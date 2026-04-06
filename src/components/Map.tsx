@@ -122,14 +122,12 @@ export function Map({
           let radius = hasFuelData ? 6 : 4;
           let color = 'transparent';
           let fillOpacity = hasFuelData ? 0.9 : 0.4;
-          let zIndexOffset = 0;
           
           if (isCheapest) {
             markerColor = 'gold';
             radius = 12; // Massive dot
             color = 'white'; // White border to make it pop
             fillOpacity = 1;
-            zIndexOffset = 1000; // Force it to the top
           }
 
           return (
@@ -138,8 +136,6 @@ export function Map({
               center={[station.latitude, station.longitude]}
               radius={radius}
               pathOptions={{ fillColor: markerColor, color: color, weight: isCheapest ? 2 : 0, fillOpacity: fillOpacity }}
-              autoPanOnFocus={false}
-              zIndexOffset={zIndexOffset}
               eventHandlers={{
                 click: () => onStationSelect(station)
               }}
