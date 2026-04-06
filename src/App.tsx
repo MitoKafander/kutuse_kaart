@@ -27,6 +27,13 @@ function App() {
   // Filter state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedFuelType, setSelectedFuelType] = useState<string | null>(null);
+  const [showOnlyFresh, setShowOnlyFresh] = useState(false);
+  const [highlightCheapest, setHighlightCheapest] = useState(false);
+
+  // If user unselects fuel type, automatically turn off cheapest highlight
+  useEffect(() => {
+    if (!selectedFuelType) setHighlightCheapest(false);
+  }, [selectedFuelType]);
 
   // Load Data
   const loadData = async () => {
@@ -84,6 +91,8 @@ function App() {
         prices={prices}
         onStationSelect={setSelectedStation} 
         focusedFuelType={selectedFuelType}
+        showOnlyFresh={showOnlyFresh}
+        highlightCheapest={highlightCheapest}
       />
       
       {/* Top Header Navigation */}
@@ -126,6 +135,10 @@ function App() {
         fuelTypes={FUEL_TYPES}
         selectedFuelType={selectedFuelType}
         setSelectedFuelType={setSelectedFuelType}
+        showOnlyFresh={showOnlyFresh}
+        setShowOnlyFresh={setShowOnlyFresh}
+        highlightCheapest={highlightCheapest}
+        setHighlightCheapest={setHighlightCheapest}
       />
       
       <StationDrawer 

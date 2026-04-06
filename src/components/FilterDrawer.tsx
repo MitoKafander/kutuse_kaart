@@ -8,7 +8,11 @@ export function FilterDrawer({
   setSelectedBrands,
   fuelTypes,
   selectedFuelType,
-  setSelectedFuelType
+  setSelectedFuelType,
+  showOnlyFresh,
+  setShowOnlyFresh,
+  highlightCheapest,
+  setHighlightCheapest
 }: { 
   isOpen: boolean, 
   onClose: () => void,
@@ -17,7 +21,11 @@ export function FilterDrawer({
   setSelectedBrands: (brands: string[]) => void,
   fuelTypes: string[],
   selectedFuelType: string | null,
-  setSelectedFuelType: (type: string | null) => void
+  setSelectedFuelType: (type: string | null) => void,
+  showOnlyFresh: boolean,
+  setShowOnlyFresh: (v: boolean) => void,
+  highlightCheapest: boolean,
+  setHighlightCheapest: (v: boolean) => void
 }) {
   if (!isOpen) return null;
 
@@ -101,6 +109,51 @@ export function FilterDrawer({
               <span>{brand}</span>
             </label>
           ))}
+        </div>
+
+        {/* Advanced Filters */}
+        <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', marginTop: '24px', color: 'var(--color-text-muted)' }}>Täpsemad Filtrid</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+            <span>Peida aegunud hinnad (&gt;24h)</span>
+            <div 
+              onClick={() => setShowOnlyFresh(!showOnlyFresh)}
+              style={{
+                width: '44px', height: '24px', borderRadius: '12px',
+                background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
+                position: 'relative', transition: 'background 0.2s'
+              }}
+            >
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
+              }}/>
+            </div>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span>Leia odavaim kütus</span>
+              {!selectedFuelType && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>*Vali esmalt kütuse tüüp</span>}
+            </div>
+            <div 
+              onClick={() => {
+                if (selectedFuelType) setHighlightCheapest(!highlightCheapest);
+              }}
+              style={{
+                width: '44px', height: '24px', borderRadius: '12px',
+                background: highlightCheapest ? 'gold' : 'var(--color-surface)',
+                position: 'relative', transition: 'background 0.2s'
+              }}
+            >
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
+              }}/>
+            </div>
+          </label>
+
         </div>
 
       </div>

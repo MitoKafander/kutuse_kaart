@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap, CircleMarker } from 'react-leaflet';
-import { Navigation } from 'lucide-react';
+import { LocateFixed } from 'lucide-react';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
@@ -24,13 +24,48 @@ export function Map({
   stations, 
   prices,
   onStationSelect, 
-  focusedFuelType 
+  focusedFuelType,
+  showOnlyFresh,
+  highlightCheapest
 }: { 
   stations: any[], 
   prices: any[],
   onStationSelect: (s: any) => void,
-  focusedFuelType: string | null 
+  focusedFuelType: string | null,
+  showOnlyFresh: boolean,
+  highlightCheapest: boolean
 }) {
+  
+  // Calculate the mathematically cheapest price for the focused fuel
+  const cheapestPrice = useMemo(() => {
+    if (!highlightCheapest || !focusedFuelType) return null;
+    
+    let minPrice = Infinity;
+    
+    // Scan all stations currently allowed on map
+    stations.forEach(station => {
+      // Find the most recent price for this fuel at this station
+      const recentPrice = prices
+        .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
+        .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
+        
+      if (recentPrice) {
+        // If we are filtering by fresh, ignore stale prices in our math
+        if (showOnlyFresh) {
+          const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
+          if (ageHours > 24) return;
+        }
+        
+        if (recentPrice.price < minPrice) {
+          minPrice = recentPrice.price;
+        }
+      }
+    });
+    
+    return minPrice === Infinity ? null : minPrice;
+  }, [stations, prices, focusedFuelType, highlightCheapest, showOnlyFresh]);
+
+
   return (
     <div style={{ height: '100dvh', width: '100vw', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
       <MapContainer 
@@ -48,28 +83,63 @@ export function Map({
         {stations.map(station => {
           let hasFuelData = true;
           let markerColor = 'var(--color-warning)'; // Default yellow
+          let isCheapest = false;
 
-          // If a specific fuel type is selected, check if this station has any price for it
-          if (focusedFuelType) {
-            const hasSpecificFuel = prices.some(p => p.station_id === station.id && p.fuel_type === focusedFuelType);
-            if (!hasSpecificFuel) {
-              markerColor = 'rgba(255,255,255,0.2)'; // Gray out missing data
-              hasFuelData = false;
-            } else {
-              markerColor = 'var(--color-fresh)'; // Highlight active hits
-            }
+          // Find the most recent price for ALL fuels (if no focused type) OR just the focused fuel
+          const relevantPrices = prices
+            .filter(p => p.station_id === station.id && (focusedFuelType ? p.fuel_type === focusedFuelType : true))
+            .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
+            
+          const mostRecentPrice = relevantPrices[0];
+
+          if (!mostRecentPrice) {
+            // No data whatsoever for the requirements
+            markerColor = 'rgba(255,255,255,0.2)'; 
+            hasFuelData = false;
           } else {
-            // No filter active, if no prices at all -> gray
-            const hasAnyPrices = prices.some(p => p.station_id === station.id);
-            if (!hasAnyPrices) markerColor = 'rgba(255,255,255,0.2)';
+            // Data exists. Check freshness.
+            const ageHours = (new Date().getTime() - new Date(mostRecentPrice.reported_at).getTime()) / (1000 * 60 * 60);
+            
+            if (showOnlyFresh && ageHours > 24) {
+              markerColor = 'rgba(255,255,255,0.1)'; 
+              hasFuelData = false;
+            } else if (ageHours <= 24) {
+              markerColor = 'var(--color-fresh)'; 
+            }
+            
+            // Check if it is the absolute cheapest
+            if (highlightCheapest && cheapestPrice !== null && mostRecentPrice.price === cheapestPrice && hasFuelData) {
+              isCheapest = true;
+            }
+          }
+
+          // Force gray out if highlightCheapest is on but this station is NOT the cheapest
+          if (highlightCheapest && focusedFuelType && !isCheapest) {
+            markerColor = 'rgba(255,255,255,0.1)';
+            hasFuelData = false;
+          }
+
+          let radius = hasFuelData ? 6 : 4;
+          let color = 'transparent';
+          let fillOpacity = hasFuelData ? 0.9 : 0.4;
+          let zIndexOffset = 0;
+          
+          if (isCheapest) {
+            markerColor = 'gold';
+            radius = 12; // Massive dot
+            color = 'white'; // White border to make it pop
+            fillOpacity = 1;
+            zIndexOffset = 1000; // Force it to the top
           }
 
           return (
             <CircleMarker 
               key={station.id} 
               center={[station.latitude, station.longitude]}
-              radius={hasFuelData ? 6 : 4} // Smaller if no data matches
-              pathOptions={{ fillColor: markerColor, color: 'transparent', fillOpacity: hasFuelData ? 0.9 : 0.4 }}
+              radius={radius}
+              pathOptions={{ fillColor: markerColor, color: color, weight: isCheapest ? 2 : 0, fillOpacity: fillOpacity }}
+              autoPanOnFocus={false}
+              zIndexOffset={zIndexOffset}
               eventHandlers={{
                 click: () => onStationSelect(station)
               }}
@@ -90,7 +160,7 @@ function RecenterButton() {
       className="glass-panel flex-center"
       style={{
         position: 'absolute',
-        bottom: '20vh',
+        bottom: '120px', 
         right: '20px',
         width: '50px',
         height: '50px',
@@ -105,7 +175,7 @@ function RecenterButton() {
         map.locate();
       }}
     >
-      <Navigation size={24} />
+      <LocateFixed size={24} />
     </button>
   );
 }
