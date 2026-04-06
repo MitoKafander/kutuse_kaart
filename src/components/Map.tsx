@@ -76,25 +76,36 @@ export function Map({
             />
           );
         })}
+
+        <RecenterButton />
       </MapContainer>
-      
-      <button 
-        className="glass-panel flex-center"
-        style={{
-          position: 'absolute',
-          bottom: '20vh',
-          right: '20px',
-          width: '50px',
-          height: '50px',
-          borderRadius: '25px',
-          zIndex: 1000,
-          border: '1px solid rgba(255,255,255,0.1)',
-          cursor: 'pointer',
-          color: 'var(--color-primary)'
-        }}
-      >
-        <Navigation size={24} />
-      </button>
     </div>
+  );
+}
+
+function RecenterButton() {
+  const map = useMap();
+  return (
+    <button 
+      className="glass-panel flex-center"
+      style={{
+        position: 'absolute',
+        bottom: '20vh',
+        right: '20px',
+        width: '50px',
+        height: '50px',
+        borderRadius: '25px',
+        zIndex: 1000,
+        border: '1px solid rgba(255,255,255,0.1)',
+        cursor: 'pointer',
+        color: 'var(--color-primary)'
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        map.locate();
+      }}
+    >
+      <Navigation size={24} />
+    </button>
   );
 }
