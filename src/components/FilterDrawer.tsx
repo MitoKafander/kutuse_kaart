@@ -42,11 +42,11 @@ export function FilterDrawer({
       <div className="glass-panel animate-slide-up" style={{
         width: '100%',
         maxWidth: '400px',
-        height: '100vh',
+        height: '100dvh',
         backgroundColor: 'var(--color-bg)',
         borderTopLeftRadius: 0,
         borderBottomLeftRadius: 0,
-        padding: '24px',
+        padding: '24px 24px calc(24px + env(safe-area-inset-bottom)) 24px',
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto'

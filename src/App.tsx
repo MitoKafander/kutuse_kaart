@@ -78,7 +78,7 @@ function App() {
   }, [stations, selectedBrands]);
 
   return (
-    <main style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
       <Map 
         stations={filteredStations} 
         prices={prices}

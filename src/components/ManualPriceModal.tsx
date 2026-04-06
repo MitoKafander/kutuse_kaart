@@ -74,7 +74,7 @@ export function ManualPriceModal({
         backgroundColor: 'var(--color-bg)',
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
-        padding: '24px',
+        padding: '24px 24px calc(24px + env(safe-area-inset-bottom)) 24px',
         display: 'flex',
         flexDirection: 'column'
       }}>

@@ -32,7 +32,7 @@ export function Map({
   focusedFuelType: string | null 
 }) {
   return (
-    <div style={{ height: '100vh', width: '100vw', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
+    <div style={{ height: '100dvh', width: '100vw', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
       <MapContainer 
         center={ESTONIA_CENTER} 
         zoom={7} 

@@ -85,7 +85,7 @@ export function StationDrawer({
       backgroundColor: 'var(--color-bg)',
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
-      padding: '24px',
+      padding: '24px 24px calc(24px + env(safe-area-inset-bottom)) 24px',
       zIndex: 1000,
       boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
     }}>
