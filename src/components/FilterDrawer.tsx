@@ -101,61 +101,106 @@ export function FilterDrawer({
             <label key={brand} onClick={(e) => { e.preventDefault(); toggleBrand(brand); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '8px 0' }}>
               <div style={{
                 width: '20px', height: '20px', borderRadius: '4px', border: '2px solid var(--color-primary)',
-                background: selectedBrands.includes(brand) ? 'var(--color-primary)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {selectedBrands.includes(brand) && <CheckIcon />}
-              </div>
-              <span>{brand}</span>
-            </label>
-          ))}
-        </div>
-
-        {/* Advanced Filters */}
-        <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', marginTop: '24px', color: 'var(--color-text-muted)' }}>Täpsemad Filtrid</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span>Peida aegunud hinnad (&gt;24h)</span>
-            <div 
-              onClick={() => setShowOnlyFresh(!showOnlyFresh)}
-              style={{
-                width: '44px', height: '24px', borderRadius: '12px',
-                background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
-                position: 'relative', transition: 'background 0.2s'
-              }}
-            >
-              <div style={{
-                width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
-              }}/>
-            </div>
-          </label>
+          {/* Fuel Types */}
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>Kütuse Tüüp</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '8px' }}>
+            {fuelTypes.map(type => (
+              <button
+                key={type}
+                className="glass-panel"
+                onClick={() => setSelectedFuelType(selectedFuelType === type ? null : type)}
+                style={{
+                  padding: '8px',
+                  minWidth: 0,
+                  border: selectedFuelType === type ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
+                  background: selectedFuelType === type ? 'rgba(0, 255, 128, 0.1)' : 'transparent',
+                  color: selectedFuelType === type ? 'var(--color-primary)' : 'var(--color-text)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span>Leia odavaim kütus</span>
-              {!selectedFuelType && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>*Vali esmalt kütuse tüüp</span>}
-            </div>
-            <div 
-              onClick={() => {
-                if (selectedFuelType) setHighlightCheapest(!highlightCheapest);
-              }}
-              style={{
-                width: '44px', height: '24px', borderRadius: '12px',
-                background: highlightCheapest ? 'gold' : 'var(--color-surface)',
-                position: 'relative', transition: 'background 0.2s'
-              }}
-            >
-              <div style={{
-                width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
-              }}/>
-            </div>
-          </label>
+          {/* Advanced Filters */}
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', marginTop: '32px', color: 'var(--color-text-muted)' }}>Täpsemad Filtrid</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+              <span>Peida aegunud hinnad (&gt;24h)</span>
+              <div 
+                onClick={() => setShowOnlyFresh(!showOnlyFresh)}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
+                  position: 'relative', transition: 'background 0.2s'
+                }}
+              >
+                <div style={{
+                  width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                  position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
+                }}/>
+              </div>
+            </label>
 
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span>Leia odavaim kütus</span>
+                {!selectedFuelType && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>*Vali esmalt kütuse tüüp</span>}
+              </div>
+              <div 
+                onClick={() => {
+                  if (selectedFuelType) setHighlightCheapest(!highlightCheapest);
+                }}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: highlightCheapest ? 'gold' : 'var(--color-surface)',
+                  position: 'relative', transition: 'background 0.2s'
+                }}
+              >
+                <div style={{
+                  width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                  position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
+                }}/>
+              </div>
+            </label>
+          </div>
+
+          {/* Brand Filters Last */}
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', marginTop: '32px', color: 'var(--color-text-muted)' }}>Kett</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {brands.map(brand => (
+              <button
+                key={brand}
+                className="glass-panel"
+                onClick={() => {
+                  if (selectedBrands.includes(brand)) {
+                    setSelectedBrands(selectedBrands.filter(b => b !== brand));
+                  } else {
+                    setSelectedBrands([...selectedBrands, brand]);
+                  }
+                }}
+                style={{
+                  padding: '8px 16px',
+                  border: selectedBrands.includes(brand) ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
+                  background: selectedBrands.includes(brand) ? 'rgba(0, 255, 128, 0.1)' : 'transparent',
+                  color: selectedBrands.includes(brand) ? 'var(--color-primary)' : 'var(--color-text)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
         </div>
-
       </div>
     </div>
   );
