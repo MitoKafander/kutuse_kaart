@@ -24,7 +24,12 @@ function StationPanController({ station }: { station: any | null }) {
   const map = useMap();
   useEffect(() => {
     if (station && station.latitude && station.longitude) {
-      map.flyTo([station.latitude, station.longitude], 14, {
+      // By subtracting a tiny amount from the latitude, the camera centers slightly
+      // south of the actual station. This effectively forces the station's marker
+      // to render in the top half of the screen, perfectly avoiding the bottom Drawer!
+      const latOffset = 0.015;
+      
+      map.flyTo([station.latitude - latOffset, station.longitude], 14, {
         animate: true,
         duration: 1.5,
       });
