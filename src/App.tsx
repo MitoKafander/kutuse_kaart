@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Map } from './components/Map';
-import { Filter, LogIn, LogOut } from 'lucide-react';
+import { Search, Filter, LogIn, LogOut } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
+// ... (cutting out imports diffs to focus on logic replacement) ...
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
 import { FilterDrawer } from './components/FilterDrawer';
@@ -29,6 +30,7 @@ function App() {
   const [selectedFuelType, setSelectedFuelType] = useState<string | null>(null);
   const [showOnlyFresh, setShowOnlyFresh] = useState(false);
   const [highlightCheapest, setHighlightCheapest] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // If user unselects fuel type, automatically turn off cheapest highlight
   useEffect(() => {
@@ -73,16 +75,23 @@ function App() {
     return Array.from(brands).sort();
   }, [stations]);
 
-  // Compute filtered stations based on Brand and Fuel Type
+  // Compute filtered stations based on Brand, Fuel Type, and Search Query
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
-      // Filter by Brand
-      if (selectedBrands.length > 0 && !selectedBrands.includes(station.name)) {
-        return false;
+      // Filter by Brand Menu
+      if (selectedBrands.length > 0 && !selectedBrands.includes(station.name)) return false;
+      
+      // Filter by Search Query
+      if (searchQuery) {
+        // station.name contains the brand and the city (e.g., "Olerex Rapla")
+        if (!station.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return false;
+        }
       }
+      
       return true;
     });
-  }, [stations, selectedBrands]);
+  }, [stations, selectedBrands, searchQuery]);
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
@@ -95,35 +104,59 @@ function App() {
         highlightCheapest={highlightCheapest}
       />
       
-      {/* Top Header Navigation */}
-      <header className="glass-panel flex-between" style={{
+      {/* Top Search & Action Bar */}
+      <header className="glass-panel" style={{
         position: 'absolute', top: '20px', left: '20px', right: '20px',
-        padding: '12px 20px', zIndex: 1000
+        padding: '8px 16px', zIndex: 1000,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setSelectedStation(null)}>
-          <div style={{ 
-            width: '12px', height: '12px', borderRadius: '50%', 
-            backgroundColor: 'var(--color-primary)', boxShadow: '0 0 10px var(--color-primary-glow)'
-          }} />
-          <h1 className="heading-1" style={{ fontSize: '1.2rem' }}>KütuseKaart</h1>
+        
+        {/* Modern Search Input Container */}
+        <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '8px' }}>
+          <Search size={20} color="var(--color-text-muted)" />
+          <input 
+            type="text" 
+            placeholder="Otsi jaamu, linna..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ 
+              background: 'transparent', border: 'none', color: 'white', flex: 1, 
+              outline: 'none', fontSize: '1rem', width: '100%' 
+            }}
+          />
         </div>
         
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer' }}>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+          <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
             <Filter size={20} />
           </button>
           
           {session ? (
-            <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
               <LogOut size={20} />
             </button>
           ) : (
-            <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
               <LogIn size={20} />
             </button>
           )}
         </div>
       </header>
+
+      {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
+      <div style={{ 
+        position: 'absolute', 
+        bottom: 'calc(16px + env(safe-area-inset-bottom))', 
+        left: '20px', 
+        zIndex: 1000,
+        display: 'flex', alignItems: 'center', gap: '6px',
+        opacity: 0.8,
+        pointerEvents: 'none' // Don't block map clicks
+      }}>
+        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', boxShadow: '0 0 8px var(--color-primary-glow)' }} />
+        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>KütuseKaart</span>
+      </div>
 
       {/* Modals & Drawers */}
       <FilterDrawer 
