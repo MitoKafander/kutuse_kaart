@@ -20,20 +20,35 @@ function LocationMarker() {
   );
 }
 
+function StationPanController({ station }: { station: any | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (station && station.latitude && station.longitude) {
+      map.flyTo([station.latitude, station.longitude], 14, {
+        animate: true,
+        duration: 1.5,
+      });
+    }
+  }, [station, map]);
+  return null;
+}
+
 export function Map({ 
   stations, 
   prices,
   onStationSelect, 
   focusedFuelType,
   showOnlyFresh,
-  highlightCheapest
+  highlightCheapest,
+  selectedStation
 }: { 
   stations: any[], 
   prices: any[],
   onStationSelect: (s: any) => void,
   focusedFuelType: string | null,
   showOnlyFresh: boolean,
-  highlightCheapest: boolean
+  highlightCheapest: boolean,
+  selectedStation: any | null
 }) {
   
   // Calculate the mathematically cheapest price for the focused fuel
@@ -79,6 +94,7 @@ export function Map({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         <LocationMarker />
+        <StationPanController station={selectedStation} />
         
         {stations.map(station => {
           let hasFuelData = true;

@@ -75,23 +75,24 @@ function App() {
     return Array.from(brands).sort();
   }, [stations]);
 
-  // Compute filtered stations based on Brand, Fuel Type, and Search Query
+  // Compute filtered stations based on Brand Menu ONLY
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
       // Filter by Brand Menu
       if (selectedBrands.length > 0 && !selectedBrands.includes(station.name)) return false;
-      
-      // Filter by Search Query
-      if (searchQuery) {
-        // station.name contains the brand and the city (e.g., "Olerex Rapla")
-        if (!station.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-          return false;
-        }
-      }
-      
       return true;
     });
-  }, [stations, selectedBrands, searchQuery]);
+  }, [stations, selectedBrands]);
+
+  // Compute live search dropdown results (max 10 results to not overwhelm UI)
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    
+    return stations
+      .filter(station => station.name.toLowerCase().includes(query))
+      .slice(0, 10);
+  }, [stations, searchQuery]);
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
@@ -102,47 +103,90 @@ function App() {
         focusedFuelType={selectedFuelType}
         showOnlyFresh={showOnlyFresh}
         highlightCheapest={highlightCheapest}
+        selectedStation={selectedStation} /* Pass selected station down to trigger panning */
       />
       
       {/* Top Search & Action Bar */}
-      <header className="glass-panel" style={{
-        position: 'absolute', top: '20px', left: '20px', right: '20px',
-        padding: '8px 16px', zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px'
-      }}>
-        
-        {/* Modern Search Input Container */}
-        <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '8px' }}>
-          <Search size={20} color="var(--color-text-muted)" />
-          <input 
-            type="text" 
-            placeholder="Otsi jaamu, linna..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ 
-              background: 'transparent', border: 'none', color: 'white', flex: 1, 
-              outline: 'none', fontSize: '1rem', width: '100%' 
-            }}
-          />
-        </div>
-        
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
-          <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-            <Filter size={20} />
-          </button>
+      <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+        <header className="glass-panel" style={{
+          padding: '8px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+          borderBottomLeftRadius: searchResults.length > 0 ? 0 : undefined,
+          borderBottomRightRadius: searchResults.length > 0 ? 0 : undefined,
+        }}>
           
-          {session ? (
-            <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-              <LogOut size={20} />
+          {/* Modern Search Input Container */}
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '8px' }}>
+            <Search size={20} color="var(--color-text-muted)" />
+            <input 
+              type="text" 
+              placeholder="Otsi jaamu, linna..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ 
+                background: 'transparent', border: 'none', color: 'white', flex: 1, 
+                outline: 'none', fontSize: '1rem', width: '100%' 
+              }}
+            />
+          </div>
+          
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+            <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
+              <Filter size={20} />
             </button>
-          ) : (
-            <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-              <LogIn size={20} />
-            </button>
-          )}
-        </div>
-      </header>
+            
+            {session ? (
+              <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
+                <LogOut size={20} />
+              </button>
+            ) : (
+              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
+                <LogIn size={20} />
+              </button>
+            )}
+          </div>
+        </header>
+        
+        {/* Search Dropdown Results */}
+        {searchResults.length > 0 && (
+          <div className="glass-panel" style={{
+            marginTop: '1px',
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            maxHeight: '40vh',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {searchResults.map((station) => (
+              <button
+                key={station.id}
+                onClick={() => {
+                  setSelectedStation(station);
+                  setSearchQuery(''); // Clear search to close dropdown
+                }}
+                style={{
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  color: 'white',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}
+              >
+                <span>{station.name}</span>
+                {/* Could add distance or snippet here in the future */}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
       <div style={{ 
