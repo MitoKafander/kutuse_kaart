@@ -84,13 +84,36 @@ function App() {
     });
   }, [stations, selectedBrands]);
 
+// Helper function to format a rich display name using OSM tags
+const getStationDisplayName = (station: any) => {
+  const brand = station.name;
+  const city = station.amenities?.['addr:city'];
+  const street = station.amenities?.['addr:street'];
+  const nodeName = station.amenities?.name;
+
+  if (city && street) return `${brand} (${city}, ${street})`;
+  if (city) return `${brand} (${city})`;
+  if (street) return `${brand} (${street})`;
+  if (nodeName && nodeName !== brand) return `${brand} (${nodeName})`;
+  return brand;
+};
+
+// ... inside App component
+  
   // Compute live search dropdown results (max 10 results to not overwhelm UI)
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     
     return stations
-      .filter(station => station.name.toLowerCase().includes(query))
+      .filter(station => {
+        const brandMatch = station.name?.toLowerCase().includes(query);
+        const cityMatch = station.amenities?.['addr:city']?.toLowerCase().includes(query);
+        const streetMatch = station.amenities?.['addr:street']?.toLowerCase().includes(query);
+        const nameMatch = station.amenities?.name?.toLowerCase().includes(query);
+        
+        return brandMatch || cityMatch || streetMatch || nameMatch;
+      })
       .slice(0, 10);
   }, [stations, searchQuery]);
 
@@ -180,8 +203,10 @@ function App() {
                   gap: '2px'
                 }}
               >
-                <span>{station.name}</span>
-                {/* Could add distance or snippet here in the future */}
+                <span style={{ fontWeight: 500 }}>{getStationDisplayName(station)}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                  {station.amenities?.['addr:street'] || station.amenities?.['addr:city'] || 'Eesti'}
+                </span>
               </button>
             ))}
           </div>
