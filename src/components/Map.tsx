@@ -27,7 +27,7 @@ function StationPanController({ station }: { station: any | null }) {
       // By subtracting a tiny amount from the latitude, the camera centers slightly
       // south of the actual station. This effectively forces the station's marker
       // to render in the top half of the screen, perfectly avoiding the bottom Drawer!
-      const latOffset = 0.015;
+      const latOffset = 0.008;
       
       map.flyTo([station.latitude - latOffset, station.longitude], 14, {
         animate: true,
