@@ -1,0 +1,166 @@
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { supabase } from '../supabase';
+
+export function StationDrawer({ 
+  station, 
+  prices,
+  allVotes,
+  session,
+  isOpen, 
+  onClose, 
+  onOpenPriceForm,
+  onRequireAuth,
+  onVoteSubmitted
+}: { 
+  station: any, 
+  prices: any[],
+  allVotes: any[],
+  session: any,
+  isOpen: boolean, 
+  onClose: () => void,
+  onOpenPriceForm: () => void,
+  onRequireAuth: () => void,
+  onVoteSubmitted: () => void
+}) {
+  if (!isOpen || !station) return null;
+
+  const getAgeColor = (reportedAt: string) => {
+    const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
+    if (ageInHours < 24) return 'var(--color-fresh)';
+    if (ageInHours < 72) return 'var(--color-warning)';
+    return 'var(--color-text-muted)';
+  };
+
+  const getAgeText = (reportedAt: string) => {
+    const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
+    if (ageInHours < 1) return 'Just praegu';
+    if (ageInHours < 24) return `${Math.floor(ageInHours)}h tagasi`;
+    return `${Math.floor(ageInHours / 24)} päeva tagasi`;
+  };
+
+  const handleVote = async (priceId: string, voteType: 'up' | 'down') => {
+    if (!session) {
+      onRequireAuth();
+      return;
+    }
+    
+    const userId = session.user.id;
+    
+    // UPSERT the vote using the unique index (price_id, user_id) we define in schema_phase3
+    const { error } = await supabase.from('votes').upsert(
+      { price_id: priceId, user_id: userId, vote_type: voteType },
+      { onConflict: 'price_id,user_id' }
+    );
+    
+    if (error) {
+      console.error("Viga hääletamisel", error);
+      alert("Hääletamine ebaõnnestus. " + error.message);
+    } else {
+      onVoteSubmitted();
+    }
+  };
+
+  const calculateScore = (priceId: string) => {
+    const priceVotes = allVotes.filter(v => v.price_id === priceId);
+    let score = 0;
+    priceVotes.forEach(v => {
+      if (v.vote_type === 'up') score += 1;
+      if (v.vote_type === 'down') score -= 1;
+    });
+    return score;
+  };
+
+  const getUserVote = (priceId: string) => {
+    if (!session) return null;
+    const vote = allVotes.find(v => v.price_id === priceId && v.user_id === session.user.id);
+    return vote ? vote.vote_type : null;
+  };
+
+  const fuelTypes = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+
+  return (
+    <div className="glass-panel animate-slide-up" style={{
+      position: 'absolute',
+      bottom: 0, left: 0, right: 0,
+      backgroundColor: 'var(--color-bg)',
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
+      padding: '24px',
+      zIndex: 1000,
+      boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
+    }}>
+      <div className="flex-between" style={{ marginBottom: '8px' }}>
+        <h2 className="heading-1">{station.name}</h2>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+          <X size={24} />
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
+        {fuelTypes.map(type => {
+          const recentPrice = prices
+            .filter(p => p.fuel_type === type)
+            .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
+
+          const score = recentPrice ? calculateScore(recentPrice.id) : 0;
+          const userVote = recentPrice ? getUserVote(recentPrice.id) : null;
+
+          return (
+            <div key={type} style={{
+              background: 'var(--color-surface)',
+              border: `1px solid ${recentPrice ? getAgeColor(recentPrice.reported_at) : 'var(--color-surface-border)'}`,
+              borderRadius: 'var(--radius-md)',
+              padding: '16px',
+              position: 'relative'
+            }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{type}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
+                {recentPrice ? `€${recentPrice.price.toFixed(3)}` : '---'}
+              </div>
+              
+              {/* Timestamp */}
+              {recentPrice && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: getAgeColor(recentPrice.reported_at), marginTop: '8px' }}>
+                  <Clock size={12} />
+                  <span>{getAgeText(recentPrice.reported_at)}</span>
+                </div>
+              )}
+
+              {/* Voting Cluster */}
+              {recentPrice && (
+                <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <button 
+                    onClick={() => handleVote(recentPrice.id, 'up')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'up' ? 'var(--color-fresh)' : 'var(--color-text-muted)' }}
+                  ><ThumbsUp size={16} /></button>
+                  
+                  <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: score > 0 ? 'var(--color-fresh)' : (score < 0 ? 'var(--color-stale)' : 'var(--color-text-muted)') }}>
+                    {score > 0 ? `+${score}` : score}
+                  </span>
+                  
+                  <button 
+                    onClick={() => handleVote(recentPrice.id, 'down')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'down' ? 'var(--color-stale)' : 'var(--color-text-muted)' }}
+                  ><ThumbsDown size={16} /></button>
+                </div>
+              )}
+
+            </div>
+          );
+        })}
+      </div>
+
+      <button 
+        style={{
+          background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+          padding: '16px', fontSize: '1.1rem', fontWeight: '600', width: '100%', marginTop: '24px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+        }}
+        onClick={onOpenPriceForm}
+      >
+        <Edit3 size={20} />
+        Uuenda Hinnad
+      </button>
+    </div>
+  );
+}
