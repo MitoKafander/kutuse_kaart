@@ -159,41 +159,7 @@ export function ProfileDrawer({
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Gamification / Contribution Score + Badge */}
-          <div className="glass-panel" style={{ padding: '16px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Award size={18} /> Sinu Panus
-            </h3>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{userPricesCount}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hinda edastatud</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>{userVotesCount}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Häält antud</div>
-              </div>
-            </div>
-            {/* Progress to next badge */}
-            {badge.label !== 'Legend' && (
-              <div style={{ marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  <span>{badge.emoji} {badge.label}</span>
-                  <span>{getNextBadgeTarget(userPricesCount + userVotesCount)} panuseni järgmise astmeni</span>
-                </div>
-                <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--color-surface)' }}>
-                  <div style={{ 
-                    width: `${getBadgeProgress(userPricesCount + userVotesCount)}%`,
-                    height: '100%', borderRadius: '2px',
-                    background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Preferences */}
+          {/* Preferences — front and center */}
           <div className="glass-panel" style={{ padding: '16px' }}>
             <h3 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
               <Fuel size={18} /> Sinu Auto Kütus
@@ -330,6 +296,39 @@ export function ProfileDrawer({
                     </button>
                   )
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Gamification / Contribution Score + Badge */}
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+              <Award size={18} /> Sinu Panus
+            </h3>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{userPricesCount}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hinda edastatud</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>{userVotesCount}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Häält antud</div>
+              </div>
+            </div>
+            {badge.label !== 'Legend' && (
+              <div style={{ marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                  <span>{badge.emoji} {badge.label}</span>
+                  <span>{getNextBadgeTarget(userPricesCount + userVotesCount)} panuseni järgmise astmeni</span>
+                </div>
+                <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--color-surface)' }}>
+                  <div style={{ 
+                    width: `${getBadgeProgress(userPricesCount + userVotesCount)}%`,
+                    height: '100%', borderRadius: '2px',
+                    background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
               </div>
             )}
           </div>
