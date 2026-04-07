@@ -2,11 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, LogOut } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
-// ... (cutting out imports diffs to focus on logic replacement) ...
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
 import { FilterDrawer } from './components/FilterDrawer';
 import { supabase } from './supabase';
+import { getStationDisplayName } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -84,22 +84,6 @@ function App() {
     });
   }, [stations, selectedBrands]);
 
-// Helper function to format a rich display name using OSM tags
-const getStationDisplayName = (station: any) => {
-  const brand = station.name;
-  const city = station.amenities?.['addr:city'];
-  const street = station.amenities?.['addr:street'];
-  const nodeName = station.amenities?.name;
-
-  if (city && street) return `${brand} (${city}, ${street})`;
-  if (city) return `${brand} (${city})`;
-  if (street) return `${brand} (${street})`;
-  if (nodeName && nodeName !== brand) return `${brand} (${nodeName})`;
-  return brand;
-};
-
-// ... inside App component
-  
   // Compute live search dropdown results (max 10 results to not overwhelm UI)
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];

@@ -1,5 +1,6 @@
 import { X, Clock, Edit3, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getStationDisplayName } from '../utils';
 
 export function StationDrawer({ 
   station, 
@@ -90,7 +91,7 @@ export function StationDrawer({
       boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
     }}>
       <div className="flex-between" style={{ marginBottom: '8px' }}>
-        <h2 className="heading-1">{station.name}</h2>
+        <h2 className="heading-1">{getStationDisplayName(station)}</h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
           <X size={24} />
         </button>

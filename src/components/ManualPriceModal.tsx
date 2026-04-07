@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { supabase } from '../supabase';
+import { getStationDisplayName } from '../utils';
 
 export function ManualPriceModal({ 
   station,
@@ -79,7 +80,7 @@ export function ManualPriceModal({
         flexDirection: 'column'
       }}>
         <div className="flex-between" style={{ marginBottom: '24px' }}>
-          <h2 className="heading-1">Uued Hinnad: {station.name}</h2>
+          <h2 className="heading-1">Uued Hinnad: {getStationDisplayName(station)}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
           </button>
