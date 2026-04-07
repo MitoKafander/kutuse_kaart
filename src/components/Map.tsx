@@ -119,9 +119,23 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
   });
 }
 
+const DOWNVOTE_THRESHOLD = -3;
+
+function calculateVoteScore(priceId: string, allVotes: any[]): number {
+  let score = 0;
+  allVotes.forEach(v => {
+    if (v.price_id === priceId) {
+      if (v.vote_type === 'up') score += 1;
+      if (v.vote_type === 'down') score -= 1;
+    }
+  });
+  return score;
+}
+
 export function Map({ 
   stations, 
   prices,
+  allVotes,
   onStationSelect, 
   focusedFuelType,
   showOnlyFresh,
@@ -130,6 +144,7 @@ export function Map({
 }: { 
   stations: any[], 
   prices: any[],
+  allVotes: any[],
   onStationSelect: (s: any) => void,
   focusedFuelType: string | null,
   showOnlyFresh: boolean,
@@ -196,15 +211,23 @@ export function Map({
           let hasFuelData = true;
           let isFresh = false;
           let isCheapest = false;
+          let isDisputed = false;
           
           if (!mostRecentPrice) {
             hasFuelData = false;
           } else {
+            // Check if this price has been downvoted below threshold
+            const voteScore = calculateVoteScore(mostRecentPrice.id, allVotes);
+            if (voteScore <= DOWNVOTE_THRESHOLD) {
+              isDisputed = true;
+              hasFuelData = false;
+            }
+            
             const ageHours = (new Date().getTime() - new Date(mostRecentPrice.reported_at).getTime()) / (1000 * 60 * 60);
             
             if (showOnlyFresh && ageHours > 24) {
               hasFuelData = false;
-            } else {
+            } else if (!isDisputed) {
               isFresh = ageHours <= 24;
             }
             

@@ -132,11 +132,12 @@ function App() {
       <Map 
         stations={filteredStations} 
         prices={prices}
+        allVotes={votes}
         onStationSelect={setSelectedStation} 
         focusedFuelType={selectedFuelType}
         showOnlyFresh={showOnlyFresh}
         highlightCheapest={highlightCheapest}
-        selectedStation={selectedStation} /* Pass selected station down to trigger panning */
+        selectedStation={selectedStation}
       />
       
       {/* Top Search & Action Bar */}

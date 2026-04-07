@@ -106,6 +106,7 @@ export function StationDrawer({
     return vote ? vote.vote_type : null;
   };
 
+  const DOWNVOTE_THRESHOLD = -3; // Hide price if net score is this or worse
   const fuelTypes = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
   return (
@@ -139,22 +140,31 @@ export function StationDrawer({
 
           const score = recentPrice ? calculateScore(recentPrice.id) : 0;
           const userVote = recentPrice ? getUserVote(recentPrice.id) : null;
+          const isDisputed = score <= DOWNVOTE_THRESHOLD;
 
           return (
             <div key={type} style={{
               background: 'var(--color-surface)',
-              border: `1px solid ${recentPrice ? getAgeColor(recentPrice.reported_at) : 'var(--color-surface-border)'}`,
+              border: `1px solid ${isDisputed ? 'var(--color-stale)' : (recentPrice ? getAgeColor(recentPrice.reported_at) : 'var(--color-surface-border)')}`,
               borderRadius: 'var(--radius-md)',
               padding: '16px',
-              position: 'relative'
+              position: 'relative',
+              opacity: isDisputed ? 0.6 : 1,
             }}>
               <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{type}</div>
               <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
-                {recentPrice ? `€${recentPrice.price.toFixed(3)}` : '---'}
+                {!recentPrice || isDisputed ? '---' : `€${recentPrice.price.toFixed(3)}`}
               </div>
               
-              {/* Timestamp */}
-              {recentPrice && (
+              {/* Disputed label */}
+              {recentPrice && isDisputed && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-stale)', marginTop: '8px' }}>
+                  <span>⚠ Vaidlustatud</span>
+                </div>
+              )}
+
+              {/* Timestamp — only show if not disputed */}
+              {recentPrice && !isDisputed && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: getAgeColor(recentPrice.reported_at), marginTop: '8px' }}>
                   <Clock size={12} />
                   <span>{getAgeText(recentPrice.reported_at)}</span>
