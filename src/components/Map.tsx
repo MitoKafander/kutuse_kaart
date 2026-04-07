@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, CircleMarker, Marker } from 'react-leaflet';
+import L from 'leaflet';
 import { LocateFixed } from 'lucide-react';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
@@ -32,9 +33,6 @@ function StationPanController({ station }: { station: any | null }) {
   const map = useMap();
   useEffect(() => {
     if (station && station.latitude && station.longitude) {
-      // By subtracting a tiny amount from the latitude, the camera centers slightly
-      // south of the actual station. This effectively forces the station's marker
-      // to render in the top half of the screen, perfectly avoiding the bottom Drawer!
       const latOffset = 0.008;
       
       map.flyTo([station.latitude - latOffset, station.longitude], 14, {
@@ -44,6 +42,67 @@ function StationPanController({ station }: { station: any | null }) {
     }
   }, [station, map]);
   return null;
+}
+
+// Create a Waze-style price label DivIcon
+function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean): L.DivIcon {
+  if (price === null) {
+    // No data — small gray dot
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="
+        width: 10px; height: 10px; border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+      "></div>`,
+      iconSize: [10, 10],
+      iconAnchor: [5, 5],
+    });
+  }
+
+  const priceStr = `€${price.toFixed(3)}`;
+  
+  // Color scheme
+  let bgColor = 'rgba(30, 34, 44, 0.92)';
+  let borderColor = 'rgba(255,255,255,0.15)';
+  let textColor = '#ffffff';
+  let dotColor = isFresh ? '#10b981' : '#f59e0b';
+  let shadow = '0 2px 8px rgba(0,0,0,0.4)';
+  
+  if (isCheapest) {
+    bgColor = 'rgba(250, 204, 21, 0.95)';
+    borderColor = 'rgba(250, 204, 21, 0.6)';
+    textColor = '#1a1a2e';
+    dotColor = '#1a1a2e';
+    shadow = '0 2px 12px rgba(250, 204, 21, 0.4)';
+  }
+
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="
+      display: flex; align-items: center; gap: 5px;
+      background: ${bgColor};
+      border: 1px solid ${borderColor};
+      border-radius: 16px;
+      padding: 4px 10px 4px 6px;
+      box-shadow: ${shadow};
+      white-space: nowrap;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    ">
+      <div style="
+        width: 8px; height: 8px; border-radius: 50%;
+        background: ${dotColor};
+        flex-shrink: 0;
+      "></div>
+      <span style="
+        font-size: 12px; font-weight: 600;
+        color: ${textColor}; letter-spacing: 0.2px;
+      ">${priceStr}</span>
+    </div>`,
+    iconSize: [90, 28],
+    iconAnchor: [45, 14],
+  });
 }
 
 export function Map({ 
@@ -67,19 +126,16 @@ export function Map({
   
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
-    if (!highlightCheapest || !focusedFuelType) return null;
+    if (!focusedFuelType) return null;
     
     let minPrice = Infinity;
     
-    // Scan all stations currently allowed on map
     stations.forEach(station => {
-      // Find the most recent price for this fuel at this station
       const recentPrice = prices
         .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
         .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
         
       if (recentPrice) {
-        // If we are filtering by fresh, ignore stale prices in our math
         if (showOnlyFresh) {
           const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
           if (ageHours > 24) return;
@@ -92,7 +148,7 @@ export function Map({
     });
     
     return minPrice === Infinity ? null : minPrice;
-  }, [stations, prices, focusedFuelType, highlightCheapest, showOnlyFresh]);
+  }, [stations, prices, focusedFuelType, showOnlyFresh]);
 
 
   return (
@@ -111,42 +167,62 @@ export function Map({
         <StationPanController station={selectedStation} />
         
         {stations.map(station => {
-          let hasFuelData = true;
-          let markerColor = 'var(--color-warning)'; // Default yellow
-          let isCheapest = false;
-
-          // Find the most recent price for ALL fuels (if no focused type) OR just the focused fuel
+          // Find the most recent price for the focused fuel type (or any fuel)
           const relevantPrices = prices
             .filter(p => p.station_id === station.id && (focusedFuelType ? p.fuel_type === focusedFuelType : true))
             .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
             
           const mostRecentPrice = relevantPrices[0];
-
+          
+          let hasFuelData = true;
+          let isFresh = false;
+          let isCheapest = false;
+          
           if (!mostRecentPrice) {
-            // No data whatsoever for the requirements
-            markerColor = 'rgba(255,255,255,0.2)'; 
             hasFuelData = false;
           } else {
-            // Data exists. Check freshness.
             const ageHours = (new Date().getTime() - new Date(mostRecentPrice.reported_at).getTime()) / (1000 * 60 * 60);
             
             if (showOnlyFresh && ageHours > 24) {
-              markerColor = 'rgba(255,255,255,0.1)'; 
               hasFuelData = false;
-            } else if (ageHours <= 24) {
-              markerColor = 'var(--color-fresh)'; 
+            } else {
+              isFresh = ageHours <= 24;
             }
             
-            // Check if it is the absolute cheapest
-            if (highlightCheapest && cheapestPrice !== null && mostRecentPrice.price === cheapestPrice && hasFuelData) {
+            if (cheapestPrice !== null && mostRecentPrice.price === cheapestPrice && hasFuelData) {
               isCheapest = true;
             }
           }
-
-          // Force gray out if highlightCheapest is on but this station is NOT the cheapest
+          
+          // Force gray out if highlightCheapest is on but this station is NOT the cheapest  
           if (highlightCheapest && focusedFuelType && !isCheapest) {
-            markerColor = 'rgba(255,255,255,0.1)';
             hasFuelData = false;
+          }
+
+          // ---- WAZE MODE: Use price label markers when a fuel type is focused ----
+          if (focusedFuelType) {
+            const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
+            const icon = createPriceIcon(priceValue, isCheapest, isFresh);
+            
+            return (
+              <Marker
+                key={station.id}
+                position={[station.latitude, station.longitude]}
+                icon={icon}
+                eventHandlers={{
+                  click: () => onStationSelect(station)
+                }}
+              />
+            );
+          }
+
+          // ---- DEFAULT MODE: Classic colored dots ----
+          let markerColor = 'var(--color-warning)';
+          
+          if (!hasFuelData) {
+            markerColor = 'rgba(255,255,255,0.2)';
+          } else if (isFresh) {
+            markerColor = 'var(--color-fresh)';
           }
 
           let radius = hasFuelData ? 6 : 4;
@@ -155,8 +231,8 @@ export function Map({
           
           if (isCheapest) {
             markerColor = 'gold';
-            radius = 12; // Massive dot
-            color = 'white'; // White border to make it pop
+            radius = 12;
+            color = 'white';
             fillOpacity = 1;
           }
 
@@ -199,10 +275,8 @@ function RecenterButton({ userLocation }: { userLocation: [number, number] | nul
       onClick={(e) => {
         e.stopPropagation();
         if (userLocation) {
-          // Instantly fly to the tracked location
           map.flyTo(userLocation, 14, { animate: true, duration: 1.5 });
         } else {
-          // Fallback if not tracked yet, do NOT use map.locate() as it breaks watch options!
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
               (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { animate: true, duration: 1.5 }),

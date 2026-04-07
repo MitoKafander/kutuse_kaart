@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Fuel } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -180,6 +180,46 @@ function App() {
             )}
           </div>
         </header>
+
+        {/* Quick Fuel Type Selector - Waze-style pills */}
+        {searchResults.length === 0 && (
+          <div style={{
+            display: 'flex', gap: '8px', marginTop: '8px',
+            overflowX: 'auto', paddingBottom: '2px',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+          }}>
+            {FUEL_TYPES.map(type => {
+              const isActive = selectedFuelType === type;
+              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setSelectedFuelType(isActive ? null : type)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    border: isActive ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.12)',
+                    background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.06)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    fontSize: '0.85rem',
+                    fontWeight: isActive ? '600' : '400',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Fuel size={14} />
+                  {shortLabel}
+                </button>
+              );
+            })}
+          </div>
+        )}
         
         {/* Search Dropdown Results */}
         {searchResults.length > 0 && (
