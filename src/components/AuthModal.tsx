@@ -73,23 +73,12 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
         <button 
           style={{
             background: 'white', color: '#333', border: 'none', borderRadius: 'var(--radius-md)',
-            padding: '12px', fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', marginBottom: '12px'
+            padding: '12px', fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', marginBottom: '24px'
           }} 
           onClick={() => handleOAuth('google')}
         >
           <img src="https://www.google.com/favicon.ico" alt="Google" style={{width: 18, height: 18}}/>
           Jätka Google'iga
-        </button>
-
-        <button 
-          style={{
-            background: '#1877F2', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-            padding: '12px', fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', marginBottom: '24px'
-          }}
-          onClick={() => handleOAuth('facebook')}
-        >
-          <img src="https://www.facebook.com/favicon.ico" alt="Facebook" style={{width: 18, height: 18}}/>
-          Jätka Facebookiga
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
