@@ -33,14 +33,29 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
   const map = useMap();
   useEffect(() => {
     if (station && station.latitude && station.longitude) {
-      // Zoom deeper (15) when price labels are active to avoid overlap
-      const targetZoom = hasPriceLabels ? 15 : 14;
-      const latOffset = hasPriceLabels ? 0.004 : 0.008;
+      const currentZoom = map.getZoom();
       
-      map.flyTo([station.latitude - latOffset, station.longitude], targetZoom, {
-        animate: true,
-        duration: 1.5,
-      });
+      // Threshold: if already zoomed in past this, respect the user's zoom
+      const ZOOM_THRESHOLD = 12;
+      const isAlreadyZoomedIn = currentZoom >= ZOOM_THRESHOLD;
+      
+      if (isAlreadyZoomedIn) {
+        // User is already at a comfortable zoom — just pan, don't change zoom
+        // Small lat offset to keep station above the drawer
+        const latOffset = currentZoom >= 15 ? 0.002 : (currentZoom >= 13 ? 0.005 : 0.008);
+        map.panTo([station.latitude - latOffset, station.longitude], {
+          animate: true,
+          duration: 0.8,
+        });
+      } else {
+        // Zoomed far out (seeing all of Estonia) — zoom in to a useful level
+        const targetZoom = hasPriceLabels ? 15 : 14;
+        const latOffset = hasPriceLabels ? 0.004 : 0.008;
+        map.flyTo([station.latitude - latOffset, station.longitude], targetZoom, {
+          animate: true,
+          duration: 1.5,
+        });
+      }
     }
   }, [station, map, hasPriceLabels]);
   return null;
