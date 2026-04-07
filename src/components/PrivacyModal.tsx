@@ -39,27 +39,47 @@ export function PrivacyModal({ isOpen, onClose }: { isOpen: boolean, onClose: ()
 
           <p style={{ marginBottom: '12px' }}>
             <strong>2. Mida me kogume?</strong><br/>
-            Kui lood konto (Google'i või e-posti kaudu), salvestame sinu e-posti aadressi ja unikaalse kasutaja ID. Midagi muud isiklikku me ei nõua ega töötle.
+            Kui lood konto (Google'i või e-posti kaudu), salvestame sinu <strong>e-posti aadressi</strong> ja <strong>unikaalse kasutaja ID</strong>. Lisaks salvestame sinu kontoga seotud:
           </p>
+          <ul style={{ paddingLeft: '20px', marginBottom: '12px' }}>
+            <li>Sinu esitatud kütusehinnad ja hääletused (avalikud andmed).</li>
+            <li>Sinu lemmikjaamade valik (nähtav ainult sulle).</li>
+            <li>Sinu eelistatud kütusetüüp (nähtav ainult sulle).</li>
+          </ul>
 
           <p style={{ marginBottom: '12px' }}>
             <strong>3. Milleks andmeid kasutatakse?</strong><br/>
-            Kogutud e-posti ja ID-d kasutatakse <strong>ainult</strong> süsteemi autentimiseks ning hääletuste ja hinnaaruannete sidumiseks, et vältida spämmimist (nt "üks hääl kasutaja kohta").
+            Kogutud andmeid kasutatakse <strong>ainult</strong> järgmisteks eesmärkideks:
+          </p>
+          <ul style={{ paddingLeft: '20px', marginBottom: '12px' }}>
+            <li>Autentimine ja spämmivastane kaitse (üks hääl kasutaja kohta).</li>
+            <li>Sinu lemmikjaamade ja eelistuste meelespidamine.</li>
+            <li>Sinu panuse kuvamine (esitatud hinnad ja hääled).</li>
+          </ul>
+
+          <p style={{ marginBottom: '12px' }}>
+            <strong>4. Pilditöötlus (AI)</strong><br/>
+            Kui kasutad kaamera skaneerimise funktsiooni, saadetakse sinu pilt turvaliselt Google'i Gemini AI teenusesse hinna lugemiseks. Pilti <strong>ei salvestata</strong> meie serverites ega andmebaasis — see töödeldakse reaalajas ja kustutatakse kohe pärast tulemuse saamist.
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>4. Asukohaandmed (GPS)</strong><br/>
-            Meie rakendus "Asukoha" nupp kasutab sinu seadme GPS-i rangelt ja ainult sinu enda seadmes (kliendi poolel), et tsentreerida kaart sinu ümber. Me <strong>ei saada</strong> sinu asukohta oma serveritesse ega salvesta sinu füüsilist liikumist.
+            <strong>5. Asukohaandmed (GPS)</strong><br/>
+            Rakenduse "Asukoha" nupp kasutab sinu seadme GPS-i rangelt ja ainult sinu enda seadmes (kliendi poolel), et tsentreerida kaart sinu ümber. Me <strong>ei saada</strong> sinu asukohta oma serveritesse ega salvesta sinu füüsilist liikumist.
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>5. Küpsised (Cookies)</strong><br/>
-            Rakendus kasutab tehnoloogiaid (nt LocalStorage ja Supabase Auth küpsised), et hoida sind sisselogituna. Jälgimiseks ega reklaamide näitamiseks me küpsiseid ei kasuta.
+            <strong>6. Küpsised (Cookies)</strong><br/>
+            Rakendus kasutab tehnoloogiaid (nt LocalStorage ja Supabase Auth küpsised), et hoida sind sisselogituna ja meeles pidada sinu GDPR nõusolekut. Jälgimiseks ega reklaamide näitamiseks me küpsiseid ei kasuta.
+          </p>
+
+          <p style={{ marginBottom: '12px' }}>
+            <strong>7. Andmete jagamine</strong><br/>
+            Me <strong>ei müü, rendi ega jaga</strong> sinu isikuandmeid kolmandate osapooltega. Ainsad välised teenused, mida kasutame, on Supabase (andmebaas ja autentimine) ning Google Gemini (pilditöötlus).
           </p>
 
           <p style={{ marginBottom: '0' }}>
-            <strong>6. Sinu õigused</strong><br/>
-            Sul on õigus igal ajal nõuda oma konto ja sellega seotud andmete täielikku kustutamist. Oma andmete haldamiseks võta ühendust rakenduse arendajaga.
+            <strong>8. Sinu õigused</strong><br/>
+            Sul on õigus igal ajal: näha, milliseid andmeid me sinu kohta hoiame; nõuda oma andmete parandamist; nõuda oma konto ja kõigi seotud andmete täielikku kustutamist. Oma andmete haldamiseks võta ühendust rakenduse arendajaga.
           </p>
         </div>
         
