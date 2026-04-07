@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
@@ -72,6 +73,8 @@ export function ProfileDrawer({
   onDefaultFuelTypeChange: (fuel: string | null) => void;
   onStationSelect: (station: any) => void;
 }) {
+  const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
+
   if (!isOpen || !session) return null;
 
   const badge = getContributorBadge(userPricesCount, userVotesCount);
@@ -83,9 +86,26 @@ export function ProfileDrawer({
       .upsert({ id: session.user.id, default_fuel_type: fuel });
   };
 
+  const fuelTypeToShow = defaultFuelType || 'Bensiin 95';
+
   const favoriteStations = favorites
     .map(fav => stations.find(s => s.id === fav.station_id))
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a: any, b: any) => {
+      if (favSort === 'name-asc') return getStationDisplayName(a).localeCompare(getStationDisplayName(b), 'et');
+      if (favSort === 'name-desc') return getStationDisplayName(b).localeCompare(getStationDisplayName(a), 'et');
+      
+      // For price/fresh sorts, get most recent price for the active fuel type
+      const priceA = prices.filter(p => p.station_id === a.id && p.fuel_type === fuelTypeToShow)
+        .sort((x: any, y: any) => new Date(y.reported_at).getTime() - new Date(x.reported_at).getTime())[0];
+      const priceB = prices.filter(p => p.station_id === b.id && p.fuel_type === fuelTypeToShow)
+        .sort((x: any, y: any) => new Date(y.reported_at).getTime() - new Date(x.reported_at).getTime())[0];
+      
+      if (favSort === 'price-asc') return (priceA?.price ?? Infinity) - (priceB?.price ?? Infinity);
+      if (favSort === 'price-desc') return (priceB?.price ?? 0) - (priceA?.price ?? 0);
+      if (favSort === 'fresh') return (new Date(priceB?.reported_at ?? 0).getTime()) - (new Date(priceA?.reported_at ?? 0).getTime());
+      return 0;
+    });
 
   // Build recent activity (last 8 items)
   const userPriceEntries = prices
@@ -203,9 +223,50 @@ export function ProfileDrawer({
 
           {/* Favorite Stations with Sparklines */}
           <div className="glass-panel" style={{ padding: '16px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Star fill="var(--color-warning)" color="var(--color-warning)" size={18} /> Lemmikjaamad
-            </h3>
+            <div className="flex-between" style={{ marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                <Star fill="var(--color-warning)" color="var(--color-warning)" size={18} /> Lemmikjaamad
+              </h3>
+              {favoriteStations.length > 0 && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{favoriteStations.length} jaama</span>
+              )}
+            </div>
+
+            {/* Sort pills */}
+            {favoriteStations.length > 1 && (
+              <div style={{
+                display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap'
+              }}>
+                {[
+                  { key: 'name-asc', label: 'Nimi A-Z' },
+                  { key: 'name-desc', label: 'Nimi Z-A' },
+                  { key: 'price-asc', label: 'Odavaim' },
+                  { key: 'price-desc', label: 'Kalleim' },
+                  { key: 'fresh', label: 'Uusim' },
+                ].map(opt => {
+                  const isActive = favSort === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => setFavSort(opt.key as any)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                        background: isActive ? 'rgba(59,130,246,0.15)' : 'var(--color-surface)',
+                        color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                        fontSize: '0.75rem',
+                        fontWeight: isActive ? '600' : '400',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             
             {favoriteStations.length === 0 ? (
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px 0' }}>
@@ -214,7 +275,6 @@ export function ProfileDrawer({
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {favoriteStations.map(station => {
-                  const fuelTypeToShow = defaultFuelType || 'Bensiin 95';
                   const stationPrices = prices
                     .filter(p => p.station_id === station.id && p.fuel_type === fuelTypeToShow)
                     .sort((a: any, b: any) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
