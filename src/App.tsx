@@ -4,6 +4,8 @@ import { Search, Filter, LogIn, LogOut } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
+import { PrivacyModal } from './components/PrivacyModal';
+import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { supabase } from './supabase';
 import { getStationDisplayName } from './utils';
@@ -19,6 +21,7 @@ function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   
   // Data state
   const [stations, setStations] = useState<any[]>([]);
@@ -239,14 +242,24 @@ function App() {
         onVoteSubmitted={() => loadData()}
       />
       
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-      
-      <ManualPriceModal 
-        station={selectedStation} 
-        isOpen={isPriceModalOpen} 
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+      />
+
+      <ManualPriceModal
+        station={selectedStation}
+        isOpen={isPriceModalOpen}
         onClose={() => setIsPriceModalOpen(false)}
         onPricesSubmitted={() => loadData()}
       />
+
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+      />
+      
+      <GdprBanner onOpenPrivacy={() => setIsPrivacyOpen(true)} />
     </main>
   );
 }
