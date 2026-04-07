@@ -9,10 +9,19 @@ function LocationMarker() {
   const map = useMap();
 
   useEffect(() => {
-    map.locate().on("locationfound", function (e) {
+    const onLocationFound = (e: any) => {
       setPosition([e.latlng.lat, e.latlng.lng]);
-      map.flyTo(e.latlng, 10);
-    });
+      map.flyTo(e.latlng, 14, { animate: true, duration: 1.5 });
+    };
+
+    map.on("locationfound", onLocationFound);
+    
+    // Initial locate on app load
+    map.locate();
+
+    return () => {
+      map.off("locationfound", onLocationFound);
+    };
   }, [map]);
 
   return position === null ? null : (
@@ -177,7 +186,7 @@ function RecenterButton() {
       className="glass-panel flex-center"
       style={{
         position: 'absolute',
-        bottom: '120px', 
+        bottom: 'calc(30px + env(safe-area-inset-bottom))', 
         right: '20px',
         width: '50px',
         height: '50px',
@@ -189,6 +198,7 @@ function RecenterButton() {
       }}
       onClick={(e) => {
         e.stopPropagation();
+        // Fly exactly to user location (triggers locationfound event which handles the flyTo)
         map.locate();
       }}
     >
