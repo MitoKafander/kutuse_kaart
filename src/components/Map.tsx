@@ -48,14 +48,14 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
       if (isAlreadyZoomedIn) {
         // Already zoomed in — just pan at current zoom, no zoom change
         const targetPoint = map.project([station.latitude, station.longitude], currentZoom);
-        targetPoint.y -= pixelOffset;
+        targetPoint.y += pixelOffset;
         const adjusted = map.unproject(targetPoint, currentZoom);
         map.panTo(adjusted, { animate: true, duration: 0.8 });
       } else {
         // Zoomed far out — zoom in to a useful level
         const targetZoom = hasPriceLabels ? 15 : 14;
         const targetPoint = map.project([station.latitude, station.longitude], targetZoom);
-        targetPoint.y -= pixelOffset;
+        targetPoint.y += pixelOffset;
         const adjusted = map.unproject(targetPoint, targetZoom);
         map.flyTo(adjusted, targetZoom, { animate: true, duration: 1.5 });
       }
