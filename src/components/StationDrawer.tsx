@@ -76,11 +76,25 @@ export function StationDrawer({
       return;
     }
     
-    // Logged-in users get upsert (can change their vote)
-    const { error } = await supabase.from('votes').upsert(
-      { price_id: priceId, user_id: userId, vote_type: voteType },
-      { onConflict: 'price_id,user_id' }
-    );
+    // Logged-in users: check if they already voted, then update or insert
+    const { data: existing } = await supabase
+      .from('votes')
+      .select('id')
+      .eq('price_id', priceId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    let error;
+    if (existing) {
+      // Update existing vote
+      ({ error } = await supabase.from('votes')
+        .update({ vote_type: voteType })
+        .eq('id', existing.id));
+    } else {
+      // Insert new vote
+      ({ error } = await supabase.from('votes')
+        .insert({ price_id: priceId, user_id: userId, vote_type: voteType }));
+    }
     
     if (error) {
       console.error("Viga hääletamisel", error);
