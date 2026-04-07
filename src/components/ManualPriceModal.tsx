@@ -108,7 +108,7 @@ export function ManualPriceModal({
         station_id: station.id,
         fuel_type: type,
         price: parseFloat(price.replace(',', '.')),
-        user_id: user?.id 
+        user_id: user?.id || null
       }));
 
     if (inserts.length > 0) {

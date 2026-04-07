@@ -91,11 +91,7 @@ function App() {
   }, []);
 
   const handleOpenPriceForm = () => {
-    if (!session) {
-      setIsAuthOpen(true);
-    } else {
-      setIsPriceModalOpen(true);
-    }
+    setIsPriceModalOpen(true);
   };
 
   // Derive all unique brands dynamically
@@ -265,7 +261,6 @@ function App() {
         isOpen={!!selectedStation && !isPriceModalOpen} 
         onClose={() => setSelectedStation(null)}
         onOpenPriceForm={handleOpenPriceForm}
-        onRequireAuth={() => setIsAuthOpen(true)}
         onVoteSubmitted={() => loadData()}
         isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
         onToggleFavorite={async () => {

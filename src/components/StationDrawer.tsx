@@ -10,7 +10,6 @@ export function StationDrawer({
   isOpen, 
   onClose, 
   onOpenPriceForm,
-  onRequireAuth,
   onVoteSubmitted,
   isFavorite,
   onToggleFavorite
@@ -22,7 +21,6 @@ export function StationDrawer({
   isOpen: boolean, 
   onClose: () => void,
   onOpenPriceForm: () => void,
-  onRequireAuth: () => void,
   onVoteSubmitted: () => void,
   isFavorite: boolean,
   onToggleFavorite: () => void
@@ -44,14 +42,27 @@ export function StationDrawer({
   };
 
   const handleVote = async (priceId: string, voteType: 'up' | 'down') => {
-    if (!session) {
-      onRequireAuth();
+    const userId = session?.user?.id || null;
+    
+    // For anonymous users, use localStorage to prevent double-voting
+    if (!userId) {
+      const votedKey = `voted_${priceId}`;
+      if (localStorage.getItem(votedKey)) {
+        return; // Silently ignore duplicate anonymous vote
+      }
+      const { error } = await supabase.from('votes').insert(
+        { price_id: priceId, user_id: null, vote_type: voteType }
+      );
+      if (error) {
+        alert("Hääletamine ebaõnnestus. " + error.message);
+      } else {
+        localStorage.setItem(votedKey, voteType);
+        onVoteSubmitted();
+      }
       return;
     }
     
-    const userId = session.user.id;
-    
-    // UPSERT the vote using the unique index (price_id, user_id) we define in schema_phase3
+    // Logged-in users get upsert (can change their vote)
     const { error } = await supabase.from('votes').upsert(
       { price_id: priceId, user_id: userId, vote_type: voteType },
       { onConflict: 'price_id,user_id' }
