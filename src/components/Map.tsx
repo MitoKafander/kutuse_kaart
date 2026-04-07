@@ -111,7 +111,7 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
-      display: flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center; gap: 5px;
       background: ${bgColor};
       border: 1px solid ${borderColor};
       border-radius: 16px;
@@ -120,7 +120,7 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
       white-space: nowrap;
       font-family: 'Outfit', sans-serif;
       cursor: pointer;
-      transition: transform 0.15s ease;
+      transform: translate(-50%, -50%);
     ">
       <div style="
         width: 8px; height: 8px; border-radius: 50%;
@@ -132,8 +132,8 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
         color: ${textColor}; letter-spacing: 0.2px;
       ">${priceStr}</span>
     </div>`,
-    iconSize: [90, 28],
-    iconAnchor: [45, 14],
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
   });
 }
 
