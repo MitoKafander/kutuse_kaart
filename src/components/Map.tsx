@@ -29,18 +29,32 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
   );
 }
 
-function StationPanController({ station }: { station: any | null }) {
+function StationPanController({ station, hasPriceLabels }: { station: any | null, hasPriceLabels: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (station && station.latitude && station.longitude) {
-      const latOffset = 0.008;
+      // Zoom deeper (15) when price labels are active to avoid overlap
+      const targetZoom = hasPriceLabels ? 15 : 14;
+      const latOffset = hasPriceLabels ? 0.004 : 0.008;
       
-      map.flyTo([station.latitude - latOffset, station.longitude], 14, {
+      map.flyTo([station.latitude - latOffset, station.longitude], targetZoom, {
         animate: true,
         duration: 1.5,
       });
     }
-  }, [station, map]);
+  }, [station, map, hasPriceLabels]);
+  return null;
+}
+
+// Track current zoom level so we can conditionally render price labels vs dots
+function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+    const handler = () => onZoomChange(map.getZoom());
+    map.on('zoomend', handler);
+    return () => { map.off('zoomend', handler); };
+  }, [map, onZoomChange]);
   return null;
 }
 
@@ -123,6 +137,10 @@ export function Map({
   selectedStation: any | null
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(7);
+  
+  // Only show Waze-style price labels when zoomed in enough (>= 12)
+  const showPriceLabels = !!focusedFuelType && zoomLevel >= 12;
   
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
@@ -164,7 +182,8 @@ export function Map({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         <LocationTracker position={userLocation} setPosition={setUserLocation} />
-        <StationPanController station={selectedStation} />
+        <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
+        <ZoomTracker onZoomChange={setZoomLevel} />
         
         {stations.map(station => {
           // Find the most recent price for the focused fuel type (or any fuel)
@@ -199,8 +218,8 @@ export function Map({
             hasFuelData = false;
           }
 
-          // ---- WAZE MODE: Use price label markers when a fuel type is focused ----
-          if (focusedFuelType) {
+          // ---- WAZE MODE: Use price label markers when zoomed in with a fuel type ----
+          if (showPriceLabels) {
             const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
             const icon = createPriceIcon(priceValue, isCheapest, isFresh);
             
