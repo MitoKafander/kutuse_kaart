@@ -29,16 +29,30 @@ export function StationDrawer({
 
   const getAgeColor = (reportedAt: string) => {
     const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
-    if (ageInHours < 24) return 'var(--color-fresh)';
-    if (ageInHours < 72) return 'var(--color-warning)';
+    // Only flash green if it was truly updated just now (< 1 hour)
+    if (ageInHours < 1) return 'var(--color-fresh)';
+    // Yellow for anything else under 24 hours
+    if (ageInHours < 24) return 'var(--color-warning)';
+    // Gray for older data
     return 'var(--color-text-muted)';
   };
 
   const getAgeText = (reportedAt: string) => {
     const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
     if (ageInHours < 1) return 'Just praegu';
-    if (ageInHours < 24) return `${Math.floor(ageInHours)}h tagasi`;
-    return `${Math.floor(ageInHours / 24)} päeva tagasi`;
+    
+    // Instead of vague "X hours ago", show exact clock time
+    const d = new Date(reportedAt);
+    const timeStr = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
+    
+    // Check if it's today
+    if (ageInHours < 24 && new Date().getDate() === d.getDate()) {
+       return `Täna ${timeStr}`;
+    } else if (ageInHours < 48) {
+       return `Eile ${timeStr}`;
+    }
+    
+    return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   };
 
   const handleVote = async (priceId: string, voteType: 'up' | 'down') => {
