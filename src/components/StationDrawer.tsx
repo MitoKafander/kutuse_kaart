@@ -1,4 +1,6 @@
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star } from 'lucide-react';
+import { useState } from 'react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
 
@@ -25,6 +27,9 @@ export function StationDrawer({
   isFavorite: boolean,
   onToggleFavorite: () => void
 }) {
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
+
   if (!isOpen || !station) return null;
 
   const getAgeColor = (reportedAt: string) => {
@@ -209,17 +214,114 @@ export function StationDrawer({
         })}
       </div>
 
-      <button 
-        style={{
-          background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-          padding: '16px', fontSize: '1.1rem', fontWeight: '600', width: '100%', marginTop: '24px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-        }}
-        onClick={onOpenPriceForm}
-      >
-        <Edit3 size={20} />
-        Uuenda Hinnad
-      </button>
+      {showHistory && (
+        <div style={{ marginTop: '24px', background: 'var(--color-surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-surface-border)' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            {fuelTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setHistoryFuelType(type)}
+                style={{
+                  padding: '6px 12px', borderRadius: '16px', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer',
+                  background: historyFuelType === type ? 'var(--color-primary-glow)' : 'transparent',
+                  border: `1px solid ${historyFuelType === type ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                  color: historyFuelType === type ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                }}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+          
+          <div style={{ height: '200px', width: '100%', position: 'relative' }}>
+            {(() => {
+              const historyData = prices
+                .filter(p => p.fuel_type === historyFuelType && p.station_id === station.id)
+                .sort((a, b) => new Date(a.reported_at).getTime() - new Date(b.reported_at).getTime());
+
+              if (historyData.length < 2) {
+                return (
+                  <div className="flex-center" style={{ height: '100%', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                    Selle kütuse kohta pole piisavalt ajalugu.
+                  </div>
+                );
+              }
+
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={historyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <XAxis 
+                      dataKey="reported_at" 
+                      tickFormatter={(val) => {
+                        const d = new Date(val);
+                        return `${d.getDate()}.${d.getMonth() + 1}`;
+                      }}
+                      stroke="var(--color-text-muted)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      domain={['auto', 'auto']}
+                      tickFormatter={(val) => `€${val.toFixed(2)}`}
+                      stroke="var(--color-text-muted)"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      width={50}
+                    />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--color-surface-border)', borderRadius: '8px' }}
+                      itemStyle={{ color: 'var(--color-primary)', fontWeight: 'bold' }}
+                      formatter={(value: any) => [`€${Number(value).toFixed(3)}`, 'Hind']}
+                      labelFormatter={(label) => new Date(label).toLocaleString('et-EE', { dateStyle: 'medium', timeStyle: 'short' })}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="price" 
+                      stroke="var(--color-primary)" 
+                      strokeWidth={3} 
+                      dot={{ fill: 'var(--color-primary)', r: 3, strokeWidth: 0 }} 
+                      activeDot={{ r: 6, fill: '#fff', stroke: 'var(--color-primary)', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+        <button 
+          style={{
+            background: showHistory ? 'var(--color-surface)' : 'transparent',
+            color: showHistory ? 'var(--color-primary)' : 'var(--color-text)',
+            border: '1px solid',
+            borderColor: showHistory ? 'var(--color-primary)' : 'var(--color-surface-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px', fontSize: '1rem', fontWeight: '500', flexShrink: 0, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '48px'
+          }}
+          onClick={() => setShowHistory(!showHistory)}
+          title="Näita hinnaajalugu"
+        >
+          <TrendingUp size={20} />
+        </button>
+
+        <button 
+          style={{
+            background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+            padding: '16px', fontSize: '1.1rem', fontWeight: '600', flex: 1, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+          }}
+          onClick={onOpenPriceForm}
+        >
+          <Edit3 size={20} />
+          Uuenda Hinnad
+        </button>
+      </div>
     </div>
   );
 }
