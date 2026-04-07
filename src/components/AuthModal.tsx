@@ -37,6 +37,9 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
   const handleOAuth = async (provider: 'google' | 'facebook') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
+      options: {
+        redirectTo: window.location.origin
+      }
     });
     if (error) setMsg(error.message);
   };
