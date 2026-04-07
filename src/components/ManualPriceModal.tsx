@@ -65,6 +65,14 @@ export function ManualPriceModal({
            
            const parsedJson = await res.json();
            
+           if (parsedJson.isBrandMatch === false) {
+             const proceed = window.confirm(`Hoiatus! Tundub, et sa pildistasid ${parsedJson.detectedBrand || 'teise keti'} tanklat, aga uuendad hetkel ${station.name} hindu!\n\nKas soovid siiski jätkata numbrite sisestamisega?`);
+             if (!proceed) {
+               setIsAnalyzing(false);
+               return;
+             }
+           }
+           
            // Hydrate form logic
            setPrices(prev => {
              const copy = { ...prev };

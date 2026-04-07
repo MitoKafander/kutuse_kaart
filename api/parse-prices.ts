@@ -33,12 +33,18 @@ export default async function handler(req: Request) {
       }
     });
 
-    const prompt = `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station named "${stationName || 'gas station'}".
-Your ONLY job is to extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
+    const prompt = `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station conceptually named "${stationName || 'gas station'}".
+Your job is twofold:
+1. Identify the station's brand based on logos, colors, or text in the image. Determine if it matches the expected name "${stationName}".
+2. Extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
+
 Understand that European signs generally use commas instead of decimals (e.g. 1,749) but you MUST return proper javascript floats (1.749).
-Return exactly a valid JSON object mapping these exact keys to the float values.
-If a fuel grade does not exist on the board, simply omit that key or set it to null.
-Example JSON: {"Bensiin 95": 1.749, "Bensiin 98": 1.799, "Diisel": 1.629}`;
+Return strictly a valid JSON object with the following schema:
+- "detectedBrand": The brand identified in the image (e.g., "Olerex", "Circle K", "Neste", "Alexela").
+- "isBrandMatch": boolean (true if detectedBrand is the same company as "${stationName}", false if it's clearly a competitor). If there is no branding visible, return true.
+- "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible.
+
+Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1.749}`;
 
     // Strip out the descriptive prefix if the frontend sent it
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
