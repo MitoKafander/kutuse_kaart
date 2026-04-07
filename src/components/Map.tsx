@@ -199,11 +199,16 @@ function RecenterButton({ userLocation }: { userLocation: [number, number] | nul
       onClick={(e) => {
         e.stopPropagation();
         if (userLocation) {
-          // Instantly fly to the tracked location instead of asking the OS to boot up the GPS!
+          // Instantly fly to the tracked location
           map.flyTo(userLocation, 14, { animate: true, duration: 1.5 });
         } else {
-          // Fallback if not tracked yet
-          map.locate({ setView: true, maxZoom: 14 });
+          // Fallback if not tracked yet, do NOT use map.locate() as it breaks watch options!
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { animate: true, duration: 1.5 }),
+              () => alert("Palun oota, GPS signaal alles laeb.")
+            );
+          }
         }
       }}
     >
