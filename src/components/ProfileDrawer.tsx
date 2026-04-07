@@ -280,7 +280,20 @@ export function ProfileDrawer({
                     .sort((a: any, b: any) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
                   
                   const activePrice = stationPrices[0]?.price;
+                  const reportedAt = stationPrices[0]?.reported_at;
                   const sparkData = stationPrices.slice(0, 10).reverse().map((p: any) => p.price);
+
+                  // Format timestamp
+                  let timeLabel = '';
+                  if (reportedAt) {
+                    const ageH = (Date.now() - new Date(reportedAt).getTime()) / 3600000;
+                    const d = new Date(reportedAt);
+                    const t = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
+                    if (ageH < 1) timeLabel = 'Just praegu';
+                    else if (ageH < 24 && new Date().getDate() === d.getDate()) timeLabel = `Täna ${t}`;
+                    else if (ageH < 48) timeLabel = `Eile ${t}`;
+                    else timeLabel = `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
+                  }
 
                   return (
                     <button
@@ -308,6 +321,11 @@ export function ProfileDrawer({
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
                           {fuelTypeToShow}
                         </div>
+                        {timeLabel && (
+                          <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                            <Clock size={10} /> {timeLabel}
+                          </div>
+                        )}
                       </div>
                     </button>
                   )
