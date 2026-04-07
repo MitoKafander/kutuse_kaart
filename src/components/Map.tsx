@@ -111,6 +111,10 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
     shadow = '0 2px 12px rgba(250, 204, 21, 0.4)';
   }
 
+  if (isSelected) {
+    shadow = '0 0 0 3px rgba(255,255,255,0.6), ' + shadow;
+  }
+
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
@@ -293,12 +297,19 @@ export function Map({
           let radius = hasFuelData ? 6 : 5;
           let color = (!hasFuelData && isSelected) ? 'rgba(255,255,255,0.4)' : 'transparent';
           let fillOpacity = hasFuelData ? 0.9 : (isSelected ? 1 : 0.55);
+          let weight = 0;
           
           if (isCheapest) {
             markerColor = 'gold';
             radius = 12;
             color = 'white';
             fillOpacity = 1;
+            weight = 2;
+          }
+
+          if (hasFuelData && isSelected && !isCheapest) {
+            color = 'rgba(255,255,255,0.8)';
+            weight = 3;
           }
 
           return (
@@ -306,7 +317,7 @@ export function Map({
               key={station.id} 
               center={[station.latitude, station.longitude]}
               radius={radius}
-              pathOptions={{ fillColor: markerColor, color: color, weight: isCheapest ? 2 : 0, fillOpacity: fillOpacity }}
+              pathOptions={{ fillColor: markerColor, color: color, weight: weight, fillOpacity: fillOpacity }}
               eventHandlers={{
                 click: () => onStationSelect(station)
               }}
