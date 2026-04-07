@@ -52,12 +52,14 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
         const adjusted = map.unproject(targetPoint, currentZoom);
         map.panTo(adjusted, { animate: true, duration: 0.8 });
       } else {
-        // Zoomed far out — zoom in to a useful level
+        // Zoomed far out — zoom in to a useful level.
+        // We use animate: false because Leaflet's zoom animation scales up SVG/DivIcons
+        // exponentially via CSS, which creates the "giant expanding dots" glitch.
         const targetZoom = hasPriceLabels ? 15 : 14;
         const targetPoint = map.project([station.latitude, station.longitude], targetZoom);
         targetPoint.y += pixelOffset;
         const adjusted = map.unproject(targetPoint, targetZoom);
-        map.flyTo(adjusted, targetZoom, { animate: true, duration: 1.5 });
+        map.setView(adjusted, targetZoom, { animate: false });
       }
     }
   }, [station, map, hasPriceLabels]);
@@ -351,11 +353,12 @@ function RecenterButton({ userLocation }: { userLocation: [number, number] | nul
       onClick={(e) => {
         e.stopPropagation();
         if (userLocation) {
-          map.flyTo(userLocation, 14, { animate: true, duration: 1.5 });
+          // Snap directly without animation to avoid massive SVG scaling distortion
+          map.setView(userLocation, 14, { animate: false });
         } else {
           if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-              (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { animate: true, duration: 1.5 }),
+              (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: false }),
               () => alert("Palun oota, GPS signaal alles laeb.")
             );
           }
