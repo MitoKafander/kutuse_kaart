@@ -79,12 +79,12 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 // Create a Waze-style price label DivIcon
 function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean): L.DivIcon {
   if (price === null) {
-    // No data — small gray dot
+    // No data — small gray dot (slightly visible so users can discover them)
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="
         width: 10px; height: 10px; border-radius: 50%;
-        background: rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.3);
       "></div>`,
       iconSize: [10, 10],
       iconAnchor: [5, 5],
@@ -280,14 +280,14 @@ export function Map({
           let markerColor = 'var(--color-warning)';
           
           if (!hasFuelData) {
-            markerColor = 'rgba(255,255,255,0.2)';
+            markerColor = 'rgba(255,255,255,0.35)';
           } else if (isFresh) {
             markerColor = 'var(--color-fresh)';
           }
 
-          let radius = hasFuelData ? 6 : 4;
+          let radius = hasFuelData ? 6 : 5;
           let color = 'transparent';
-          let fillOpacity = hasFuelData ? 0.9 : 0.4;
+          let fillOpacity = hasFuelData ? 0.9 : 0.55;
           
           if (isCheapest) {
             markerColor = 'gold';
