@@ -4,25 +4,24 @@ import { LocateFixed } from 'lucide-react';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
-function LocationMarker() {
-  const [position, setPosition] = useState<[number, number] | null>(null);
+function LocationTracker({ position, setPosition }: { position: [number, number] | null, setPosition: (pos: [number, number]) => void }) {
   const map = useMap();
 
   useEffect(() => {
     const onLocationFound = (e: any) => {
       setPosition([e.latlng.lat, e.latlng.lng]);
-      map.flyTo(e.latlng, 14, { animate: true, duration: 1.5 });
     };
 
     map.on("locationfound", onLocationFound);
     
-    // Initial locate on app load
-    map.locate();
+    // Start watching the GPS constantly for instant reactions
+    map.locate({ watch: true, enableHighAccuracy: true });
 
     return () => {
       map.off("locationfound", onLocationFound);
+      map.stopLocate();
     };
-  }, [map]);
+  }, [map, setPosition]);
 
   return position === null ? null : (
     <CircleMarker center={position} radius={8} pathOptions={{ fillColor: 'var(--color-primary)', color: 'white', weight: 2, fillOpacity: 1 }} />
@@ -64,6 +63,7 @@ export function Map({
   highlightCheapest: boolean,
   selectedStation: any | null
 }) {
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
@@ -107,7 +107,7 @@ export function Map({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <LocationMarker />
+        <LocationTracker position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} />
         
         {stations.map(station => {
@@ -173,13 +173,13 @@ export function Map({
           );
         })}
 
-        <RecenterButton />
+        <RecenterButton userLocation={userLocation} />
       </MapContainer>
     </div>
   );
 }
 
-function RecenterButton() {
+function RecenterButton({ userLocation }: { userLocation: [number, number] | null }) {
   const map = useMap();
   return (
     <button 
@@ -198,8 +198,13 @@ function RecenterButton() {
       }}
       onClick={(e) => {
         e.stopPropagation();
-        // Fly exactly to user location (triggers locationfound event which handles the flyTo)
-        map.locate();
+        if (userLocation) {
+          // Instantly fly to the tracked location instead of asking the OS to boot up the GPS!
+          map.flyTo(userLocation, 14, { animate: true, duration: 1.5 });
+        } else {
+          // Fallback if not tracked yet
+          map.locate({ setView: true, maxZoom: 14 });
+        }
       }}
     >
       <LocateFixed size={24} />
