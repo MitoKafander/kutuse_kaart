@@ -77,14 +77,17 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 }
 
 // Create a Waze-style price label DivIcon
-function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean): L.DivIcon {
+function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false): L.DivIcon {
   if (price === null) {
-    // No data — small gray dot (slightly visible so users can discover them)
+    // No data — small gray dot (becomes brighter when selected)
+    const opacity = isSelected ? 0.9 : 0.3;
+    const shadow = isSelected ? 'box-shadow: 0 0 8px rgba(255,255,255,0.8);' : '';
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="
         width: 10px; height: 10px; border-radius: 50%;
-        background: rgba(255,255,255,0.3);
+        background: rgba(255,255,255,${opacity});
+        ${shadow}
       "></div>`,
       iconSize: [10, 10],
       iconAnchor: [5, 5],
@@ -259,10 +262,12 @@ export function Map({
             hasFuelData = false;
           }
 
+          const isSelected = selectedStation?.id === station.id;
+
           // ---- WAZE MODE: Use price label markers when zoomed in with a fuel type ----
           if (showPriceLabels) {
             const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
-            const icon = createPriceIcon(priceValue, isCheapest, isFresh);
+            const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected);
             
             return (
               <Marker
@@ -280,14 +285,14 @@ export function Map({
           let markerColor = 'var(--color-warning)';
           
           if (!hasFuelData) {
-            markerColor = 'rgba(255,255,255,0.35)';
+            markerColor = isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)';
           } else if (isFresh) {
             markerColor = 'var(--color-fresh)';
           }
 
           let radius = hasFuelData ? 6 : 5;
-          let color = 'transparent';
-          let fillOpacity = hasFuelData ? 0.9 : 0.55;
+          let color = (!hasFuelData && isSelected) ? 'rgba(255,255,255,0.4)' : 'transparent';
+          let fillOpacity = hasFuelData ? 0.9 : (isSelected ? 1 : 0.55);
           
           if (isCheapest) {
             markerColor = 'gold';
