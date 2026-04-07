@@ -39,22 +39,25 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
       const ZOOM_THRESHOLD = 12;
       const isAlreadyZoomedIn = currentZoom >= ZOOM_THRESHOLD;
       
+      // Use pixel-based offset so it works consistently at any zoom level.
+      // The drawer covers ~40% of the bottom, so we push the station up
+      // by ~25% of the map height to land it in the visible upper area.
+      const mapHeight = map.getSize().y;
+      const pixelOffset = mapHeight * 0.25;
+      
       if (isAlreadyZoomedIn) {
-        // User is already at a comfortable zoom — just pan, don't change zoom
-        // Small lat offset to keep station above the drawer
-        const latOffset = currentZoom >= 15 ? 0.002 : (currentZoom >= 13 ? 0.005 : 0.008);
-        map.panTo([station.latitude - latOffset, station.longitude], {
-          animate: true,
-          duration: 0.8,
-        });
+        // Already zoomed in — just pan at current zoom, no zoom change
+        const targetPoint = map.project([station.latitude, station.longitude], currentZoom);
+        targetPoint.y -= pixelOffset;
+        const adjusted = map.unproject(targetPoint, currentZoom);
+        map.panTo(adjusted, { animate: true, duration: 0.8 });
       } else {
-        // Zoomed far out (seeing all of Estonia) — zoom in to a useful level
+        // Zoomed far out — zoom in to a useful level
         const targetZoom = hasPriceLabels ? 15 : 14;
-        const latOffset = hasPriceLabels ? 0.004 : 0.008;
-        map.flyTo([station.latitude - latOffset, station.longitude], targetZoom, {
-          animate: true,
-          duration: 1.5,
-        });
+        const targetPoint = map.project([station.latitude, station.longitude], targetZoom);
+        targetPoint.y -= pixelOffset;
+        const adjusted = map.unproject(targetPoint, targetZoom);
+        map.flyTo(adjusted, targetZoom, { animate: true, duration: 1.5 });
       }
     }
   }, [station, map, hasPriceLabels]);
