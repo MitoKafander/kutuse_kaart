@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, LogOut } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
 import { PrivacyModal } from './components/PrivacyModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
+import { ProfileDrawer } from './components/ProfileDrawer';
 import { supabase } from './supabase';
 import { getStationDisplayName } from './utils';
 import './index.css';
@@ -19,6 +20,7 @@ function App() {
   // Modals state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -27,6 +29,10 @@ function App() {
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
+  
+  // User specialized state (Phase 8)
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [defaultFuelType, setDefaultFuelType] = useState<string | null>(null);
   
   // Filter state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -40,8 +46,8 @@ function App() {
     if (!selectedFuelType) setHighlightCheapest(false);
   }, [selectedFuelType]);
 
-  // Load Data
-  const loadData = async () => {
+  // Load Base Data & User Data
+  const loadData = async (activeSession?: any) => {
     const { data: st } = await supabase.from('stations').select('*');
     if (st) setStations(st);
     
@@ -50,14 +56,35 @@ function App() {
     
     const { data: vt } = await supabase.from('votes').select('*');
     if (vt) setVotes(vt);
+
+    const currentUser = activeSession || session;
+    if (currentUser?.user) {
+      // Load favorites
+      const { data: favs } = await supabase.from('user_favorites').select('*');
+      if (favs) setFavorites(favs);
+      
+      // Load preferences
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type').eq('id', currentUser.user.id).single();
+      if (prof?.default_fuel_type) {
+        setDefaultFuelType(prof.default_fuel_type);
+        // Automatically set map filter on first load
+        setSelectedFuelType(prev => prev || prof.default_fuel_type);
+      }
+    } else {
+      setFavorites([]);
+      setDefaultFuelType(null);
+    }
   };
 
   useEffect(() => {
-    loadData();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      loadData(session);
+    });
 
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      loadData(session); // Reload state if user logs in/out
     });
 
     return () => subscription.unsubscribe();
@@ -147,8 +174,8 @@ function App() {
             </button>
             
             {session ? (
-              <button onClick={() => supabase.auth.signOut()} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-                <LogOut size={20} />
+              <button onClick={() => setIsProfileOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
+                <UserCircle size={20} />
               </button>
             ) : (
               <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
@@ -240,6 +267,17 @@ function App() {
         onOpenPriceForm={handleOpenPriceForm}
         onRequireAuth={() => setIsAuthOpen(true)}
         onVoteSubmitted={() => loadData()}
+        isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
+        onToggleFavorite={async () => {
+          if (!session) return setIsAuthOpen(true);
+          const isFav = favorites.some(f => f.station_id === selectedStation?.id);
+          if (isFav) {
+            await supabase.from('user_favorites').delete().eq('user_id', session.user.id).eq('station_id', selectedStation.id);
+          } else {
+            await supabase.from('user_favorites').insert({ user_id: session.user.id, station_id: selectedStation.id });
+          }
+          loadData();
+        }}
       />
       
       <AuthModal 
@@ -252,6 +290,20 @@ function App() {
         isOpen={isPriceModalOpen}
         onClose={() => setIsPriceModalOpen(false)}
         onPricesSubmitted={() => loadData()}
+      />
+
+      <ProfileDrawer 
+        session={session}
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        favorites={favorites}
+        stations={stations}
+        prices={prices}
+        userVotesCount={votes.filter(v => v.user_id === session?.user?.id).length}
+        userPricesCount={prices.filter(p => p.user_id === session?.user?.id).length}
+        defaultFuelType={defaultFuelType}
+        onDefaultFuelTypeChange={setDefaultFuelType}
+        onStationSelect={setSelectedStation}
       />
 
       <PrivacyModal

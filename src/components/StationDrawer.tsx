@@ -1,4 +1,4 @@
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
 
@@ -11,7 +11,9 @@ export function StationDrawer({
   onClose, 
   onOpenPriceForm,
   onRequireAuth,
-  onVoteSubmitted
+  onVoteSubmitted,
+  isFavorite,
+  onToggleFavorite
 }: { 
   station: any, 
   prices: any[],
@@ -21,7 +23,9 @@ export function StationDrawer({
   onClose: () => void,
   onOpenPriceForm: () => void,
   onRequireAuth: () => void,
-  onVoteSubmitted: () => void
+  onVoteSubmitted: () => void,
+  isFavorite: boolean,
+  onToggleFavorite: () => void
 }) {
   if (!isOpen || !station) return null;
 
@@ -91,8 +95,13 @@ export function StationDrawer({
       boxShadow: '0 -8px 32px rgba(0,0,0,0.4)',
     }}>
       <div className="flex-between" style={{ marginBottom: '8px' }}>
-        <h2 className="heading-1">{getStationDisplayName(station)}</h2>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+          <button onClick={onToggleFavorite} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+            <Star size={22} fill={isFavorite ? '#f59e0b' : 'none'} color={isFavorite ? '#f59e0b' : 'var(--color-text-muted)'} />
+          </button>
+          <h2 className="heading-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getStationDisplayName(station)}</h2>
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', flexShrink: 0 }}>
           <X size={24} />
         </button>
       </div>
