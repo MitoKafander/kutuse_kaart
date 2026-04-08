@@ -67,6 +67,7 @@ export function ManualPriceModal({
       });
 
       if (res.ok) return res.json();
+      if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
       if (res.status === 503 && attempt < MAX_RETRIES) continue;
 
       const err = await res.json().catch(() => ({}));
@@ -360,7 +361,9 @@ export function ManualPriceModal({
           }}>
             <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-              AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.
+              {scanError === 'QUOTA_EXCEEDED'
+                ? 'Gemini päevane limiit (20 päringut) on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
+                : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
             </span>
             <button
               onClick={handleManualRetry}

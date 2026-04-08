@@ -69,8 +69,9 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     console.error('Vision API Error:', error);
     const msg = error.message || 'Unknown API Exception';
     const is503 = msg.includes('503') || /service.?unavailable|high demand/i.test(msg);
+    const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
     return new Response(JSON.stringify({ error: msg }), {
-      status: is503 ? 503 : 500, headers: { 'Content-Type': 'application/json' }
+      status: is429 ? 429 : is503 ? 503 : 500, headers: { 'Content-Type': 'application/json' }
     });
   }
 }
