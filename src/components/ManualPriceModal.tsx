@@ -31,6 +31,7 @@ export function ManualPriceModal({
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
   const [brandMismatch, setBrandMismatch] = useState<{ detected: string } | null>(null);
   const [autoSelectMsg, setAutoSelectMsg] = useState<string | null>(null);
+  const [photoExpanded, setPhotoExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset and initialise state when the modal opens/closes
@@ -43,6 +44,7 @@ export function ManualPriceModal({
       setScanError(null);
       setBrandMismatch(null);
       setAutoSelectMsg(null);
+      setPhotoExpanded(false);
       setPrices(EMPTY_PRICES);
       // Camera FAB mode: auto-open camera immediately
       if (!station && allStations) {
@@ -297,16 +299,39 @@ export function ManualPriceModal({
           </div>
         )}
 
+        {/* Expanded photo overlay */}
+        {photoExpanded && capturedPreviewUrl && (
+          <div
+            onClick={() => setPhotoExpanded(false)}
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 3000,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '24px', cursor: 'pointer'
+            }}
+          >
+            <img
+              src={capturedPreviewUrl}
+              alt="Skaneeritud pilt"
+              style={{
+                maxWidth: '100%', maxHeight: '100%', objectFit: 'contain',
+                borderRadius: 'var(--radius-md)'
+              }}
+            />
+          </div>
+        )}
+
         {/* Scan button + photo thumbnail */}
         <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
           {capturedPreviewUrl && (
             <img
               src={capturedPreviewUrl}
               alt="Skaneeritud pilt"
+              onClick={() => setPhotoExpanded(true)}
               style={{
                 width: '80px', height: '80px', objectFit: 'cover',
                 borderRadius: 'var(--radius-md)', border: '1px solid var(--color-surface-border)',
-                flexShrink: 0
+                flexShrink: 0, cursor: 'pointer'
               }}
             />
           )}
