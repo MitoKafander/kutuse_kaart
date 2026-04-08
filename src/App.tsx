@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Zap } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
@@ -10,7 +10,7 @@ import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { supabase } from './supabase';
-import { getStationDisplayName, useBackButton } from './utils';
+import { getStationDisplayName } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -46,24 +46,54 @@ function App() {
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Back button closes overlays instead of leaving the app
-  const closeAuth = useCallback(() => setIsAuthOpen(false), []);
-  const closeFilter = useCallback(() => setIsFilterOpen(false), []);
-  const closeProfile = useCallback(() => setIsProfileOpen(false), []);
-  const closeStation = useCallback(() => setSelectedStation(null), []);
-  const closePriceModal = useCallback(() => setIsPriceModalOpen(false), []);
-  const closeCamera = useCallback(() => setIsCameraOpen(false), []);
-  const closeNearby = useCallback(() => setIsCheapestNearbyOpen(false), []);
-  const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
+  // Back button closes the topmost overlay instead of leaving the app.
+  // Uses a ref so the popstate listener always sees current state without re-registering.
+  const overlayStateRef = useRef({
+    isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen,
+    isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen
+  });
+  overlayStateRef.current = {
+    isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen,
+    isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen
+  };
 
-  useBackButton(isAuthOpen, closeAuth);
-  useBackButton(isFilterOpen, closeFilter);
-  useBackButton(isProfileOpen, closeProfile);
-  useBackButton(!!selectedStation && !isPriceModalOpen, closeStation);
-  useBackButton(isPriceModalOpen, closePriceModal);
-  useBackButton(isCameraOpen, closeCamera);
-  useBackButton(isCheapestNearbyOpen, closeNearby);
-  useBackButton(isPrivacyOpen, closePrivacy);
+  // Track how many overlays are open to manage history entries
+  const overlayCountRef = useRef(0);
+  const overlayCount = [isAuthOpen, isFilterOpen, isProfileOpen, !!selectedStation,
+    isPriceModalOpen, isCameraOpen, isCheapestNearbyOpen, isPrivacyOpen]
+    .filter(Boolean).length;
+
+  useEffect(() => {
+    const prev = overlayCountRef.current;
+    if (overlayCount > prev) {
+      // New overlay(s) opened — push history entries for each
+      for (let i = 0; i < overlayCount - prev; i++) {
+        window.history.pushState({ overlay: true }, '');
+      }
+    } else if (overlayCount < prev) {
+      // Overlay(s) closed programmatically — silently pop extra history entries
+      // We skip this if count went to 0 from 1, since popstate already consumed it
+    }
+    overlayCountRef.current = overlayCount;
+  }, [overlayCount]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const s = overlayStateRef.current;
+      if (s.isPriceModalOpen) setIsPriceModalOpen(false);
+      else if (s.isCameraOpen) setIsCameraOpen(false);
+      else if (s.isAuthOpen) setIsAuthOpen(false);
+      else if (s.isPrivacyOpen) setIsPrivacyOpen(false);
+      else if (s.isProfileOpen) setIsProfileOpen(false);
+      else if (s.isFilterOpen) setIsFilterOpen(false);
+      else if (s.selectedStation) setSelectedStation(null);
+      else if (s.isCheapestNearbyOpen) setIsCheapestNearbyOpen(false);
+      overlayCountRef.current = Math.max(0, overlayCountRef.current - 1);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // If user unselects fuel type, automatically turn off cheapest highlight
   useEffect(() => {
