@@ -37,6 +37,7 @@ function App() {
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
   const [defaultFuelType, setDefaultFuelType] = useState<string | null>(null);
+  const [preferredBrands, setPreferredBrands] = useState<string[]>([]);
   
   // Filter state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -68,11 +69,14 @@ function App() {
       if (favs) setFavorites(favs);
       
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, auto_open_nearby').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, auto_open_nearby, preferred_brands').eq('id', currentUser.user.id).single();
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
         setSelectedFuelType(prev => prev || prof.default_fuel_type);
+      }
+      if (prof?.preferred_brands) {
+        setPreferredBrands(prof.preferred_brands);
       }
       // Auto-open nearby panel if user has it enabled
       if (prof?.auto_open_nearby !== false && navigator.geolocation) {
@@ -81,6 +85,7 @@ function App() {
     } else {
       setFavorites([]);
       setDefaultFuelType(null);
+      setPreferredBrands([]);
       // For non-logged-in users, auto-open nearby panel if geolocation available
       if (navigator.geolocation) {
         setIsCheapestNearbyOpen(true);
@@ -402,6 +407,9 @@ function App() {
         defaultFuelType={defaultFuelType}
         onDefaultFuelTypeChange={setDefaultFuelType}
         onStationSelect={setSelectedStation}
+        preferredBrands={preferredBrands}
+        onPreferredBrandsChange={setPreferredBrands}
+        allBrands={uniqueBrands}
       />
 
       <CheapestNearbyPanel
@@ -411,6 +419,7 @@ function App() {
         prices={prices}
         radius={nearbyRadius}
         onRadiusChange={setNearbyRadius}
+        preferredBrands={preferredBrands}
       />
 
       <PrivacyModal

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
 
@@ -59,7 +59,10 @@ export function ProfileDrawer({
   userPricesCount,
   defaultFuelType,
   onDefaultFuelTypeChange,
-  onStationSelect
+  onStationSelect,
+  preferredBrands,
+  onPreferredBrandsChange,
+  allBrands,
 }: { 
   session: any;
   isOpen: boolean; 
@@ -72,6 +75,9 @@ export function ProfileDrawer({
   defaultFuelType: string | null;
   onDefaultFuelTypeChange: (fuel: string | null) => void;
   onStationSelect: (station: any) => void;
+  preferredBrands: string[];
+  onPreferredBrandsChange: (brands: string[]) => void;
+  allBrands: string[];
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
 
@@ -84,6 +90,16 @@ export function ProfileDrawer({
     await supabase
       .from('user_profiles')
       .upsert({ id: session.user.id, default_fuel_type: fuel });
+  };
+
+  const handleToggleBrand = async (brand: string) => {
+    const updated = preferredBrands.includes(brand)
+      ? preferredBrands.filter(b => b !== brand)
+      : [...preferredBrands, brand];
+    onPreferredBrandsChange(updated);
+    await supabase
+      .from('user_profiles')
+      .upsert({ id: session.user.id, preferred_brands: updated });
   };
 
   const fuelTypeToShow = defaultFuelType || 'Bensiin 95';
@@ -184,6 +200,40 @@ export function ProfileDrawer({
                   {type}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Preferred Brands for Driving Mode */}
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <h3 style={{ fontSize: '1rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+              <Building2 size={18} /> Eelistatud Tanklad
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
+              Vali ketid, mida "Odavaim lähedal" eelistab. Tühi = kõik.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {allBrands.map(brand => {
+                const isActive = preferredBrands.includes(brand);
+                return (
+                  <button
+                    key={brand}
+                    onClick={() => handleToggleBrand(brand)}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                      background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface)',
+                      color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      fontSize: '0.85rem',
+                      fontWeight: isActive ? '600' : '400',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {brand}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

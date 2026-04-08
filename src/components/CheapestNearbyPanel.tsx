@@ -18,7 +18,8 @@ function findCheapestNearby(
   prices: any[],
   userLat: number,
   userLon: number,
-  radiusKm: number
+  radiusKm: number,
+  preferredBrands: string[] = []
 ): NearbyResult[] {
   const results: NearbyResult[] = [];
   const now = new Date().getTime();
@@ -27,6 +28,7 @@ function findCheapestNearby(
     let best: NearbyResult | null = null;
 
     for (const station of stations) {
+      if (preferredBrands.length > 0 && !preferredBrands.includes(station.name)) continue;
       const dist = haversineKm(userLat, userLon, station.latitude, station.longitude);
       if (dist > radiusKm) continue;
 
@@ -63,6 +65,7 @@ export function CheapestNearbyPanel({
   prices,
   radius,
   onRadiusChange,
+  preferredBrands = [],
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -70,6 +73,7 @@ export function CheapestNearbyPanel({
   prices: any[];
   radius: number;
   onRadiusChange: (r: number) => void;
+  preferredBrands?: string[];
 }) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationError, setLocationError] = useState(false);
@@ -95,7 +99,7 @@ export function CheapestNearbyPanel({
   if (!isOpen) return null;
 
   const results = userLocation
-    ? findCheapestNearby(stations, prices, userLocation.lat, userLocation.lon, radius)
+    ? findCheapestNearby(stations, prices, userLocation.lat, userLocation.lon, radius, preferredBrands)
     : [];
 
   const fuelLabel: Record<string, string> = {
@@ -160,6 +164,14 @@ export function CheapestNearbyPanel({
             </button>
           ))}
         </div>
+
+        {/* Preferred brands indicator */}
+        {preferredBrands.length > 0 && (
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>Filtreeritud:</span>
+            <span style={{ color: 'var(--color-primary)', fontWeight: '500' }}>{preferredBrands.join(', ')}</span>
+          </div>
+        )}
 
         {/* Content */}
         {isLocating && (
