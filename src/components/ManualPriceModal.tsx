@@ -94,31 +94,38 @@ export function ManualPriceModal({
     const handlePosition = (pos: GeolocationPosition) => {
       const { latitude, longitude } = pos.coords;
 
-      const nearby500 = allStations.filter(s =>
-        haversineKm(latitude, longitude, s.latitude, s.longitude) <= 0.5
-      );
+      // Find stations within photo range (500m — allows for GPS lag while driving past)
+      const MAX_PHOTO_KM = 0.5;
+      const nearby = allStations.map(s => ({
+        ...s,
+        _dist: haversineKm(latitude, longitude, s.latitude, s.longitude)
+      })).filter(s => s._dist <= MAX_PHOTO_KM).sort((a, b) => a._dist - b._dist);
+
+      if (nearby.length === 0) {
+        setScanError('NO_NEARBY_STATION');
+        return;
+      }
 
       const brandLower = detectedBrand.toLowerCase();
-      const brandMatches = nearby500.filter(s =>
+      const brandMatches = nearby.filter(s =>
         s.name?.toLowerCase().includes(brandLower) ||
         brandLower.includes(s.name?.toLowerCase())
       );
 
-      const candidates = brandMatches.length > 0 ? brandMatches : nearby500;
+      const candidates = brandMatches.length > 0 ? brandMatches : nearby;
 
       if (candidates.length === 1) {
         setResolvedStation(candidates[0]);
         setAutoSelectMsg(`Valitud: ${getStationDisplayName(candidates[0])}`);
         setTimeout(() => setAutoSelectMsg(null), 4000);
       } else {
-        // Show picker (show all nearby if no brand match)
-        setStationCandidates(candidates.length > 0 ? candidates : nearby500.slice(0, 10));
+        setStationCandidates(candidates.slice(0, 10));
       }
     };
 
     navigator.geolocation.getCurrentPosition(
       handlePosition,
-      () => setStationCandidates(allStations.slice(0, 20))
+      () => setScanError('NO_NEARBY_STATION')
     );
   };
 
@@ -289,10 +296,16 @@ export function ManualPriceModal({
                   style={{
                     background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
                     borderRadius: 'var(--radius-md)', padding: '14px 16px', cursor: 'pointer',
-                    color: 'var(--color-text)', textAlign: 'left', fontSize: '0.95rem', fontWeight: '500'
+                    color: 'var(--color-text)', textAlign: 'left', fontSize: '0.95rem', fontWeight: '500',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                   }}
                 >
-                  {getStationDisplayName(s)}
+                  <span>{getStationDisplayName(s)}</span>
+                  {s._dist != null && (
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '400', marginLeft: '12px', flexShrink: 0 }}>
+                      {s._dist < 1 ? `${Math.round(s._dist * 1000)}m` : `${s._dist.toFixed(1)}km`}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -388,6 +401,8 @@ export function ManualPriceModal({
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
               {scanError === 'QUOTA_EXCEEDED'
                 ? 'Gemini päevane limiit (20 päringut) on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
+                : scanError === 'NO_NEARBY_STATION'
+                ? 'Läheduses (500m raadiuses) ei leitud ühtegi tankla. Mine tankla juurde lähemale ja proovi uuesti.'
                 : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
             </span>
             <button
