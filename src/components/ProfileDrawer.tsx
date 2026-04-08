@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2 } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
 
@@ -80,6 +80,7 @@ export function ProfileDrawer({
   allBrands: string[];
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!isOpen || !session) return null;
 
@@ -174,70 +175,8 @@ export function ProfileDrawer({
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Preferences — front and center */}
-          <div className="glass-panel" style={{ padding: '16px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Fuel size={18} /> Sinu Auto Kütus
-            </h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {["Bensiin 95", "Bensiin 98", "Diisel", "LPG"].map(type => (
-                <button
-                  key={type}
-                  onClick={() => handleUpdateFuelPref(type)}
-                  style={{
-                    flex: '1 1 40%',
-                    padding: '10px 0',
-                    border: '1px solid',
-                    borderColor: defaultFuelType === type ? 'var(--color-primary)' : 'var(--color-surface-border)',
-                    background: defaultFuelType === type ? 'var(--color-primary-glow)' : 'var(--color-surface)',
-                    color: 'white',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontWeight: defaultFuelType === type ? 'bold' : 'normal'
-                  }}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Preferred Brands for Driving Mode */}
-          <div className="glass-panel" style={{ padding: '16px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Building2 size={18} /> Eelistatud Tanklad
-            </h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: '12px' }}>
-              Vali ketid, mida "Odavaim lähedal" eelistab. Tühi = kõik.
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {allBrands.map(brand => {
-                const isActive = preferredBrands.includes(brand);
-                return (
-                  <button
-                    key={brand}
-                    onClick={() => handleToggleBrand(brand)}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: '20px',
-                      border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
-                      background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface)',
-                      color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      fontSize: '0.85rem',
-                      fontWeight: isActive ? '600' : '400',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {brand}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Favorite Stations with Sparklines */}
+          {/* Favorite Stations with Sparklines — PRIMARY use case, first */}
           <div className="glass-panel" style={{ padding: '16px' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
               <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
@@ -378,6 +317,106 @@ export function ProfileDrawer({
                     background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
                     transition: 'width 0.5s ease'
                   }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Settings */}
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                width: '100%', background: 'none', border: 'none', color: 'var(--color-text-muted)',
+                cursor: 'pointer', fontSize: '1rem', padding: 0,
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Settings size={18} /> Seaded
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {!settingsOpen && (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                    {defaultFuelType || 'Bensiin 95'}
+                    {preferredBrands.length > 0 && ` · ${preferredBrands.length} ketti`}
+                  </span>
+                )}
+                <ChevronDown size={18} style={{
+                  transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: 'transform 0.2s ease'
+                }} />
+              </span>
+            </button>
+
+            {settingsOpen && (
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Fuel type preference */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                    <Fuel size={16} /> Sinu Auto Kütus
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {["Bensiin 95", "Bensiin 98", "Diisel", "LPG"].map(type => (
+                      <button
+                        key={type}
+                        onClick={() => handleUpdateFuelPref(type)}
+                        style={{
+                          flex: '1 1 40%',
+                          padding: '10px 0',
+                          border: '1px solid',
+                          borderColor: defaultFuelType === type ? 'var(--color-primary)' : 'var(--color-surface-border)',
+                          background: defaultFuelType === type ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+                          color: 'white',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: defaultFuelType === type ? 'bold' : 'normal'
+                        }}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preferred brands */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                    <Building2 size={16} /> Eelistatud Tanklad
+                  </h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                    Vali ketid, mida "Odavaim lähedal" eelistab. Tühi = kõik.
+                  </p>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '6px',
+                  }}>
+                    {allBrands.map(brand => {
+                      const isActive = preferredBrands.includes(brand);
+                      return (
+                        <button
+                          key={brand}
+                          onClick={() => handleToggleBrand(brand)}
+                          style={{
+                            padding: '6px 8px',
+                            borderRadius: '16px',
+                            border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                            background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface)',
+                            color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                            fontSize: '0.78rem',
+                            fontWeight: isActive ? '600' : '400',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {brand}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
