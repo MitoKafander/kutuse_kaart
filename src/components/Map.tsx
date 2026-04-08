@@ -181,34 +181,51 @@ export function Map({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [zoomLevel, setZoomLevel] = useState(7);
   
-  // Only show Waze-style price labels when zoomed in enough (>= 12)
-  const showPriceLabels = !!focusedFuelType && zoomLevel >= 12;
-  
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
     if (!focusedFuelType) return null;
-    
+
     let minPrice = Infinity;
-    
+
     stations.forEach(station => {
       const recentPrice = prices
         .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
         .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
-        
+
       if (recentPrice) {
         if (showOnlyFresh) {
           const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
           if (ageHours > 24) return;
         }
-        
+
         if (recentPrice.price < minPrice) {
           minPrice = recentPrice.price;
         }
       }
     });
-    
+
     return minPrice === Infinity ? null : minPrice;
   }, [stations, prices, focusedFuelType, showOnlyFresh]);
+
+  // IDs of the 5 cheapest stations for the focused fuel — shown as price pills even when zoomed out
+  const topCheapestStationIds = useMemo(() => {
+    if (!focusedFuelType) return new Set<string>();
+    const ranked: { id: string; price: number }[] = [];
+    stations.forEach(station => {
+      const recentPrice = prices
+        .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
+        .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
+      if (!recentPrice) return;
+      if (showOnlyFresh) {
+        const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
+        if (ageHours > 24) return;
+      }
+      if (calculateVoteScore(recentPrice.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
+      ranked.push({ id: station.id, price: recentPrice.price });
+    });
+    ranked.sort((a, b) => a.price - b.price);
+    return new Set(ranked.slice(0, 5).map(s => s.id));
+  }, [stations, prices, focusedFuelType, showOnlyFresh, allVotes]);
 
 
   return (
@@ -270,8 +287,9 @@ export function Map({
 
           const isSelected = selectedStation?.id === station.id;
 
-          // ---- WAZE MODE: Use price label markers when zoomed in with a fuel type ----
-          if (showPriceLabels) {
+          // ---- WAZE MODE: price labels when zoomed in, or always for top-5 cheapest ----
+          const showPill = !!focusedFuelType && (zoomLevel >= 12 || topCheapestStationIds.has(station.id));
+          if (showPill) {
             const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
             const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected);
             

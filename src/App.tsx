@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Fuel } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Zap } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -8,6 +8,7 @@ import { PrivacyModal } from './components/PrivacyModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
+import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { supabase } from './supabase';
 import { getStationDisplayName } from './utils';
 import './index.css';
@@ -23,6 +24,9 @@ function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
+  const [nearbyRadius, setNearbyRadius] = useState(20);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   
   // Data state
@@ -64,15 +68,23 @@ function App() {
       if (favs) setFavorites(favs);
       
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, auto_open_nearby').eq('id', currentUser.user.id).single();
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
         setSelectedFuelType(prev => prev || prof.default_fuel_type);
       }
+      // Auto-open nearby panel if user has it enabled
+      if (prof?.auto_open_nearby !== false && navigator.geolocation) {
+        setIsCheapestNearbyOpen(true);
+      }
     } else {
       setFavorites([]);
       setDefaultFuelType(null);
+      // For non-logged-in users, auto-open nearby panel if geolocation available
+      if (navigator.geolocation) {
+        setIsCheapestNearbyOpen(true);
+      }
     }
   };
 
@@ -264,6 +276,47 @@ function App() {
         )}
       </div>
 
+      {/* Driving mode FAB — cheapest nearby panel */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => setIsCheapestNearbyOpen(true)}
+        title="Odavaim kütus lähedal"
+        style={{
+          position: 'absolute',
+          bottom: 'calc(160px + env(safe-area-inset-bottom))',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '25px',
+          zIndex: 1000,
+          border: '1px solid rgba(255,255,255,0.1)',
+          cursor: 'pointer',
+          color: '#facc15',
+        }}
+      >
+        <Zap size={22} />
+      </button>
+
+      {/* Camera FAB — quick scan without pre-selecting a station */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => setIsCameraOpen(true)}
+        style={{
+          position: 'absolute',
+          bottom: 'calc(95px + env(safe-area-inset-bottom))',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '25px',
+          zIndex: 1000,
+          border: '1px solid rgba(255,255,255,0.1)',
+          cursor: 'pointer',
+          color: 'var(--color-primary)',
+        }}
+      >
+        <Camera size={22} />
+      </button>
+
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
       <div style={{ 
         position: 'absolute', 
@@ -328,6 +381,15 @@ function App() {
         onPricesSubmitted={() => loadData()}
       />
 
+      {/* Camera FAB mode: no pre-selected station, GPS auto-selects */}
+      <ManualPriceModal
+        station={null}
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onPricesSubmitted={() => loadData()}
+        allStations={stations}
+      />
+
       <ProfileDrawer 
         session={session}
         isOpen={isProfileOpen}
@@ -340,6 +402,15 @@ function App() {
         defaultFuelType={defaultFuelType}
         onDefaultFuelTypeChange={setDefaultFuelType}
         onStationSelect={setSelectedStation}
+      />
+
+      <CheapestNearbyPanel
+        isOpen={isCheapestNearbyOpen}
+        onClose={() => setIsCheapestNearbyOpen(false)}
+        stations={stations}
+        prices={prices}
+        radius={nearbyRadius}
+        onRadiusChange={setNearbyRadius}
       />
 
       <PrivacyModal
