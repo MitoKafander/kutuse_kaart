@@ -1,3 +1,44 @@
+import { useEffect, useRef } from 'react';
+
+/**
+ * Intercepts the mobile back button to close overlays instead of leaving the app.
+ * Pushes a history entry when any overlay is open; on popstate, calls the close callback.
+ */
+let programmaticBack = false;
+
+export function useBackButton(isOpen: boolean, onClose: () => void) {
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpen.current) {
+      window.history.pushState({ overlay: true }, '');
+    }
+    if (!isOpen && wasOpen.current) {
+      // Closed programmatically (X button, etc.) — clean up history entry
+      if (window.history.state?.overlay) {
+        programmaticBack = true;
+        window.history.back();
+      }
+    }
+    wasOpen.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePopState = () => {
+      if (programmaticBack) {
+        programmaticBack = false;
+        return; // Ignore — this popstate was triggered by our own cleanup
+      }
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isOpen, onClose]);
+}
+
 export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;

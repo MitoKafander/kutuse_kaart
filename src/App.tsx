@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Zap } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
@@ -10,7 +10,7 @@ import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { supabase } from './supabase';
-import { getStationDisplayName } from './utils';
+import { getStationDisplayName, useBackButton } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -45,6 +45,25 @@ function App() {
   const [showOnlyFresh, setShowOnlyFresh] = useState(false);
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Back button closes overlays instead of leaving the app
+  const closeAuth = useCallback(() => setIsAuthOpen(false), []);
+  const closeFilter = useCallback(() => setIsFilterOpen(false), []);
+  const closeProfile = useCallback(() => setIsProfileOpen(false), []);
+  const closeStation = useCallback(() => setSelectedStation(null), []);
+  const closePriceModal = useCallback(() => setIsPriceModalOpen(false), []);
+  const closeCamera = useCallback(() => setIsCameraOpen(false), []);
+  const closeNearby = useCallback(() => setIsCheapestNearbyOpen(false), []);
+  const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
+
+  useBackButton(isAuthOpen, closeAuth);
+  useBackButton(isFilterOpen, closeFilter);
+  useBackButton(isProfileOpen, closeProfile);
+  useBackButton(!!selectedStation && !isPriceModalOpen, closeStation);
+  useBackButton(isPriceModalOpen, closePriceModal);
+  useBackButton(isCameraOpen, closeCamera);
+  useBackButton(isCheapestNearbyOpen, closeNearby);
+  useBackButton(isPrivacyOpen, closePrivacy);
 
   // If user unselects fuel type, automatically turn off cheapest highlight
   useEffect(() => {
