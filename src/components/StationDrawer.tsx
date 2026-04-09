@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
-import { getStationDisplayName } from '../utils';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, isPriceFresh, FRESH_HOURS } from '../utils';
 
 export function StationDrawer({ 
   station, 
@@ -29,34 +29,35 @@ export function StationDrawer({
 }) {
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
+  const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
 
   if (!isOpen || !station) return null;
 
-  const getAgeColor = (reportedAt: string) => {
-    const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
-    // Only flash green if it was truly updated just now (< 1 hour)
+  const getAgeColor = (price: any) => {
+    const effectiveDate = getEffectiveTimestamp(price, allVotes);
+    const ageInHours = (Date.now() - effectiveDate.getTime()) / (1000 * 60 * 60);
     if (ageInHours < 1) return 'var(--color-fresh)';
-    // Yellow for anything else under 24 hours
+    if (ageInHours < FRESH_HOURS) return 'var(--color-fresh)';
     if (ageInHours < 24) return 'var(--color-warning)';
-    // Gray for older data
     return 'var(--color-text-muted)';
   };
 
-  const getAgeText = (reportedAt: string) => {
-    const ageInHours = (new Date().getTime() - new Date(reportedAt).getTime()) / (1000 * 60 * 60);
+  const getAgeText = (price: any) => {
+    const effectiveDate = getEffectiveTimestamp(price, allVotes);
+    const ageInHours = (Date.now() - effectiveDate.getTime()) / (1000 * 60 * 60);
+
+    if (ageInHours > 24) return 'Aegunud';
     if (ageInHours < 1) return 'Just praegu';
-    
-    // Instead of vague "X hours ago", show exact clock time
-    const d = new Date(reportedAt);
+
+    const d = effectiveDate;
     const timeStr = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
-    
-    // Check if it's today
+
     if (ageInHours < 24 && new Date().getDate() === d.getDate()) {
        return `Täna ${timeStr}`;
     } else if (ageInHours < 48) {
        return `Eile ${timeStr}`;
     }
-    
+
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
   };
 
@@ -106,6 +107,10 @@ export function StationDrawer({
       alert("Hääletamine ebaõnnestus. " + error.message);
     } else {
       onVoteSubmitted();
+      if (voteType === 'up') {
+        setVoteConfirm(priceId);
+        setTimeout(() => setVoteConfirm(null), 2000);
+      }
     }
   };
 
@@ -164,21 +169,22 @@ export function StationDrawer({
           const score = recentPrice ? calculateScore(recentPrice.id) : 0;
           const userVote = recentPrice ? getUserVote(recentPrice.id) : null;
           const isDisputed = score <= DOWNVOTE_THRESHOLD;
+          const isExpired = recentPrice ? isPriceExpired(recentPrice, allVotes) : false;
 
           return (
             <div key={type} style={{
               background: 'var(--color-surface)',
-              border: `1px solid ${isDisputed ? 'var(--color-stale)' : (recentPrice ? getAgeColor(recentPrice.reported_at) : 'var(--color-surface-border)')}`,
+              border: `1px solid ${isDisputed || isExpired ? 'var(--color-surface-border)' : (recentPrice ? getAgeColor(recentPrice) : 'var(--color-surface-border)')}`,
               borderRadius: 'var(--radius-md)',
               padding: '16px',
               position: 'relative',
-              opacity: isDisputed ? 0.6 : 1,
+              opacity: isDisputed || isExpired ? 0.5 : 1,
             }}>
               <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{type}</div>
               <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
                 {!recentPrice || isDisputed ? '---' : `€${recentPrice.price.toFixed(3)}`}
               </div>
-              
+
               {/* Disputed label */}
               {recentPrice && isDisputed && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-stale)', marginTop: '8px' }}>
@@ -186,27 +192,47 @@ export function StationDrawer({
                 </div>
               )}
 
-              {/* Timestamp — only show if not disputed */}
-              {recentPrice && !isDisputed && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: getAgeColor(recentPrice.reported_at), marginTop: '8px' }}>
+              {/* Expired label */}
+              {recentPrice && !isDisputed && isExpired && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
                   <Clock size={12} />
-                  <span>{getAgeText(recentPrice.reported_at)}</span>
+                  <span>Aegunud</span>
+                </div>
+              )}
+
+              {/* Timestamp — only show if not disputed and not expired */}
+              {recentPrice && !isDisputed && !isExpired && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: getAgeColor(recentPrice), marginTop: '8px' }}>
+                  <Clock size={12} />
+                  <span>{getAgeText(recentPrice)}</span>
+                </div>
+              )}
+
+              {/* Vote confirmation toast */}
+              {voteConfirm === recentPrice?.id && (
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  background: 'rgba(16, 185, 129, 0.9)', color: '#fff', padding: '6px 12px',
+                  borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', whiteSpace: 'nowrap',
+                  zIndex: 10, pointerEvents: 'none'
+                }}>
+                  Hind kinnitatud ✓
                 </div>
               )}
 
               {/* Voting Cluster */}
               {recentPrice && (
                 <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <button 
+                  <button
                     onClick={() => handleVote(recentPrice.id, 'up')}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'up' ? 'var(--color-fresh)' : 'var(--color-text-muted)' }}
                   ><ThumbsUp size={16} /></button>
-                  
+
                   <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: score > 0 ? 'var(--color-fresh)' : (score < 0 ? 'var(--color-stale)' : 'var(--color-text-muted)') }}>
                     {score > 0 ? `+${score}` : score}
                   </span>
-                  
-                  <button 
+
+                  <button
                     onClick={() => handleVote(recentPrice.id, 'down')}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'down' ? 'var(--color-stale)' : 'var(--color-text-muted)' }}
                   ><ThumbsDown size={16} /></button>

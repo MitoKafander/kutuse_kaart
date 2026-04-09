@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
@@ -16,13 +16,13 @@ interface NearbyResult {
 function findCheapestNearby(
   stations: any[],
   prices: any[],
+  allVotes: any[],
   userLat: number,
   userLon: number,
   radiusKm: number,
   preferredBrands: string[] = []
 ): NearbyResult[] {
   const results: NearbyResult[] = [];
-  const now = new Date().getTime();
 
   for (const fuelType of FUEL_TYPES) {
     let best: NearbyResult | null = null;
@@ -37,9 +37,7 @@ function findCheapestNearby(
         .sort((a: any, b: any) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
 
       if (!recentPrice) continue;
-
-      const ageHours = (now - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
-      if (ageHours > 72) continue; // ignore prices older than 3 days
+      if (isPriceExpired(recentPrice, allVotes)) continue;
 
       if (!best || recentPrice.price < best.price) {
         best = {
@@ -47,7 +45,7 @@ function findCheapestNearby(
           price: recentPrice.price,
           station,
           distanceKm: dist,
-          isFresh: ageHours <= 24,
+          isFresh: isPriceFresh(recentPrice, allVotes),
         };
       }
     }
@@ -63,6 +61,7 @@ export function CheapestNearbyPanel({
   onClose,
   stations,
   prices,
+  allVotes,
   radius,
   onRadiusChange,
   preferredBrands = [],
@@ -71,6 +70,7 @@ export function CheapestNearbyPanel({
   onClose: () => void;
   stations: any[];
   prices: any[];
+  allVotes: any[];
   radius: number;
   onRadiusChange: (r: number) => void;
   preferredBrands?: string[];
@@ -99,7 +99,7 @@ export function CheapestNearbyPanel({
   if (!isOpen) return null;
 
   const results = userLocation
-    ? findCheapestNearby(stations, prices, userLocation.lat, userLocation.lon, radius, preferredBrands)
+    ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands)
     : [];
 
   const fuelLabel: Record<string, string> = {

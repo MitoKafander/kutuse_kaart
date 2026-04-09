@@ -55,6 +55,13 @@ export function ManualPriceModal({
     }
   }, [isOpen]);
 
+  // When AI scan fails and GPS arrives late, still resolve station candidates
+  useEffect(() => {
+    if (scanError && capturedPosition && !station && allStations && !resolvedStation && !stationCandidates) {
+      resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon);
+    }
+  }, [scanError, capturedPosition]);
+
   if (!isOpen) return null;
 
   const callGemini = async (base64: string, stationName: string): Promise<any> => {
@@ -407,7 +414,7 @@ export function ManualPriceModal({
             <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
               {scanError === 'QUOTA_EXCEEDED'
-                ? 'Gemini päevane limiit (20 päringut) on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
+                ? 'AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
                 : scanError === 'NO_NEARBY_STATION'
                 ? 'Läheduses (500m raadiuses) ei leitud ühtegi tankla. Mine tankla juurde lähemale ja proovi uuesti.'
                 : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}

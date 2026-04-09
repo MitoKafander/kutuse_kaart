@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Zap } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -340,7 +340,7 @@ function App() {
           color: '#facc15',
         }}
       >
-        <Zap size={22} />
+        <Euro size={22} />
       </button>
 
       {/* Camera FAB — quick scan without pre-selecting a station */}
@@ -374,7 +374,7 @@ function App() {
         pointerEvents: 'none' // Don't block map clicks
       }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', boxShadow: '0 0 8px var(--color-primary-glow)' }} />
-        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>KütuseKaart</span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>Kyts</span>
       </div>
 
       {/* Modals & Drawers */}
@@ -436,13 +436,14 @@ function App() {
         allStations={stations}
       />
 
-      <ProfileDrawer 
+      <ProfileDrawer
         session={session}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         favorites={favorites}
         stations={stations}
         prices={prices}
+        allVotes={votes}
         userVotesCount={votes.filter(v => v.user_id === session?.user?.id).length}
         userPricesCount={prices.filter(p => p.user_id === session?.user?.id).length}
         defaultFuelType={defaultFuelType}
@@ -458,6 +459,7 @@ function App() {
         onClose={() => setIsCheapestNearbyOpen(false)}
         stations={stations}
         prices={prices}
+        allVotes={votes}
         radius={nearbyRadius}
         onRadiusChange={setNearbyRadius}
         preferredBrands={preferredBrands}

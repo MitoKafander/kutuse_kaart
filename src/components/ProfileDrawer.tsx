@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
 
 // --- Contributor Badge System ---
 function getContributorBadge(priceCount: number, voteCount: number) {
@@ -48,13 +48,14 @@ function Sparkline({ data, color }: { data: number[], color: string }) {
   );
 }
 
-export function ProfileDrawer({ 
-  session, 
-  isOpen, 
+export function ProfileDrawer({
+  session,
+  isOpen,
   onClose,
   favorites,
   stations,
   prices,
+  allVotes,
   userVotesCount,
   userPricesCount,
   defaultFuelType,
@@ -63,13 +64,14 @@ export function ProfileDrawer({
   preferredBrands,
   onPreferredBrandsChange,
   allBrands,
-}: { 
+}: {
   session: any;
-  isOpen: boolean; 
+  isOpen: boolean;
   onClose: () => void;
   favorites: any[];
   stations: any[];
   prices: any[];
+  allVotes: any[];
   userVotesCount: number;
   userPricesCount: number;
   defaultFuelType: string | null;
@@ -234,15 +236,19 @@ export function ProfileDrawer({
                     .filter(p => p.station_id === station.id && p.fuel_type === fuelTypeToShow)
                     .sort((a: any, b: any) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
                   
-                  const activePrice = stationPrices[0]?.price;
-                  const reportedAt = stationPrices[0]?.reported_at;
+                  const latestPrice = stationPrices[0];
+                  const activePrice = latestPrice?.price;
                   const sparkData = stationPrices.slice(0, 10).reverse().map((p: any) => p.price);
+                  const expired = latestPrice ? isPriceExpired(latestPrice, allVotes) : false;
+                  const fresh = latestPrice ? isPriceFresh(latestPrice, allVotes) : false;
 
                   // Format timestamp
                   let timeLabel = '';
-                  if (reportedAt) {
-                    const ageH = (Date.now() - new Date(reportedAt).getTime()) / 3600000;
-                    const d = new Date(reportedAt);
+                  if (expired) {
+                    timeLabel = 'Aegunud';
+                  } else if (latestPrice) {
+                    const ageH = (Date.now() - new Date(latestPrice.reported_at).getTime()) / 3600000;
+                    const d = new Date(latestPrice.reported_at);
                     const t = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
                     if (ageH < 1) timeLabel = 'Just praegu';
                     else if (ageH < 24 && new Date().getDate() === d.getDate()) timeLabel = `Täna ${t}`;
@@ -271,7 +277,7 @@ export function ProfileDrawer({
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, marginLeft: '12px' }}>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: expired ? 'var(--color-text-muted)' : (fresh ? 'var(--color-fresh)' : 'var(--color-warning)') }}>
                             {activePrice ? `€${activePrice.toFixed(3)}` : '-'}
                           </div>
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>

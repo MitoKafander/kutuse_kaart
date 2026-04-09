@@ -2,8 +2,22 @@ import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap, CircleMarker, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { LocateFixed, Sun, Moon } from 'lucide-react';
+import { isPriceExpired, isPriceFresh } from '../utils';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
+
+const BRAND_STYLE: Record<string, { abbr: string; bg: string; text: string }> = {
+  'Circle K':  { abbr: 'CK', bg: '#e31937', text: '#fff' },
+  'Neste':     { abbr: 'N',  bg: '#009639', text: '#fff' },
+  'Olerex':    { abbr: 'O',  bg: '#f7941d', text: '#fff' },
+  'Alexela':   { abbr: 'A',  bg: '#0072ce', text: '#fff' },
+  'Terminal':  { abbr: 'T',  bg: '#8b5cf6', text: '#fff' },
+};
+
+function getBrandStyle(name: string): { abbr: string; bg: string; text: string } {
+  if (BRAND_STYLE[name]) return BRAND_STYLE[name];
+  return { abbr: name?.charAt(0)?.toUpperCase() || '?', bg: '#6b7280', text: '#fff' };
+}
 
 function LocationTracker({ position, setPosition }: { position: [number, number] | null, setPosition: (pos: [number, number]) => void }) {
   const map = useMap();
@@ -78,10 +92,38 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
   return null;
 }
 
-// Create a Waze-style price label DivIcon
-function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false): L.DivIcon {
+// Create a brand badge DivIcon (zoomed out, no price data)
+function createBrandIcon(brandName: string, isSelected: boolean, isLightMap: boolean): L.DivIcon {
+  const brand = getBrandStyle(brandName);
+  const opacity = isSelected ? 1 : 0.75;
+  const shadow = isSelected
+    ? (isLightMap ? '0 0 8px rgba(0,0,0,0.4)' : '0 0 8px rgba(255,255,255,0.6)')
+    : '0 1px 4px rgba(0,0,0,0.3)';
+  const border = isSelected
+    ? (isLightMap ? '2px solid rgba(0,0,0,0.5)' : '2px solid rgba(255,255,255,0.8)')
+    : '1px solid rgba(255,255,255,0.2)';
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="
+      width: 22px; height: 22px; border-radius: 50%;
+      background: ${brand.bg}; color: ${brand.text};
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; font-family: 'Outfit', sans-serif;
+      opacity: ${opacity}; box-shadow: ${shadow}; border: ${border};
+      cursor: pointer;
+    ">${brand.abbr}</div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+}
+
+// Create a Waze-style price label DivIcon with brand badge
+function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false, brandName: string = ''): L.DivIcon {
   if (price === null) {
-    // No data — small dot (becomes brighter/darker when selected)
+    // No data — show brand badge if we have a brand name
+    if (brandName) {
+      return createBrandIcon(brandName, isSelected, isLightMap);
+    }
     const dotBg = isLightMap
       ? (isSelected ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.25)')
       : (isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)');
@@ -91,24 +133,25 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="
-        width: 10px; height: 10px; border-radius: 50%;
+        width: 16px; height: 16px; border-radius: 50%;
         background: ${dotBg};
         ${shadow}
       "></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
     });
   }
 
   const priceStr = `€${price.toFixed(3)}`;
-  
+  const brand = getBrandStyle(brandName);
+
   // Color scheme
   let bgColor = 'rgba(30, 34, 44, 0.92)';
   let borderColor = 'rgba(255,255,255,0.15)';
   let textColor = '#ffffff';
   let dotColor = isFresh ? '#10b981' : '#f59e0b';
   let shadow = '0 2px 8px rgba(0,0,0,0.4)';
-  
+
   if (isCheapest) {
     bgColor = 'rgba(250, 204, 21, 0.95)';
     borderColor = 'rgba(250, 204, 21, 0.6)';
@@ -120,6 +163,17 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
   if (isSelected) {
     shadow = '0 0 0 3px rgba(255,255,255,0.6), ' + shadow;
   }
+
+  // Brand badge HTML for the pill
+  const brandBadge = brandName ? `<div style="
+    width: 16px; height: 16px; border-radius: 50%;
+    background: ${brand.bg}; color: ${brand.text};
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; flex-shrink: 0;
+  ">${brand.abbr}</div>` : `<div style="
+    width: 8px; height: 8px; border-radius: 50%;
+    background: ${dotColor}; flex-shrink: 0;
+  "></div>`;
 
   return L.divIcon({
     className: 'custom-marker',
@@ -135,11 +189,7 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
       cursor: pointer;
       transform: translate(-50%, -50%);
     ">
-      <div style="
-        width: 8px; height: 8px; border-radius: 50%;
-        background: ${dotColor};
-        flex-shrink: 0;
-      "></div>
+      ${brandBadge}
       <span style="
         font-size: 12px; font-weight: 600;
         color: ${textColor}; letter-spacing: 0.2px;
@@ -210,10 +260,8 @@ export function Map({
         .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
 
       if (recentPrice) {
-        if (showOnlyFresh) {
-          const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
-          if (ageHours > 24) return;
-        }
+        if (isPriceExpired(recentPrice, allVotes)) return;
+        if (showOnlyFresh && !isPriceFresh(recentPrice, allVotes)) return;
 
         if (recentPrice.price < minPrice) {
           minPrice = recentPrice.price;
@@ -222,7 +270,7 @@ export function Map({
     });
 
     return minPrice === Infinity ? null : minPrice;
-  }, [stations, prices, focusedFuelType, showOnlyFresh]);
+  }, [stations, prices, focusedFuelType, showOnlyFresh, allVotes]);
 
   // IDs of the 5 cheapest stations for the focused fuel — shown as price pills even when zoomed out
   const topCheapestStationIds = useMemo(() => {
@@ -233,10 +281,8 @@ export function Map({
         .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
         .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
       if (!recentPrice) return;
-      if (showOnlyFresh) {
-        const ageHours = (new Date().getTime() - new Date(recentPrice.reported_at).getTime()) / (1000 * 60 * 60);
-        if (ageHours > 24) return;
-      }
+      if (isPriceExpired(recentPrice, allVotes)) return;
+      if (showOnlyFresh && !isPriceFresh(recentPrice, allVotes)) return;
       if (calculateVoteScore(recentPrice.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
       ranked.push({ id: station.id, price: recentPrice.price });
     });
@@ -274,7 +320,7 @@ export function Map({
           let isFresh = false;
           let isCheapest = false;
           let isDisputed = false;
-          
+
           if (!mostRecentPrice) {
             hasFuelData = false;
           } else {
@@ -284,15 +330,16 @@ export function Map({
               isDisputed = true;
               hasFuelData = false;
             }
-            
-            const ageHours = (new Date().getTime() - new Date(mostRecentPrice.reported_at).getTime()) / (1000 * 60 * 60);
-            
-            if (showOnlyFresh && ageHours > 24) {
+
+            // Price expiry: > 24h (effective age including upvote confirmations) = expired
+            if (isPriceExpired(mostRecentPrice, allVotes)) {
+              hasFuelData = false;
+            } else if (showOnlyFresh && !isPriceFresh(mostRecentPrice, allVotes)) {
               hasFuelData = false;
             } else if (!isDisputed) {
-              isFresh = ageHours <= 24;
+              isFresh = isPriceFresh(mostRecentPrice, allVotes);
             }
-            
+
             if (cheapestPrice !== null && mostRecentPrice.price === cheapestPrice && hasFuelData) {
               isCheapest = true;
             }
@@ -309,7 +356,7 @@ export function Map({
           const showPill = !!focusedFuelType && (zoomLevel >= 12 || topCheapestStationIds.has(station.id));
           if (showPill) {
             const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
-            const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected, mapStyle === 'light');
+            const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected, mapStyle === 'light', station.name);
             
             return (
               <Marker
@@ -323,9 +370,24 @@ export function Map({
             );
           }
 
-          // ---- DEFAULT MODE: Classic colored dots ----
+          // ---- DEFAULT MODE: Brand badges or colored dots ----
+          // Use brand badge DivIcon for better tap targets and brand identification
+          if (station.name) {
+            const brandIcon = createBrandIcon(station.name, isSelected, mapStyle === 'light');
+            return (
+              <Marker
+                key={station.id}
+                position={[station.latitude, station.longitude]}
+                icon={brandIcon}
+                eventHandlers={{
+                  click: () => onStationSelect(station)
+                }}
+              />
+            );
+          }
+
+          // Fallback: plain dot for stations without a name
           let markerColor = 'var(--color-warning)';
-          
           if (!hasFuelData) {
             markerColor = mapStyle === 'light'
               ? (isSelected ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.25)')
@@ -334,16 +396,16 @@ export function Map({
             markerColor = 'var(--color-fresh)';
           }
 
-          let radius = hasFuelData ? 6 : 5;
+          let radius = hasFuelData ? 10 : 8;
           let color = (!hasFuelData && isSelected)
             ? (mapStyle === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.4)')
             : 'transparent';
           let fillOpacity = hasFuelData ? 0.9 : (isSelected ? 1 : 0.55);
           let weight = 0;
-          
+
           if (isCheapest) {
             markerColor = 'gold';
-            radius = 12;
+            radius = 16;
             color = 'white';
             fillOpacity = 1;
             weight = 2;
@@ -355,8 +417,8 @@ export function Map({
           }
 
           return (
-            <CircleMarker 
-              key={station.id} 
+            <CircleMarker
+              key={station.id}
               center={[station.latitude, station.longitude]}
               radius={radius}
               pathOptions={{ fillColor: markerColor, color: color, weight: weight, fillOpacity: fillOpacity }}
