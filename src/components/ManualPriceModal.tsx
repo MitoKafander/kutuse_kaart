@@ -32,6 +32,7 @@ export function ManualPriceModal({
   const [brandMismatch, setBrandMismatch] = useState<{ detected: string } | null>(null);
   const [autoSelectMsg, setAutoSelectMsg] = useState<string | null>(null);
   const [photoExpanded, setPhotoExpanded] = useState(false);
+  const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset and initialise state when the modal opens/closes
@@ -45,6 +46,7 @@ export function ManualPriceModal({
       setBrandMismatch(null);
       setAutoSelectMsg(null);
       setPhotoExpanded(false);
+      setCapturedPosition(null);
       setPrices(EMPTY_PRICES);
       // Camera FAB mode: auto-open camera immediately
       if (!station && allStations) {
@@ -87,46 +89,38 @@ export function ManualPriceModal({
     });
   };
 
-  // Given a detected brand and the scanned photo, pick the best nearby station
-  const autoSelectByGps = (detectedBrand: string) => {
+  // Resolve nearby station candidates from a known position
+  const resolveNearbyCandidates = (lat: number, lon: number, detectedBrand?: string) => {
     if (!allStations?.length) return;
 
-    const handlePosition = (pos: GeolocationPosition) => {
-      const { latitude, longitude } = pos.coords;
+    const MAX_PHOTO_KM = 0.5;
+    const nearby = allStations.map(s => ({
+      ...s,
+      _dist: haversineKm(lat, lon, s.latitude, s.longitude)
+    })).filter(s => s._dist <= MAX_PHOTO_KM).sort((a, b) => a._dist - b._dist);
 
-      // Find stations within photo range (500m — allows for GPS lag while driving past)
-      const MAX_PHOTO_KM = 0.5;
-      const nearby = allStations.map(s => ({
-        ...s,
-        _dist: haversineKm(latitude, longitude, s.latitude, s.longitude)
-      })).filter(s => s._dist <= MAX_PHOTO_KM).sort((a, b) => a._dist - b._dist);
+    if (nearby.length === 0) {
+      setScanError('NO_NEARBY_STATION');
+      return;
+    }
 
-      if (nearby.length === 0) {
-        setScanError('NO_NEARBY_STATION');
-        return;
-      }
-
+    let candidates = nearby;
+    if (detectedBrand) {
       const brandLower = detectedBrand.toLowerCase();
       const brandMatches = nearby.filter(s =>
         s.name?.toLowerCase().includes(brandLower) ||
         brandLower.includes(s.name?.toLowerCase())
       );
+      if (brandMatches.length > 0) candidates = brandMatches;
+    }
 
-      const candidates = brandMatches.length > 0 ? brandMatches : nearby;
-
-      if (candidates.length === 1) {
-        setResolvedStation(candidates[0]);
-        setAutoSelectMsg(`Valitud: ${getStationDisplayName(candidates[0])}`);
-        setTimeout(() => setAutoSelectMsg(null), 4000);
-      } else {
-        setStationCandidates(candidates.slice(0, 10));
-      }
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      handlePosition,
-      () => setScanError('NO_NEARBY_STATION')
-    );
+    if (candidates.length === 1) {
+      setResolvedStation(candidates[0]);
+      setAutoSelectMsg(`Valitud: ${getStationDisplayName(candidates[0])}`);
+      setTimeout(() => setAutoSelectMsg(null), 4000);
+    } else {
+      setStationCandidates(candidates.slice(0, 10));
+    }
   };
 
   const runScan = async (base64: string, stationNameHint: string) => {
@@ -137,9 +131,9 @@ export function ManualPriceModal({
     try {
       const parsedJson = await callGemini(base64, stationNameHint);
 
-      // GPS auto-select mode (camera FAB)
-      if (!station && allStations) {
-        autoSelectByGps(parsedJson.detectedBrand || '');
+      // GPS auto-select mode (camera FAB) — use position captured at photo time
+      if (!station && allStations && capturedPosition) {
+        resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon, parsedJson.detectedBrand || '');
       } else if (parsedJson.isBrandMatch === false) {
         setBrandMismatch({ detected: parsedJson.detectedBrand || 'teine kett' });
       }
@@ -148,6 +142,10 @@ export function ManualPriceModal({
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
       setScanError(error.message);
+      // Still resolve station candidates on AI failure so user can enter prices manually
+      if (!station && allStations && capturedPosition && !resolvedStation) {
+        resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon);
+      }
     } finally {
       setIsAnalyzing(false);
       setRetryStatus(null);
@@ -157,6 +155,14 @@ export function ManualPriceModal({
   const handleCameraCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Capture GPS immediately — before AI processing delays change the position
+    if (!station && allStations) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        () => {} // GPS failure handled later when resolving candidates
+      );
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -196,6 +202,7 @@ export function ManualPriceModal({
     setScanError(null);
     setBrandMismatch(null);
     setAutoSelectMsg(null);
+    setCapturedPosition(null);
     setPrices(EMPTY_PRICES);
     onClose();
   };

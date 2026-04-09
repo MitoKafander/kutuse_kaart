@@ -118,7 +118,7 @@ function App() {
       if (favs) setFavorites(favs);
       
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, auto_open_nearby, preferred_brands').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands').eq('id', currentUser.user.id).single();
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
@@ -127,18 +127,10 @@ function App() {
       if (prof?.preferred_brands) {
         setPreferredBrands(prof.preferred_brands);
       }
-      // Auto-open nearby panel if user has it enabled
-      if (prof?.auto_open_nearby !== false && navigator.geolocation) {
-        setIsCheapestNearbyOpen(true);
-      }
     } else {
       setFavorites([]);
       setDefaultFuelType(null);
       setPreferredBrands([]);
-      // For non-logged-in users, auto-open nearby panel if geolocation available
-      if (navigator.geolocation) {
-        setIsCheapestNearbyOpen(true);
-      }
     }
   };
 
