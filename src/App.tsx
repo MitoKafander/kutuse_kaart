@@ -329,7 +329,7 @@ function App() {
         title="Odavaim kütus lähedal"
         style={{
           position: 'absolute',
-          bottom: 'calc(160px + env(safe-area-inset-bottom))',
+          bottom: 'calc(210px + env(safe-area-inset-bottom))',
           right: '20px',
           width: '50px',
           height: '50px',
@@ -349,7 +349,7 @@ function App() {
         onClick={() => setIsCameraOpen(true)}
         style={{
           position: 'absolute',
-          bottom: 'calc(95px + env(safe-area-inset-bottom))',
+          bottom: 'calc(150px + env(safe-area-inset-bottom))',
           right: '20px',
           width: '50px',
           height: '50px',
