@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
-import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, isPriceFresh, FRESH_HOURS } from '../utils';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS } from '../utils';
 
 export function StationDrawer({ 
   station, 
