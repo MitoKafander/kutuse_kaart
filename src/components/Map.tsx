@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap, CircleMarker, Marker } from 'react-leaflet';
 import L from 'leaflet';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Sun, Moon } from 'lucide-react';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
@@ -79,16 +79,20 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 }
 
 // Create a Waze-style price label DivIcon
-function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false): L.DivIcon {
+function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false): L.DivIcon {
   if (price === null) {
-    // No data — small gray dot (becomes brighter when selected)
-    const opacity = isSelected ? 0.9 : 0.3;
-    const shadow = isSelected ? 'box-shadow: 0 0 8px rgba(255,255,255,0.8);' : '';
+    // No data — small dot (becomes brighter/darker when selected)
+    const dotBg = isLightMap
+      ? (isSelected ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.25)')
+      : (isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)');
+    const shadow = isSelected
+      ? (isLightMap ? 'box-shadow: 0 0 8px rgba(0,0,0,0.4);' : 'box-shadow: 0 0 8px rgba(255,255,255,0.8);')
+      : '';
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="
         width: 10px; height: 10px; border-radius: 50%;
-        background: rgba(255,255,255,${opacity});
+        background: ${dotBg};
         ${shadow}
       "></div>`,
       iconSize: [10, 10],
@@ -180,6 +184,19 @@ export function Map({
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [zoomLevel, setZoomLevel] = useState(7);
+  const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('kyts-map-style') as 'dark' | 'light') || 'dark';
+  });
+
+  const tileUrl = mapStyle === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+  const toggleMapStyle = () => {
+    const next = mapStyle === 'dark' ? 'light' : 'dark';
+    setMapStyle(next);
+    localStorage.setItem('kyts-map-style', next);
+  };
   
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
@@ -237,8 +254,9 @@ export function Map({
         zoomControl={false}
       >
         <TileLayer
+          key={mapStyle}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={tileUrl}
         />
         <LocationTracker position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
@@ -291,7 +309,7 @@ export function Map({
           const showPill = !!focusedFuelType && (zoomLevel >= 12 || topCheapestStationIds.has(station.id));
           if (showPill) {
             const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
-            const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected);
+            const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected, mapStyle === 'light');
             
             return (
               <Marker
@@ -309,13 +327,17 @@ export function Map({
           let markerColor = 'var(--color-warning)';
           
           if (!hasFuelData) {
-            markerColor = isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)';
+            markerColor = mapStyle === 'light'
+              ? (isSelected ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.25)')
+              : (isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)');
           } else if (isFresh) {
             markerColor = 'var(--color-fresh)';
           }
 
           let radius = hasFuelData ? 6 : 5;
-          let color = (!hasFuelData && isSelected) ? 'rgba(255,255,255,0.4)' : 'transparent';
+          let color = (!hasFuelData && isSelected)
+            ? (mapStyle === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.4)')
+            : 'transparent';
           let fillOpacity = hasFuelData ? 0.9 : (isSelected ? 1 : 0.55);
           let weight = 0;
           
@@ -328,7 +350,7 @@ export function Map({
           }
 
           if (hasFuelData && isSelected && !isCheapest) {
-            color = 'rgba(255,255,255,0.8)';
+            color = mapStyle === 'light' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
             weight = 3;
           }
 
@@ -346,8 +368,37 @@ export function Map({
         })}
 
         <RecenterButton userLocation={userLocation} />
+        <MapStyleToggle mapStyle={mapStyle} onToggle={toggleMapStyle} />
       </MapContainer>
     </div>
+  );
+}
+
+function MapStyleToggle({ mapStyle, onToggle }: { mapStyle: 'dark' | 'light', onToggle: () => void }) {
+  return (
+    <button
+      className="glass-panel flex-center"
+      style={{
+        position: 'absolute',
+        bottom: 'calc(90px + env(safe-area-inset-bottom))',
+        right: '20px',
+        width: '50px',
+        height: '50px',
+        borderRadius: '25px',
+        zIndex: 1000,
+        border: '1px solid rgba(255,255,255,0.1)',
+        cursor: 'pointer',
+        color: mapStyle === 'dark' ? '#f59e0b' : '#6366f1',
+        background: mapStyle === 'dark' ? 'var(--color-bg)' : 'rgba(255,255,255,0.9)',
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      title={mapStyle === 'dark' ? 'Hele kaart' : 'Tume kaart'}
+    >
+      {mapStyle === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+    </button>
   );
 }
 

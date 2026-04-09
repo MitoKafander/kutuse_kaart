@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp } from 'lucide-react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
@@ -293,7 +293,7 @@ export function StationDrawer({
       )}
 
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-        <button 
+        <button
           style={{
             background: showHistory ? 'var(--color-surface)' : 'transparent',
             color: showHistory ? 'var(--color-primary)' : 'var(--color-text)',
@@ -310,7 +310,26 @@ export function StationDrawer({
           <TrendingUp size={20} />
         </button>
 
-        <button 
+        <button
+          style={{
+            background: 'transparent',
+            color: 'var(--color-text)',
+            border: '1px solid var(--color-surface-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px', fontSize: '1rem', fontWeight: '500', flexShrink: 0, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '48px'
+          }}
+          onClick={() => window.open(
+            `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`,
+            '_blank'
+          )}
+          title="Navigeeri"
+        >
+          <Navigation size={20} />
+        </button>
+
+        <button
           style={{
             background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
             padding: '16px', fontSize: '1.1rem', fontWeight: '600', flex: 1, cursor: 'pointer',

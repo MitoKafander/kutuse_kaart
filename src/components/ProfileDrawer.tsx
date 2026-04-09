@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName } from '../utils';
 
@@ -269,18 +269,38 @@ export function ProfileDrawer({
                         </span>
                         <Sparkline data={sparkData} color="var(--color-primary)" />
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>
-                          {activePrice ? `€${activePrice.toFixed(3)}` : '-'}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                          {fuelTypeToShow}
-                        </div>
-                        {timeLabel && (
-                          <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
-                            <Clock size={10} /> {timeLabel}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, marginLeft: '12px' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>
+                            {activePrice ? `€${activePrice.toFixed(3)}` : '-'}
                           </div>
-                        )}
+                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                            {fuelTypeToShow}
+                          </div>
+                          {timeLabel && (
+                            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
+                              <Clock size={10} /> {timeLabel}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(
+                              `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`,
+                              '_blank'
+                            );
+                          }}
+                          style={{
+                            background: 'none', border: '1px solid var(--color-surface-border)',
+                            borderRadius: '8px', padding: '8px', cursor: 'pointer',
+                            color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                          title="Navigeeri"
+                        >
+                          <Navigation size={16} />
+                        </button>
                       </div>
                     </button>
                   )
