@@ -45,7 +45,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
   };
 
   return (
-    <div style={{
+    <div onClick={onClose} style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.8)',
@@ -55,7 +55,7 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      <div className="glass-panel animate-slide-up" style={{
+      <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" style={{
         width: '90%',
         maxWidth: '400px',
         backgroundColor: 'var(--color-bg)',

@@ -38,7 +38,7 @@ export function FilterDrawer({
   };
 
   return (
-    <div style={{
+    <div onClick={onClose} style={{
       position: 'absolute',
       top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
@@ -46,7 +46,7 @@ export function FilterDrawer({
       display: 'flex',
       justifyContent: 'flex-end'
     }}>
-      <div className="glass-panel animate-slide-up" style={{
+      <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" style={{
         width: '100%',
         maxWidth: '400px',
         height: '100dvh',
