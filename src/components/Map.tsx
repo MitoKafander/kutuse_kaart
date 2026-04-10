@@ -19,6 +19,54 @@ function getBrandColor(name: string): string {
   return BRAND_COLORS[name] || '#6b7280';
 }
 
+function toRgba(color: string, alpha: number): string {
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return color;
+}
+
+// Create a tappable dot with a transparent hit area larger than the visible dot.
+// This makes dots much easier to tap on phones without making them visually bigger.
+const DOT_HIT_SIZE = 36;
+function createDotIcon({
+  fillColor,
+  fillOpacity,
+  visibleDiameter,
+  strokeColor,
+  strokeWidth = 0,
+}: {
+  fillColor: string;
+  fillOpacity: number;
+  visibleDiameter: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+}): L.DivIcon {
+  const bg = toRgba(fillColor, fillOpacity);
+  const border = strokeWidth > 0 && strokeColor
+    ? `border: ${strokeWidth}px solid ${strokeColor};`
+    : '';
+  return L.divIcon({
+    className: 'custom-dot',
+    html: `<div style="
+      width: ${DOT_HIT_SIZE}px; height: ${DOT_HIT_SIZE}px;
+      display: flex; align-items: center; justify-content: center;
+    "><div style="
+      width: ${visibleDiameter}px; height: ${visibleDiameter}px;
+      border-radius: 50%;
+      background: ${bg};
+      ${border}
+      box-sizing: content-box;
+    "></div></div>`,
+    iconSize: [DOT_HIT_SIZE, DOT_HIT_SIZE],
+    iconAnchor: [DOT_HIT_SIZE / 2, DOT_HIT_SIZE / 2],
+  });
+}
+
 function LocationTracker({ position, setPosition }: { position: [number, number] | null, setPosition: (pos: [number, number]) => void }) {
   const map = useMap();
 
@@ -328,6 +376,58 @@ export function Map({
 
   const isLight = mapStyle === 'light';
 
+  const renderFadedDot = ({ station }: typeof stationMarkerData[number]) => {
+    const isSelected = selectedStation?.id === station.id;
+    const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
+    const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
+    const strokeColor = isSelected
+      ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
+      : undefined;
+    const strokeWidth = isSelected ? 2 : 0;
+
+    return (
+      <Marker
+        key={station.id}
+        position={[station.latitude, station.longitude]}
+        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter: 10, strokeColor, strokeWidth })}
+        eventHandlers={{ click: () => onStationSelect(station) }}
+      />
+    );
+  };
+
+  const renderFreshDot = ({ station, isFresh, isCheapest }: typeof stationMarkerData[number]) => {
+    const isSelected = selectedStation?.id === station.id;
+    const brandColor = getBrandColor(station.name);
+
+    let visibleDiameter = 12;
+    let fillColor = brandColor;
+    let fillOpacity = isFresh ? 0.9 : 0.55;
+    let strokeColor: string | undefined;
+    let strokeWidth = 0;
+
+    if (isCheapest) {
+      fillColor = '#facc15';
+      visibleDiameter = 22;
+      fillOpacity = 1;
+      strokeColor = isLight ? '#333' : '#ffffff';
+      strokeWidth = 2;
+    }
+
+    if (isSelected && !isCheapest) {
+      strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
+      strokeWidth = 3;
+    }
+
+    return (
+      <Marker
+        key={station.id}
+        position={[station.latitude, station.longitude]}
+        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth })}
+        eventHandlers={{ click: () => onStationSelect(station) }}
+      />
+    );
+  };
+
   return (
     <div style={{ height: '100dvh', width: '100vw', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
       <MapContainer
@@ -356,48 +456,10 @@ export function Map({
             showCoverageOnHover={false}
             iconCreateFunction={createClusterIcon}
           >
-            {fadedDots.map(({ station }) => {
-              const isSelected = selectedStation?.id === station.id;
-              const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
-              const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
-              const strokeColor = isSelected
-                ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
-                : 'transparent';
-              const weight = isSelected ? 2 : 0;
-
-              return (
-                <CircleMarker
-                  key={station.id}
-                  center={[station.latitude, station.longitude]}
-                  radius={5}
-                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
-                  eventHandlers={{ click: () => onStationSelect(station) }}
-                />
-              );
-            })}
+            {fadedDots.map(renderFadedDot)}
           </MarkerClusterGroup>
         ) : (
-          <>
-            {fadedDots.map(({ station }) => {
-              const isSelected = selectedStation?.id === station.id;
-              const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
-              const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
-              const strokeColor = isSelected
-                ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
-                : 'transparent';
-              const weight = isSelected ? 2 : 0;
-
-              return (
-                <CircleMarker
-                  key={station.id}
-                  center={[station.latitude, station.longitude]}
-                  radius={5}
-                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
-                  eventHandlers={{ click: () => onStationSelect(station) }}
-                />
-              );
-            })}
-          </>
+          <>{fadedDots.map(renderFadedDot)}</>
         )}
 
         {/* Layer 2: Fresh/active dots — vibrant */}
@@ -411,76 +473,10 @@ export function Map({
             showCoverageOnHover={false}
             iconCreateFunction={createClusterIcon}
           >
-            {freshDots.map(({ station, isFresh, isCheapest }) => {
-              const isSelected = selectedStation?.id === station.id;
-              const brandColor = getBrandColor(station.name);
-
-              let radius = 6;
-              let fillColor = brandColor;
-              let strokeColor = 'transparent';
-              let fillOpacity = isFresh ? 0.9 : 0.55;
-              let weight = 0;
-
-              if (isCheapest) {
-                fillColor = 'gold';
-                radius = 12;
-                strokeColor = isLight ? '#333' : 'white';
-                fillOpacity = 1;
-                weight = 2;
-              }
-
-              if (isSelected && !isCheapest) {
-                strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
-                weight = 3;
-              }
-
-              return (
-                <CircleMarker
-                  key={station.id}
-                  center={[station.latitude, station.longitude]}
-                  radius={radius}
-                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
-                  eventHandlers={{ click: () => onStationSelect(station) }}
-                />
-              );
-            })}
+            {freshDots.map(renderFreshDot)}
           </MarkerClusterGroup>
         ) : (
-          <>
-            {freshDots.map(({ station, isFresh, isCheapest }) => {
-              const isSelected = selectedStation?.id === station.id;
-              const brandColor = getBrandColor(station.name);
-
-              let radius = 6;
-              let fillColor = brandColor;
-              let strokeColor = 'transparent';
-              let fillOpacity = isFresh ? 0.9 : 0.55;
-              let weight = 0;
-
-              if (isCheapest) {
-                fillColor = 'gold';
-                radius = 12;
-                strokeColor = isLight ? '#333' : 'white';
-                fillOpacity = 1;
-                weight = 2;
-              }
-
-              if (isSelected && !isCheapest) {
-                strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
-                weight = 3;
-              }
-
-              return (
-                <CircleMarker
-                  key={station.id}
-                  center={[station.latitude, station.longitude]}
-                  radius={radius}
-                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
-                  eventHandlers={{ click: () => onStationSelect(station) }}
-                />
-              );
-            })}
-          </>
+          <>{freshDots.map(renderFreshDot)}</>
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}

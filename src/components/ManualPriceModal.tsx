@@ -33,6 +33,7 @@ export function ManualPriceModal({
   const [autoSelectMsg, setAutoSelectMsg] = useState<string | null>(null);
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
+  const [pendingDetectedBrand, setPendingDetectedBrand] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset and initialise state when the modal opens/closes
@@ -47,6 +48,7 @@ export function ManualPriceModal({
       setAutoSelectMsg(null);
       setPhotoExpanded(false);
       setCapturedPosition(null);
+      setPendingDetectedBrand(null);
       setPrices(EMPTY_PRICES);
       // Camera FAB mode: auto-open camera immediately
       if (!station && allStations) {
@@ -55,12 +57,17 @@ export function ManualPriceModal({
     }
   }, [isOpen]);
 
-  // When AI scan fails and GPS arrives late, still resolve station candidates
+  // When GPS arrives after the AI scan finishes, resolve station candidates.
+  // Handles both successful scans (use detected brand) and failures (any nearby).
   useEffect(() => {
-    if (scanError && capturedPosition && !station && allStations && !resolvedStation && !stationCandidates) {
+    if (!capturedPosition || station || !allStations || resolvedStation || stationCandidates || isAnalyzing) return;
+    if (pendingDetectedBrand !== null) {
+      resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon, pendingDetectedBrand);
+      setPendingDetectedBrand(null);
+    } else if (scanError) {
       resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon);
     }
-  }, [scanError, capturedPosition]);
+  }, [scanError, capturedPosition, pendingDetectedBrand, isAnalyzing]);
 
   if (!isOpen) return null;
 
@@ -137,15 +144,20 @@ export function ManualPriceModal({
     setRetryStatus(null);
     try {
       const parsedJson = await callGemini(base64, stationNameHint);
+      applyParsedPrices(parsedJson);
 
-      // GPS auto-select mode (camera FAB) — use position captured at photo time
-      if (!station && allStations && capturedPosition) {
-        resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon, parsedJson.detectedBrand || '');
-      } else if (parsedJson.isBrandMatch === false) {
+      if (!station && allStations) {
+        // Camera FAB mode — resolve station via GPS + detected brand
+        if (capturedPosition) {
+          resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon, parsedJson.detectedBrand || '');
+        } else {
+          // GPS not back yet — stash brand for the late-GPS effect to use
+          setPendingDetectedBrand(parsedJson.detectedBrand || '');
+        }
+      } else if (station && parsedJson.isBrandMatch === false) {
+        // Pre-selected station mode only — warn if AI sees a different brand
         setBrandMismatch({ detected: parsedJson.detectedBrand || 'teine kett' });
       }
-
-      applyParsedPrices(parsedJson);
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
       setScanError(error.message);
@@ -210,6 +222,7 @@ export function ManualPriceModal({
     setBrandMismatch(null);
     setAutoSelectMsg(null);
     setCapturedPosition(null);
+    setPendingDetectedBrand(null);
     setPrices(EMPTY_PRICES);
     onClose();
   };
