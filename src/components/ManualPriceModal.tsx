@@ -264,6 +264,18 @@ export function ManualPriceModal({
   const activeStation = resolvedStation;
   const isFabMode = !station && !!allStations;
 
+  // Submit-button label: reflects what the app is actually waiting on,
+  // instead of blaming the user with "Vali esmalt tankla" in every state.
+  const getSubmitLabel = () => {
+    if (loading) return 'Salvestan...';
+    if (activeStation) return 'Salvesta';
+    if (isAnalyzing) return 'AI loeb pilti...';
+    if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return 'Ootan GPS-signaali...';
+    if (stationCandidates && stationCandidates.length > 0) return 'Vali tankla loendist';
+    if (isFabMode && !capturedBase64) return 'Pildista hinnaposti';
+    return 'Vali esmalt tankla';
+  };
+
   return (
     <div onClick={onClose} style={{
       position: 'fixed',
@@ -482,7 +494,7 @@ export function ManualPriceModal({
             }}
           >
             <Check size={20} />
-            {loading ? 'Salvestan...' : activeStation ? 'Salvesta' : 'Vali esmalt tankla'}
+            {getSubmitLabel()}
           </button>
         </form>
       </div>

@@ -140,33 +140,36 @@ function createPriceIcon(price: number, isCheapest: boolean, isFresh: boolean, i
   let bgColor = isLightMap ? 'rgba(255, 255, 255, 0.92)' : 'rgba(30, 34, 44, 0.92)';
   let borderColor = isLightMap ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
   let textColor = isLightMap ? '#1a1d24' : '#ffffff';
-  let dotColor = isFresh ? '#10b981' : '#f59e0b';
   let shadow = '0 2px 8px rgba(0,0,0,0.4)';
 
   if (isCheapest) {
     bgColor = 'rgba(250, 204, 21, 0.95)';
     borderColor = 'rgba(250, 204, 21, 0.6)';
     textColor = '#1a1a2e';
-    dotColor = '#1a1a2e';
     shadow = '0 2px 12px rgba(250, 204, 21, 0.4)';
   }
+
+  // Freshness cues for stale pills (5–24h):
+  //   1. Fade the inner content (price text + brand dot) to 0.55 — bg stays opaque
+  //      so the pill remains legible against busy map tiles.
+  //   2. Tint the border amber (unless cheapest, where gold border wins).
+  const contentOpacity = isFresh ? 1 : 0.55;
+  if (!isFresh && !isCheapest) {
+    borderColor = 'rgba(245, 158, 11, 0.55)';
+  }
+  const borderWidth = isFresh ? 1 : 1.5;
 
   if (isSelected) {
     const ringColor = isLightMap ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)';
     shadow = `0 0 0 3px ${ringColor}, ` + shadow;
   }
 
-  // Brand color dot in the pill
-  const dotHtml = brandName
-    ? `<div style="width: 8px; height: 8px; border-radius: 50%; background: ${brandColor}; flex-shrink: 0;"></div>`
-    : `<div style="width: 8px; height: 8px; border-radius: 50%; background: ${dotColor}; flex-shrink: 0;"></div>`;
-
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
-      display: inline-flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center;
       background: ${bgColor};
-      border: 1px solid ${borderColor};
+      border: ${borderWidth}px solid ${borderColor};
       border-radius: 16px;
       padding: 4px 10px 4px 6px;
       box-shadow: ${shadow};
@@ -175,11 +178,13 @@ function createPriceIcon(price: number, isCheapest: boolean, isFresh: boolean, i
       cursor: pointer;
       transform: translate(-50%, -50%);
     ">
-      ${dotHtml}
-      <span style="
-        font-size: 12px; font-weight: 600;
-        color: ${textColor}; letter-spacing: 0.2px;
-      ">${priceStr}</span>
+      <div style="display: inline-flex; align-items: center; gap: 5px; opacity: ${contentOpacity};">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${brandColor}; flex-shrink: 0;"></div>
+        <span style="
+          font-size: 12px; font-weight: 600;
+          color: ${textColor}; letter-spacing: 0.2px;
+        ">${priceStr}</span>
+      </div>
     </div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
