@@ -198,7 +198,9 @@ export function ManualPriceModal({
         const base64 = canvas.toDataURL('image/jpeg', 0.8);
         setCapturedBase64(base64);
         setCapturedPreviewUrl(base64);
-        const stationName = station?.name || resolvedStation?.name || 'tankla';
+        // Empty hint in FAB mode tells the API to use its "unknown station" prompt,
+        // which is more reliable for price extraction than passing a fake placeholder.
+        const stationName = station?.name || resolvedStation?.name || '';
         runScan(base64, stationName);
       };
       img.src = event.target?.result as string;
@@ -208,7 +210,7 @@ export function ManualPriceModal({
 
   const handleManualRetry = () => {
     if (capturedBase64) {
-      const stationName = station?.name || resolvedStation?.name || 'tankla';
+      const stationName = station?.name || resolvedStation?.name || '';
       runScan(capturedBase64, stationName);
     }
   };
