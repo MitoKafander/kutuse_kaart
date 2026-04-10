@@ -449,7 +449,7 @@ export function ManualPriceModal({
                   onChange={e => setPrices({ ...prices, [type]: e.target.value })}
                   style={{
                     background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
-                    color: 'white', padding: '8px 12px 8px 32px', borderRadius: '8px', outline: 'none',
+                    color: 'var(--color-text)', padding: '8px 12px 8px 32px', borderRadius: '8px', outline: 'none',
                     width: '120px', fontSize: '1.2rem', fontWeight: 'bold'
                   }}
                 />

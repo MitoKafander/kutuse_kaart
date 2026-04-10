@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
 
@@ -64,6 +64,10 @@ export function ProfileDrawer({
   preferredBrands,
   onPreferredBrandsChange,
   allBrands,
+  dotStyle,
+  onDotStyleChange,
+  showClusters,
+  onShowClustersChange,
 }: {
   session: any;
   isOpen: boolean;
@@ -80,6 +84,10 @@ export function ProfileDrawer({
   preferredBrands: string[];
   onPreferredBrandsChange: (brands: string[]) => void;
   allBrands: string[];
+  dotStyle: 'info' | 'brand';
+  onDotStyleChange: (style: 'info' | 'brand') => void;
+  showClusters: boolean;
+  onShowClustersChange: (show: boolean) => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -93,6 +101,21 @@ export function ProfileDrawer({
     await supabase
       .from('user_profiles')
       .upsert({ id: session.user.id, default_fuel_type: fuel });
+  };
+
+  const handleDotStyleChange = async (style: 'info' | 'brand') => {
+    onDotStyleChange(style);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, dot_style: style });
+    }
+  };
+
+  const handleClusterToggle = async () => {
+    const next = !showClusters;
+    onShowClustersChange(next);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, show_clusters: next });
+    }
   };
 
   const handleToggleBrand = async (brand: string) => {
@@ -266,7 +289,7 @@ export function ProfileDrawer({
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '12px', background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
-                        borderRadius: '8px', cursor: 'pointer', textAlign: 'left', color: 'white'
+                        borderRadius: '8px', cursor: 'pointer', textAlign: 'left', color: 'var(--color-text)'
                       }}
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
@@ -366,6 +389,7 @@ export function ProfileDrawer({
                   <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                     {defaultFuelType || 'Bensiin 95'}
                     {preferredBrands.length > 0 && ` · ${preferredBrands.length} ketti`}
+                    {` · ${dotStyle === 'info' ? 'Info' : 'Bränd'}`}
                   </span>
                 )}
                 <ChevronDown size={18} style={{
@@ -393,7 +417,7 @@ export function ProfileDrawer({
                           border: '1px solid',
                           borderColor: defaultFuelType === type ? 'var(--color-primary)' : 'var(--color-surface-border)',
                           background: defaultFuelType === type ? 'var(--color-primary-glow)' : 'var(--color-surface)',
-                          color: 'white',
+                          color: 'var(--color-text)',
                           borderRadius: '8px',
                           cursor: 'pointer',
                           fontWeight: defaultFuelType === type ? 'bold' : 'normal'
@@ -444,6 +468,67 @@ export function ProfileDrawer({
                     })}
                   </div>
                 </div>
+
+                {/* Dot style preference */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                    <MapPin size={16} /> Kaardi Punktid
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {([
+                      { key: 'info', label: 'Info', desc: 'Hallid = andmed puudu' },
+                      { key: 'brand', label: 'Bränd', desc: 'Kõik brändi värvis' },
+                    ] as const).map(opt => {
+                      const isActive = dotStyle === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => handleDotStyleChange(opt.key)}
+                          style={{
+                            flex: 1,
+                            padding: '10px 8px',
+                            border: '1px solid',
+                            borderColor: isActive ? 'var(--color-primary)' : 'var(--color-surface-border)',
+                            background: isActive ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+                            color: 'var(--color-text)',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: isActive ? 'bold' : 'normal',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span style={{ fontSize: '0.85rem' }}>{opt.label}</span>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{opt.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Clustering toggle */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                      <Layers size={16} /> Grupeeri lähedased jaamad
+                    </span>
+                    <div
+                      onClick={handleClusterToggle}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: showClusters ? 'var(--color-primary)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: showClusters ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
               </div>
             )}
           </div>
@@ -460,7 +545,7 @@ export function ProfileDrawer({
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '8px 0', borderBottom: '1px solid var(--color-surface-border)'
                   }}>
-                    <span style={{ fontSize: '0.85rem', color: 'white', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {entry.text}
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', flexShrink: 0, marginLeft: '8px' }}>{entry.time}</span>

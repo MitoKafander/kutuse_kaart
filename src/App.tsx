@@ -46,6 +46,27 @@ function App() {
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Theme + display preferences
+  const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('kyts-map-style') as 'dark' | 'light') || 'dark';
+  });
+  const [dotStyle, setDotStyle] = useState<'info' | 'brand'>(() => {
+    return (localStorage.getItem('kyts-dot-style') as 'info' | 'brand') || 'info';
+  });
+  const [showClusters, setShowClusters] = useState(() => {
+    return localStorage.getItem('kyts-show-clusters') !== 'false';
+  });
+
+  const toggleMapStyle = () => {
+    const next = mapStyle === 'dark' ? 'light' : 'dark';
+    setMapStyle(next);
+    localStorage.setItem('kyts-map-style', next);
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mapStyle);
+  }, [mapStyle]);
+
   // Back button closes the topmost overlay instead of leaving the app.
   // Uses a ref so the popstate listener always sees current state without re-registering.
   const overlayStateRef = useRef({
@@ -118,7 +139,7 @@ function App() {
       if (favs) setFavorites(favs);
       
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters').eq('id', currentUser.user.id).single();
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
@@ -126,6 +147,14 @@ function App() {
       }
       if (prof?.preferred_brands) {
         setPreferredBrands(prof.preferred_brands);
+      }
+      if (prof?.dot_style) {
+        setDotStyle(prof.dot_style);
+        localStorage.setItem('kyts-dot-style', prof.dot_style);
+      }
+      if (prof?.show_clusters !== null && prof?.show_clusters !== undefined) {
+        setShowClusters(prof.show_clusters);
+        localStorage.setItem('kyts-show-clusters', String(prof.show_clusters));
       }
     } else {
       setFavorites([]);
@@ -187,15 +216,19 @@ function App() {
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
-      <Map 
-        stations={filteredStations} 
+      <Map
+        stations={filteredStations}
         prices={prices}
         allVotes={votes}
-        onStationSelect={setSelectedStation} 
+        onStationSelect={setSelectedStation}
         focusedFuelType={selectedFuelType}
         showOnlyFresh={showOnlyFresh}
         highlightCheapest={highlightCheapest}
         selectedStation={selectedStation}
+        mapStyle={mapStyle}
+        onToggleMapStyle={toggleMapStyle}
+        dotStyle={dotStyle}
+        showClusters={showClusters}
       />
       
       {/* Top Search & Action Bar */}
@@ -216,14 +249,14 @@ function App() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ 
-                background: 'transparent', border: 'none', color: 'white', flex: 1, 
+                background: 'transparent', border: 'none', color: 'var(--color-text)', flex: 1,
                 outline: 'none', fontSize: '1rem', width: '100%' 
               }}
             />
           </div>
           
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px' }}>
             <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
               <Filter size={20} />
             </button>
@@ -259,8 +292,8 @@ function App() {
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '6px 14px',
                     borderRadius: '20px',
-                    border: isActive ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.12)',
-                    background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.06)',
+                    border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
+                    background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
                     color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
@@ -302,8 +335,8 @@ function App() {
                   padding: '12px 16px',
                   background: 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  color: 'white',
+                  borderBottom: '1px solid var(--color-surface-border)',
+                  color: 'var(--color-text)',
                   textAlign: 'left',
                   cursor: 'pointer',
                   fontSize: '0.95rem',
@@ -335,7 +368,7 @@ function App() {
           height: '50px',
           borderRadius: '25px',
           zIndex: 1000,
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid var(--color-surface-border)',
           cursor: 'pointer',
           color: '#facc15',
         }}
@@ -355,7 +388,7 @@ function App() {
           height: '50px',
           borderRadius: '25px',
           zIndex: 1000,
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid var(--color-surface-border)',
           cursor: 'pointer',
           color: 'var(--color-primary)',
         }}
@@ -374,7 +407,7 @@ function App() {
         pointerEvents: 'none' // Don't block map clicks
       }}>
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-primary)', boxShadow: '0 0 8px var(--color-primary-glow)' }} />
-        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>Kyts</span>
+        <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-watermark)', letterSpacing: '0.5px' }}>Kyts</span>
       </div>
 
       {/* Modals & Drawers */}
@@ -452,6 +485,10 @@ function App() {
         preferredBrands={preferredBrands}
         onPreferredBrandsChange={setPreferredBrands}
         allBrands={uniqueBrands}
+        dotStyle={dotStyle}
+        onDotStyleChange={(s) => { setDotStyle(s); localStorage.setItem('kyts-dot-style', s); }}
+        showClusters={showClusters}
+        onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
       />
 
       <CheapestNearbyPanel

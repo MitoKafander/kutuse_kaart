@@ -23,7 +23,7 @@ export function GdprBanner({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
       bottom: '16px',
       left: '16px',
       right: '16px',
-      backgroundColor: 'rgba(20, 24, 30, 0.95)',
+      backgroundColor: 'var(--color-overlay-bg)',
       padding: '16px',
       zIndex: 2500, // High enough to cover map UI, but below modals
       display: 'flex',
@@ -49,7 +49,7 @@ export function GdprBanner({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
         <button 
           onClick={onOpenPrivacy}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)',
+            flex: 1, background: 'var(--color-overlay-button)', color: 'var(--color-text)', border: '1px solid var(--color-overlay-button-border)',
             borderRadius: 'var(--radius-md)', padding: '10px', fontSize: '0.95rem', fontWeight: 'bold',
             cursor: 'pointer'
           }}

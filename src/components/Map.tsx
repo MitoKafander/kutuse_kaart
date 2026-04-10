@@ -108,10 +108,10 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
   const priceStr = `€${price.toFixed(3)}`;
   const brandColor = getBrandColor(brandName);
 
-  // Color scheme
-  let bgColor = 'rgba(30, 34, 44, 0.92)';
-  let borderColor = 'rgba(255,255,255,0.15)';
-  let textColor = '#ffffff';
+  // Color scheme — theme-aware
+  let bgColor = isLightMap ? 'rgba(255, 255, 255, 0.92)' : 'rgba(30, 34, 44, 0.92)';
+  let borderColor = isLightMap ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
+  let textColor = isLightMap ? '#1a1d24' : '#ffffff';
   let dotColor = isFresh ? '#10b981' : '#f59e0b';
   let shadow = '0 2px 8px rgba(0,0,0,0.4)';
 
@@ -124,7 +124,8 @@ function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boo
   }
 
   if (isSelected) {
-    shadow = '0 0 0 3px rgba(255,255,255,0.6), ' + shadow;
+    const ringColor = isLightMap ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)';
+    shadow = `0 0 0 3px ${ringColor}, ` + shadow;
   }
 
   // Brand color dot in the pill
@@ -198,7 +199,11 @@ export function Map({
   focusedFuelType,
   showOnlyFresh,
   highlightCheapest,
-  selectedStation
+  selectedStation,
+  mapStyle,
+  onToggleMapStyle,
+  dotStyle,
+  showClusters,
 }: {
   stations: any[],
   prices: any[],
@@ -207,23 +212,18 @@ export function Map({
   focusedFuelType: string | null,
   showOnlyFresh: boolean,
   highlightCheapest: boolean,
-  selectedStation: any | null
+  selectedStation: any | null,
+  mapStyle: 'dark' | 'light',
+  onToggleMapStyle: () => void,
+  dotStyle: 'info' | 'brand',
+  showClusters: boolean,
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [zoomLevel, setZoomLevel] = useState(7);
-  const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('kyts-map-style') as 'dark' | 'light') || 'dark';
-  });
 
   const tileUrl = mapStyle === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-
-  const toggleMapStyle = () => {
-    const next = mapStyle === 'dark' ? 'light' : 'dark';
-    setMapStyle(next);
-    localStorage.setItem('kyts-map-style', next);
-  };
 
   // Calculate the mathematically cheapest price for the focused fuel
   const cheapestPrice = useMemo(() => {
@@ -345,79 +345,143 @@ export function Map({
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
         <ZoomTracker onZoomChange={setZoomLevel} />
 
-        {/* Layer 1: Faded dots (no data / expired) — clustered at low zoom */}
-        <MarkerClusterGroup
-          chunkedLoading
-          maxClusterRadius={40}
-          disableClusteringAtZoom={11}
-          spiderfyOnMaxZoom={false}
-          showCoverageOnHover={false}
-          iconCreateFunction={createClusterIcon}
-        >
-          {fadedDots.map(({ station }) => {
-            const isSelected = selectedStation?.id === station.id;
-            const brandColor = getBrandColor(station.name);
-            const fillOpacity = isSelected ? 0.6 : 0.25;
-            const strokeColor = isSelected
-              ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
-              : 'transparent';
-            const weight = isSelected ? 2 : 0;
+        {/* Layer 1: Faded dots (no data / expired) */}
+        {showClusters ? (
+          <MarkerClusterGroup
+            key="faded-clustered"
+            chunkedLoading
+            maxClusterRadius={40}
+            disableClusteringAtZoom={11}
+            spiderfyOnMaxZoom={false}
+            showCoverageOnHover={false}
+            iconCreateFunction={createClusterIcon}
+          >
+            {fadedDots.map(({ station }) => {
+              const isSelected = selectedStation?.id === station.id;
+              const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
+              const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
+              const strokeColor = isSelected
+                ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
+                : 'transparent';
+              const weight = isSelected ? 2 : 0;
 
-            return (
-              <CircleMarker
-                key={station.id}
-                center={[station.latitude, station.longitude]}
-                radius={5}
-                pathOptions={{ fillColor: brandColor, color: strokeColor, weight, fillOpacity }}
-                eventHandlers={{ click: () => onStationSelect(station) }}
-              />
-            );
-          })}
-        </MarkerClusterGroup>
+              return (
+                <CircleMarker
+                  key={station.id}
+                  center={[station.latitude, station.longitude]}
+                  radius={5}
+                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
+                  eventHandlers={{ click: () => onStationSelect(station) }}
+                />
+              );
+            })}
+          </MarkerClusterGroup>
+        ) : (
+          <>
+            {fadedDots.map(({ station }) => {
+              const isSelected = selectedStation?.id === station.id;
+              const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
+              const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
+              const strokeColor = isSelected
+                ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
+                : 'transparent';
+              const weight = isSelected ? 2 : 0;
 
-        {/* Layer 2: Fresh/active dots — clustered at low zoom, vibrant */}
-        <MarkerClusterGroup
-          chunkedLoading
-          maxClusterRadius={40}
-          disableClusteringAtZoom={11}
-          spiderfyOnMaxZoom={false}
-          showCoverageOnHover={false}
-          iconCreateFunction={createClusterIcon}
-        >
-          {freshDots.map(({ station, isFresh, isCheapest }) => {
-            const isSelected = selectedStation?.id === station.id;
-            const brandColor = getBrandColor(station.name);
+              return (
+                <CircleMarker
+                  key={station.id}
+                  center={[station.latitude, station.longitude]}
+                  radius={5}
+                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
+                  eventHandlers={{ click: () => onStationSelect(station) }}
+                />
+              );
+            })}
+          </>
+        )}
 
-            let radius = 6;
-            let fillColor = brandColor;
-            let strokeColor = 'transparent';
-            let fillOpacity = isFresh ? 0.9 : 0.55;
-            let weight = 0;
+        {/* Layer 2: Fresh/active dots — vibrant */}
+        {showClusters ? (
+          <MarkerClusterGroup
+            key="fresh-clustered"
+            chunkedLoading
+            maxClusterRadius={40}
+            disableClusteringAtZoom={11}
+            spiderfyOnMaxZoom={false}
+            showCoverageOnHover={false}
+            iconCreateFunction={createClusterIcon}
+          >
+            {freshDots.map(({ station, isFresh, isCheapest }) => {
+              const isSelected = selectedStation?.id === station.id;
+              const brandColor = getBrandColor(station.name);
 
-            if (isCheapest) {
-              fillColor = 'gold';
-              radius = 12;
-              strokeColor = 'white';
-              fillOpacity = 1;
-              weight = 2;
-            }
+              let radius = 6;
+              let fillColor = brandColor;
+              let strokeColor = 'transparent';
+              let fillOpacity = isFresh ? 0.9 : 0.55;
+              let weight = 0;
 
-            if (isSelected && !isCheapest) {
-              strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
-              weight = 3;
-            }
+              if (isCheapest) {
+                fillColor = 'gold';
+                radius = 12;
+                strokeColor = isLight ? '#333' : 'white';
+                fillOpacity = 1;
+                weight = 2;
+              }
 
-            return (
-              <CircleMarker
-                key={station.id}
-                center={[station.latitude, station.longitude]}
-                radius={radius}
-                pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
-                eventHandlers={{ click: () => onStationSelect(station) }}
-              />
-            );
-          })}
-        </MarkerClusterGroup>
+              if (isSelected && !isCheapest) {
+                strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
+                weight = 3;
+              }
+
+              return (
+                <CircleMarker
+                  key={station.id}
+                  center={[station.latitude, station.longitude]}
+                  radius={radius}
+                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
+                  eventHandlers={{ click: () => onStationSelect(station) }}
+                />
+              );
+            })}
+          </MarkerClusterGroup>
+        ) : (
+          <>
+            {freshDots.map(({ station, isFresh, isCheapest }) => {
+              const isSelected = selectedStation?.id === station.id;
+              const brandColor = getBrandColor(station.name);
+
+              let radius = 6;
+              let fillColor = brandColor;
+              let strokeColor = 'transparent';
+              let fillOpacity = isFresh ? 0.9 : 0.55;
+              let weight = 0;
+
+              if (isCheapest) {
+                fillColor = 'gold';
+                radius = 12;
+                strokeColor = isLight ? '#333' : 'white';
+                fillOpacity = 1;
+                weight = 2;
+              }
+
+              if (isSelected && !isCheapest) {
+                strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
+                weight = 3;
+              }
+
+              return (
+                <CircleMarker
+                  key={station.id}
+                  center={[station.latitude, station.longitude]}
+                  radius={radius}
+                  pathOptions={{ fillColor, color: strokeColor, weight, fillOpacity }}
+                  eventHandlers={{ click: () => onStationSelect(station) }}
+                />
+              );
+            })}
+          </>
+        )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}
         {pillMarkers.map(({ station, mostRecentPrice, hasFuelData, isFresh, isCheapest }) => {
@@ -436,7 +500,7 @@ export function Map({
         })}
 
         <RecenterButton userLocation={userLocation} />
-        <MapStyleToggle mapStyle={mapStyle} onToggle={toggleMapStyle} />
+        <MapStyleToggle mapStyle={mapStyle} onToggle={onToggleMapStyle} />
       </MapContainer>
     </div>
   );
@@ -454,10 +518,10 @@ function MapStyleToggle({ mapStyle, onToggle }: { mapStyle: 'dark' | 'light', on
         height: '50px',
         borderRadius: '25px',
         zIndex: 1000,
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid var(--color-surface-border)',
         cursor: 'pointer',
         color: mapStyle === 'dark' ? '#f59e0b' : '#6366f1',
-        background: mapStyle === 'dark' ? 'var(--color-bg)' : 'rgba(255,255,255,0.9)',
+        background: 'var(--color-bg)',
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -483,7 +547,7 @@ function RecenterButton({ userLocation }: { userLocation: [number, number] | nul
         height: '50px',
         borderRadius: '25px',
         zIndex: 1000,
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid var(--color-surface-border)',
         cursor: 'pointer',
         color: 'var(--color-primary)'
       }}

@@ -92,14 +92,14 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
             <Mail size={20} color="var(--color-text-muted)" style={{ marginRight: '12px' }} />
             <input 
               type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required
-              style={{ background: 'transparent', border: 'none', color: 'white', flex: 1, outline: 'none', fontSize: '1rem' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', flex: 1, outline: 'none', fontSize: '1rem' }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', borderRadius: '8px', padding: '12px' }}>
             <Key size={20} color="var(--color-text-muted)" style={{ marginRight: '12px' }} />
-            <input 
+            <input
               type="password" placeholder="Parool" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-              style={{ background: 'transparent', border: 'none', color: 'white', flex: 1, outline: 'none', fontSize: '1rem' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', flex: 1, outline: 'none', fontSize: '1rem' }}
             />
           </div>
 

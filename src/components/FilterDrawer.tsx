@@ -80,8 +80,8 @@ export function FilterDrawer({
                   style={{
                     padding: '8px',
                     minWidth: 0,
-                    border: selectedFuelType === type ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
-                    background: selectedFuelType === type ? 'rgba(0, 255, 128, 0.1)' : 'transparent',
+                    border: selectedFuelType === type ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                    background: selectedFuelType === type ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
                     color: selectedFuelType === type ? 'var(--color-primary)' : 'var(--color-text)',
                     cursor: 'pointer',
                     textAlign: 'center',

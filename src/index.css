@@ -18,9 +18,42 @@
   --color-primary: #3b82f6; /* Blue */
   --color-primary-glow: rgba(59, 130, 246, 0.5);
 
+  /* Theme-aware alpha surfaces */
+  --color-surface-alpha-06: rgba(255, 255, 255, 0.06);
+  --color-surface-alpha-12: rgba(255, 255, 255, 0.12);
+  --color-overlay-bg: rgba(20, 24, 30, 0.95);
+  --color-overlay-button: rgba(255, 255, 255, 0.1);
+  --color-overlay-button-border: rgba(255, 255, 255, 0.2);
+  --color-watermark: rgba(255, 255, 255, 0.8);
+  --color-pill-bg: rgba(30, 34, 44, 0.92);
+  --color-pill-border: rgba(255, 255, 255, 0.15);
+  --color-pill-selected-ring: rgba(255, 255, 255, 0.6);
+  --color-dot-nodata: rgba(255, 255, 255, 0.3);
+  --color-dot-nodata-selected: rgba(255, 255, 255, 0.9);
+
   --font-family: 'Outfit', -apple-system, sans-serif;
   --radius-md: 12px;
   --radius-lg: 24px;
+}
+
+[data-theme="light"] {
+  --color-bg: #f5f7fa;
+  --color-surface: rgba(0, 0, 0, 0.04);
+  --color-surface-hover: rgba(0, 0, 0, 0.08);
+  --color-surface-border: rgba(0, 0, 0, 0.1);
+  --color-text: #1a1d24;
+  --color-text-muted: #6b7280;
+  --color-surface-alpha-06: rgba(0, 0, 0, 0.04);
+  --color-surface-alpha-12: rgba(0, 0, 0, 0.12);
+  --color-overlay-bg: rgba(245, 247, 250, 0.95);
+  --color-overlay-button: rgba(0, 0, 0, 0.06);
+  --color-overlay-button-border: rgba(0, 0, 0, 0.15);
+  --color-watermark: rgba(0, 0, 0, 0.6);
+  --color-pill-bg: rgba(255, 255, 255, 0.92);
+  --color-pill-border: rgba(0, 0, 0, 0.12);
+  --color-pill-selected-ring: rgba(0, 0, 0, 0.4);
+  --color-dot-nodata: rgba(0, 0, 0, 0.25);
+  --color-dot-nodata-selected: rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -91,7 +124,7 @@ body {
 /* Map Overrides */
 .leaflet-container {
   font-family: var(--font-family) !important;
-  background-color: #1a1d24; /* Darker than default */
+  background-color: var(--color-bg);
 }
 
 .leaflet-control-zoom {

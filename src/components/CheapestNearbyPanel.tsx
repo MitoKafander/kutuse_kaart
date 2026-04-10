@@ -152,8 +152,8 @@ export function CheapestNearbyPanel({
               style={{
                 padding: '6px 14px',
                 borderRadius: '20px',
-                border: radius === r ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.12)',
-                background: radius === r ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.06)',
+                border: radius === r ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
+                background: radius === r ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
                 color: radius === r ? 'var(--color-primary)' : 'var(--color-text-muted)',
                 fontSize: '0.85rem',
                 fontWeight: radius === r ? '600' : '400',

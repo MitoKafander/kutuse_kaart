@@ -92,7 +92,7 @@ export function CameraModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
                     step="0.001"
                     style={{ 
                       background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)', 
-                      color: 'white', padding: '8px 12px', borderRadius: '8px', outline: 'none',
+                      color: 'var(--color-text)', padding: '8px 12px', borderRadius: '8px', outline: 'none',
                       width: '100px', fontSize: '1rem', textAlign: 'right'
                     }}
                   />
