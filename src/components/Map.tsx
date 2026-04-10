@@ -132,27 +132,7 @@ function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 }
 
 // Create a Waze-style price label DivIcon
-function createPriceIcon(price: number | null, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false, brandName: string = ''): L.DivIcon {
-  if (price === null) {
-    // No data — small dot
-    const dotBg = isLightMap
-      ? (isSelected ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.25)')
-      : (isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)');
-    const shadow = isSelected
-      ? (isLightMap ? 'box-shadow: 0 0 8px rgba(0,0,0,0.4);' : 'box-shadow: 0 0 8px rgba(255,255,255,0.8);')
-      : '';
-    return L.divIcon({
-      className: 'custom-marker',
-      html: `<div style="
-        width: 10px; height: 10px; border-radius: 50%;
-        background: ${dotBg};
-        ${shadow}
-      "></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
-    });
-  }
-
+function createPriceIcon(price: number, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false, brandName: string = ''): L.DivIcon {
   const priceStr = `€${price.toFixed(3)}`;
   const brandColor = getBrandColor(brandName);
 
@@ -364,13 +344,17 @@ export function Map({
   const fadedDots: typeof stationMarkerData = [];
 
   stationMarkerData.forEach(d => {
+    if (!d.hasFuelData) {
+      // No-data stations always render as faded dots so they respect dotStyle
+      // (otherwise the brand-color mode would lose them at high zoom levels).
+      fadedDots.push(d);
+      return;
+    }
     const showPill = !!focusedFuelType && (zoomLevel >= 12 || topCheapestStationIds.has(d.station.id));
     if (showPill) {
       pillMarkers.push(d);
-    } else if (d.hasFuelData) {
-      freshDots.push(d);
     } else {
-      fadedDots.push(d);
+      freshDots.push(d);
     }
   });
 
@@ -480,10 +464,9 @@ export function Map({
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}
-        {pillMarkers.map(({ station, mostRecentPrice, hasFuelData, isFresh, isCheapest }) => {
+        {pillMarkers.map(({ station, mostRecentPrice, isFresh, isCheapest }) => {
           const isSelected = selectedStation?.id === station.id;
-          const priceValue = (hasFuelData && mostRecentPrice) ? mostRecentPrice.price : null;
-          const icon = createPriceIcon(priceValue, isCheapest, isFresh, isSelected, isLight, station.name);
+          const icon = createPriceIcon(mostRecentPrice.price, isCheapest, isFresh, isSelected, isLight, station.name);
 
           return (
             <Marker
