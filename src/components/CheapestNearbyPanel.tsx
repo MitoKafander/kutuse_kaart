@@ -119,6 +119,14 @@ export function CheapestNearbyPanel({
 
   useEffect(() => {
     if (!isOpen) return;
+    if (userLocation) {
+      // Reopen with cached location: show results immediately, refresh silently.
+      setLocationErrorKind(null);
+      getCurrentPositionAsync({ enableHighAccuracy: true, maximumAge: 120000, timeout: 15000 })
+        .then(pos => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .catch(() => {});
+      return;
+    }
     requestLocation();
   }, [isOpen]);
 

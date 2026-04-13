@@ -73,6 +73,8 @@ export function RoutePlanModal({
   onStationSelect?: (station: any) => void;
 }) {
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
+  const [originError, setOriginError] = useState(false);
+  const [locatingOrigin, setLocatingOrigin] = useState(false);
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -83,15 +85,24 @@ export function RoutePlanModal({
   const [corridorKm, setCorridorKm] = useState(2);
   const [fuel, setFuel] = useState<string>(selectedFuelType || 'Bensiin 95');
 
+  const requestOrigin = () => {
+    setLocatingOrigin(true);
+    setOriginError(false);
+    getCurrentPositionAsync({ enableHighAccuracy: true, maximumAge: 120000, timeout: 15000 })
+      .then(pos => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+      .catch(() => setOriginError(true))
+      .finally(() => setLocatingOrigin(false));
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-    getCurrentPositionAsync()
-      .then(pos => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
-      .catch(() => {});
+    if (origin) return;
+    requestOrigin();
   }, [isOpen]);
 
   useEffect(() => { onRouteChange(route); }, [route, onRouteChange]);
-  useEffect(() => () => { onRouteChange(null); }, []);
+  // Don't clear the polyline on unmount — the user closes the modal TO see the
+  // drawn route. The dedicated cancel-route (X) FAB clears it explicitly.
 
   useEffect(() => {
     if (!isOpen) return;
@@ -261,6 +272,28 @@ export function RoutePlanModal({
             ))}
           </div>
         </div>
+
+        {(locatingOrigin || (!origin && !originError)) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-muted)' }}>
+            <Loader2 size={18} className="spin" /> Otsin sinu asukohta...
+          </div>
+        )}
+
+        {originError && !locatingOrigin && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)', padding: '12px 14px',
+            fontSize: '0.88rem', color: 'var(--color-text)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+            <span>Asukohta ei leitud. Marsruudi planeerimiseks on vaja lähtekohta.</span>
+            <button onClick={requestOrigin} style={{
+              background: 'var(--color-primary)', color: 'white', border: 'none',
+              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 600, flexShrink: 0,
+            }}>Proovi uuesti</button>
+          </div>
+        )}
 
         {routing && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-muted)' }}>

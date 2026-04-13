@@ -110,7 +110,16 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
 
 function MapClickCloser({ onMapClick }: { onMapClick: () => void }) {
   useMapEvents({
-    click: () => onMapClick(),
+    click: (e) => {
+      // Only close the drawer when the user clicks bare map tiles, not when
+      // they click a marker/pill. Leaflet usually stops marker clicks from
+      // reaching the map, but Brave/desktop has edge cases where a fast
+      // double-tap on a pill still fires the map click — which closed the
+      // drawer faster than the user could see it, looking like "multi-click".
+      const t = e.originalEvent?.target as HTMLElement | null;
+      if (t?.closest?.('.leaflet-marker-icon, .leaflet-interactive, .custom-marker, .custom-dot')) return;
+      onMapClick();
+    },
   });
   return null;
 }
