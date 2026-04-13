@@ -38,6 +38,7 @@ function App() {
   const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(20);
   const [isRouteOpen, setIsRouteOpen] = useState(false);
+  const [routeMounted, setRouteMounted] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -436,7 +437,7 @@ function App() {
 
       <button
         className="glass-panel flex-center"
-        onClick={() => setIsRouteOpen(true)}
+        onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
           position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
@@ -451,7 +452,7 @@ function App() {
       {routePolyline && (
         <button
           className="glass-panel flex-center"
-          onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); }}
+          onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title="Tühista marsruut"
           style={{
             position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
@@ -640,7 +641,7 @@ function App() {
       />
 
       <Suspense fallback={null}>
-        {isRouteOpen && <RoutePlanModal
+        {routeMounted && <RoutePlanModal
           isOpen={isRouteOpen}
           onClose={() => setIsRouteOpen(false)}
           stations={stations}

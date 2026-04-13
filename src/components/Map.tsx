@@ -503,6 +503,7 @@ export function Map({
         key={station.id}
         position={[station.latitude, station.longitude]}
         icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter: 12, strokeColor, strokeWidth })}
+        bubblingMouseEvents={false}
         eventHandlers={{ click: () => onStationSelect(station) }}
       />
     );
@@ -536,6 +537,7 @@ export function Map({
         key={station.id}
         position={[station.latitude, station.longitude]}
         icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth })}
+        bubblingMouseEvents={false}
         eventHandlers={{ click: () => onStationSelect(station) }}
       />
     );
@@ -607,7 +609,8 @@ export function Map({
               position={[station.latitude, station.longitude]}
               icon={icon}
               zIndexOffset={1000}
-              eventHandlers={{ click: () => onStationSelect(station) }}
+              bubblingMouseEvents={false}
+        eventHandlers={{ click: () => onStationSelect(station) }}
             />
           );
         })}
