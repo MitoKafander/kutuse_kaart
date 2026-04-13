@@ -304,11 +304,16 @@ function calculateVoteScore(priceId: string, allVotes: any[]): number {
   return score;
 }
 
-// Custom cluster icon
+// Custom cluster icon. Cache by (size, count) so MCG reuses the same DivIcon
+// instance across re-renders instead of rebuilding the cluster DOM mid-click.
+const clusterIconCache = new NativeMap<string, L.DivIcon>();
 function createClusterIcon(cluster: any) {
   const count = cluster.getChildCount();
   const size = count < 10 ? 30 : count < 30 ? 36 : 42;
-  return L.divIcon({
+  const key = `${size}|${count}`;
+  const cached = clusterIconCache.get(key);
+  if (cached) return cached;
+  const icon = L.divIcon({
     html: `<div style="
       width: ${size}px; height: ${size}px; border-radius: 50%;
       background: rgba(59, 130, 246, 0.7);
@@ -322,6 +327,8 @@ function createClusterIcon(cluster: any) {
     iconSize: L.point(size, size),
     iconAnchor: L.point(size / 2, size / 2),
   });
+  clusterIconCache.set(key, icon);
+  return icon;
 }
 
 const FUEL_TYPES_ALL = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
