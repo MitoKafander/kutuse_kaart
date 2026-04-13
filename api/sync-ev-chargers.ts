@@ -70,6 +70,7 @@ export default async function handler(req: Request) {
         max_kw: maxKw || null,
         source: 'ocm' as const,
         source_url: `https://openchargemap.org/site/poi/details/${p.ID}`,
+        usage_cost_raw: p.UsageCost ?? null,
         updated_at: new Date().toISOString(),
       };
     });

@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, CircleMarker, Marker, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Lock } from 'lucide-react';
 import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
@@ -260,6 +260,7 @@ function createClusterIcon(cluster: any) {
 }
 
 const FUEL_TYPES_ALL = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+const DEFAULT_FUELS = ["Bensiin 95", "Bensiin 98", "Diisel"];
 const TOP_N_PER_FUEL = 3;
 
 export function Map({
@@ -300,6 +301,7 @@ export function Map({
   evPrices?: any[],
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [followMode, setFollowMode] = useState<'off' | 'located' | 'locked'>('off');
   const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
@@ -335,7 +337,7 @@ export function Map({
   // rows to the single cheapest fuel so pills stay readable.
   const pillRowsByStation = useMemo(() => {
     const result: NativeMap<string, PillRow[]> = new NativeMap();
-    const fuels = focusedFuelType ? [focusedFuelType] : FUEL_TYPES_ALL;
+    const fuels = focusedFuelType ? [focusedFuelType] : DEFAULT_FUELS;
 
     fuels.forEach(ft => {
       const candidates: { stationId: string; brand: string; gross: number; net: number; isFresh: boolean; discounted: boolean }[] = [];
@@ -572,14 +574,10 @@ export function Map({
         })}
 
         {(() => {
-          const showEv = !focusedFuelType || focusedFuelType === 'EV_AC' || focusedFuelType === 'EV_DC';
+          const showEv = focusedFuelType === 'EV' || (!focusedFuelType && false);
+          // EV markers only render when EV filter is explicitly selected (not in default view).
           if (!showEv) return null;
-          const filtered = focusedFuelType === 'EV_DC'
-            ? evChargers.filter(c => (c.max_kw ?? 0) >= 50)
-            : focusedFuelType === 'EV_AC'
-              ? evChargers.filter(c => (c.max_kw ?? 0) < 50)
-              : evChargers;
-          return filtered.map(c => {
+          return evChargers.map(c => {
             const recent = evPrices.find((p: any) => p.charger_id === c.id);
             const priceLabel = recent ? `€${Number(recent.price_per_kwh).toFixed(3)}` : '';
             const icon = L.divIcon({
@@ -600,17 +598,61 @@ export function Map({
           });
         })()}
 
-        <RecenterButton userLocation={userLocation} />
+        <LocationFollower userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
+        <RecenterButton userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
       </MapContainer>
     </div>
   );
 }
 
-function RecenterButton({ userLocation }: { userLocation: [number, number] | null }) {
+function LocationFollower({
+  userLocation,
+  followMode,
+  setFollowMode,
+}: {
+  userLocation: [number, number] | null;
+  followMode: 'off' | 'located' | 'locked';
+  setFollowMode: (m: 'off' | 'located' | 'locked') => void;
+}) {
   const map = useMap();
+  const programmaticRef = useRef(false);
+
+  useEffect(() => {
+    if (followMode !== 'locked' || !userLocation) return;
+    programmaticRef.current = true;
+    map.setView(userLocation, map.getZoom(), { animate: true });
+    setTimeout(() => { programmaticRef.current = false; }, 400);
+  }, [userLocation, followMode, map]);
+
+  useEffect(() => {
+    const onDrag = () => {
+      if (programmaticRef.current) return;
+      if (followMode === 'locked') setFollowMode('located');
+    };
+    map.on('dragstart', onDrag);
+    return () => { map.off('dragstart', onDrag); };
+  }, [map, followMode, setFollowMode]);
+
+  return null;
+}
+
+function RecenterButton({
+  userLocation,
+  followMode,
+  setFollowMode,
+}: {
+  userLocation: [number, number] | null;
+  followMode: 'off' | 'located' | 'locked';
+  setFollowMode: (m: 'off' | 'located' | 'locked') => void;
+}) {
+  const map = useMap();
+  const color = followMode === 'locked' ? '#22c55e'
+    : followMode === 'located' ? 'var(--color-primary)'
+    : 'var(--color-text-muted)';
   return (
     <button
       className="glass-panel flex-center"
+      title={followMode === 'locked' ? 'GPS lukus — vajuta uuesti vabastamiseks' : followMode === 'located' ? 'Vajuta uuesti GPS lukustamiseks' : 'Leia minu asukoht'}
       style={{
         position: 'absolute',
         bottom: 'calc(30px + env(safe-area-inset-bottom))',
@@ -619,25 +661,43 @@ function RecenterButton({ userLocation }: { userLocation: [number, number] | nul
         height: '50px',
         borderRadius: '25px',
         zIndex: 1000,
-        border: '1px solid var(--color-surface-border)',
+        border: followMode === 'locked' ? '1px solid #22c55e' : '1px solid var(--color-surface-border)',
         cursor: 'pointer',
-        color: 'var(--color-primary)'
+        color,
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (userLocation) {
-          map.setView(userLocation, 14, { animate: false });
-        } else {
-          if (navigator.geolocation) {
+        if (followMode === 'off') {
+          if (userLocation) {
+            map.setView(userLocation, 14, { animate: false });
+            setFollowMode('located');
+          } else if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-              (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: false }),
-              () => alert("Palun oota, GPS signaal alles laeb.")
+              (pos) => {
+                map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: false });
+                setFollowMode('located');
+              },
+              () => alert('Palun oota, GPS signaal alles laeb.')
             );
           }
+        } else if (followMode === 'located') {
+          setFollowMode('locked');
+        } else {
+          setFollowMode('off');
         }
       }}
     >
       <LocateFixed size={24} />
+      {followMode === 'locked' && (
+        <span style={{
+          position: 'absolute', top: 4, right: 4,
+          background: '#22c55e', borderRadius: '50%',
+          width: 14, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white',
+        }}>
+          <Lock size={9} strokeWidth={3} />
+        </span>
+      )}
     </button>
   );
 }

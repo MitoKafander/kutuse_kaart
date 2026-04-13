@@ -18,7 +18,7 @@ import { getStationDisplayName } from './utils';
 import type { LoyaltyDiscounts } from './utils';
 import './index.css';
 
-const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG", "EV_AC", "EV_DC"];
+const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG", "EV"];
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -49,6 +49,7 @@ function App() {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [defaultFuelType, setDefaultFuelType] = useState<string | null>(null);
   const [preferredBrands, setPreferredBrands] = useState<string[]>([]);
+  const [displayName, setDisplayName] = useState<string>('');
   
   // Filter state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -182,7 +183,8 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, apply_loyalty').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
+      if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
@@ -337,7 +339,7 @@ function App() {
             <BrandPickerPill selected={selectedBrands} onChange={setSelectedBrands} />
             {FUEL_TYPES.map(type => {
               const isActive = selectedFuelType === type;
-              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type === 'EV_AC' ? '⚡AC' : type === 'EV_DC' ? '⚡DC' : type;
+              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type === 'EV' ? '⚡EV' : type;
               return (
                 <button
                   key={type}
@@ -440,20 +442,34 @@ function App() {
 
       <button
         className="glass-panel flex-center"
-        onClick={() => {
-          if (routePolyline) { setRoutePolyline(null); setIsRouteOpen(false); }
-          else setIsRouteOpen(true);
-        }}
-        title={routePolyline ? "Tühista marsruut" : "Odavaim kütus marsruudil"}
+        onClick={() => setIsRouteOpen(true)}
+        title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
           position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           border: '1px solid var(--color-surface-border)', cursor: 'pointer',
-          color: routePolyline ? '#ef4444' : '#22c55e',
+          color: '#22c55e',
         }}
       >
-        {routePolyline ? <X size={22} /> : <Navigation size={22} />}
+        <Navigation size={22} />
       </button>
+
+      {routePolyline && (
+        <button
+          className="glass-panel flex-center"
+          onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); }}
+          title="Tühista marsruut"
+          style={{
+            position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
+            right: 'calc(20px + 50px + 10px)',
+            width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
+            border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+            color: '#ef4444',
+          }}
+        >
+          <X size={20} />
+        </button>
+      )}
 
       <button
         className="glass-panel flex-center"
@@ -576,6 +592,13 @@ function App() {
         mapStyle={mapStyle}
         onMapStyleChange={setMapStyle}
         onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
+        displayName={displayName}
+        onDisplayNameChange={async (name) => {
+          setDisplayName(name);
+          if (session?.user?.id) {
+            await supabase.from('user_profiles').upsert({ id: session.user.id, display_name: name });
+          }
+        }}
         allBrandsForLoyalty={uniqueBrands}
         loyaltyDiscounts={loyaltyDiscounts}
         onLoyaltyChange={async (brand, cents) => {

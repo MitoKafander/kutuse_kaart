@@ -9,6 +9,10 @@
     {
       "path": "/api/sync-ev-chargers",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/sync-ev-prices",
+      "schedule": "0 4 * * 1"
     }
   ]
 }

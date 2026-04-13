@@ -1,13 +1,13 @@
-export const EV_FUEL_TYPES = ['EV_AC', 'EV_DC'] as const;
-export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG', 'EV_AC', 'EV_DC'] as const;
+export const EV_FUEL_TYPES = ['EV'] as const;
+export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG', 'EV'] as const;
+export const DEFAULT_FUELS = ['Bensiin 95', 'Bensiin 98', 'Diisel'] as const;
 
 export function isEvFuel(type: string | null | undefined): boolean {
-  return type === 'EV_AC' || type === 'EV_DC';
+  return type === 'EV';
 }
 
 export function fuelLabel(type: string): string {
-  if (type === 'EV_AC') return 'EV AC';
-  if (type === 'EV_DC') return 'EV DC';
+  if (type === 'EV') return 'EV';
   return type;
 }
 

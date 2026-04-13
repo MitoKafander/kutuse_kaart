@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 const QUICK_BRANDS = ['Circle K', 'Neste', 'Olerex', 'Alexela', 'Terminal'];
@@ -8,12 +9,33 @@ export function BrandPickerPill({ selected, onChange }: {
   onChange: (brands: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!btnRef.current) return;
+      const r = btnRef.current.getBoundingClientRect();
+      setRect({ top: r.bottom + 6, left: r.left });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t)) return;
+      if (popRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -28,8 +50,9 @@ export function BrandPickerPill({ selected, onChange }: {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+    <>
       <button
+        ref={btnRef}
         onClick={() => setOpen(v => !v)}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
@@ -39,19 +62,20 @@ export function BrandPickerPill({ selected, onChange }: {
           backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
           color: activeCount > 0 ? 'var(--color-primary)' : 'var(--color-text-muted)',
           fontSize: '0.85rem', fontWeight: activeCount > 0 ? 600 : 400,
-          cursor: 'pointer', whiteSpace: 'nowrap',
+          cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
         }}
       >
         {label} <ChevronDown size={14} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform .2s' }} />
       </button>
 
-      {open && (
-        <div className="glass-panel" style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+      {open && rect && createPortal(
+        <div ref={popRef} className="glass-panel" style={{
+          position: 'fixed', top: rect.top, left: rect.left,
           minWidth: 160, padding: 6, borderRadius: 10,
           display: 'flex', flexDirection: 'column', gap: 2,
-          zIndex: 1100,
+          zIndex: 2500,
           boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+          background: 'var(--color-bg)',
         }}>
           {QUICK_BRANDS.map(b => {
             const isOn = selected.includes(b);
@@ -85,8 +109,9 @@ export function BrandPickerPill({ selected, onChange }: {
               Tühista valik
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
