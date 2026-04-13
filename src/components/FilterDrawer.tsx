@@ -67,9 +67,28 @@ export function FilterDrawer({
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-primary)' }}>Mida otsid?</h2>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
-            <X size={24} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {(selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) && (
+              <button
+                onClick={() => {
+                  setSelectedBrands([]);
+                  setSelectedFuelType(null);
+                  setShowOnlyFresh(false);
+                  setHighlightCheapest(false);
+                }}
+                style={{
+                  background: 'transparent', border: '1px solid var(--color-surface-border)',
+                  borderRadius: 8, padding: '4px 10px', color: 'var(--color-text-muted)',
+                  fontSize: '0.78rem', cursor: 'pointer',
+                }}
+              >
+                Lähtesta kõik
+              </button>
+            )}
+            <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -172,7 +191,21 @@ export function FilterDrawer({
 
           {/* Brand Filters (Last) */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>Kett</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', margin: 0 }}>Kett</h3>
+              {selectedBrands.length > 0 && (
+                <button
+                  onClick={() => setSelectedBrands([])}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--color-surface-border)',
+                    borderRadius: 8, padding: '4px 10px', color: 'var(--color-text-muted)',
+                    fontSize: '0.78rem', cursor: 'pointer',
+                  }}
+                >
+                  Tühjenda ({selectedBrands.length})
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {brands.map(brand => (
                 <label key={brand} onClick={(e) => { e.preventDefault(); toggleBrand(brand); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '8px 0', width: '100%' }}>
