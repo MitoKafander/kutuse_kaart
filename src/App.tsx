@@ -155,16 +155,16 @@ function App() {
     const { data: st } = await supabase.from('stations').select('*');
     if (st) setStations(st);
     
-    const { data: pr } = await supabase.from('prices').select('*').order('reported_at', { ascending: false });
+    const { data: pr } = await supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000);
     if (pr) setPrices(pr);
-    
-    const { data: vt } = await supabase.from('votes').select('*');
+
+    const { data: vt } = await supabase.from('votes').select('*').limit(10000);
     if (vt) setVotes(vt);
 
-    const { data: ev } = await supabase.from('ev_chargers').select('*');
+    const { data: ev } = await supabase.from('ev_chargers').select('*').limit(10000);
     if (ev) setEvChargers(ev);
 
-    const { data: evp } = await supabase.from('ev_prices').select('*').order('reported_at', { ascending: false });
+    const { data: evp } = await supabase.from('ev_prices').select('*').order('reported_at', { ascending: false }).limit(10000);
     if (evp) setEvPrices(evp);
 
     const currentUser = activeSession || session;
@@ -640,7 +640,7 @@ function App() {
         applyLoyalty={applyLoyalty}
       />
 
-      <RoutePlanModal
+      {isRouteOpen && <RoutePlanModal
         isOpen={isRouteOpen}
         onClose={() => setIsRouteOpen(false)}
         stations={stations}
@@ -651,7 +651,7 @@ function App() {
         selectedFuelType={selectedFuelType}
         onRouteChange={setRoutePolyline}
         onStationSelect={setSelectedStation}
-      />
+      />}
 
       <StatisticsDrawer
         isOpen={isStatsOpen}

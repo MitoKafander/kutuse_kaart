@@ -134,14 +134,10 @@ export function StationDrawer({
   const fuelTypes = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
   return (
-    <div onClick={onClose} style={{
-      position: 'absolute',
-      top: 0, left: 0, right: 0, bottom: 0,
-      zIndex: 1000,
-    }}>
     <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" style={{
       position: 'absolute',
       bottom: 0, left: 0, right: 0,
+      zIndex: 1000,
       backgroundColor: 'var(--color-bg)',
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
@@ -371,7 +367,6 @@ export function StationDrawer({
           Uuenda Hinnad
         </button>
       </div>
-    </div>
     </div>
   );
 }
