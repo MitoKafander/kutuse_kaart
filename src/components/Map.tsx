@@ -384,6 +384,11 @@ export function Map({
   // and clicks land on air while the element is being replaced.
   const fadedIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   const freshIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
+  // Pills depend on actual price rows too, so we key by stationId and keep a
+  // content hash on the entry — icon is rebuilt only if rows/selection/fuel
+  // filter actually change, not on every map re-render.
+  const pillIconCacheRef = useRef<NativeMap<string, { hash: string; icon: L.DivIcon }>>(new NativeMap());
+  useEffect(() => { pillIconCacheRef.current.clear(); }, [mapStyle]);
   const [followMode, setFollowMode] = useState<'off' | 'located' | 'locked'>('off');
   const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
@@ -663,7 +668,16 @@ export function Map({
         {/* Layer 3: Price pills — always on top, never clustered */}
         {visiblePillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
-          const icon = createPriceIcon(rows, isSelected, isLight, station.name, !focusedFuelType, station.id);
+          const showFuelLabel = !focusedFuelType;
+          const rowsHash = rows.map(r => `${r.fuelType},${r.price},${r.grossPrice},${r.isFresh ? 1 : 0},${r.isCheapest ? 1 : 0},${r.discounted ? 1 : 0}`).join(';');
+          const pillHash = `${isSelected ? 1 : 0}|${showFuelLabel ? 1 : 0}|${rowsHash}`;
+          const pillKey = String(station.id);
+          let entry = pillIconCacheRef.current.get(pillKey);
+          if (!entry || entry.hash !== pillHash) {
+            entry = { hash: pillHash, icon: createPriceIcon(rows, isSelected, isLight, station.name, showFuelLabel, station.id) };
+            pillIconCacheRef.current.set(pillKey, entry);
+          }
+          const icon = entry.icon;
 
           return (
             <Marker
