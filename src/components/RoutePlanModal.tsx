@@ -58,6 +58,7 @@ export function RoutePlanModal({
   applyLoyalty = false,
   selectedFuelType,
   onRouteChange,
+  onStationSelect,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -68,6 +69,7 @@ export function RoutePlanModal({
   applyLoyalty?: boolean;
   selectedFuelType: string | null;
   onRouteChange: (route: [number, number][] | null) => void;
+  onStationSelect?: (station: any) => void;
 }) {
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [query, setQuery] = useState('');
@@ -90,6 +92,26 @@ export function RoutePlanModal({
 
   useEffect(() => { onRouteChange(route); }, [route, onRouteChange]);
   useEffect(() => () => { onRouteChange(null); }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (destination) return;
+    const q = query.trim();
+    if (q.length < 3) { setHits([]); return; }
+    const ctrl = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ee&q=${encodeURIComponent(q)}`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'et' }, signal: ctrl.signal });
+        if (!res.ok) return;
+        const data: any[] = await res.json();
+        setHits(data.map(d => ({ displayName: d.display_name, lat: parseFloat(d.lat), lon: parseFloat(d.lon) })));
+      } catch { /* aborted or network */ }
+      finally { setSearching(false); }
+    }, 250);
+    return () => { ctrl.abort(); clearTimeout(timer); };
+  }, [query, destination, isOpen]);
 
   useEffect(() => {
     if (!origin || !destination) { setRoute(null); return; }
@@ -249,10 +271,13 @@ export function RoutePlanModal({
         )}
 
         {results.map(r => (
-          <div key={r.station.id} className="glass-panel" style={{
-            padding: 14, borderRadius: 'var(--radius-md)',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
+          <div key={r.station.id} className="glass-panel"
+            onClick={() => { if (onStationSelect) { onStationSelect(r.station); onClose(); } }}
+            style={{
+              padding: 14, borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', gap: 12,
+              cursor: onStationSelect ? 'pointer' : 'default',
+            }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{r.price.toFixed(3)}</span>
@@ -268,7 +293,7 @@ export function RoutePlanModal({
                 {r.corridorKm < 1 ? `${Math.round(r.corridorKm * 1000)}m teest` : `${r.corridorKm.toFixed(1)}km teest`} · {r.progressKm.toFixed(0)}km lähtest
               </div>
             </div>
-            <button onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${r.station.latitude},${r.station.longitude}`, '_blank')}
+            <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${r.station.latitude},${r.station.longitude}`, '_blank'); }}
               style={{
                 background: 'var(--color-primary)', color: 'white', border: 'none',
                 borderRadius: 10, padding: '8px 12px', cursor: 'pointer',

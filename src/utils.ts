@@ -1,3 +1,20 @@
+export const EV_FUEL_TYPES = ['EV_AC', 'EV_DC'] as const;
+export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG', 'EV_AC', 'EV_DC'] as const;
+
+export function isEvFuel(type: string | null | undefined): boolean {
+  return type === 'EV_AC' || type === 'EV_DC';
+}
+
+export function fuelLabel(type: string): string {
+  if (type === 'EV_AC') return 'EV AC';
+  if (type === 'EV_DC') return 'EV DC';
+  return type;
+}
+
+export function priceUnit(type: string): string {
+  return isEvFuel(type) ? '€/kWh' : '€/L';
+}
+
 export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;

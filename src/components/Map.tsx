@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap, CircleMarker, Marker, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { LocateFixed, Sun, Moon } from 'lucide-react';
+import { LocateFixed } from 'lucide-react';
 import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
@@ -126,13 +126,13 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
 
 // Tracks the current viewport bounds so top-N pills are recomputed only for
 // stations visible on screen. Debounced to avoid thrashing during pans.
-function ViewportBoundsTracker({ onBoundsChange }: { onBoundsChange: (b: L.LatLngBounds) => void }) {
+function ViewportBoundsTracker({ onChange }: { onChange: (b: L.LatLngBounds, zoom: number, map: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const fire = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => onBoundsChange(map.getBounds()), 150);
+      timer = setTimeout(() => onChange(map.getBounds(), map.getZoom(), map), 150);
     };
     fire();
     map.on('moveend', fire);
@@ -142,7 +142,7 @@ function ViewportBoundsTracker({ onBoundsChange }: { onBoundsChange: (b: L.LatLn
       map.off('moveend', fire);
       map.off('zoomend', fire);
     };
-  }, [map, onBoundsChange]);
+  }, [map, onChange]);
   return null;
 }
 
@@ -273,12 +273,13 @@ export function Map({
   showStaleDemo = false,
   selectedStation,
   mapStyle,
-  onToggleMapStyle,
   dotStyle,
   showClusters,
   loyaltyDiscounts = {},
   applyLoyalty = false,
   routePolyline = null,
+  evChargers = [],
+  evPrices = [],
 }: {
   stations: any[],
   prices: any[],
@@ -290,15 +291,18 @@ export function Map({
   showStaleDemo?: boolean,
   selectedStation: any | null,
   mapStyle: 'dark' | 'light',
-  onToggleMapStyle: () => void,
   dotStyle: 'info' | 'brand',
   showClusters: boolean,
   loyaltyDiscounts?: LoyaltyDiscounts,
   applyLoyalty?: boolean,
   routePolyline?: [number, number][] | null,
+  evChargers?: any[],
+  evPrices?: any[],
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(7);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const tileUrl = mapStyle === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -327,7 +331,8 @@ export function Map({
   }, [stations, prices, allVotes, showOnlyFresh, showStaleDemo]);
 
   // Top-N cheapest stations per fuel type within the current viewport bounds.
-  // Returns a map: stationId -> PillRow[] (one row per fuel type it ranks in).
+  // Zoom-gated: when no fuel filter and zoomed out (<12), collapse each station's
+  // rows to the single cheapest fuel so pills stay readable.
   const pillRowsByStation = useMemo(() => {
     const result: NativeMap<string, PillRow[]> = new NativeMap();
     const fuels = focusedFuelType ? [focusedFuelType] : FUEL_TYPES_ALL;
@@ -364,8 +369,16 @@ export function Map({
       });
     });
 
+    // Collapse to single cheapest row when zoomed out without a fuel filter.
+    if (!focusedFuelType && zoomLevel < 12) {
+      result.forEach((rows, stationId) => {
+        const cheapest = rows.reduce((m, r) => (r.price < m.price ? r : m), rows[0]);
+        result.set(stationId, [{ ...cheapest, isCheapest: true }]);
+      });
+    }
+
     return result;
-  }, [stations, freshPriceByStationFuel, focusedFuelType, viewportBounds, loyaltyDiscounts, applyLoyalty]);
+  }, [stations, freshPriceByStationFuel, focusedFuelType, viewportBounds, loyaltyDiscounts, applyLoyalty, zoomLevel]);
 
   // Split markers: stations that earned pill rows get pills; others get dots.
   // `highlightCheapest` (when focused fuel): keep only the single cheapest station.
@@ -396,6 +409,40 @@ export function Map({
     dotStations.push({ station, isFresh, isCheapest: false, hasFuelData });
   });
 
+  // Pixel-level overlap collision: demote the more expensive pill of each overlapping pair to a dot.
+  const visiblePillStations = useMemo(() => {
+    if (!mapInstance) return pillStations;
+    const PILL_W = 78;
+    const rowHeight = 20;
+    type P = { entry: typeof pillStations[number]; x: number; y: number; w: number; h: number; cheapestPrice: number; isFresh: boolean };
+    const placed: P[] = pillStations
+      .map(e => {
+        const pt = mapInstance.latLngToContainerPoint([e.station.latitude, e.station.longitude]);
+        const h = 12 + e.rows.length * rowHeight;
+        const cheapest = e.rows.reduce((m, r) => Math.min(m, r.price), Infinity);
+        const anyFresh = e.rows.some(r => r.isFresh);
+        return { entry: e, x: pt.x, y: pt.y, w: PILL_W, h, cheapestPrice: cheapest, isFresh: anyFresh };
+      })
+      .sort((a, b) => a.cheapestPrice - b.cheapestPrice);
+
+    const kept: P[] = [];
+    const demoted = new Set<string>();
+    for (const cand of placed) {
+      const collides = kept.some(k =>
+        Math.abs(cand.x - k.x) < (cand.w + k.w) / 2 &&
+        Math.abs(cand.y - k.y) < (cand.h + k.h) / 2
+      );
+      if (collides) demoted.add(cand.entry.station.id);
+      else kept.push(cand);
+    }
+    if (demoted.size === 0) return pillStations;
+    const demotedStations = pillStations.filter(e => demoted.has(e.station.id));
+    demotedStations.forEach(e => {
+      dotStations.push({ station: e.station, isFresh: e.rows.some(r => r.isFresh), isCheapest: false, hasFuelData: true });
+    });
+    return pillStations.filter(e => !demoted.has(e.station.id));
+  }, [pillStations, mapInstance, zoomLevel, viewportBounds]);
+
   const fadedDots = dotStations.filter(d => !d.hasFuelData);
   const freshDots = dotStations.filter(d => d.hasFuelData);
 
@@ -403,18 +450,18 @@ export function Map({
 
   const renderFadedDot = ({ station }: { station: any }) => {
     const isSelected = selectedStation?.id === station.id;
-    const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
-    const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
+    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(station.name);
+    const fillOpacity = isSelected ? 0.85 : (dotStyle === 'info' ? 0.6 : 0.4);
     const strokeColor = isSelected
-      ? (isLight ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)')
-      : undefined;
-    const strokeWidth = isSelected ? 2 : 0;
+      ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)')
+      : (dotStyle === 'info' ? (isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)') : undefined);
+    const strokeWidth = isSelected ? 2 : (dotStyle === 'info' ? 1 : 0);
 
     return (
       <Marker
         key={station.id}
         position={[station.latitude, station.longitude]}
-        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter: 10, strokeColor, strokeWidth })}
+        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter: 12, strokeColor, strokeWidth })}
         eventHandlers={{ click: () => onStationSelect(station) }}
       />
     );
@@ -468,7 +515,7 @@ export function Map({
         />
         <LocationTracker position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
-        <ViewportBoundsTracker onBoundsChange={setViewportBounds} />
+        <ViewportBoundsTracker onChange={(b, z, m) => { setViewportBounds(b); setZoomLevel(z); setMapInstance(m); }} />
 
         {routePolyline && routePolyline.length > 1 && (
           <Polyline positions={routePolyline} pathOptions={{ color: '#22c55e', weight: 4, opacity: 0.75 }} />
@@ -509,7 +556,7 @@ export function Map({
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}
-        {pillStations.map(({ station, rows }) => {
+        {visiblePillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
           const icon = createPriceIcon(rows, isSelected, isLight, station.name, !focusedFuelType);
 
@@ -518,43 +565,44 @@ export function Map({
               key={station.id}
               position={[station.latitude, station.longitude]}
               icon={icon}
+              zIndexOffset={1000}
               eventHandlers={{ click: () => onStationSelect(station) }}
             />
           );
         })}
 
+        {(() => {
+          const showEv = !focusedFuelType || focusedFuelType === 'EV_AC' || focusedFuelType === 'EV_DC';
+          if (!showEv) return null;
+          const filtered = focusedFuelType === 'EV_DC'
+            ? evChargers.filter(c => (c.max_kw ?? 0) >= 50)
+            : focusedFuelType === 'EV_AC'
+              ? evChargers.filter(c => (c.max_kw ?? 0) < 50)
+              : evChargers;
+          return filtered.map(c => {
+            const recent = evPrices.find((p: any) => p.charger_id === c.id);
+            const priceLabel = recent ? `€${Number(recent.price_per_kwh).toFixed(3)}` : '';
+            const icon = L.divIcon({
+              className: 'ev-marker',
+              iconSize: [28, 28],
+              iconAnchor: [14, 14],
+              html: `<div style="width:28px;height:28px;border-radius:50%;background:#22c55e;border:2px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);color:white;font-size:14px;font-weight:700;">⚡</div>${priceLabel ? `<div style="position:absolute;top:28px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;font-size:10px;padding:1px 4px;border-radius:4px;white-space:nowrap;">${priceLabel}</div>` : ''}`,
+            });
+            return (
+              <Marker
+                key={c.id}
+                position={[c.latitude, c.longitude]}
+                icon={icon}
+                zIndexOffset={500}
+                eventHandlers={{ click: () => onStationSelect({ ...c, _isEv: true, name: c.operator || 'EV' }) }}
+              />
+            );
+          });
+        })()}
+
         <RecenterButton userLocation={userLocation} />
-        <MapStyleToggle mapStyle={mapStyle} onToggle={onToggleMapStyle} />
       </MapContainer>
     </div>
-  );
-}
-
-function MapStyleToggle({ mapStyle, onToggle }: { mapStyle: 'dark' | 'light', onToggle: () => void }) {
-  return (
-    <button
-      className="glass-panel flex-center"
-      style={{
-        position: 'absolute',
-        bottom: 'calc(90px + env(safe-area-inset-bottom))',
-        right: '20px',
-        width: '50px',
-        height: '50px',
-        borderRadius: '25px',
-        zIndex: 1000,
-        border: '1px solid var(--color-surface-border)',
-        cursor: 'pointer',
-        color: mapStyle === 'dark' ? '#f59e0b' : '#6366f1',
-        background: 'var(--color-bg)',
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
-      title={mapStyle === 'dark' ? 'Hele kaart' : 'Tume kaart'}
-    >
-      {mapStyle === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
-    </button>
   );
 }
 

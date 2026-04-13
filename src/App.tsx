@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro, Navigation, TrendingUp } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -8,15 +8,17 @@ import { PrivacyModal } from './components/PrivacyModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
+import { LeaderboardDrawer } from './components/LeaderboardDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { RoutePlanModal } from './components/RoutePlanModal';
 import { StatisticsDrawer } from './components/StatisticsDrawer';
+import { BrandPickerPill } from './components/BrandPickerPill';
 import { supabase } from './supabase';
 import { getStationDisplayName } from './utils';
 import type { LoyaltyDiscounts } from './utils';
 import './index.css';
 
-const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG", "EV_AC", "EV_DC"];
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -25,6 +27,7 @@ function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -39,6 +42,8 @@ function App() {
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
+  const [evChargers, setEvChargers] = useState<any[]>([]);
+  const [evPrices, setEvPrices] = useState<any[]>([]);
   
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -54,7 +59,12 @@ function App() {
 
   // Theme + display preferences
   const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('kyts-map-style') as 'dark' | 'light') || 'dark';
+    const saved = localStorage.getItem('kyts-map-style') as 'dark' | 'light' | null;
+    if (saved === 'dark' || saved === 'light') return saved;
+    return typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
   });
   const [dotStyle, setDotStyle] = useState<'info' | 'brand'>(() => {
     return (localStorage.getItem('kyts-dot-style') as 'info' | 'brand') || 'info';
@@ -73,15 +83,17 @@ function App() {
     return localStorage.getItem('kyts-apply-loyalty') !== 'false';
   });
 
-  const toggleMapStyle = () => {
-    const next = mapStyle === 'dark' ? 'light' : 'dark';
-    setMapStyle(next);
-    localStorage.setItem('kyts-map-style', next);
-  };
-
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mapStyle);
   }, [mapStyle]);
+
+  useEffect(() => {
+    if (localStorage.getItem('kyts-map-style')) return;
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    const onChange = (e: MediaQueryListEvent) => setMapStyle(e.matches ? 'light' : 'dark');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Back button closes the topmost overlay instead of leaving the app.
   // Uses a ref so the popstate listener always sees current state without re-registering.
@@ -147,6 +159,12 @@ function App() {
     
     const { data: vt } = await supabase.from('votes').select('*');
     if (vt) setVotes(vt);
+
+    const { data: ev } = await supabase.from('ev_chargers').select('*');
+    if (ev) setEvChargers(ev);
+
+    const { data: evp } = await supabase.from('ev_prices').select('*').order('reported_at', { ascending: false });
+    if (evp) setEvPrices(evp);
 
     const currentUser = activeSession || session;
     if (currentUser?.user) {
@@ -255,13 +273,14 @@ function App() {
         highlightCheapest={highlightCheapest}
         selectedStation={selectedStation}
         mapStyle={mapStyle}
-        onToggleMapStyle={toggleMapStyle}
         dotStyle={dotStyle}
         showClusters={showClusters}
         showStaleDemo={showStaleDemo}
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
         routePolyline={routePolyline}
+        evChargers={evChargers}
+        evPrices={evPrices}
       />
 
       {/* Top Search & Action Bar */}
@@ -313,10 +332,12 @@ function App() {
             overflowX: 'auto', paddingBottom: '2px',
             WebkitOverflowScrolling: 'touch',
             scrollbarWidth: 'none',
+            position: 'relative',
           }}>
+            <BrandPickerPill selected={selectedBrands} onChange={setSelectedBrands} />
             {FUEL_TYPES.map(type => {
               const isActive = selectedFuelType === type;
-              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type;
+              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type === 'EV_AC' ? '⚡AC' : type === 'EV_DC' ? '⚡DC' : type;
               return (
                 <button
                   key={type}
@@ -388,87 +409,64 @@ function App() {
         )}
       </div>
 
-      {/* Driving mode FAB — cheapest nearby panel */}
+      {/* FAB stack (top → bottom): Camera, Nearby, Navigation, Stats */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => setIsCameraOpen(true)}
+        title="Pildista hindu"
+        style={{
+          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          color: 'var(--color-primary)',
+        }}
+      >
+        <Camera size={22} />
+      </button>
+
       <button
         className="glass-panel flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
         title="Odavaim kütus lähedal"
         style={{
-          position: 'absolute',
-          bottom: 'calc(210px + env(safe-area-inset-bottom))',
-          right: '20px',
-          width: '50px',
-          height: '50px',
-          borderRadius: '25px',
-          zIndex: 1000,
-          border: '1px solid var(--color-surface-border)',
-          cursor: 'pointer',
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
           color: '#facc15',
         }}
       >
         <Euro size={22} />
       </button>
 
-      {/* Statistics FAB */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => {
+          if (routePolyline) { setRoutePolyline(null); setIsRouteOpen(false); }
+          else setIsRouteOpen(true);
+        }}
+        title={routePolyline ? "Tühista marsruut" : "Odavaim kütus marsruudil"}
+        style={{
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          color: routePolyline ? '#ef4444' : '#22c55e',
+        }}
+      >
+        {routePolyline ? <X size={22} /> : <Navigation size={22} />}
+      </button>
+
       <button
         className="glass-panel flex-center"
         onClick={() => setIsStatsOpen(true)}
         title="Statistika"
         style={{
-          position: 'absolute',
-          bottom: 'calc(330px + env(safe-area-inset-bottom))',
-          right: '20px',
-          width: '50px',
-          height: '50px',
-          borderRadius: '25px',
-          zIndex: 1000,
-          border: '1px solid var(--color-surface-border)',
-          cursor: 'pointer',
+          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
           color: '#a855f7',
         }}
       >
         <TrendingUp size={22} />
-      </button>
-
-      {/* Route-aware FAB — cheapest fuel along route to destination */}
-      <button
-        className="glass-panel flex-center"
-        onClick={() => setIsRouteOpen(true)}
-        title="Odavaim kütus marsruudil"
-        style={{
-          position: 'absolute',
-          bottom: 'calc(270px + env(safe-area-inset-bottom))',
-          right: '20px',
-          width: '50px',
-          height: '50px',
-          borderRadius: '25px',
-          zIndex: 1000,
-          border: '1px solid var(--color-surface-border)',
-          cursor: 'pointer',
-          color: '#22c55e',
-        }}
-      >
-        <Navigation size={22} />
-      </button>
-
-      {/* Camera FAB — quick scan without pre-selecting a station */}
-      <button
-        className="glass-panel flex-center"
-        onClick={() => setIsCameraOpen(true)}
-        style={{
-          position: 'absolute',
-          bottom: 'calc(150px + env(safe-area-inset-bottom))',
-          right: '20px',
-          width: '50px',
-          height: '50px',
-          borderRadius: '25px',
-          zIndex: 1000,
-          border: '1px solid var(--color-surface-border)',
-          cursor: 'pointer',
-          color: 'var(--color-primary)',
-        }}
-      >
-        <Camera size={22} />
       </button>
 
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
@@ -575,6 +573,9 @@ function App() {
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
+        mapStyle={mapStyle}
+        onMapStyleChange={setMapStyle}
+        onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
         allBrandsForLoyalty={uniqueBrands}
         loyaltyDiscounts={loyaltyDiscounts}
         onLoyaltyChange={async (brand, cents) => {
@@ -595,6 +596,12 @@ function App() {
             }
           }
         }}
+      />
+
+      <LeaderboardDrawer
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+        currentUserId={session?.user?.id}
       />
 
       <CheapestNearbyPanel
@@ -620,6 +627,7 @@ function App() {
         applyLoyalty={applyLoyalty}
         selectedFuelType={selectedFuelType}
         onRouteChange={setRoutePolyline}
+        onStationSelect={setSelectedStation}
       />
 
       <StatisticsDrawer

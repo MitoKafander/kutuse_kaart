@@ -493,11 +493,22 @@ export function ManualPriceModal({
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }}>€</span>
                 <input
-                  type="number"
-                  step="0.001"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="0.000"
                   value={prices[type]}
-                  onChange={e => setPrices({ ...prices, [type]: e.target.value })}
+                  onChange={e => {
+                    let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+                    const prev = prices[type] || '';
+                    // Auto-insert decimal after first digit on typing (0–9 € range).
+                    if (!v.includes('.') && v.length === 2 && prev.length === 1) {
+                      v = v[0] + '.' + v[1];
+                    }
+                    // Cap to 4 decimals.
+                    const dot = v.indexOf('.');
+                    if (dot >= 0 && v.length - dot - 1 > 3) v = v.slice(0, dot + 4);
+                    setPrices({ ...prices, [type]: v });
+                  }}
                   style={{
                     background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
                     color: 'var(--color-text)', padding: '8px 12px 8px 32px', borderRadius: '8px', outline: 'none',

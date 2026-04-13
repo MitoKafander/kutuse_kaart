@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, CreditCard } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, CreditCard, Trophy } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -74,6 +74,9 @@ export function ProfileDrawer({
   allBrandsForLoyalty,
   loyaltyDiscounts,
   onLoyaltyChange,
+  mapStyle,
+  onMapStyleChange,
+  onOpenLeaderboard,
 }: {
   session: any;
   isOpen: boolean;
@@ -99,9 +102,13 @@ export function ProfileDrawer({
   allBrandsForLoyalty: string[];
   loyaltyDiscounts: LoyaltyDiscounts;
   onLoyaltyChange: (brand: string, cents: number) => void;
+  mapStyle: 'dark' | 'light';
+  onMapStyleChange: (s: 'dark' | 'light') => void;
+  onOpenLeaderboard?: () => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
 
   if (!isOpen || !session) return null;
 
@@ -382,6 +389,19 @@ export function ProfileDrawer({
             )}
           </div>
 
+          {onOpenLeaderboard && (
+            <button onClick={onOpenLeaderboard} className="glass-panel" style={{
+              padding: '14px 16px', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              color: 'var(--color-text)', width: '100%', textAlign: 'left', fontSize: '1rem',
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Trophy size={18} color="var(--color-warning)" /> Edetabel
+              </span>
+              <ChevronDown size={16} style={{ transform: 'rotate(-90deg)', color: 'var(--color-text-muted)' }} />
+            </button>
+          )}
+
           {/* Collapsible Settings */}
           <div className="glass-panel" style={{ padding: '16px' }}>
             <button
@@ -412,6 +432,31 @@ export function ProfileDrawer({
 
             {settingsOpen && (
               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Theme toggle */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', color: 'var(--color-text-muted)' }}>
+                    Kaardi teema
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {(['dark', 'light'] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => { onMapStyleChange(s); localStorage.setItem('kyts-map-style', s); }}
+                        style={{
+                          flex: 1, padding: '8px',
+                          borderRadius: '8px',
+                          border: mapStyle === s ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                          background: mapStyle === s ? 'rgba(59,130,246,0.15)' : 'var(--color-surface)',
+                          color: mapStyle === s ? 'var(--color-primary)' : 'var(--color-text)',
+                          cursor: 'pointer', fontSize: '0.9rem',
+                        }}
+                      >
+                        {s === 'dark' ? 'Tume' : 'Hele'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Fuel type preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
@@ -480,12 +525,32 @@ export function ProfileDrawer({
                   </div>
                 </div>
 
-                {/* Loyalty card discounts */}
+                {/* Loyalty card discounts (collapsible) */}
                 <div>
-                  <h4 style={{ fontSize: '0.85rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <CreditCard size={16} /> Kliendikaardid
-                  </h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                  <button
+                    onClick={() => setLoyaltyOpen(!loyaltyOpen)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%', background: 'none', border: 'none',
+                      color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0,
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                      <CreditCard size={16} /> Kliendikaardid
+                      {Object.values(loyaltyDiscounts).filter(v => v > 0).length > 0 && (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
+                          ({Object.values(loyaltyDiscounts).filter(v => v > 0).length} aktiivset)
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown size={16} style={{
+                      transform: loyaltyOpen ? 'rotate(180deg)' : 'rotate(0)',
+                      transition: 'transform .2s',
+                    }} />
+                  </button>
+                  {loyaltyOpen && (
+                  <>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '10px 0' }}>
                     Sisesta soodustus sentides liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja "Odavaim lähedal" kasutab sooduskaardi hinda järjestamiseks.
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -524,6 +589,8 @@ export function ProfileDrawer({
                       );
                     })}
                   </div>
+                  </>
+                  )}
                 </div>
 
                 {/* Dot style preference */}
