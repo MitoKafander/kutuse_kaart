@@ -126,19 +126,38 @@ export function hasDiscount(brand: string, discounts: LoyaltyDiscounts, apply: b
   return (discounts[brand] ?? 0) > 0;
 }
 
-// Canonical Estonian fuel chain prefixes. Matched case-insensitively against
-// the start of a station's stored name so "Olerex Enge tankla" groups with "Olerex"
-// for brand filtering, loyalty discounts, and colour assignment.
-const KNOWN_CHAINS = [
-  'Circle K', 'Neste', 'Olerex', 'Alexela', 'Terminal',
-  'Krooning', 'Jetoil', 'Statoil', 'Eesti Autogaas', 'Eksar-Transoil',
+// Canonical Estonian fuel chains. The `match` value is a normalized substring
+// (lowercase, hyphens → spaces, whitespace collapsed) and is searched anywhere
+// in the station name, so "Kristiine Circle K tankla", "Kärdla Olerex",
+// "Eksar-Transoil Masti tankla", "HEPA", "Jetgas", "Premium-7", and "Thori
+// tanklad" all collapse to their canonical brand for filtering, loyalty
+// discounts, and colour assignment.
+const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
+  { match: 'circle k',       canonical: 'Circle K' },
+  { match: 'olerex',         canonical: 'Olerex' },
+  { match: 'alexela',        canonical: 'Alexela' },
+  { match: 'neste',          canonical: 'Neste' },
+  { match: 'terminal',       canonical: 'Terminal' },
+  { match: 'krooning',       canonical: 'Krooning' },
+  { match: 'jetoil',         canonical: 'Jetoil' },
+  { match: 'jetgas',         canonical: 'JetGas' },
+  { match: 'statoil',        canonical: 'Statoil' },
+  { match: 'eesti autogaas', canonical: 'Eesti Autogaas' },
+  { match: 'eksar transoil', canonical: 'Eksar Transoil' },
+  { match: 'premium 7',      canonical: 'Premium 7' },
+  { match: 'hepa',           canonical: 'Hepa' },
+  { match: 'thor',           canonical: 'Thor' }, // matches "Thor" and "Thori"
 ];
+
+function normalizeBrandKey(s: string): string {
+  return s.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 export function getBrand(name: string | null | undefined): string {
   if (!name) return 'Tundmatu';
-  const lower = name.toLowerCase();
-  for (const chain of KNOWN_CHAINS) {
-    if (lower.startsWith(chain.toLowerCase())) return chain;
+  const n = normalizeBrandKey(name);
+  for (const { match, canonical } of CHAIN_PATTERNS) {
+    if (n.includes(match)) return canonical;
   }
   return name;
 }
