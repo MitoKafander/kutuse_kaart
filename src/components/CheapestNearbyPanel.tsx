@@ -87,6 +87,7 @@ export function CheapestNearbyPanel({
   loyaltyDiscounts = {},
   applyLoyalty = false,
   onStationSelect,
+  fallbackLocation = null,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -99,6 +100,7 @@ export function CheapestNearbyPanel({
   loyaltyDiscounts?: LoyaltyDiscounts;
   applyLoyalty?: boolean;
   onStationSelect?: (station: any) => void;
+  fallbackLocation?: { lat: number; lon: number } | null;
 }) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationErrorKind, setLocationErrorKind] = useState<GeolocationErrorKind | null>(null);
@@ -112,16 +114,21 @@ export function CheapestNearbyPanel({
         setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       })
       .catch((e: any) => {
-        setLocationErrorKind((e?.kind as GeolocationErrorKind) || 'unavailable');
+        if (fallbackLocation) {
+          setUserLocation(fallbackLocation);
+          setLocationErrorKind(null);
+        } else {
+          setLocationErrorKind((e?.kind as GeolocationErrorKind) || 'unavailable');
+        }
       })
       .finally(() => setIsLocating(false));
   };
 
   useEffect(() => {
     if (!isOpen) return;
-    if (userLocation) {
-      // Reopen with cached location: show results immediately, refresh silently.
-      setLocationErrorKind(null);
+    setLocationErrorKind(null);
+    if (userLocation || fallbackLocation) {
+      if (!userLocation && fallbackLocation) setUserLocation(fallbackLocation);
       getCurrentPositionAsync({ enableHighAccuracy: true, maximumAge: 120000, timeout: 15000 })
         .then(pos => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
         .catch(() => {});

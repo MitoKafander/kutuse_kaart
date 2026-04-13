@@ -322,6 +322,7 @@ export function Map({
   loyaltyDiscounts = {},
   applyLoyalty = false,
   routePolyline = null,
+  onUserLocationChange,
 }: {
   stations: any[],
   prices: any[],
@@ -338,8 +339,13 @@ export function Map({
   loyaltyDiscounts?: LoyaltyDiscounts,
   applyLoyalty?: boolean,
   routePolyline?: [number, number][] | null,
+  onUserLocationChange?: (loc: { lat: number; lon: number } | null) => void,
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    onUserLocationChange?.(userLocation ? { lat: userLocation[0], lon: userLocation[1] } : null);
+  }, [userLocation, onUserLocationChange]);
   const [followMode, setFollowMode] = useState<'off' | 'located' | 'locked'>('off');
   const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(7);

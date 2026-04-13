@@ -39,6 +39,7 @@ function App() {
   const [nearbyRadius, setNearbyRadius] = useState(20);
   const [isRouteOpen, setIsRouteOpen] = useState(false);
   const [routeMounted, setRouteMounted] = useState(false);
+  const [liveUserLocation, setLiveUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -278,6 +279,7 @@ function App() {
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
         routePolyline={routePolyline}
+        onUserLocationChange={setLiveUserLocation}
       />
 
       {/* Top Search & Action Bar */}
@@ -638,6 +640,7 @@ function App() {
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
         onStationSelect={setSelectedStation}
+        fallbackLocation={liveUserLocation}
       />
 
       <Suspense fallback={null}>
