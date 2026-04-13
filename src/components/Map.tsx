@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Polyline } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import 'leaflet.markercluster';
 import { LocateFixed, Lock } from 'lucide-react';
 import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
@@ -117,6 +119,82 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
 // stable listener instead of hundreds of per-marker handlers eliminates the
 // "needs several clicks" flakiness caused by react-leaflet re-registering
 // every marker's click handler on each render.
+// Imperative cluster layer. Replaces react-leaflet-cluster, which re-rendered
+// its child Markers on every Map render — even with stable icons that constant
+// React reconciliation churned the cluster group's internal layer state and
+// made first-clicks miss. Here we own a single L.markerClusterGroup and diff
+// markers by id ourselves; the group's DOM never gets recreated unless
+// stations are actually added or removed.
+type ClusterMarkerSpec = { id: string; lat: number; lng: number; icon: L.DivIcon };
+
+function ClusterLayer({
+  markers,
+  iconCreateFunction,
+}: {
+  markers: ClusterMarkerSpec[];
+  iconCreateFunction: (cluster: any) => L.DivIcon;
+}) {
+  const map = useMap();
+  const groupRef = useRef<any>(null);
+  const markerMapRef = useRef<NativeMap<string, L.Marker>>(new NativeMap());
+
+  useEffect(() => {
+    const group = (L as any).markerClusterGroup({
+      chunkedLoading: true,
+      maxClusterRadius: 40,
+      disableClusteringAtZoom: 11,
+      spiderfyOnMaxZoom: false,
+      showCoverageOnHover: false,
+      animate: false,
+      animateAddingMarkers: false,
+      removeOutsideVisibleBounds: false,
+      iconCreateFunction,
+    });
+    map.addLayer(group);
+    groupRef.current = group;
+    return () => {
+      map.removeLayer(group);
+      groupRef.current = null;
+      markerMapRef.current.clear();
+    };
+  }, [map, iconCreateFunction]);
+
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    const existing = markerMapRef.current;
+    const incoming = new NativeMap<string, ClusterMarkerSpec>();
+    for (const m of markers) incoming.set(m.id, m);
+
+    const toRemove: L.Marker[] = [];
+    for (const [id, marker] of existing) {
+      if (!incoming.has(id)) {
+        toRemove.push(marker);
+        existing.delete(id);
+      }
+    }
+    if (toRemove.length) group.removeLayers(toRemove);
+
+    const toAdd: L.Marker[] = [];
+    for (const spec of markers) {
+      let marker = existing.get(spec.id);
+      if (!marker) {
+        marker = L.marker([spec.lat, spec.lng], {
+          icon: spec.icon,
+          bubblingMouseEvents: true,
+        } as any);
+        existing.set(spec.id, marker);
+        toAdd.push(marker);
+      } else {
+        if ((marker.options as any).icon !== spec.icon) marker.setIcon(spec.icon);
+      }
+    }
+    if (toAdd.length) group.addLayers(toAdd);
+  }, [markers]);
+
+  return null;
+}
+
 function MapClickDelegate({
   stationsByIdRef,
   onSelectRef,
@@ -610,6 +688,26 @@ export function Map({
     return icon;
   };
 
+  const fadedClusterMarkers = useMemo<ClusterMarkerSpec[]>(
+    () => fadedDots.map(d => ({
+      id: String(d.station.id),
+      lat: d.station.latitude,
+      lng: d.station.longitude,
+      icon: getFadedIcon(d.station, selectedStation?.id === d.station.id),
+    })),
+    [fadedDots, selectedStation?.id, dotStyle, mapStyle]
+  );
+
+  const freshClusterMarkers = useMemo<ClusterMarkerSpec[]>(
+    () => freshDots.map(d => ({
+      id: String(d.station.id),
+      lat: d.station.latitude,
+      lng: d.station.longitude,
+      icon: getFreshIcon(d.station, selectedStation?.id === d.station.id, d.isFresh, d.isCheapest),
+    })),
+    [freshDots, selectedStation?.id, dotStyle, mapStyle]
+  );
+
   const renderFreshDot = ({ station, isFresh, isCheapest }: { station: any; isFresh: boolean; isCheapest: boolean }) => {
     const isSelected = selectedStation?.id === station.id;
     return (
@@ -646,37 +744,14 @@ export function Map({
 
         {/* Layer 1: Faded dots (no data / expired) */}
         {showClusters ? (
-          <MarkerClusterGroup
-            key="faded-clustered"
-            chunkedLoading
-            maxClusterRadius={40}
-            disableClusteringAtZoom={11}
-            spiderfyOnMaxZoom={false}
-            showCoverageOnHover={false}
-            animate={false}
-            animateAddingMarkers={false}
-            removeOutsideVisibleBounds={false}
-            iconCreateFunction={createClusterIcon}
-          >
-            {fadedDots.map(renderFadedDot)}
-          </MarkerClusterGroup>
+          <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} />
         ) : (
           <>{fadedDots.map(renderFadedDot)}</>
         )}
 
         {/* Layer 2: Fresh/active dots — vibrant */}
         {showClusters ? (
-          <MarkerClusterGroup
-            key="fresh-clustered"
-            chunkedLoading
-            maxClusterRadius={40}
-            disableClusteringAtZoom={11}
-            spiderfyOnMaxZoom={false}
-            showCoverageOnHover={false}
-            iconCreateFunction={createClusterIcon}
-          >
-            {freshDots.map(renderFreshDot)}
-          </MarkerClusterGroup>
+          <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} />
         ) : (
           <>{freshDots.map(renderFreshDot)}</>
         )}
