@@ -3,6 +3,7 @@ import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
+  getCurrentPositionAsync,
 } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
@@ -78,16 +79,15 @@ export function RoutePlanModal({
   const [destination, setDestination] = useState<SearchHit | null>(null);
   const [route, setRoute] = useState<[number, number][] | null>(null);
   const [routing, setRouting] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
   const [corridorKm, setCorridorKm] = useState(2);
   const [fuel, setFuel] = useState<string>(selectedFuelType || 'Bensiin 95');
 
   useEffect(() => {
     if (!isOpen) return;
-    navigator.geolocation.getCurrentPosition(
-      pos => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => {},
-      { maximumAge: 30000, timeout: 8000 }
-    );
+    getCurrentPositionAsync()
+      .then(pos => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+      .catch(() => {});
   }, [isOpen]);
 
   useEffect(() => { onRouteChange(route); }, [route, onRouteChange]);
@@ -113,10 +113,15 @@ export function RoutePlanModal({
   }, [query, isOpen]);
 
   useEffect(() => {
-    if (!origin || !destination) { setRoute(null); return; }
+    if (!origin || !destination) { setRoute(null); setRouteError(null); return; }
     setRouting(true);
+    setRouteError(null);
     fetchRoute(origin.lat, origin.lon, destination.lat, destination.lon)
-      .then(r => setRoute(r))
+      .then(r => {
+        setRoute(r);
+        if (!r) setRouteError('Marsruuti ei leitud. Proovi teist sihtkohta või kontrolli internetiühendust.');
+      })
+      .catch(() => setRouteError('Marsruudi arvutamine ebaõnnestus. Proovi uuesti.'))
       .finally(() => setRouting(false));
   }, [origin, destination]);
 
@@ -260,6 +265,16 @@ export function RoutePlanModal({
         {routing && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-muted)' }}>
             <Loader2 size={18} className="spin" /> Arvutan marsruuti...
+          </div>
+        )}
+
+        {!routing && routeError && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: 'var(--radius-md)', padding: '12px 14px',
+            fontSize: '0.88rem', color: 'var(--color-text)'
+          }}>
+            {routeError}
           </div>
         )}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
@@ -8,17 +8,21 @@ import { PrivacyModal } from './components/PrivacyModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
-import { LeaderboardDrawer } from './components/LeaderboardDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
-import { RoutePlanModal } from './components/RoutePlanModal';
-import { StatisticsDrawer } from './components/StatisticsDrawer';
 import { BrandPickerPill } from './components/BrandPickerPill';
+
+// Lazy-load panels that aren't on the critical first-paint path to keep the
+// initial JS bundle under the 500 kB Vercel warning. These are only fetched
+// when the user opens them.
+const LeaderboardDrawer = lazy(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
+const RoutePlanModal = lazy(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
+const StatisticsDrawer = lazy(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 import { supabase } from './supabase';
 import { getStationDisplayName } from './utils';
 import type { LoyaltyDiscounts } from './utils';
 import './index.css';
 
-const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG", "EV"];
+const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -42,8 +46,6 @@ function App() {
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
-  const [evChargers, setEvChargers] = useState<any[]>([]);
-  const [evPrices, setEvPrices] = useState<any[]>([]);
   
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -161,12 +163,6 @@ function App() {
     const { data: vt } = await supabase.from('votes').select('*').limit(10000);
     if (vt) setVotes(vt);
 
-    const { data: ev } = await supabase.from('ev_chargers').select('*').limit(10000);
-    if (ev) setEvChargers(ev);
-
-    const { data: evp } = await supabase.from('ev_prices').select('*').order('reported_at', { ascending: false }).limit(10000);
-    if (evp) setEvPrices(evp);
-
     const currentUser = activeSession || session;
     if (currentUser?.user) {
       // Load favorites
@@ -281,8 +277,6 @@ function App() {
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
         routePolyline={routePolyline}
-        evChargers={evChargers}
-        evPrices={evPrices}
       />
 
       {/* Top Search & Action Bar */}
@@ -339,7 +333,7 @@ function App() {
             <BrandPickerPill selected={selectedBrands} onChange={setSelectedBrands} />
             {FUEL_TYPES.map(type => {
               const isActive = selectedFuelType === type;
-              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type === 'EV' ? '⚡EV' : type;
+              const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type;
               return (
                 <button
                   key={type}
@@ -621,11 +615,15 @@ function App() {
         }}
       />
 
-      <LeaderboardDrawer
-        isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
-        currentUserId={session?.user?.id}
-      />
+      <Suspense fallback={null}>
+        {isLeaderboardOpen && (
+          <LeaderboardDrawer
+            isOpen={isLeaderboardOpen}
+            onClose={() => setIsLeaderboardOpen(false)}
+            currentUserId={session?.user?.id}
+          />
+        )}
+      </Suspense>
 
       <CheapestNearbyPanel
         isOpen={isCheapestNearbyOpen}
@@ -638,28 +636,35 @@ function App() {
         preferredBrands={preferredBrands}
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
-      />
-
-      {isRouteOpen && <RoutePlanModal
-        isOpen={isRouteOpen}
-        onClose={() => setIsRouteOpen(false)}
-        stations={stations}
-        prices={prices}
-        allVotes={votes}
-        loyaltyDiscounts={loyaltyDiscounts}
-        applyLoyalty={applyLoyalty}
-        selectedFuelType={selectedFuelType}
-        onRouteChange={setRoutePolyline}
         onStationSelect={setSelectedStation}
-      />}
-
-      <StatisticsDrawer
-        isOpen={isStatsOpen}
-        onClose={() => setIsStatsOpen(false)}
-        stations={stations}
-        prices={prices}
-        session={session}
       />
+
+      <Suspense fallback={null}>
+        {isRouteOpen && <RoutePlanModal
+          isOpen={isRouteOpen}
+          onClose={() => setIsRouteOpen(false)}
+          stations={stations}
+          prices={prices}
+          allVotes={votes}
+          loyaltyDiscounts={loyaltyDiscounts}
+          applyLoyalty={applyLoyalty}
+          selectedFuelType={selectedFuelType}
+          onRouteChange={setRoutePolyline}
+          onStationSelect={setSelectedStation}
+        />}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        {isStatsOpen && (
+          <StatisticsDrawer
+            isOpen={isStatsOpen}
+            onClose={() => setIsStatsOpen(false)}
+            stations={stations}
+            prices={prices}
+            session={session}
+          />
+        )}
+      </Suspense>
 
       <PrivacyModal
         isOpen={isPrivacyOpen}

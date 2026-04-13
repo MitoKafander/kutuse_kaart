@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
-import type { LoyaltyDiscounts } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessage } from '../utils';
+import type { LoyaltyDiscounts, GeolocationErrorKind } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel"];
 const RADIUS_OPTIONS = [5, 10, 20];
@@ -86,6 +86,7 @@ export function CheapestNearbyPanel({
   preferredBrands = [],
   loyaltyDiscounts = {},
   applyLoyalty = false,
+  onStationSelect,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -97,26 +98,28 @@ export function CheapestNearbyPanel({
   preferredBrands?: string[];
   loyaltyDiscounts?: LoyaltyDiscounts;
   applyLoyalty?: boolean;
+  onStationSelect?: (station: any) => void;
 }) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [locationError, setLocationError] = useState(false);
+  const [locationErrorKind, setLocationErrorKind] = useState<GeolocationErrorKind | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+
+  const requestLocation = () => {
+    setIsLocating(true);
+    setLocationErrorKind(null);
+    getCurrentPositionAsync()
+      .then(pos => {
+        setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      })
+      .catch((e: any) => {
+        setLocationErrorKind((e?.kind as GeolocationErrorKind) || 'unavailable');
+      })
+      .finally(() => setIsLocating(false));
+  };
 
   useEffect(() => {
     if (!isOpen) return;
-    setIsLocating(true);
-    setLocationError(false);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-        setIsLocating(false);
-      },
-      () => {
-        setLocationError(true);
-        setIsLocating(false);
-      },
-      { maximumAge: 30000, timeout: 8000 }
-    );
+    requestLocation();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -204,13 +207,19 @@ export function CheapestNearbyPanel({
           </div>
         )}
 
-        {locationError && !isLocating && (
+        {locationErrorKind && !isLocating && (
           <div style={{
             background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
             borderRadius: 'var(--radius-md)', padding: '14px 16px',
-            fontSize: '0.9rem', color: 'var(--color-text)'
+            fontSize: '0.9rem', color: 'var(--color-text)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>
-            Asukoht pole saadaval. Luba rakendusele asukoha kasutamine ja proovi uuesti.
+            <span>{geolocationErrorMessage(locationErrorKind)}</span>
+            <button onClick={requestLocation} style={{
+              background: 'var(--color-primary)', color: 'white', border: 'none',
+              borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
+              fontSize: '0.82rem', fontWeight: 600, flexShrink: 0,
+            }}>Proovi uuesti</button>
           </div>
         )}
 
@@ -228,12 +237,16 @@ export function CheapestNearbyPanel({
           <div
             key={result.fuelType}
             className="glass-panel"
+            onClick={() => {
+              if (onStationSelect) { onStationSelect(result.station); onClose(); }
+            }}
             style={{
               padding: '16px',
               borderRadius: 'var(--radius-md)',
               display: 'flex',
               alignItems: 'center',
               gap: '14px',
+              cursor: onStationSelect ? 'pointer' : 'default',
             }}
           >
             {/* Fuel type badge */}
@@ -283,10 +296,13 @@ export function CheapestNearbyPanel({
 
             {/* Navigate button */}
             <button
-              onClick={() => window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${result.station.latitude},${result.station.longitude}`,
-                '_blank'
-              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(
+                  `https://www.google.com/maps/dir/?api=1&destination=${result.station.latitude},${result.station.longitude}`,
+                  '_blank'
+                );
+              }}
               style={{
                 background: 'var(--color-primary)', color: 'white',
                 border: 'none', borderRadius: '12px', padding: '10px 14px',

@@ -1,18 +1,49 @@
-export const EV_FUEL_TYPES = ['EV'] as const;
-export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG', 'EV'] as const;
+export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'] as const;
 export const DEFAULT_FUELS = ['Bensiin 95', 'Bensiin 98', 'Diisel'] as const;
 
-export function isEvFuel(type: string | null | undefined): boolean {
-  return type === 'EV';
-}
-
 export function fuelLabel(type: string): string {
-  if (type === 'EV') return 'EV';
   return type;
 }
 
-export function priceUnit(type: string): string {
-  return isEvFuel(type) ? '€/kWh' : '€/L';
+export function priceUnit(_type: string): string {
+  return '€/L';
+}
+
+// Shared geolocation helper. Timeout is deliberately generous (15 s) so Brave/desktop
+// users have time to accept the permission prompt on second+ invocations without
+// failing with a bogus "position unavailable".
+export type GeolocationErrorKind = 'permission' | 'unavailable' | 'timeout' | 'unsupported';
+
+export function getCurrentPositionAsync(options: PositionOptions = {}): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) {
+      const err: any = new Error('Geolocation not supported');
+      err.kind = 'unsupported' as GeolocationErrorKind;
+      reject(err);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (e) => {
+        const kind: GeolocationErrorKind =
+          e.code === 1 ? 'permission' :
+          e.code === 3 ? 'timeout' :
+          'unavailable';
+        const err: any = new Error(e.message || kind);
+        err.kind = kind;
+        err.code = e.code;
+        reject(err);
+      },
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000, ...options }
+    );
+  });
+}
+
+export function geolocationErrorMessage(kind: GeolocationErrorKind): string {
+  if (kind === 'permission') return 'Asukoht pole saadaval. Luba rakendusele asukoha kasutamine ja proovi uuesti.';
+  if (kind === 'timeout') return 'Asukoha leidmine võtab oodatust kauem. Proovi uuesti.';
+  if (kind === 'unsupported') return 'Sinu brauser ei toeta asukoha määramist.';
+  return 'Asukohta ei õnnestunud leida. Proovi uuesti.';
 }
 
 export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {

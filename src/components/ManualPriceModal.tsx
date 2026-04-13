@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName, haversineKm } from '../utils';
+import { getStationDisplayName, haversineKm, getCurrentPositionAsync } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
@@ -184,10 +184,9 @@ export function ManualPriceModal({
 
     // Capture GPS immediately — before AI processing delays change the position
     if (!station && allStations) {
-      navigator.geolocation.getCurrentPosition(
-        pos => setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-        () => {} // GPS failure handled later when resolving candidates
-      );
+      getCurrentPositionAsync()
+        .then(pos => setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .catch(() => {}); // GPS failure handled later when resolving candidates
     }
 
     const reader = new FileReader();

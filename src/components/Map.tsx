@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, useMap, CircleMarker, Marker, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { LocateFixed, Lock } from 'lucide-react';
-import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
+import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -71,6 +71,21 @@ function createDotIcon({
   });
 }
 
+// Fixed-pixel location dot. Using a Marker with a divIcon instead of CircleMarker
+// avoids the zoom-flicker — CircleMarker re-projects its center on every zoom
+// animation frame, which made the dot jitter while the map zoomed.
+const LOCATION_DOT_ICON = L.divIcon({
+  className: 'user-location-dot',
+  html: `<div style="
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.35), 0 2px 6px rgba(0,0,0,0.4);
+  "></div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
+
 function LocationTracker({ position, setPosition }: { position: [number, number] | null, setPosition: (pos: [number, number]) => void }) {
   const map = useMap();
 
@@ -80,8 +95,6 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
     };
 
     map.on("locationfound", onLocationFound);
-
-    // Start watching the GPS constantly for instant reactions
     map.locate({ watch: true, enableHighAccuracy: true });
 
     return () => {
@@ -91,8 +104,15 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
   }, [map, setPosition]);
 
   return position === null ? null : (
-    <CircleMarker center={position} radius={8} pathOptions={{ fillColor: 'var(--color-primary)', color: 'white', weight: 2, fillOpacity: 1 }} />
+    <Marker position={position} icon={LOCATION_DOT_ICON} interactive={false} keyboard={false} />
   );
+}
+
+function MapClickCloser({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => onMapClick(),
+  });
+  return null;
 }
 
 function StationPanController({ station, hasPriceLabels }: { station: any | null, hasPriceLabels: boolean }) {
@@ -215,6 +235,13 @@ function createPriceIcon(
     </div>`;
   }).join('');
 
+  // Sized iconSize so Leaflet computes a real clickable hit area. Pills auto-size
+  // their width via inline-flex, but Leaflet needs a concrete box to register clicks
+  // — using [0,0] previously made the pill effectively un-clickable on desktop and
+  // required multiple taps on mobile (first click hit the map, second hit the pill).
+  const rowHeight = 16;
+  const iconW = 96;
+  const iconH = 8 + rows.length * rowHeight;
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
@@ -227,10 +254,9 @@ function createPriceIcon(
       white-space: nowrap;
       font-family: 'Outfit', sans-serif;
       cursor: pointer;
-      transform: translate(-50%, -50%);
     ">${rowsHtml}</div>`,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [iconW, iconH],
+    iconAnchor: [iconW / 2, iconH / 2],
   });
 }
 
@@ -287,8 +313,6 @@ export function Map({
   loyaltyDiscounts = {},
   applyLoyalty = false,
   routePolyline = null,
-  evChargers = [],
-  evPrices = [],
 }: {
   stations: any[],
   prices: any[],
@@ -305,8 +329,6 @@ export function Map({
   loyaltyDiscounts?: LoyaltyDiscounts,
   applyLoyalty?: boolean,
   routePolyline?: [number, number][] | null,
-  evChargers?: any[],
-  evPrices?: any[],
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [followMode, setFollowMode] = useState<'off' | 'located' | 'locked'>('off');
@@ -581,30 +603,7 @@ export function Map({
           );
         })}
 
-        {(() => {
-          const showEv = focusedFuelType === 'EV' || (!focusedFuelType && false);
-          // EV markers only render when EV filter is explicitly selected (not in default view).
-          if (!showEv) return null;
-          return evChargers.map(c => {
-            const recent = evPrices.find((p: any) => p.charger_id === c.id);
-            const priceLabel = recent ? `€${Number(recent.price_per_kwh).toFixed(3)}` : '';
-            const icon = L.divIcon({
-              className: 'ev-marker',
-              iconSize: [28, 28],
-              iconAnchor: [14, 14],
-              html: `<div style="width:28px;height:28px;border-radius:50%;background:#22c55e;border:2px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);color:white;font-size:14px;font-weight:700;">⚡</div>${priceLabel ? `<div style="position:absolute;top:28px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:white;font-size:10px;padding:1px 4px;border-radius:4px;white-space:nowrap;">${priceLabel}</div>` : ''}`,
-            });
-            return (
-              <Marker
-                key={c.id}
-                position={[c.latitude, c.longitude]}
-                icon={icon}
-                zIndexOffset={500}
-                eventHandlers={{ click: () => onStationSelect({ ...c, _isEv: true, name: c.operator || 'EV' }) }}
-              />
-            );
-          });
-        })()}
+        <MapClickCloser onMapClick={() => { if (selectedStation) onStationSelect(null); }} />
 
         <LocationFollower userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
         <RecenterButton userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
@@ -679,14 +678,13 @@ function RecenterButton({
           if (userLocation) {
             map.setView(userLocation, 14, { animate: false });
             setFollowMode('located');
-          } else if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
+          } else {
+            getCurrentPositionAsync()
+              .then((pos) => {
                 map.setView([pos.coords.latitude, pos.coords.longitude], 14, { animate: false });
                 setFollowMode('located');
-              },
-              () => alert('Palun oota, GPS signaal alles laeb.')
-            );
+              })
+              .catch(() => alert('Palun oota, GPS signaal alles laeb.'));
           }
         } else if (followMode === 'located') {
           setFollowMode('locked');
