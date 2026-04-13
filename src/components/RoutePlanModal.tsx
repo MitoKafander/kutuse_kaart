@@ -201,18 +201,32 @@ export function RoutePlanModal({
 
         {/* Destination search */}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            value={query}
-            placeholder="Sihtkoht (nt Tartu, Pärnu)"
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-            style={{
-              flex: 1, padding: '10px 12px',
-              background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
-              borderRadius: '8px', color: 'var(--color-text)', fontSize: '0.95rem', outline: 'none'
-            }}
-          />
+          <div style={{ flex: 1, position: 'relative', display: 'flex' }}>
+            <input
+              type="text"
+              value={query}
+              placeholder="Sihtkoht (nt Tartu, Pärnu)"
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
+              style={{
+                flex: 1, padding: '10px 36px 10px 12px',
+                background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+                borderRadius: '8px', color: 'var(--color-text)', fontSize: '0.95rem', outline: 'none'
+              }}
+            />
+            {query && (
+              <button
+                onClick={() => { setQuery(''); setHits([]); setDestination(null); setRoute(null); }}
+                aria-label="Tühjenda"
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: 'var(--color-text-muted)',
+                  cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
+                }}>
+                <X size={16} />
+              </button>
+            )}
+          </div>
           <button onClick={handleSearch} style={{
             background: 'var(--color-primary)', color: 'white', border: 'none',
             borderRadius: '8px', padding: '0 14px', cursor: 'pointer',
