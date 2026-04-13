@@ -219,7 +219,7 @@ export function RoutePlanModal({
           </button>
         </div>
 
-        {hits.length > 0 && !destination && (
+        {hits.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {hits.map((h, i) => (
               <button key={i} onClick={() => { setDestination(h); setHits([]); setQuery(h.displayName.split(',')[0]); }}
