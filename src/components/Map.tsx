@@ -129,6 +129,12 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
 function ViewportBoundsTracker({ onChange }: { onChange: (b: L.LatLngBounds, zoom: number, map: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
+    // Force Leaflet to recompute container size after mount — without this,
+    // hard reloads can leave the click→lat/lng projection off until the
+    // first user interaction, so the first marker tap misses.
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
     let timer: ReturnType<typeof setTimeout> | null = null;
     const fire = () => {
       if (timer) clearTimeout(timer);
@@ -139,6 +145,8 @@ function ViewportBoundsTracker({ onChange }: { onChange: (b: L.LatLngBounds, zoo
     map.on('zoomend', fire);
     return () => {
       if (timer) clearTimeout(timer);
+      clearTimeout(t1);
+      clearTimeout(t2);
       map.off('moveend', fire);
       map.off('zoomend', fire);
     };
