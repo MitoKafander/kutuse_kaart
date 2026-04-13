@@ -3,8 +3,8 @@ import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
-  LoyaltyDiscounts,
 } from '../utils';
+import type { LoyaltyDiscounts } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const CORRIDOR_OPTIONS = [1, 2, 5];

@@ -3,7 +3,11 @@ import { MapContainer, TileLayer, useMap, CircleMarker, Marker, Polyline } from 
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { LocateFixed, Sun, Moon } from 'lucide-react';
-import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, LoyaltyDiscounts } from '../utils';
+import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
+import type { LoyaltyDiscounts } from '../utils';
+
+type NativeMap<K, V> = globalThis.Map<K, V>;
+const NativeMap = globalThis.Map;
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
@@ -303,9 +307,9 @@ export function Map({
   // Per-fuel most-recent valid price per station (applies freshness + vote filters).
   // isFresh is carried for pill styling. null if no showable price for that fuel.
   const freshPriceByStationFuel = useMemo(() => {
-    const map = new Map<string, Map<string, { price: number; isFresh: boolean }>>();
+    const map: NativeMap<string, NativeMap<string, { price: number; isFresh: boolean }>> = new NativeMap();
     stations.forEach(station => {
-      const inner = new Map<string, { price: number; isFresh: boolean }>();
+      const inner: NativeMap<string, { price: number; isFresh: boolean }> = new NativeMap();
       FUEL_TYPES_ALL.forEach(ft => {
         const recent = prices
           .filter(p => p.station_id === station.id && p.fuel_type === ft)
@@ -325,7 +329,7 @@ export function Map({
   // Top-N cheapest stations per fuel type within the current viewport bounds.
   // Returns a map: stationId -> PillRow[] (one row per fuel type it ranks in).
   const pillRowsByStation = useMemo(() => {
-    const result = new Map<string, PillRow[]>();
+    const result: NativeMap<string, PillRow[]> = new NativeMap();
     const fuels = focusedFuelType ? [focusedFuelType] : FUEL_TYPES_ALL;
 
     fuels.forEach(ft => {

@@ -12,7 +12,8 @@ import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { RoutePlanModal } from './components/RoutePlanModal';
 import { StatisticsDrawer } from './components/StatisticsDrawer';
 import { supabase } from './supabase';
-import { getStationDisplayName, LoyaltyDiscounts } from './utils';
+import { getStationDisplayName } from './utils';
+import type { LoyaltyDiscounts } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];

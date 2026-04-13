@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, LoyaltyDiscounts } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount } from '../utils';
+import type { LoyaltyDiscounts } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
