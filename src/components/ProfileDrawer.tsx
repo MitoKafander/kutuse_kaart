@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, CreditCard } from 'lucide-react';
+import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
 
@@ -68,6 +69,11 @@ export function ProfileDrawer({
   onDotStyleChange,
   showClusters,
   onShowClustersChange,
+  showStaleDemo,
+  onShowStaleDemoChange,
+  allBrandsForLoyalty,
+  loyaltyDiscounts,
+  onLoyaltyChange,
 }: {
   session: any;
   isOpen: boolean;
@@ -88,6 +94,11 @@ export function ProfileDrawer({
   onDotStyleChange: (style: 'info' | 'brand') => void;
   showClusters: boolean;
   onShowClustersChange: (show: boolean) => void;
+  showStaleDemo: boolean;
+  onShowStaleDemoChange: (show: boolean) => void;
+  allBrandsForLoyalty: string[];
+  loyaltyDiscounts: LoyaltyDiscounts;
+  onLoyaltyChange: (brand: string, cents: number) => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -469,6 +480,52 @@ export function ProfileDrawer({
                   </div>
                 </div>
 
+                {/* Loyalty card discounts */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                    <CreditCard size={16} /> Kliendikaardid
+                  </h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                    Sisesta soodustus sentides liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja "Odavaim lähedal" kasutab sooduskaardi hinda järjestamiseks.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {allBrandsForLoyalty.map(brand => {
+                      const current = loyaltyDiscounts[brand] ?? 0;
+                      return (
+                        <div key={brand} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 12px', background: 'var(--color-surface)',
+                          border: '1px solid var(--color-surface-border)', borderRadius: '8px'
+                        }}>
+                          <span style={{ fontSize: '0.85rem' }}>{brand}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>−</span>
+                            <input
+                              type="number"
+                              min={0}
+                              max={50}
+                              step={0.5}
+                              value={current || ''}
+                              placeholder="0"
+                              onChange={e => {
+                                const v = parseFloat(e.target.value);
+                                onLoyaltyChange(brand, isNaN(v) ? 0 : v);
+                              }}
+                              style={{
+                                width: '64px', textAlign: 'right',
+                                background: 'var(--color-bg)', border: '1px solid var(--color-surface-border)',
+                                color: 'var(--color-text)', borderRadius: '6px',
+                                padding: '4px 8px', fontSize: '0.85rem', outline: 'none'
+                              }}
+                            />
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>¢/L</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Dot style preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
@@ -525,6 +582,33 @@ export function ProfileDrawer({
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
                         position: 'absolute', top: '2px', left: showClusters ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Demo: show stale/expired prices (>24h) */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <Eye size={16} /> Näita aegunud hindu (demo)
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        Kuvab ka &gt;24h vanu hindu
+                      </span>
+                    </div>
+                    <div
+                      onClick={() => onShowStaleDemoChange(!showStaleDemo)}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: showStaleDemo ? 'var(--color-warning)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: showStaleDemo ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>

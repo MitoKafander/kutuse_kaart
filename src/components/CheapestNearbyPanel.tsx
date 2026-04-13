@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, LoyaltyDiscounts } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
@@ -8,9 +8,12 @@ const RADIUS_OPTIONS = [5, 10, 20];
 interface NearbyResult {
   fuelType: string;
   price: number;
+  grossPrice: number;
   station: any;
   distanceKm: number;
   isFresh: boolean;
+  outsideRadius: boolean;
+  discounted: boolean;
 }
 
 function findCheapestNearby(
@@ -20,17 +23,19 @@ function findCheapestNearby(
   userLat: number,
   userLon: number,
   radiusKm: number,
-  preferredBrands: string[] = []
+  preferredBrands: string[] = [],
+  loyaltyDiscounts: LoyaltyDiscounts = {},
+  applyLoyalty: boolean = false,
 ): NearbyResult[] {
   const results: NearbyResult[] = [];
 
   for (const fuelType of FUEL_TYPES) {
     let best: NearbyResult | null = null;
+    let bestOutside: NearbyResult | null = null;
 
     for (const station of stations) {
       if (preferredBrands.length > 0 && !preferredBrands.includes(station.name)) continue;
       const dist = haversineKm(userLat, userLon, station.latitude, station.longitude);
-      if (dist > radiusKm) continue;
 
       const recentPrice = prices
         .filter(p => p.station_id === station.id && p.fuel_type === fuelType)
@@ -39,18 +44,31 @@ function findCheapestNearby(
       if (!recentPrice) continue;
       if (isPriceExpired(recentPrice, allVotes)) continue;
 
-      if (!best || recentPrice.price < best.price) {
-        best = {
-          fuelType,
-          price: recentPrice.price,
-          station,
-          distanceKm: dist,
-          isFresh: isPriceFresh(recentPrice, allVotes),
-        };
+      const net = getNetPrice(recentPrice.price, station.name, loyaltyDiscounts, applyLoyalty);
+      const candidate: NearbyResult = {
+        fuelType,
+        price: net,
+        grossPrice: recentPrice.price,
+        station,
+        distanceKm: dist,
+        isFresh: isPriceFresh(recentPrice, allVotes),
+        outsideRadius: dist > radiusKm,
+        discounted: hasDiscount(station.name, loyaltyDiscounts, applyLoyalty),
+      };
+
+      if (dist <= radiusKm) {
+        if (!best || candidate.price < best.price) best = candidate;
+      } else {
+        // Fallback: closest-outside-radius cheapest, only used if nothing within
+        if (!bestOutside || candidate.distanceKm < bestOutside.distanceKm ||
+            (candidate.distanceKm === bestOutside.distanceKm && candidate.price < bestOutside.price)) {
+          bestOutside = candidate;
+        }
       }
     }
 
     if (best) results.push(best);
+    else if (bestOutside) results.push(bestOutside);
   }
 
   return results;
@@ -65,6 +83,8 @@ export function CheapestNearbyPanel({
   radius,
   onRadiusChange,
   preferredBrands = [],
+  loyaltyDiscounts = {},
+  applyLoyalty = false,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -74,6 +94,8 @@ export function CheapestNearbyPanel({
   radius: number;
   onRadiusChange: (r: number) => void;
   preferredBrands?: string[];
+  loyaltyDiscounts?: LoyaltyDiscounts;
+  applyLoyalty?: boolean;
 }) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationError, setLocationError] = useState(false);
@@ -99,7 +121,7 @@ export function CheapestNearbyPanel({
   if (!isOpen) return null;
 
   const results = userLocation
-    ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands)
+    ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands, loyaltyDiscounts, applyLoyalty)
     : [];
 
   const fuelLabel: Record<string, string> = {
@@ -226,10 +248,18 @@ export function CheapestNearbyPanel({
 
             {/* Price + station info */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                   €{result.price.toFixed(3)}
                 </span>
+                {result.discounted && (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>
+                    €{result.grossPrice.toFixed(3)}
+                  </span>
+                )}
+                {result.discounted && (
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f59e0b' }}>★ sooduskaart</span>
+                )}
                 <span style={{
                   fontSize: '0.75rem', fontWeight: '600',
                   color: result.isFresh ? 'var(--color-fresh)' : 'var(--color-warning)',
@@ -240,10 +270,13 @@ export function CheapestNearbyPanel({
               <div style={{ fontSize: '0.88rem', color: 'var(--color-text)', fontWeight: '500', marginTop: '2px' }}>
                 {getStationDisplayName(result.station)}
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                {result.distanceKm < 1
+              <div style={{ fontSize: '0.78rem', color: result.outsideRadius ? 'var(--color-warning)' : 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{result.distanceKm < 1
                   ? `${Math.round(result.distanceKm * 1000)} m`
-                  : `${result.distanceKm.toFixed(1)} km`}
+                  : `${result.distanceKm.toFixed(1)} km`}</span>
+                {result.outsideRadius && (
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>• väljaspool raadiust</span>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro, Navigation, TrendingUp } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -9,8 +9,10 @@ import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
+import { RoutePlanModal } from './components/RoutePlanModal';
+import { StatisticsDrawer } from './components/StatisticsDrawer';
 import { supabase } from './supabase';
-import { getStationDisplayName } from './utils';
+import { getStationDisplayName, LoyaltyDiscounts } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -27,6 +29,9 @@ function App() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(20);
+  const [isRouteOpen, setIsRouteOpen] = useState(false);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   
   // Data state
@@ -55,6 +60,16 @@ function App() {
   });
   const [showClusters, setShowClusters] = useState(() => {
     return localStorage.getItem('kyts-show-clusters') !== 'false';
+  });
+  const [showStaleDemo, setShowStaleDemo] = useState(() => {
+    return localStorage.getItem('kyts-show-stale-demo') === 'true';
+  });
+  const [loyaltyDiscounts, setLoyaltyDiscounts] = useState<LoyaltyDiscounts>(() => {
+    try { return JSON.parse(localStorage.getItem('kyts-loyalty-discounts') || '{}'); }
+    catch { return {}; }
+  });
+  const [applyLoyalty, setApplyLoyalty] = useState(() => {
+    return localStorage.getItem('kyts-apply-loyalty') !== 'false';
   });
 
   const toggleMapStyle = () => {
@@ -138,8 +153,17 @@ function App() {
       const { data: favs } = await supabase.from('user_favorites').select('*');
       if (favs) setFavorites(favs);
       
+      // Load loyalty discounts
+      const { data: loyalty } = await supabase.from('user_loyalty_discounts').select('brand, discount_cents');
+      if (loyalty) {
+        const map: LoyaltyDiscounts = {};
+        loyalty.forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
+        setLoyaltyDiscounts(map);
+        localStorage.setItem('kyts-loyalty-discounts', JSON.stringify(map));
+      }
+
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, apply_loyalty').eq('id', currentUser.user.id).single();
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
         // Automatically set map filter on first load
@@ -155,6 +179,10 @@ function App() {
       if (prof?.show_clusters !== null && prof?.show_clusters !== undefined) {
         setShowClusters(prof.show_clusters);
         localStorage.setItem('kyts-show-clusters', String(prof.show_clusters));
+      }
+      if (prof?.apply_loyalty !== null && prof?.apply_loyalty !== undefined) {
+        setApplyLoyalty(prof.apply_loyalty);
+        localStorage.setItem('kyts-apply-loyalty', String(prof.apply_loyalty));
       }
     } else {
       setFavorites([]);
@@ -229,8 +257,12 @@ function App() {
         onToggleMapStyle={toggleMapStyle}
         dotStyle={dotStyle}
         showClusters={showClusters}
+        showStaleDemo={showStaleDemo}
+        loyaltyDiscounts={loyaltyDiscounts}
+        applyLoyalty={applyLoyalty}
+        routePolyline={routePolyline}
       />
-      
+
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
         <header className="glass-panel" style={{
@@ -376,6 +408,48 @@ function App() {
         <Euro size={22} />
       </button>
 
+      {/* Statistics FAB */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => setIsStatsOpen(true)}
+        title="Statistika"
+        style={{
+          position: 'absolute',
+          bottom: 'calc(330px + env(safe-area-inset-bottom))',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '25px',
+          zIndex: 1000,
+          border: '1px solid var(--color-surface-border)',
+          cursor: 'pointer',
+          color: '#a855f7',
+        }}
+      >
+        <TrendingUp size={22} />
+      </button>
+
+      {/* Route-aware FAB — cheapest fuel along route to destination */}
+      <button
+        className="glass-panel flex-center"
+        onClick={() => setIsRouteOpen(true)}
+        title="Odavaim kütus marsruudil"
+        style={{
+          position: 'absolute',
+          bottom: 'calc(270px + env(safe-area-inset-bottom))',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '25px',
+          zIndex: 1000,
+          border: '1px solid var(--color-surface-border)',
+          cursor: 'pointer',
+          color: '#22c55e',
+        }}
+      >
+        <Navigation size={22} />
+      </button>
+
       {/* Camera FAB — quick scan without pre-selecting a station */}
       <button
         className="glass-panel flex-center"
@@ -411,8 +485,8 @@ function App() {
       </div>
 
       {/* Modals & Drawers */}
-      <FilterDrawer 
-        isOpen={isFilterOpen} 
+      <FilterDrawer
+        isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         brands={uniqueBrands}
         selectedBrands={selectedBrands}
@@ -424,6 +498,15 @@ function App() {
         setShowOnlyFresh={setShowOnlyFresh}
         highlightCheapest={highlightCheapest}
         setHighlightCheapest={setHighlightCheapest}
+        applyLoyalty={applyLoyalty}
+        onApplyLoyaltyChange={async (v) => {
+          setApplyLoyalty(v);
+          localStorage.setItem('kyts-apply-loyalty', String(v));
+          if (session?.user?.id) {
+            await supabase.from('user_profiles').upsert({ id: session.user.id, apply_loyalty: v });
+          }
+        }}
+        hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
       />
       
       <StationDrawer 
@@ -489,6 +572,28 @@ function App() {
         onDotStyleChange={(s) => { setDotStyle(s); localStorage.setItem('kyts-dot-style', s); }}
         showClusters={showClusters}
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
+        showStaleDemo={showStaleDemo}
+        onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
+        allBrandsForLoyalty={uniqueBrands}
+        loyaltyDiscounts={loyaltyDiscounts}
+        onLoyaltyChange={async (brand, cents) => {
+          const next = { ...loyaltyDiscounts };
+          if (cents > 0) next[brand] = cents;
+          else delete next[brand];
+          setLoyaltyDiscounts(next);
+          localStorage.setItem('kyts-loyalty-discounts', JSON.stringify(next));
+          if (session?.user?.id) {
+            if (cents > 0) {
+              await supabase.from('user_loyalty_discounts').upsert(
+                { user_id: session.user.id, brand, discount_cents: cents },
+                { onConflict: 'user_id,brand' }
+              );
+            } else {
+              await supabase.from('user_loyalty_discounts').delete()
+                .eq('user_id', session.user.id).eq('brand', brand);
+            }
+          }
+        }}
       />
 
       <CheapestNearbyPanel
@@ -500,6 +605,28 @@ function App() {
         radius={nearbyRadius}
         onRadiusChange={setNearbyRadius}
         preferredBrands={preferredBrands}
+        loyaltyDiscounts={loyaltyDiscounts}
+        applyLoyalty={applyLoyalty}
+      />
+
+      <RoutePlanModal
+        isOpen={isRouteOpen}
+        onClose={() => setIsRouteOpen(false)}
+        stations={stations}
+        prices={prices}
+        allVotes={votes}
+        loyaltyDiscounts={loyaltyDiscounts}
+        applyLoyalty={applyLoyalty}
+        selectedFuelType={selectedFuelType}
+        onRouteChange={setRoutePolyline}
+      />
+
+      <StatisticsDrawer
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+        stations={stations}
+        prices={prices}
+        session={session}
       />
 
       <PrivacyModal

@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, CircleMarker, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, CircleMarker, Marker, Polyline } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { LocateFixed, Sun, Moon } from 'lucide-react';
-import { isPriceExpired, isPriceFresh } from '../utils';
+import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, LoyaltyDiscounts } from '../utils';
 
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
@@ -120,72 +120,103 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
   return null;
 }
 
-function ZoomTracker({ onZoomChange }: { onZoomChange: (zoom: number) => void }) {
+// Tracks the current viewport bounds so top-N pills are recomputed only for
+// stations visible on screen. Debounced to avoid thrashing during pans.
+function ViewportBoundsTracker({ onBoundsChange }: { onBoundsChange: (b: L.LatLngBounds) => void }) {
   const map = useMap();
   useEffect(() => {
-    onZoomChange(map.getZoom());
-    const handler = () => onZoomChange(map.getZoom());
-    map.on('zoomend', handler);
-    return () => { map.off('zoomend', handler); };
-  }, [map, onZoomChange]);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const fire = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => onBoundsChange(map.getBounds()), 150);
+    };
+    fire();
+    map.on('moveend', fire);
+    map.on('zoomend', fire);
+    return () => {
+      if (timer) clearTimeout(timer);
+      map.off('moveend', fire);
+      map.off('zoomend', fire);
+    };
+  }, [map, onBoundsChange]);
   return null;
 }
 
-// Create a Waze-style price label DivIcon
-function createPriceIcon(price: number, isCheapest: boolean, isFresh: boolean, isSelected: boolean = false, isLightMap: boolean = false, brandName: string = ''): L.DivIcon {
-  const priceStr = `€${price.toFixed(3)}`;
-  const brandColor = getBrandColor(brandName);
+const FUEL_SHORT: Record<string, string> = {
+  'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG',
+};
 
-  // Color scheme — theme-aware
+interface PillRow { fuelType: string; price: number; grossPrice: number; isFresh: boolean; isCheapest: boolean; discounted: boolean; }
+
+// Create a Waze-style price label DivIcon. Supports multi-row content
+// (one row per fuel type) so a station that ranks in top-N for multiple
+// fuels shows all of them stacked in a single pill.
+function createPriceIcon(
+  rows: PillRow[],
+  isSelected: boolean,
+  isLightMap: boolean,
+  brandName: string,
+  showFuelLabel: boolean,
+): L.DivIcon {
+  const brandColor = getBrandColor(brandName);
+  const anyCheapest = rows.some(r => r.isCheapest);
+
   let bgColor = isLightMap ? 'rgba(255, 255, 255, 0.92)' : 'rgba(30, 34, 44, 0.92)';
   let borderColor = isLightMap ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)';
-  let textColor = isLightMap ? '#1a1d24' : '#ffffff';
+  const textColor = isLightMap ? '#1a1d24' : '#ffffff';
   let shadow = '0 2px 8px rgba(0,0,0,0.4)';
 
-  if (isCheapest) {
+  if (anyCheapest) {
     bgColor = 'rgba(250, 204, 21, 0.95)';
     borderColor = 'rgba(250, 204, 21, 0.6)';
-    textColor = '#1a1a2e';
     shadow = '0 2px 12px rgba(250, 204, 21, 0.4)';
   }
 
-  // Freshness cues for stale pills (5–24h):
-  //   1. Fade the inner content (price text + brand dot) to 0.55 — bg stays opaque
-  //      so the pill remains legible against busy map tiles.
-  //   2. Tint the border amber (unless cheapest, where gold border wins).
-  const contentOpacity = isFresh ? 1 : 0.55;
-  if (!isFresh && !isCheapest) {
+  const anyStale = rows.some(r => !r.isFresh);
+  if (anyStale && !anyCheapest) {
     borderColor = 'rgba(245, 158, 11, 0.55)';
   }
-  const borderWidth = isFresh ? 1 : 1.5;
+  const borderWidth = anyStale ? 1.5 : 1;
 
   if (isSelected) {
     const ringColor = isLightMap ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.6)';
     shadow = `0 0 0 3px ${ringColor}, ` + shadow;
   }
 
+  const rowsHtml = rows.map(r => {
+    const priceStr = `€${r.price.toFixed(3)}`;
+    const rowColor = anyCheapest ? '#1a1a2e' : textColor;
+    const fuelBadge = showFuelLabel
+      ? `<span style="font-size:10px;font-weight:700;opacity:0.7;margin-right:4px;min-width:18px;">${FUEL_SHORT[r.fuelType] ?? r.fuelType}</span>`
+      : '';
+    const grossStrike = r.discounted
+      ? `<span style="font-size:10px;font-weight:500;color:${rowColor};opacity:0.55;text-decoration:line-through;margin-left:3px;">€${r.grossPrice.toFixed(3)}</span>`
+      : '';
+    const cardBadge = r.discounted
+      ? `<span style="font-size:9px;font-weight:700;color:${anyCheapest ? '#1a1a2e' : '#f59e0b'};margin-left:2px;">★</span>`
+      : '';
+    return `<div style="display:flex;align-items:center;gap:5px;opacity:${r.isFresh ? 1 : 0.55};line-height:1.1;">
+      <div style="width:6px;height:6px;border-radius:50%;background:${brandColor};flex-shrink:0;"></div>
+      ${fuelBadge}
+      <span style="font-size:12px;font-weight:600;color:${rowColor};letter-spacing:0.2px;">${priceStr}</span>
+      ${cardBadge}${grossStrike}
+    </div>`;
+  }).join('');
+
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="
-      display: inline-flex; align-items: center;
+      display: inline-flex; flex-direction: column; gap: 2px;
       background: ${bgColor};
       border: ${borderWidth}px solid ${borderColor};
-      border-radius: 16px;
+      border-radius: 12px;
       padding: 4px 10px 4px 6px;
       box-shadow: ${shadow};
       white-space: nowrap;
       font-family: 'Outfit', sans-serif;
       cursor: pointer;
       transform: translate(-50%, -50%);
-    ">
-      <div style="display: inline-flex; align-items: center; gap: 5px; opacity: ${contentOpacity};">
-        <div style="width: 8px; height: 8px; border-radius: 50%; background: ${brandColor}; flex-shrink: 0;"></div>
-        <span style="
-          font-size: 12px; font-weight: 600;
-          color: ${textColor}; letter-spacing: 0.2px;
-        ">${priceStr}</span>
-      </div>
-    </div>`,
+    ">${rowsHtml}</div>`,
     iconSize: [0, 0],
     iconAnchor: [0, 0],
   });
@@ -224,6 +255,9 @@ function createClusterIcon(cluster: any) {
   });
 }
 
+const FUEL_TYPES_ALL = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+const TOP_N_PER_FUEL = 3;
+
 export function Map({
   stations,
   prices,
@@ -232,11 +266,15 @@ export function Map({
   focusedFuelType,
   showOnlyFresh,
   highlightCheapest,
+  showStaleDemo = false,
   selectedStation,
   mapStyle,
   onToggleMapStyle,
   dotStyle,
   showClusters,
+  loyaltyDiscounts = {},
+  applyLoyalty = false,
+  routePolyline = null,
 }: {
   stations: any[],
   prices: any[],
@@ -245,127 +283,121 @@ export function Map({
   focusedFuelType: string | null,
   showOnlyFresh: boolean,
   highlightCheapest: boolean,
+  showStaleDemo?: boolean,
   selectedStation: any | null,
   mapStyle: 'dark' | 'light',
   onToggleMapStyle: () => void,
   dotStyle: 'info' | 'brand',
   showClusters: boolean,
+  loyaltyDiscounts?: LoyaltyDiscounts,
+  applyLoyalty?: boolean,
+  routePolyline?: [number, number][] | null,
 }) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(7);
+  const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
 
   const tileUrl = mapStyle === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
-  // Calculate the mathematically cheapest price for the focused fuel
-  const cheapestPrice = useMemo(() => {
-    if (!focusedFuelType) return null;
-
-    let minPrice = Infinity;
-
+  // Per-fuel most-recent valid price per station (applies freshness + vote filters).
+  // isFresh is carried for pill styling. null if no showable price for that fuel.
+  const freshPriceByStationFuel = useMemo(() => {
+    const map = new Map<string, Map<string, { price: number; isFresh: boolean }>>();
     stations.forEach(station => {
-      const recentPrice = prices
-        .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
-        .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
+      const inner = new Map<string, { price: number; isFresh: boolean }>();
+      FUEL_TYPES_ALL.forEach(ft => {
+        const recent = prices
+          .filter(p => p.station_id === station.id && p.fuel_type === ft)
+          .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
+        if (!recent) return;
+        if (calculateVoteScore(recent.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
+        const expired = isPriceExpired(recent, allVotes);
+        if (expired && !showStaleDemo) return;
+        if (showOnlyFresh && !isPriceFresh(recent, allVotes)) return;
+        inner.set(ft, { price: recent.price, isFresh: isPriceFresh(recent, allVotes) });
+      });
+      if (inner.size > 0) map.set(station.id, inner);
+    });
+    return map;
+  }, [stations, prices, allVotes, showOnlyFresh, showStaleDemo]);
 
-      if (recentPrice) {
-        if (isPriceExpired(recentPrice, allVotes)) return;
-        if (showOnlyFresh && !isPriceFresh(recentPrice, allVotes)) return;
+  // Top-N cheapest stations per fuel type within the current viewport bounds.
+  // Returns a map: stationId -> PillRow[] (one row per fuel type it ranks in).
+  const pillRowsByStation = useMemo(() => {
+    const result = new Map<string, PillRow[]>();
+    const fuels = focusedFuelType ? [focusedFuelType] : FUEL_TYPES_ALL;
 
-        if (recentPrice.price < minPrice) {
-          minPrice = recentPrice.price;
-        }
-      }
+    fuels.forEach(ft => {
+      const candidates: { stationId: string; brand: string; gross: number; net: number; isFresh: boolean; discounted: boolean }[] = [];
+      stations.forEach(station => {
+        if (viewportBounds && !viewportBounds.contains([station.latitude, station.longitude])) return;
+        const data = freshPriceByStationFuel.get(station.id)?.get(ft);
+        if (!data) return;
+        const net = getNetPrice(data.price, station.name, loyaltyDiscounts, applyLoyalty);
+        candidates.push({
+          stationId: station.id,
+          brand: station.name,
+          gross: data.price,
+          net,
+          isFresh: data.isFresh,
+          discounted: hasDiscount(station.name, loyaltyDiscounts, applyLoyalty),
+        });
+      });
+      candidates.sort((a, b) => a.net - b.net);
+      const topN = candidates.slice(0, TOP_N_PER_FUEL);
+      topN.forEach((c, i) => {
+        const rows = result.get(c.stationId) || [];
+        rows.push({
+          fuelType: ft,
+          price: c.net,
+          grossPrice: c.gross,
+          isFresh: c.isFresh,
+          isCheapest: i === 0,
+          discounted: c.discounted,
+        });
+        result.set(c.stationId, rows);
+      });
     });
 
-    return minPrice === Infinity ? null : minPrice;
-  }, [stations, prices, focusedFuelType, showOnlyFresh, allVotes]);
+    return result;
+  }, [stations, freshPriceByStationFuel, focusedFuelType, viewportBounds, loyaltyDiscounts, applyLoyalty]);
 
-  // IDs of the 5 cheapest stations for the focused fuel — shown as price pills even when zoomed out
-  const topCheapestStationIds = useMemo(() => {
-    if (!focusedFuelType) return new Set<string>();
-    const ranked: { id: string; price: number }[] = [];
-    stations.forEach(station => {
-      const recentPrice = prices
-        .filter(p => p.station_id === station.id && p.fuel_type === focusedFuelType)
-        .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
-      if (!recentPrice) return;
-      if (isPriceExpired(recentPrice, allVotes)) return;
-      if (showOnlyFresh && !isPriceFresh(recentPrice, allVotes)) return;
-      if (calculateVoteScore(recentPrice.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
-      ranked.push({ id: station.id, price: recentPrice.price });
-    });
-    ranked.sort((a, b) => a.price - b.price);
-    return new Set(ranked.slice(0, 5).map(s => s.id));
-  }, [stations, prices, focusedFuelType, showOnlyFresh, allVotes]);
+  // Split markers: stations that earned pill rows get pills; others get dots.
+  // `highlightCheapest` (when focused fuel): keep only the single cheapest station.
+  const pillStations: { station: any; rows: PillRow[] }[] = [];
+  const dotStations: { station: any; isFresh: boolean; isCheapest: boolean; hasFuelData: boolean }[] = [];
 
-  // Pre-compute station data for rendering
-  const stationMarkerData = useMemo(() => {
-    return stations.map(station => {
-      const relevantPrices = prices
-        .filter(p => p.station_id === station.id && (focusedFuelType ? p.fuel_type === focusedFuelType : true))
-        .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime());
-
-      const mostRecentPrice = relevantPrices[0];
-
-      let hasFuelData = true;
-      let isFresh = false;
-      let isCheapest = false;
-
-      if (!mostRecentPrice) {
-        hasFuelData = false;
-      } else {
-        const voteScore = calculateVoteScore(mostRecentPrice.id, allVotes);
-        if (voteScore <= DOWNVOTE_THRESHOLD) {
-          hasFuelData = false;
-        }
-
-        if (isPriceExpired(mostRecentPrice, allVotes)) {
-          hasFuelData = false;
-        } else if (showOnlyFresh && !isPriceFresh(mostRecentPrice, allVotes)) {
-          hasFuelData = false;
-        } else if (hasFuelData) {
-          isFresh = isPriceFresh(mostRecentPrice, allVotes);
-        }
-
-        if (cheapestPrice !== null && mostRecentPrice.price === cheapestPrice && hasFuelData) {
-          isCheapest = true;
-        }
+  stations.forEach(station => {
+    const rows = pillRowsByStation.get(station.id);
+    if (rows && rows.length > 0) {
+      if (highlightCheapest && focusedFuelType && !rows[0].isCheapest) {
+        // hide non-cheapest in highlight mode
+        return;
       }
-
-      if (highlightCheapest && focusedFuelType && !isCheapest) {
-        hasFuelData = false;
-      }
-
-      return { station, mostRecentPrice, hasFuelData, isFresh, isCheapest };
-    });
-  }, [stations, prices, allVotes, focusedFuelType, showOnlyFresh, highlightCheapest, cheapestPrice]);
-
-  // Split markers: fresh/data stations render on top, faded ones behind
-  // Price pills and top-5 cheapest are rendered outside the cluster group
-  const pillMarkers: typeof stationMarkerData = [];
-  const freshDots: typeof stationMarkerData = [];
-  const fadedDots: typeof stationMarkerData = [];
-
-  stationMarkerData.forEach(d => {
-    if (!d.hasFuelData) {
-      // No-data stations always render as faded dots so they respect dotStyle
-      // (otherwise the brand-color mode would lose them at high zoom levels).
-      fadedDots.push(d);
+      pillStations.push({ station, rows });
       return;
     }
-    const showPill = !!focusedFuelType && (zoomLevel >= 12 || topCheapestStationIds.has(d.station.id));
-    if (showPill) {
-      pillMarkers.push(d);
-    } else {
-      freshDots.push(d);
+    if (highlightCheapest && focusedFuelType) return;
+    // Determine dot freshness based on most relevant fuel data (for brand/info styling)
+    const fuelMap = freshPriceByStationFuel.get(station.id);
+    const hasFuelData = !!fuelMap && fuelMap.size > 0;
+    let isFresh = false;
+    if (hasFuelData && focusedFuelType) {
+      const d = fuelMap!.get(focusedFuelType);
+      if (d) isFresh = d.isFresh;
+    } else if (hasFuelData) {
+      isFresh = Array.from(fuelMap!.values()).some(v => v.isFresh);
     }
+    dotStations.push({ station, isFresh, isCheapest: false, hasFuelData });
   });
+
+  const fadedDots = dotStations.filter(d => !d.hasFuelData);
+  const freshDots = dotStations.filter(d => d.hasFuelData);
 
   const isLight = mapStyle === 'light';
 
-  const renderFadedDot = ({ station }: typeof stationMarkerData[number]) => {
+  const renderFadedDot = ({ station }: { station: any }) => {
     const isSelected = selectedStation?.id === station.id;
     const fillColor = dotStyle === 'info' ? '#6b7280' : getBrandColor(station.name);
     const fillOpacity = isSelected ? 0.6 : (dotStyle === 'info' ? 0.25 : 0.35);
@@ -384,7 +416,7 @@ export function Map({
     );
   };
 
-  const renderFreshDot = ({ station, isFresh, isCheapest }: typeof stationMarkerData[number]) => {
+  const renderFreshDot = ({ station, isFresh, isCheapest }: { station: any; isFresh: boolean; isCheapest: boolean }) => {
     const isSelected = selectedStation?.id === station.id;
     const brandColor = getBrandColor(station.name);
 
@@ -432,7 +464,11 @@ export function Map({
         />
         <LocationTracker position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
-        <ZoomTracker onZoomChange={setZoomLevel} />
+        <ViewportBoundsTracker onBoundsChange={setViewportBounds} />
+
+        {routePolyline && routePolyline.length > 1 && (
+          <Polyline positions={routePolyline} pathOptions={{ color: '#22c55e', weight: 4, opacity: 0.75 }} />
+        )}
 
         {/* Layer 1: Faded dots (no data / expired) */}
         {showClusters ? (
@@ -469,9 +505,9 @@ export function Map({
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}
-        {pillMarkers.map(({ station, mostRecentPrice, isFresh, isCheapest }) => {
+        {pillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
-          const icon = createPriceIcon(mostRecentPrice.price, isCheapest, isFresh, isSelected, isLight, station.name);
+          const icon = createPriceIcon(rows, isSelected, isLight, station.name, !focusedFuelType);
 
           return (
             <Marker

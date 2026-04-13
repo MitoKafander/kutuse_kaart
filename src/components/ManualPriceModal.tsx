@@ -34,6 +34,7 @@ export function ManualPriceModal({
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [pendingDetectedBrand, setPendingDetectedBrand] = useState<string | null>(null);
+  const [pricesFromAi, setPricesFromAi] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reset and initialise state when the modal opens/closes
@@ -49,6 +50,7 @@ export function ManualPriceModal({
       setPhotoExpanded(false);
       setCapturedPosition(null);
       setPendingDetectedBrand(null);
+      setPricesFromAi(false);
       setPrices(EMPTY_PRICES);
       // Camera FAB mode: auto-open camera immediately
       if (!station && allStations) {
@@ -94,13 +96,18 @@ export function ManualPriceModal({
   };
 
   const applyParsedPrices = (parsedJson: any) => {
+    let gotAny = false;
     setPrices(prev => {
       const copy = { ...prev };
       for (const type of FUEL_TYPES) {
-        if (parsedJson[type]) copy[type] = parsedJson[type].toString().replace(',', '.');
+        if (parsedJson[type]) {
+          copy[type] = parsedJson[type].toString().replace(',', '.');
+          gotAny = true;
+        }
       }
       return copy;
     });
+    if (gotAny) setPricesFromAi(true);
   };
 
   // Resolve nearby station candidates from a known position
@@ -225,6 +232,7 @@ export function ManualPriceModal({
     setAutoSelectMsg(null);
     setCapturedPosition(null);
     setPendingDetectedBrand(null);
+    setPricesFromAi(false);
     setPrices(EMPTY_PRICES);
     onClose();
   };
@@ -270,7 +278,7 @@ export function ManualPriceModal({
   // instead of blaming the user with "Vali esmalt tankla" in every state.
   const getSubmitLabel = () => {
     if (loading) return 'Salvestan...';
-    if (activeStation) return 'Salvesta';
+    if (activeStation) return pricesFromAi ? 'Kinnita' : 'Salvesta';
     if (isAnalyzing) return 'AI loeb pilti...';
     if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return 'Ootan GPS-signaali...';
     if (stationCandidates && stationCandidates.length > 0) return 'Vali tankla loendist';
@@ -323,6 +331,22 @@ export function ManualPriceModal({
         {/* Station picker (GPS FAB mode, multiple candidates) */}
         {isFabMode && !activeStation && stationCandidates !== null && (
           <div style={{ marginBottom: '16px' }}>
+            {pricesFromAi && (
+              <div style={{
+                background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.35)',
+                borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: '12px',
+                fontSize: '0.85rem', color: 'var(--color-text)',
+                display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center'
+              }}>
+                <span style={{ fontWeight: 600, color: '#22c55e' }}>AI tuvastas hinnad:</span>
+                {FUEL_TYPES.filter(t => prices[t]).map(t => (
+                  <span key={t} style={{ display: 'inline-flex', gap: '4px' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{t === 'Bensiin 95' ? '95' : t === 'Bensiin 98' ? '98' : t === 'Diisel' ? 'D' : t}</span>
+                    <span style={{ fontWeight: 600 }}>€{prices[t]}</span>
+                  </span>
+                ))}
+              </div>
+            )}
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
               Vali tankla, mille hindu uuendad:
             </p>

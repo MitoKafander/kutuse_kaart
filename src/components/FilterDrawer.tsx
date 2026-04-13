@@ -1,4 +1,4 @@
-import { X, Check } from 'lucide-react';
+import { X, Check, CreditCard } from 'lucide-react';
 
 export function FilterDrawer({ 
   isOpen, 
@@ -12,9 +12,12 @@ export function FilterDrawer({
   showOnlyFresh,
   setShowOnlyFresh,
   highlightCheapest,
-  setHighlightCheapest
-}: { 
-  isOpen: boolean, 
+  setHighlightCheapest,
+  applyLoyalty,
+  onApplyLoyaltyChange,
+  hasAnyDiscount,
+}: {
+  isOpen: boolean,
   onClose: () => void,
   brands: string[],
   selectedBrands: string[],
@@ -25,7 +28,10 @@ export function FilterDrawer({
   showOnlyFresh: boolean,
   setShowOnlyFresh: (v: boolean) => void,
   highlightCheapest: boolean,
-  setHighlightCheapest: (v: boolean) => void
+  setHighlightCheapest: (v: boolean) => void,
+  applyLoyalty: boolean,
+  onApplyLoyaltyChange: (v: boolean) => void,
+  hasAnyDiscount: boolean,
 }) {
   if (!isOpen) return null;
 
@@ -118,6 +124,27 @@ export function FilterDrawer({
                   }}/>
                 </div>
               </label>
+
+              {hasAnyDiscount && (
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CreditCard size={16} /> Näita hindu sooduskaardiga
+                  </span>
+                  <div
+                    onClick={() => onApplyLoyaltyChange(!applyLoyalty)}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: applyLoyalty ? '#f59e0b' : 'var(--color-surface)',
+                      position: 'relative', transition: 'background 0.2s'
+                    }}
+                  >
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                      position: 'absolute', top: '2px', left: applyLoyalty ? '22px' : '2px', transition: 'left 0.2s'
+                    }}/>
+                  </div>
+                </label>
+              )}
 
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>

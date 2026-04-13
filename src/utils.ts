@@ -35,6 +35,49 @@ export function isPriceFresh(price: any, allVotes: any[]): boolean {
   return getPriceAgeHours(price, allVotes) <= FRESH_HOURS;
 }
 
+// Haversine distance from a point to a great-circle segment [A, B], approximated
+// by projecting onto the segment in local equirectangular coordinates. Good enough
+// for short road-segment distances (<100km) at Estonia latitudes.
+export function pointToSegmentKm(pLat: number, pLon: number, aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const latToKm = 111.32;
+  const lonToKm = 111.32 * Math.cos((pLat * Math.PI) / 180);
+  const ax = aLon * lonToKm, ay = aLat * latToKm;
+  const bx = bLon * lonToKm, by = bLat * latToKm;
+  const px = pLon * lonToKm, py = pLat * latToKm;
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const qx = ax + t * dx, qy = ay + t * dy;
+  return Math.sqrt((px - qx) ** 2 + (py - qy) ** 2);
+}
+
+// Distance from point to nearest segment in a route polyline (LatLng pairs).
+export function pointToRouteKm(pLat: number, pLon: number, route: [number, number][]): number {
+  let best = Infinity;
+  for (let i = 0; i < route.length - 1; i++) {
+    const d = pointToSegmentKm(pLat, pLon, route[i][0], route[i][1], route[i + 1][0], route[i + 1][1]);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+// Loyalty discounts: flat cents off per brand (e.g. { 'Alexela': 4 } = -€0.04/L)
+export type LoyaltyDiscounts = Record<string, number>;
+
+export function getNetPrice(gross: number, brand: string, discounts: LoyaltyDiscounts, apply: boolean): number {
+  if (!apply) return gross;
+  const centsOff = discounts[brand];
+  if (!centsOff || centsOff <= 0) return gross;
+  return Math.max(0, gross - centsOff / 100);
+}
+
+export function hasDiscount(brand: string, discounts: LoyaltyDiscounts, apply: boolean): boolean {
+  if (!apply) return false;
+  return (discounts[brand] ?? 0) > 0;
+}
+
 export const getStationDisplayName = (station: any) => {
   const brand = station.name;
   const city = station.amenities?.['addr:city'];
