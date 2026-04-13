@@ -108,6 +108,9 @@ export function RoutePlanModal({
     if (!isOpen) return;
     const q = query.trim();
     if (q.length < 3) { setHits([]); return; }
+    // Query was auto-filled from the selected destination — don't re-search
+    // until the user actually types something different.
+    if (destination && q === destination.displayName.split(',')[0].trim()) { setHits([]); return; }
     const ctrl = new AbortController();
     const timer = setTimeout(async () => {
       setSearching(true);
@@ -121,7 +124,7 @@ export function RoutePlanModal({
       finally { setSearching(false); }
     }, 250);
     return () => { ctrl.abort(); clearTimeout(timer); };
-  }, [query, isOpen]);
+  }, [query, isOpen, destination]);
 
   useEffect(() => {
     if (!origin || !destination) { setRoute(null); setRouteError(null); return; }
