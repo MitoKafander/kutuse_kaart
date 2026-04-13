@@ -118,29 +118,29 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
 // "needs several clicks" flakiness caused by react-leaflet re-registering
 // every marker's click handler on each render.
 function MapClickDelegate({
-  stationsById,
-  onStationSelect,
+  stationsByIdRef,
+  onSelectRef,
   selectedRef,
 }: {
-  stationsById: NativeMap<string, any>;
-  onStationSelect: (s: any | null) => void;
+  stationsByIdRef: React.MutableRefObject<NativeMap<string, any>>;
+  onSelectRef: React.MutableRefObject<(s: any | null) => void>;
   selectedRef: React.MutableRefObject<any | null>;
 }) {
-  useMapEvents({
-    click: (e) => {
+  const handlers = useMemo(() => ({
+    click: (e: L.LeafletMouseEvent) => {
       const t = e.originalEvent?.target as HTMLElement | null;
       const sidEl = t?.closest?.('[data-sid]') as HTMLElement | null;
       if (sidEl) {
         const sid = sidEl.getAttribute('data-sid');
         if (sid) {
-          const station = stationsById.get(sid);
-          if (station) { onStationSelect(station); return; }
+          const station = stationsByIdRef.current.get(sid);
+          if (station) { onSelectRef.current(station); return; }
         }
       }
-      // Bare map — close any open drawer.
-      if (selectedRef.current) onStationSelect(null);
+      if (selectedRef.current) onSelectRef.current(null);
     },
-  });
+  }), [stationsByIdRef, onSelectRef, selectedRef]);
+  useMapEvents(handlers);
   return null;
 }
 
@@ -381,6 +381,12 @@ export function Map({
     for (const s of stations) m.set(String(s.id), s);
     return m;
   }, [stations]);
+
+  const stationsByIdRef = useRef(stationsById);
+  stationsByIdRef.current = stationsById;
+
+  const onStationSelectRef = useRef(onStationSelect);
+  onStationSelectRef.current = onStationSelect;
 
   const selectedStationRef = useRef<any | null>(null);
   selectedStationRef.current = selectedStation;
@@ -647,6 +653,9 @@ export function Map({
             disableClusteringAtZoom={11}
             spiderfyOnMaxZoom={false}
             showCoverageOnHover={false}
+            animate={false}
+            animateAddingMarkers={false}
+            removeOutsideVisibleBounds={false}
             iconCreateFunction={createClusterIcon}
           >
             {fadedDots.map(renderFadedDot)}
@@ -699,8 +708,8 @@ export function Map({
         })}
 
         <MapClickDelegate
-          stationsById={stationsById}
-          onStationSelect={onStationSelect}
+          stationsByIdRef={stationsByIdRef}
+          onSelectRef={onStationSelectRef}
           selectedRef={selectedStationRef}
         />
 
