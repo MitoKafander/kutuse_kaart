@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessage } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessage, getBrand } from '../utils';
 import type { LoyaltyDiscounts, GeolocationErrorKind } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel"];
@@ -35,7 +35,8 @@ function findCheapestNearby(
     let bestOutside: NearbyResult | null = null;
 
     for (const station of stations) {
-      if (preferredBrands.length > 0 && !preferredBrands.includes(station.name)) continue;
+      const brand = getBrand(station.name);
+      if (preferredBrands.length > 0 && !preferredBrands.includes(brand)) continue;
       const dist = haversineKm(userLat, userLon, station.latitude, station.longitude);
 
       const recentPrice = prices
@@ -45,7 +46,7 @@ function findCheapestNearby(
       if (!recentPrice) continue;
       if (isPriceExpired(recentPrice, allVotes)) continue;
 
-      const net = getNetPrice(recentPrice.price, station.name, loyaltyDiscounts, applyLoyalty);
+      const net = getNetPrice(recentPrice.price, brand, loyaltyDiscounts, applyLoyalty);
       const candidate: NearbyResult = {
         fuelType,
         price: net,
@@ -54,7 +55,7 @@ function findCheapestNearby(
         distanceKm: dist,
         isFresh: isPriceFresh(recentPrice, allVotes),
         outsideRadius: dist > radiusKm,
-        discounted: hasDiscount(station.name, loyaltyDiscounts, applyLoyalty),
+        discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
       };
 
       if (dist <= radiusKm) {

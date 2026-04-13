@@ -126,6 +126,23 @@ export function hasDiscount(brand: string, discounts: LoyaltyDiscounts, apply: b
   return (discounts[brand] ?? 0) > 0;
 }
 
+// Canonical Estonian fuel chain prefixes. Matched case-insensitively against
+// the start of a station's stored name so "Olerex Enge tankla" groups with "Olerex"
+// for brand filtering, loyalty discounts, and colour assignment.
+const KNOWN_CHAINS = [
+  'Circle K', 'Neste', 'Olerex', 'Alexela', 'Terminal',
+  'Krooning', 'Jetoil', 'Statoil', 'Eesti Autogaas', 'Eksar-Transoil',
+];
+
+export function getBrand(name: string | null | undefined): string {
+  if (!name) return 'Tundmatu';
+  const lower = name.toLowerCase();
+  for (const chain of KNOWN_CHAINS) {
+    if (lower.startsWith(chain.toLowerCase())) return chain;
+  }
+  return name;
+}
+
 export const getStationDisplayName = (station: any) => {
   const rawBrand = station.name;
   const city = station.amenities?.['addr:city'];

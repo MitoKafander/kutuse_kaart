@@ -5,7 +5,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock } from 'lucide-react';
-import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync } from '../utils';
+import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -524,14 +524,15 @@ export function Map({
         if (viewportBounds && !viewportBounds.contains([station.latitude, station.longitude])) return;
         const data = freshPriceByStationFuel.get(station.id)?.get(ft);
         if (!data) return;
-        const net = getNetPrice(data.price, station.name, loyaltyDiscounts, applyLoyalty);
+        const brand = getBrand(station.name);
+        const net = getNetPrice(data.price, brand, loyaltyDiscounts, applyLoyalty);
         candidates.push({
           stationId: station.id,
-          brand: station.name,
+          brand,
           gross: data.price,
           net,
           isFresh: data.isFresh,
-          discounted: hasDiscount(station.name, loyaltyDiscounts, applyLoyalty),
+          discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
         });
       });
       candidates.sort((a, b) => a.net - b.net);
@@ -630,7 +631,7 @@ export function Map({
   const isLight = mapStyle === 'light';
 
   const getFadedIcon = (station: any, isSelected: boolean): L.DivIcon => {
-    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(station.name);
+    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(getBrand(station.name));
     const key = `${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
     let icon = fadedIconCache.get(key);
     if (!icon) {
@@ -659,7 +660,7 @@ export function Map({
   };
 
   const getFreshIcon = (station: any, isSelected: boolean, isFresh: boolean, isCheapest: boolean): L.DivIcon => {
-    const brandColor = getBrandColor(station.name);
+    const brandColor = getBrandColor(getBrand(station.name));
     const key = `${brandColor}|${isSelected ? 1 : 0}|${isFresh ? 1 : 0}|${isCheapest ? 1 : 0}|${String(station.id)}`;
     let icon = freshIconCache.get(key);
     if (!icon) {
@@ -765,7 +766,7 @@ export function Map({
           const pillKey = String(station.id);
           let entry = pillIconCacheRef.current.get(pillKey);
           if (!entry || entry.hash !== pillHash) {
-            entry = { hash: pillHash, icon: createPriceIcon(rows, isSelected, isLight, station.name, showFuelLabel, station.id) };
+            entry = { hash: pillHash, icon: createPriceIcon(rows, isSelected, isLight, getBrand(station.name), showFuelLabel, station.id) };
             pillIconCacheRef.current.set(pillKey, entry);
           }
           const icon = entry.icon;

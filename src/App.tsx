@@ -18,7 +18,7 @@ const LeaderboardDrawer = lazy(() => import('./components/LeaderboardDrawer').th
 const RoutePlanModal = lazy(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
 const StatisticsDrawer = lazy(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 import { supabase } from './supabase';
-import { getStationDisplayName } from './utils';
+import { getStationDisplayName, getBrand } from './utils';
 import type { LoyaltyDiscounts } from './utils';
 import './index.css';
 
@@ -231,15 +231,15 @@ function App() {
   // Derive all unique brands dynamically
   const uniqueBrands = useMemo(() => {
     const brands = new Set<string>();
-    stations.forEach(s => { if (s.name) brands.add(s.name); });
+    stations.forEach(s => { if (s.name) brands.add(getBrand(s.name)); });
     return Array.from(brands).sort();
   }, [stations]);
 
   // Compute filtered stations based on Brand Menu ONLY
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
-      // Filter by Brand Menu
-      if (selectedBrands.length > 0 && !selectedBrands.includes(station.name)) return false;
+      // Filter by Brand Menu (canonical chain)
+      if (selectedBrands.length > 0 && !selectedBrands.includes(getBrand(station.name))) return false;
       return true;
     });
   }, [stations, selectedBrands]);

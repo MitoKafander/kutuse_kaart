@@ -3,7 +3,7 @@ import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
-  getCurrentPositionAsync,
+  getCurrentPositionAsync, getBrand,
 } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
@@ -160,13 +160,14 @@ export function RoutePlanModal({
         .sort((a: any, b: any) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
       if (!recent) continue;
       if (isPriceExpired(recent, allVotes)) continue;
-      const net = getNetPrice(recent.price, station.name, loyaltyDiscounts, applyLoyalty);
+      const brand = getBrand(station.name);
+      const net = getNetPrice(recent.price, brand, loyaltyDiscounts, applyLoyalty);
       out.push({
         station,
         fuelType: fuel,
         price: net,
         grossPrice: recent.price,
-        discounted: hasDiscount(station.name, loyaltyDiscounts, applyLoyalty),
+        discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
         isFresh: isPriceFresh(recent, allVotes),
         corridorKm: corridor,
         progressKm: haversineKm(origin.lat, origin.lon, station.latitude, station.longitude),

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
-import { getStationDisplayName } from '../utils';
+import { getStationDisplayName, getBrand } from '../utils';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
 const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
@@ -63,9 +63,10 @@ export function StatisticsDrawer({
       if (p.fuel_type !== selectedFuel) continue;
       const st = stationById.get(p.station_id);
       if (!st) continue;
-      const arr = byBrand.get(st.name) || [];
+      const brand = getBrand(st.name);
+      const arr = byBrand.get(brand) || [];
       arr.push(p.price);
-      byBrand.set(st.name, arr);
+      byBrand.set(brand, arr);
     }
     return [...byBrand.entries()]
       .map(([brand, arr]) => ({ brand, median: median(arr), n: arr.length }))
