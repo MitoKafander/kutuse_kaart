@@ -241,10 +241,6 @@ export function RoutePlanModal({
         {destination && (
           <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
             <strong style={{ color: 'var(--color-text)' }}>Sihtkoht:</strong> {destination.displayName}
-            <button onClick={() => { setDestination(null); setRoute(null); setQuery(''); setHits([]); }}
-              style={{ marginLeft: 8, background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontSize: '0.8rem' }}>
-              muuda
-            </button>
           </div>
         )}
 
