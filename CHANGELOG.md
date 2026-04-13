@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Desktop Click Reliability, Route Planner UX & Station Names - 2026-04-13
+
+### Fixed 🐛
+- 🔴 **Multi-click required to open station drawer** (`Map.tsx`): Every render rebuilt Leaflet icon instances and `eventHandlers` closures, causing react-leaflet to detach/reattach click listeners and `setIcon()` to rebuild DOM nodes — clicks landing during the gap were dropped (worst on desktop). Replaced with memoized icon caches (`fadedIconCache`, `freshIconCache`, `pillIconCacheRef`, `clusterIconCache`) keyed on visual state, plus a single map-level click delegate that resolves the station via `data-sid` attributes embedded in the DivIcon HTML. Single click is now reliable for dots, pills, clusters, and de-clustered markers.
+- 🔴 **Cluster-mode click flakiness** (`Map.tsx`): Replaced `react-leaflet-cluster` with an imperative `ClusterLayer` that owns `L.markerClusterGroup` directly and diffs markers by id. Bypasses React reconciliation churn that was tearing down marker layers mid-interaction.
+- 🟡 **CheapestNearbyPanel false timeout error on reopen** (`CheapestNearbyPanel.tsx`, `App.tsx`): Brave on desktop delayed the second permission prompt past our 8s timeout, surfacing a stale `POSITION_UNAVAILABLE`. Now the Map shares its actively-tracked GPS as `fallbackLocation`; the panel uses it immediately on open and silently refreshes in the background.
+- 🟡 **Route planner polyline cleared on close, then lost on reopen** (`RoutePlanModal.tsx`, `App.tsx`): Modal unmounted on close and dropped its route. Added `routeMounted` flag in `App.tsx` so the modal stays mounted after first open; the X-cancel FAB resets it for a clean reopen.
+- 🟢 **Station names show "Tundmatu" for unbranded OSM nodes** (`utils.ts`, `scripts/seed_stations.js`): `getStationDisplayName` now treats "Tundmatu" as a placeholder and substitutes `amenities.name` or `amenities.operator`. Seed script's brand-name fallback chain now also tries `operator` before defaulting.
+
+### Changed 🔧
+- 🟡 **Route planner: type-to-search after selection** (`RoutePlanModal.tsx`): Removed the `!destination` guard on the search dropdown and added a "skip search when query equals current destination's first segment" rule, so retyping naturally reopens the dropdown without re-querying for the already-selected place.
+- 🟡 **Route planner: removed redundant "muuda" button** (`RoutePlanModal.tsx`): Search field is always editable now.
+- 🟡 **Route planner: X clear button in search field** (`RoutePlanModal.tsx`): One-tap clear of query, hits, destination, and route.
+- 🟢 **Removed EV pipeline entirely** (per Feedback.md item 4): Deleted `api/sync-ev-chargers.ts`, `api/sync-ev-prices.ts`; stripped EV branches from `App.tsx`, `Map.tsx`, `utils.ts`; new `schema_phase17_drop_ev.sql` drops `ev_prices` + `ev_chargers` tables.
+
+### Key Decisions
+- Map-level click delegation via `data-sid` is more reliable than per-marker react-leaflet `eventHandlers` for high-marker-count maps that re-render frequently
+- Imperative ClusterLayer beats react-leaflet-cluster for our usage — too many React-driven marker changes per state update
+- Keep fresh-prices-only filter in route planner (user preference); fix silent failures, not the rule
+- "Tundmatu" is a placeholder, not a real station name — prefer any OSM-known label over showing it
+
+### Open Items
+- 13 stations remain literally nameless in OSM (no `brand`, `name`, or `operator`). Either label them manually in app/DB or contribute to OSM. Gemini identified one as Neste (Ahtme mnt, Kohtla-Järve) — applied via `schema_phase20_unknown_targeted.sql`.
+- Vercel cron jobs for `/api/sync-ev-chargers` and `/api/sync-ev-prices` need manual deletion in dashboard after deploy
+
+### Database Migrations
+- `schema_phase17_drop_ev.sql`: Drops `ev_prices` and `ev_chargers` tables.
+- `schema_phase18_ruhnu_name.sql`: Names "Ruhnu sadama tankla" by lat/lon bbox.
+- `schema_phase19_list_unknown.sql`: Audit query + auto-promote stations whose `amenities` already has a name/operator.
+- `schema_phase20_unknown_targeted.sql`: Per-id renames for stations identified via lookup (Eksar-Transoil, Eesti Autogaas, Alexela, Neste).
+
+### File Impact
+- **New**: `migrations/schema_phase17_drop_ev.sql`, `schema_phase18_ruhnu_name.sql`, `schema_phase19_list_unknown.sql`, `schema_phase20_unknown_targeted.sql`
+- **Modified**: `src/components/Map.tsx`, `src/components/RoutePlanModal.tsx`, `src/components/CheapestNearbyPanel.tsx`, `src/App.tsx`, `src/utils.ts`, `scripts/seed_stations.js`
+- **Deleted**: `api/sync-ev-chargers.ts`, `api/sync-ev-prices.ts`
+
+---
+
 ## [v1.5.0] - Brand Preferences, Profile Redesign & Back Button - 2026-04-09
 
 ### Added 🚀

@@ -127,14 +127,19 @@ export function hasDiscount(brand: string, discounts: LoyaltyDiscounts, apply: b
 }
 
 export const getStationDisplayName = (station: any) => {
-  const brand = station.name;
+  const rawBrand = station.name;
   const city = station.amenities?.['addr:city'];
   const street = station.amenities?.['addr:street'];
   const nodeName = station.amenities?.name;
+  const operator = station.amenities?.operator;
+
+  // If brand is the "Tundmatu" placeholder, prefer the OSM name/operator as the primary label.
+  const isUnknownBrand = !rawBrand || rawBrand === 'Tundmatu';
+  const brand = isUnknownBrand ? (nodeName || operator || 'Tundmatu') : rawBrand;
 
   if (city && street) return `${brand} (${city}, ${street})`;
   if (city) return `${brand} (${city})`;
   if (street) return `${brand} (${street})`;
-  if (nodeName && nodeName !== brand) return `${brand} (${nodeName})`;
+  if (!isUnknownBrand && nodeName && nodeName !== brand) return `${brand} (${nodeName})`;
   return brand;
 };

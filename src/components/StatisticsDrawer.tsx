@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
+import { getStationDisplayName } from '../utils';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
+const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
 const DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function median(xs: number[]): number {
   if (xs.length === 0) return 0;
@@ -20,8 +23,9 @@ export function StatisticsDrawer({
   prices: any[];
   session: any;
 }) {
+  const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
   const now = Date.now();
-  const horizonMs = DAYS * 24 * 60 * 60 * 1000;
+  const horizonMs = DAYS * DAY_MS;
 
   const recent = useMemo(
     () => prices.filter(p => now - new Date(p.reported_at).getTime() < horizonMs),
@@ -47,23 +51,78 @@ export function StatisticsDrawer({
     return out;
   }, [recent]);
 
+  const stationById = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const s of stations) m.set(s.id, s);
+    return m;
+  }, [stations]);
+
   const brandMedians = useMemo(() => {
-    const stationBrand = new Map<string, string>();
-    for (const s of stations) stationBrand.set(s.id, s.name);
     const byBrand = new Map<string, number[]>();
     for (const p of recent) {
-      if (p.fuel_type !== 'Bensiin 95') continue;
-      const brand = stationBrand.get(p.station_id);
-      if (!brand) continue;
-      const arr = byBrand.get(brand) || [];
+      if (p.fuel_type !== selectedFuel) continue;
+      const st = stationById.get(p.station_id);
+      if (!st) continue;
+      const arr = byBrand.get(st.name) || [];
       arr.push(p.price);
-      byBrand.set(brand, arr);
+      byBrand.set(st.name, arr);
     }
     return [...byBrand.entries()]
       .map(([brand, arr]) => ({ brand, median: median(arr), n: arr.length }))
       .filter(x => x.n >= 3)
       .sort((a, b) => a.median - b.median);
-  }, [recent, stations]);
+  }, [recent, stationById, selectedFuel]);
+
+  // Latest price per station for the selected fuel (within DAYS horizon).
+  const latestByStation = useMemo(() => {
+    const m = new Map<string, { price: number; reportedAt: number }>();
+    for (const p of recent) {
+      if (p.fuel_type !== selectedFuel) continue;
+      const t = new Date(p.reported_at).getTime();
+      const cur = m.get(p.station_id);
+      if (!cur || t > cur.reportedAt) m.set(p.station_id, { price: p.price, reportedAt: t });
+    }
+    return m;
+  }, [recent, selectedFuel]);
+
+  const cheapestNow = useMemo(() => {
+    let best: { station: any; price: number; reportedAt: number } | null = null;
+    for (const [stationId, v] of latestByStation) {
+      const st = stationById.get(stationId);
+      if (!st) continue;
+      if (!best || v.price < best.price) best = { station: st, price: v.price, reportedAt: v.reportedAt };
+    }
+    return best;
+  }, [latestByStation, stationById]);
+
+  // Biggest 7-day drops: compare latest price in 0–7d window vs. 7–14d window per (station, fuel).
+  const biggestDrops = useMemo(() => {
+    const cutoffNow = now;
+    const cutoff7 = now - 7 * DAY_MS;
+    const cutoff14 = now - 14 * DAY_MS;
+    const map = new Map<string, { recent: { price: number; t: number } | null; prior: { price: number; t: number } | null; fuel: string; stationId: string }>();
+    for (const p of recent) {
+      const t = new Date(p.reported_at).getTime();
+      const key = `${p.station_id}|${p.fuel_type}`;
+      const entry = map.get(key) || { recent: null, prior: null, fuel: p.fuel_type, stationId: p.station_id };
+      if (t >= cutoff7 && t <= cutoffNow) {
+        if (!entry.recent || t > entry.recent.t) entry.recent = { price: p.price, t };
+      } else if (t >= cutoff14 && t < cutoff7) {
+        if (!entry.prior || t > entry.prior.t) entry.prior = { price: p.price, t };
+      }
+      map.set(key, entry);
+    }
+    const rows: { station: any; fuel: string; oldPrice: number; newPrice: number; delta: number }[] = [];
+    for (const e of map.values()) {
+      if (!e.recent || !e.prior) continue;
+      const delta = e.recent.price - e.prior.price;
+      if (delta >= 0) continue;
+      const st = stationById.get(e.stationId);
+      if (!st) continue;
+      rows.push({ station: st, fuel: e.fuel, oldPrice: e.prior.price, newPrice: e.recent.price, delta });
+    }
+    return rows.sort((a, b) => a.delta - b.delta).slice(0, 5);
+  }, [recent, stationById, now]);
 
   const userCount = useMemo(
     () => session?.user?.id ? prices.filter(p => p.user_id === session.user.id).length : 0,
@@ -135,7 +194,50 @@ export function StatisticsDrawer({
         </div>
 
         <div>
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Soodsaim bränd (95, mediaan)</h3>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Kütus:</span>
+            {FUEL_TYPES.map(f => (
+              <button
+                key={f}
+                onClick={() => setSelectedFuel(f)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 20,
+                  border: selectedFuel === f ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
+                  background: selectedFuel === f ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
+                  color: selectedFuel === f ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  fontSize: '0.85rem',
+                  fontWeight: selectedFuel === f ? 600 : 400,
+                  cursor: 'pointer',
+                }}
+              >
+                {FUEL_LABEL[f] ?? f}
+              </button>
+            ))}
+          </div>
+
+          {cheapestNow && (
+            <div className="glass-panel" style={{
+              padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
+              background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.3)',
+            }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Odavaim hetkel</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{getStationDisplayName(cheapestNow.station)}</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{cheapestNow.price.toFixed(3)}</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                {(() => {
+                  const h = Math.floor((now - cheapestNow.reportedAt) / (60 * 60 * 1000));
+                  if (h < 1) return 'vähem kui tund tagasi';
+                  if (h < 24) return `${h} tundi tagasi`;
+                  return `${Math.floor(h / 24)} päeva tagasi`;
+                })()}
+              </div>
+            </div>
+          )}
+
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Soodsaim bränd ({selectedFuel}, mediaan)</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {brandMedians.slice(0, 10).map((b, i) => (
               <div key={b.brand} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px',
@@ -147,6 +249,34 @@ export function StatisticsDrawer({
             ))}
             {brandMedians.length === 0 && (
               <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Pole piisavalt hindu.</div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Suurimad hinnalangused (7 päeva)</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {biggestDrops.map(d => (
+              <div key={`${d.station.id}-${d.fuel}`} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+                padding: '8px 10px', background: 'var(--color-surface)',
+                border: '1px solid var(--color-surface-border)', borderRadius: 8, fontSize: '0.85rem',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {getStationDisplayName(d.station)}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                    {FUEL_LABEL[d.fuel] ?? d.fuel} · €{d.oldPrice.toFixed(3)} → €{d.newPrice.toFixed(3)}
+                  </div>
+                </div>
+                <span style={{ fontWeight: 700, color: 'var(--color-fresh)' }}>
+                  ▼ {Math.abs(d.delta * 100).toFixed(1)}¢
+                </span>
+              </div>
+            ))}
+            {biggestDrops.length === 0 && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Hinnalangusi ei tuvastatud.</div>
             )}
           </div>
         </div>

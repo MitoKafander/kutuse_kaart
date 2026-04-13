@@ -43,7 +43,7 @@ async function seedStations() {
       const lon = el.lon || (el.center && el.center.lon);
       
       // Extract brand/name
-      const name = el.tags?.brand || el.tags?.name || 'Tundmatu';
+      const name = el.tags?.brand || el.tags?.name || el.tags?.operator || 'Tundmatu';
       
       return {
         // We can use OSM id as our reference or just let Supabase generate UUIDs
