@@ -47,7 +47,7 @@ export default async function handler(req: Request) {
     headers: ocmKey ? { 'X-API-Key': ocmKey } : {},
   });
   if (!res.ok) return new Response(`OCM ${res.status}`, { status: 502 });
-  const pois: OcmPoi[] = await res.json();
+  const pois = await res.json() as OcmPoi[];
 
   const chargerRows = pois
     .filter(p => p.AddressInfo && typeof p.AddressInfo.Latitude === 'number')

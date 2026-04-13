@@ -17,7 +17,7 @@ export default async function handler(req: Request) {
   const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
-    const { imageBase64, stationName } = await req.json();
+    const { imageBase64, stationName } = await req.json() as { imageBase64?: string; stationName?: string };
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'Missing imageBase64 payload.' }), { 
