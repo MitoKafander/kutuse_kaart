@@ -43,20 +43,23 @@ function createDotIcon({
   visibleDiameter,
   strokeColor,
   strokeWidth = 0,
+  stationId,
 }: {
   fillColor: string;
   fillOpacity: number;
   visibleDiameter: number;
   strokeColor?: string;
   strokeWidth?: number;
+  stationId?: string | number;
 }): L.DivIcon {
   const bg = toRgba(fillColor, fillOpacity);
   const border = strokeWidth > 0 && strokeColor
     ? `border: ${strokeWidth}px solid ${strokeColor};`
     : '';
+  const sid = stationId != null ? ` data-sid="${String(stationId).replace(/"/g, '')}"` : '';
   return L.divIcon({
     className: 'custom-dot',
-    html: `<div style="
+    html: `<div${sid} style="
       width: ${DOT_HIT_SIZE}px; height: ${DOT_HIT_SIZE}px;
       display: flex; align-items: center; justify-content: center;
     "><div style="
@@ -65,6 +68,7 @@ function createDotIcon({
       background: ${bg};
       ${border}
       box-sizing: content-box;
+      pointer-events: none;
     "></div></div>`,
     iconSize: [DOT_HIT_SIZE, DOT_HIT_SIZE],
     iconAnchor: [DOT_HIT_SIZE / 2, DOT_HIT_SIZE / 2],
@@ -108,17 +112,33 @@ function LocationTracker({ position, setPosition }: { position: [number, number]
   );
 }
 
-function MapClickCloser({ onMapClick }: { onMapClick: () => void }) {
+// Single map-level click delegate. Resolves the clicked station by reading the
+// data-sid attribute embedded in each dot/pill DivIcon's HTML. Having one
+// stable listener instead of hundreds of per-marker handlers eliminates the
+// "needs several clicks" flakiness caused by react-leaflet re-registering
+// every marker's click handler on each render.
+function MapClickDelegate({
+  stationsById,
+  onStationSelect,
+  selectedRef,
+}: {
+  stationsById: NativeMap<string, any>;
+  onStationSelect: (s: any | null) => void;
+  selectedRef: React.MutableRefObject<any | null>;
+}) {
   useMapEvents({
     click: (e) => {
-      // Only close the drawer when the user clicks bare map tiles, not when
-      // they click a marker/pill. Leaflet usually stops marker clicks from
-      // reaching the map, but Brave/desktop has edge cases where a fast
-      // double-tap on a pill still fires the map click — which closed the
-      // drawer faster than the user could see it, looking like "multi-click".
       const t = e.originalEvent?.target as HTMLElement | null;
-      if (t?.closest?.('.leaflet-marker-icon, .leaflet-interactive, .custom-marker, .custom-dot')) return;
-      onMapClick();
+      const sidEl = t?.closest?.('[data-sid]') as HTMLElement | null;
+      if (sidEl) {
+        const sid = sidEl.getAttribute('data-sid');
+        if (sid) {
+          const station = stationsById.get(sid);
+          if (station) { onStationSelect(station); return; }
+        }
+      }
+      // Bare map — close any open drawer.
+      if (selectedRef.current) onStationSelect(null);
     },
   });
   return null;
@@ -198,6 +218,7 @@ function createPriceIcon(
   isLightMap: boolean,
   brandName: string,
   showFuelLabel: boolean,
+  stationId?: string | number,
 ): L.DivIcon {
   const brandColor = getBrandColor(brandName);
   const anyCheapest = rows.some(r => r.isCheapest);
@@ -251,9 +272,10 @@ function createPriceIcon(
   const rowHeight = 16;
   const iconW = 96;
   const iconH = 8 + rows.length * rowHeight;
+  const sid = stationId != null ? ` data-sid="${String(stationId).replace(/"/g, '')}"` : '';
   return L.divIcon({
     className: 'custom-marker',
-    html: `<div style="
+    html: `<div${sid} style="
       display: inline-flex; flex-direction: column; gap: 2px;
       background: ${bgColor};
       border: ${borderWidth}px solid ${borderColor};
@@ -346,6 +368,22 @@ export function Map({
   useEffect(() => {
     onUserLocationChange?.(userLocation ? { lat: userLocation[0], lon: userLocation[1] } : null);
   }, [userLocation, onUserLocationChange]);
+
+  const stationsById = useMemo(() => {
+    const m: NativeMap<string, any> = new NativeMap();
+    for (const s of stations) m.set(String(s.id), s);
+    return m;
+  }, [stations]);
+
+  const selectedStationRef = useRef<any | null>(null);
+  selectedStationRef.current = selectedStation;
+
+  // Faded/fresh icons only depend on dotStyle + mapStyle. Cache per visual
+  // state so Marker icon prop stays referentially stable across re-renders —
+  // otherwise react-leaflet calls setIcon() which rebuilds the DOM element
+  // and clicks land on air while the element is being replaced.
+  const fadedIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
+  const freshIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   const [followMode, setFollowMode] = useState<'off' | 'located' | 'locked'>('off');
   const [viewportBounds, setViewportBounds] = useState<L.LatLngBounds | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(7);
@@ -495,56 +533,74 @@ export function Map({
 
   const isLight = mapStyle === 'light';
 
+  const getFadedIcon = (station: any, isSelected: boolean): L.DivIcon => {
+    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(station.name);
+    const key = `${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
+    let icon = fadedIconCache.get(key);
+    if (!icon) {
+      const fillOpacity = isSelected ? 0.85 : (dotStyle === 'info' ? 0.6 : 0.4);
+      const strokeColor = isSelected
+        ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)')
+        : (dotStyle === 'info' ? (isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)') : undefined);
+      const strokeWidth = isSelected ? 2 : (dotStyle === 'info' ? 1 : 0);
+      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter: 12, strokeColor, strokeWidth, stationId: station.id });
+      fadedIconCache.set(key, icon);
+    }
+    return icon;
+  };
+
   const renderFadedDot = ({ station }: { station: any }) => {
     const isSelected = selectedStation?.id === station.id;
-    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(station.name);
-    const fillOpacity = isSelected ? 0.85 : (dotStyle === 'info' ? 0.6 : 0.4);
-    const strokeColor = isSelected
-      ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)')
-      : (dotStyle === 'info' ? (isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)') : undefined);
-    const strokeWidth = isSelected ? 2 : (dotStyle === 'info' ? 1 : 0);
-
     return (
       <Marker
         key={station.id}
         position={[station.latitude, station.longitude]}
-        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter: 12, strokeColor, strokeWidth })}
-        bubblingMouseEvents={false}
-        eventHandlers={{ click: () => onStationSelect(station) }}
+        icon={getFadedIcon(station, isSelected)}
+        bubblingMouseEvents={true}
+        interactive={true}
       />
     );
   };
 
+  const getFreshIcon = (station: any, isSelected: boolean, isFresh: boolean, isCheapest: boolean): L.DivIcon => {
+    const brandColor = getBrandColor(station.name);
+    const key = `${brandColor}|${isSelected ? 1 : 0}|${isFresh ? 1 : 0}|${isCheapest ? 1 : 0}|${String(station.id)}`;
+    let icon = freshIconCache.get(key);
+    if (!icon) {
+      let visibleDiameter = 12;
+      let fillColor = brandColor;
+      let fillOpacity = isFresh ? 0.9 : 0.55;
+      let strokeColor: string | undefined;
+      let strokeWidth = 0;
+
+      if (isCheapest) {
+        fillColor = '#facc15';
+        visibleDiameter = 22;
+        fillOpacity = 1;
+        strokeColor = isLight ? '#333' : '#ffffff';
+        strokeWidth = 2;
+      }
+
+      if (isSelected && !isCheapest) {
+        strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
+        strokeWidth = 3;
+      }
+
+      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth, stationId: station.id });
+      freshIconCache.set(key, icon);
+    }
+    return icon;
+  };
+
   const renderFreshDot = ({ station, isFresh, isCheapest }: { station: any; isFresh: boolean; isCheapest: boolean }) => {
     const isSelected = selectedStation?.id === station.id;
-    const brandColor = getBrandColor(station.name);
-
-    let visibleDiameter = 12;
-    let fillColor = brandColor;
-    let fillOpacity = isFresh ? 0.9 : 0.55;
-    let strokeColor: string | undefined;
-    let strokeWidth = 0;
-
-    if (isCheapest) {
-      fillColor = '#facc15';
-      visibleDiameter = 22;
-      fillOpacity = 1;
-      strokeColor = isLight ? '#333' : '#ffffff';
-      strokeWidth = 2;
-    }
-
-    if (isSelected && !isCheapest) {
-      strokeColor = isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)';
-      strokeWidth = 3;
-    }
-
     return (
       <Marker
         key={station.id}
         position={[station.latitude, station.longitude]}
-        icon={createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth })}
-        bubblingMouseEvents={false}
-        eventHandlers={{ click: () => onStationSelect(station) }}
+        icon={getFreshIcon(station, isSelected, isFresh, isCheapest)}
+        bubblingMouseEvents={true}
+        interactive={true}
       />
     );
   };
@@ -607,7 +663,7 @@ export function Map({
         {/* Layer 3: Price pills — always on top, never clustered */}
         {visiblePillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
-          const icon = createPriceIcon(rows, isSelected, isLight, station.name, !focusedFuelType);
+          const icon = createPriceIcon(rows, isSelected, isLight, station.name, !focusedFuelType, station.id);
 
           return (
             <Marker
@@ -615,13 +671,17 @@ export function Map({
               position={[station.latitude, station.longitude]}
               icon={icon}
               zIndexOffset={1000}
-              bubblingMouseEvents={false}
-        eventHandlers={{ click: () => onStationSelect(station) }}
+              bubblingMouseEvents={true}
+              interactive={true}
             />
           );
         })}
 
-        <MapClickCloser onMapClick={() => { if (selectedStation) onStationSelect(null); }} />
+        <MapClickDelegate
+          stationsById={stationsById}
+          onStationSelect={onStationSelect}
+          selectedRef={selectedStationRef}
+        />
 
         <LocationFollower userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
         <RecenterButton userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
