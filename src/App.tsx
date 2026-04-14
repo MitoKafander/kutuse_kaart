@@ -227,12 +227,31 @@ function App() {
       loadData(session);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       loadData(session); // Reload state if user logs in/out
+      // Mobile post-OAuth viewport fix: when Google redirects back to the app
+      // on Android Chrome, the visible viewport height and `100dvh` briefly
+      // disagree, pushing absolutely-positioned FABs off-screen until the
+      // next layout pass. Nudging resize re-syncs CSS dvh units + Leaflet.
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        const nudge = () => window.dispatchEvent(new Event('resize'));
+        requestAnimationFrame(nudge);
+        setTimeout(nudge, 150);
+        setTimeout(nudge, 600);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // URL-bar show/hide on mobile fires visualViewport.resize but not window.resize,
+    // so forward it so Leaflet + any resize-sensitive UI stay in sync.
+    const vv = window.visualViewport;
+    const onVVResize = () => window.dispatchEvent(new Event('resize'));
+    vv?.addEventListener('resize', onVVResize);
+
+    return () => {
+      subscription.unsubscribe();
+      vv?.removeEventListener('resize', onVVResize);
+    };
   }, []);
 
   const handleOpenPriceForm = () => {
