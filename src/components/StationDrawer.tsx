@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
@@ -30,6 +30,22 @@ export function StationDrawer({
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
   const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
+
+  // Escape-key dismiss — matches the modal pattern used elsewhere in the app.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  // Clear the vote-confirm toast after 2s with proper cleanup so the callback
+  // doesn't fire on an unmounted drawer (prev: raw setTimeout in the handler).
+  useEffect(() => {
+    if (!voteConfirm) return;
+    const t = setTimeout(() => setVoteConfirm(null), 2000);
+    return () => clearTimeout(t);
+  }, [voteConfirm]);
 
   if (!isOpen || !station) return null;
 
@@ -107,10 +123,7 @@ export function StationDrawer({
       alert("Hääletamine ebaõnnestus. " + error.message);
     } else {
       onVoteSubmitted();
-      if (voteType === 'up') {
-        setVoteConfirm(priceId);
-        setTimeout(() => setVoteConfirm(null), 2000);
-      }
+      if (voteType === 'up') setVoteConfirm(priceId);
     }
   };
 
@@ -134,7 +147,15 @@ export function StationDrawer({
   const fuelTypes = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
   return (
-    <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" style={{
+    <>
+    {/* Transparent backdrop — outside-tap dismisses. Sits below the panel but
+        above the map so map interactions don't eat the dismiss tap. */}
+    <div
+      onClick={onClose}
+      style={{ position: 'absolute', inset: 0, zIndex: 999, background: 'transparent' }}
+      aria-hidden="true"
+    />
+    <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" role="dialog" aria-modal="true" style={{
       position: 'absolute',
       bottom: 0, left: 0, right: 0,
       zIndex: 1000,
@@ -221,6 +242,8 @@ export function StationDrawer({
                 <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                   <button
                     onClick={() => handleVote(recentPrice.id, 'up')}
+                    aria-label="Kinnita hind"
+                    aria-pressed={userVote === 'up'}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'up' ? 'var(--color-fresh)' : 'var(--color-text-muted)' }}
                   ><ThumbsUp size={16} /></button>
 
@@ -230,6 +253,8 @@ export function StationDrawer({
 
                   <button
                     onClick={() => handleVote(recentPrice.id, 'down')}
+                    aria-label="Vaidlusta hind"
+                    aria-pressed={userVote === 'down'}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'down' ? 'var(--color-stale)' : 'var(--color-text-muted)' }}
                   ><ThumbsDown size={16} /></button>
                 </div>
@@ -368,5 +393,6 @@ export function StationDrawer({
         </button>
       </div>
     </div>
+    </>
   );
 }

@@ -35,16 +35,17 @@ async function searchPlace(q: string): Promise<SearchHit[]> {
   }));
 }
 
-async function fetchRoute(fromLat: number, fromLon: number, toLat: number, toLon: number): Promise<[number, number][] | null> {
+async function fetchRoute(fromLat: number, fromLon: number, toLat: number, toLon: number, signal?: AbortSignal): Promise<[number, number][] | null> {
   const url = `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=full&geometries=geojson`;
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     if (!res.ok) return null;
     const data = await res.json();
     const coords = data.routes?.[0]?.geometry?.coordinates;
     if (!coords) return null;
     return coords.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
   } catch {
+    // Aborted or network — caller treats null as "no route".
     return null;
   }
 }
@@ -128,15 +129,24 @@ export function RoutePlanModal({
 
   useEffect(() => {
     if (!origin || !destination) { setRoute(null); setRouteError(null); return; }
+    const ctrl = new AbortController();
     setRouting(true);
     setRouteError(null);
-    fetchRoute(origin.lat, origin.lon, destination.lat, destination.lon)
+    fetchRoute(origin.lat, origin.lon, destination.lat, destination.lon, ctrl.signal)
       .then(r => {
+        if (ctrl.signal.aborted) return;
         setRoute(r);
         if (!r) setRouteError('Marsruuti ei leitud. Proovi teist sihtkohta või kontrolli internetiühendust.');
       })
-      .catch(() => setRouteError('Marsruudi arvutamine ebaõnnestus. Proovi uuesti.'))
-      .finally(() => setRouting(false));
+      .catch(() => {
+        if (ctrl.signal.aborted) return;
+        setRouteError('Marsruudi arvutamine ebaõnnestus. Proovi uuesti.');
+      })
+      .finally(() => {
+        if (ctrl.signal.aborted) return;
+        setRouting(false);
+      });
+    return () => ctrl.abort();
   }, [origin, destination]);
 
   if (!isOpen) return null;

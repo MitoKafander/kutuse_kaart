@@ -101,50 +101,61 @@ function App() {
   }, []);
 
   // Back button closes the topmost overlay instead of leaving the app.
-  // Uses a ref so the popstate listener always sees current state without re-registering.
-  const overlayStateRef = useRef({
-    isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen,
-    isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen
-  });
-  overlayStateRef.current = {
-    isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen,
-    isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen
-  };
+  // LIFO stack keyed by overlay id: newly-opened overlays are pushed; popstate
+  // always closes the most recently opened one. Previous implementation used a
+  // count + hard-coded priority chain, which picked the wrong overlay to close
+  // whenever the user's open order didn't match that priority.
+  const overlayStackRef = useRef<Array<{ id: string; close: () => void }>>([]);
+  const suppressPopRef = useRef(0);
 
-  // Track how many overlays are open to manage history entries
-  const overlayCountRef = useRef(0);
-  const overlayCount = [isAuthOpen, isFilterOpen, isProfileOpen, !!selectedStation,
-    isPriceModalOpen, isCameraOpen, isCheapestNearbyOpen, isPrivacyOpen]
-    .filter(Boolean).length;
+  const openOverlays = useMemo(() => {
+    const list: Array<{ id: string; close: () => void }> = [];
+    if (isPriceModalOpen) list.push({ id: 'priceModal', close: () => setIsPriceModalOpen(false) });
+    if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
+    if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
+    if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
+    if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
+    if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
+    if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
+    if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
+    return list;
+  }, [isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
-    const prev = overlayCountRef.current;
-    if (overlayCount > prev) {
-      // New overlay(s) opened — push history entries for each
-      for (let i = 0; i < overlayCount - prev; i++) {
-        window.history.pushState({ overlay: true }, '');
-      }
-    } else if (overlayCount < prev) {
-      // Overlay(s) closed programmatically — silently pop extra history entries
-      // We skip this if count went to 0 from 1, since popstate already consumed it
+    const stack = overlayStackRef.current;
+    const openIds = new Set(openOverlays.map(o => o.id));
+    // 1. Drop any stack entries that are no longer open (programmatic close).
+    //    Each removal costs one history entry we must rewind, suppressing our
+    //    own popstate handler for that tick so we don't re-close something.
+    const removed = stack.filter(e => !openIds.has(e.id));
+    if (removed.length) {
+      overlayStackRef.current = stack.filter(e => openIds.has(e.id));
+      suppressPopRef.current += removed.length;
+      window.history.go(-removed.length);
     }
-    overlayCountRef.current = overlayCount;
-  }, [overlayCount]);
+    // 2. Append newly-opened overlays in open order + push history per entry.
+    const known = new Set(overlayStackRef.current.map(e => e.id));
+    for (const o of openOverlays) {
+      if (!known.has(o.id)) {
+        overlayStackRef.current.push(o);
+        window.history.pushState({ overlay: o.id }, '');
+      } else {
+        // Refresh the close callback so it uses the latest setter identity.
+        const i = overlayStackRef.current.findIndex(e => e.id === o.id);
+        if (i >= 0) overlayStackRef.current[i] = o;
+      }
+    }
+  }, [openOverlays]);
 
   useEffect(() => {
     const handlePopState = () => {
-      const s = overlayStateRef.current;
-      if (s.isPriceModalOpen) setIsPriceModalOpen(false);
-      else if (s.isCameraOpen) setIsCameraOpen(false);
-      else if (s.isAuthOpen) setIsAuthOpen(false);
-      else if (s.isPrivacyOpen) setIsPrivacyOpen(false);
-      else if (s.isProfileOpen) setIsProfileOpen(false);
-      else if (s.isFilterOpen) setIsFilterOpen(false);
-      else if (s.selectedStation) setSelectedStation(null);
-      else if (s.isCheapestNearbyOpen) setIsCheapestNearbyOpen(false);
-      overlayCountRef.current = Math.max(0, overlayCountRef.current - 1);
+      if (suppressPopRef.current > 0) {
+        suppressPopRef.current -= 1;
+        return;
+      }
+      const top = overlayStackRef.current.pop();
+      if (top) top.close();
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);

@@ -4,15 +4,21 @@ import * as dotenv from 'dotenv';
 // Load environment variables from .env
 dotenv.config({ path: '.env' });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+// Seeding is a privileged operation — use the service role key (server-only,
+// never prefixed with VITE_ so it can't be bundled into the client). The anon
+// key is public and rate-limited; relying on it here couples the seeder to RLS
+// and would fail the moment we tighten station insert policies.
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error("Missing Supabase credentials in .env file.");
+  console.error("Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env (NOT the VITE_ anon key).");
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 

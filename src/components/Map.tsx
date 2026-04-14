@@ -204,6 +204,9 @@ function MapClickDelegate({
   onSelectRef: React.MutableRefObject<(s: any | null) => void>;
   selectedRef: React.MutableRefObject<any | null>;
 }) {
+  // Deps are refs by design — their `.current` is mutated inline each render
+  // elsewhere in this file. Re-creating `handlers` would reattach the Leaflet
+  // click listener and reintroduce the first-click-lost bug on hard reload.
   const handlers = useMemo(() => ({
     click: (e: L.LeafletMouseEvent) => {
       const t = e.originalEvent?.target as HTMLElement | null;

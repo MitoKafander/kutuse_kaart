@@ -106,6 +106,7 @@ export function CheapestNearbyPanel({
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationErrorKind, setLocationErrorKind] = useState<GeolocationErrorKind | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const requestLocation = () => {
     setIsLocating(true);
@@ -113,10 +114,12 @@ export function CheapestNearbyPanel({
     getCurrentPositionAsync()
       .then(pos => {
         setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setUsingFallback(false);
       })
       .catch((e: any) => {
         if (fallbackLocation) {
           setUserLocation(fallbackLocation);
+          setUsingFallback(true);
           setLocationErrorKind(null);
         } else {
           setLocationErrorKind((e?.kind as GeolocationErrorKind) || 'unavailable');
@@ -129,9 +132,9 @@ export function CheapestNearbyPanel({
     if (!isOpen) return;
     setLocationErrorKind(null);
     if (userLocation || fallbackLocation) {
-      if (!userLocation && fallbackLocation) setUserLocation(fallbackLocation);
+      if (!userLocation && fallbackLocation) { setUserLocation(fallbackLocation); setUsingFallback(true); }
       getCurrentPositionAsync({ enableHighAccuracy: true, maximumAge: 120000, timeout: 15000 })
-        .then(pos => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .then(pos => { setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }); setUsingFallback(false); })
         .catch(() => {});
       return;
     }
@@ -183,6 +186,16 @@ export function CheapestNearbyPanel({
             <X size={24} />
           </button>
         </div>
+
+        {usingFallback && userLocation && (
+          <div style={{
+            fontSize: '0.78rem', color: 'var(--color-text-muted)',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            <MapPin size={12} />
+            <span>Kasutan kaardi asukohta — värske GPS pole veel saabunud.</span>
+          </div>
+        )}
 
         {/* Radius selector */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

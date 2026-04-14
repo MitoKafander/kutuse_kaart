@@ -4,13 +4,20 @@ export const config = {
   runtime: 'edge', // Use edge compute for ultra-fast, cold-bootless API response
 };
 
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+};
+
 export default async function handler(req: Request) {
-  if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: JSON_HEADERS });
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Server is missing Gemini API key.' }), { 
-      status: 500, headers: { 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify({ error: 'Server is missing Gemini API key.' }), {
+      status: 500, headers: JSON_HEADERS
     });
   }
 
@@ -21,7 +28,7 @@ export default async function handler(req: Request) {
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: 'Missing imageBase64 payload.' }), { 
-        status: 400, headers: { 'Content-Type': 'application/json' } 
+        status: 400, headers: JSON_HEADERS 
       });
     }
 
@@ -84,7 +91,7 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     const text = result.response.text();
     return new Response(text, { 
       status: 200, 
-      headers: { 'Content-Type': 'application/json' } 
+      headers: JSON_HEADERS 
     });
     
   } catch (error: any) {
@@ -93,7 +100,7 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     const is503 = msg.includes('503') || /service.?unavailable|high demand/i.test(msg);
     const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
     return new Response(JSON.stringify({ error: msg }), {
-      status: is429 ? 429 : is503 ? 503 : 500, headers: { 'Content-Type': 'application/json' }
+      status: is429 ? 429 : is503 ? 503 : 500, headers: JSON_HEADERS
     });
   }
 }

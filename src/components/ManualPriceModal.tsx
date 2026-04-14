@@ -182,11 +182,13 @@ export function ManualPriceModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Capture GPS immediately — before AI processing delays change the position
+    // Capture GPS immediately — before AI processing delays change the position.
+    // The helper already has a 15 s timeout; on failure surface an actionable
+    // error instead of letting the submit button hang on "Ootan GPS-signaali...".
     if (!station && allStations) {
       getCurrentPositionAsync()
         .then(pos => setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
-        .catch(() => {}); // GPS failure handled later when resolving candidates
+        .catch(() => setScanError('NO_GPS'));
     }
 
     const reader = new FileReader();
@@ -246,14 +248,26 @@ export function ManualPriceModal({
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData?.session?.user;
 
-    const inserts = Object.entries(prices)
+    const parsed = Object.entries(prices)
       .filter(([_, price]) => price.trim() !== '')
       .map(([type, price]) => ({
-        station_id: activeStation.id,
-        fuel_type: type,
-        price: parseFloat(price.replace(',', '.')),
-        user_id: user?.id || null
+        type,
+        value: parseFloat(price.replace(',', '.')),
       }));
+
+    const invalid = parsed.find(p => !Number.isFinite(p.value) || p.value <= 0 || p.value >= 10);
+    if (invalid) {
+      alert(`Hind peab olema vahemikus 0–10 € (${invalid.type}: ${invalid.value}).`);
+      setLoading(false);
+      return;
+    }
+
+    const inserts = parsed.map(p => ({
+      station_id: activeStation.id,
+      fuel_type: p.type,
+      price: p.value,
+      user_id: user?.id || null
+    }));
 
     if (inserts.length > 0) {
       const { error } = await supabase.from('prices').insert(inserts);
@@ -467,6 +481,8 @@ export function ManualPriceModal({
                 ? 'AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
                 : scanError === 'NO_NEARBY_STATION'
                 ? 'Läheduses (500m raadiuses) ei leitud ühtegi tankla. Mine tankla juurde lähemale ja proovi uuesti.'
+                : scanError === 'NO_GPS'
+                ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
                 : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
             </span>
             <button
