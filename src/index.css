@@ -30,6 +30,9 @@
   --color-pill-selected-ring: rgba(255, 255, 255, 0.6);
   --color-dot-nodata: rgba(255, 255, 255, 0.3);
   --color-dot-nodata-selected: rgba(255, 255, 255, 0.9);
+  --color-fab-bg: rgba(20, 24, 32, 0.82);
+  --color-fab-bg-hover: rgba(30, 35, 45, 0.88);
+  --color-fab-border: rgba(255, 255, 255, 0.18);
 
   --font-family: 'Outfit', -apple-system, sans-serif;
   --radius-md: 12px;
@@ -54,6 +57,9 @@
   --color-pill-selected-ring: rgba(0, 0, 0, 0.4);
   --color-dot-nodata: rgba(0, 0, 0, 0.25);
   --color-dot-nodata-selected: rgba(0, 0, 0, 0.7);
+  --color-fab-bg: rgba(255, 255, 255, 0.88);
+  --color-fab-bg-hover: rgba(255, 255, 255, 0.95);
+  --color-fab-border: rgba(0, 0, 0, 0.15);
 }
 
 * {
@@ -78,6 +84,30 @@ body {
   border: 1px solid var(--color-surface-border);
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Floating action buttons: glassy vibe but readable over busy map content.
+   Much higher background opacity + heavier blur + dark halo ring so clusters
+   and price pills underneath don't muddy the button silhouette. */
+.glass-fab {
+  background: var(--color-fab-bg);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--color-fab-border);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 6px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.12s ease, background 0.2s ease;
+}
+.glass-fab:hover { background: var(--color-fab-bg-hover); }
+.glass-fab:active { transform: scale(0.94); }
+
+[data-theme="light"] .glass-fab {
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 6px 20px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .heading-1 {

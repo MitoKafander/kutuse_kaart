@@ -454,13 +454,13 @@ function App() {
 
       {/* FAB stack (top → bottom): Camera, Nearby, Navigation, Stats */}
       <button
-        className="glass-panel flex-center"
+        className="glass-fab flex-center"
         onClick={() => setIsCameraOpen(true)}
         title="Pildista hindu"
         style={{
           position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
-          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          cursor: 'pointer',
           color: 'var(--color-primary)',
         }}
       >
@@ -468,13 +468,13 @@ function App() {
       </button>
 
       <button
-        className="glass-panel flex-center"
+        className="glass-fab flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
         title="Odavaim kütus lähedal"
         style={{
           position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
-          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          cursor: 'pointer',
           color: '#facc15',
         }}
       >
@@ -482,13 +482,13 @@ function App() {
       </button>
 
       <button
-        className="glass-panel flex-center"
+        className="glass-fab flex-center"
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
           position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
-          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          cursor: 'pointer',
           color: '#22c55e',
         }}
       >
@@ -497,14 +497,14 @@ function App() {
 
       {routePolyline && (
         <button
-          className="glass-panel flex-center"
+          className="glass-fab flex-center"
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title="Tühista marsruut"
           style={{
             position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
-            border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+            cursor: 'pointer',
             color: '#ef4444',
           }}
         >
@@ -513,13 +513,13 @@ function App() {
       )}
 
       <button
-        className="glass-panel flex-center"
+        className="glass-fab flex-center"
         onClick={() => setIsStatsOpen(true)}
         title="Statistika"
         style={{
           position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
-          border: '1px solid var(--color-surface-border)', cursor: 'pointer',
+          cursor: 'pointer',
           color: '#a855f7',
         }}
       >

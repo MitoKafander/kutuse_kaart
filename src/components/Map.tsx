@@ -845,7 +845,7 @@ function RecenterButton({
     : 'var(--color-text-muted)';
   return (
     <button
-      className="glass-panel flex-center"
+      className="glass-fab flex-center"
       title={followMode === 'locked' ? 'GPS lukus — vajuta uuesti vabastamiseks' : followMode === 'located' ? 'Vajuta uuesti GPS lukustamiseks' : 'Leia minu asukoht'}
       style={{
         position: 'absolute',
@@ -855,7 +855,7 @@ function RecenterButton({
         height: '50px',
         borderRadius: '25px',
         zIndex: 1000,
-        border: followMode === 'locked' ? '1px solid #22c55e' : '1px solid var(--color-surface-border)',
+        ...(followMode === 'locked' ? { border: '1px solid #22c55e' } : {}),
         cursor: 'pointer',
         color,
       }}
