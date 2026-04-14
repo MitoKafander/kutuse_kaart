@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName, haversineKm, getCurrentPositionAsync } from '../utils';
+import { capture } from '../utils/analytics';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
@@ -86,7 +87,7 @@ export function ManualPriceModal({
         body: JSON.stringify({ imageBase64: base64, stationName })
       });
 
-      if (res.ok) return res.json();
+      if (res.ok) { capture('ai_scan_success'); return res.json(); }
       if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
       if (res.status === 503 && attempt < MAX_RETRIES) continue;
 
@@ -274,6 +275,7 @@ export function ManualPriceModal({
       if (error) {
         alert("Viga hinna salvestamisel!");
       } else {
+        capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi });
         onPricesSubmitted();
         handleClose();
       }
