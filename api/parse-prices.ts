@@ -21,14 +21,6 @@ const dayLimit = redis
   : null;
 
 export default async function handler(req: Request) {
-  if (req.method === 'GET') {
-    return new Response(JSON.stringify({
-      hasUpstash,
-      hasUrl: !!process.env.UPSTASH_REDIS_REST_URL,
-      hasToken: !!process.env.UPSTASH_REDIS_REST_TOKEN,
-      hasGemini: !!process.env.GEMINI_API_KEY,
-    }), { status: 200, headers: JSON_HEADERS });
-  }
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: JSON_HEADERS });
   }
