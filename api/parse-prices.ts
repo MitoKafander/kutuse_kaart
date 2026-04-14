@@ -1,4 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 export const config = {
   runtime: 'edge', // Use edge compute for ultra-fast, cold-bootless API response
@@ -8,6 +10,15 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
 };
+
+const hasUpstash = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = hasUpstash ? Redis.fromEnv() : null;
+const perIpLimit = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '1 m'), analytics: true, prefix: 'kyts:parse' })
+  : null;
+const dayLimit = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(1000, '1 d'), analytics: true, prefix: 'kyts:parse:day' })
+  : null;
 
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
@@ -19,6 +30,24 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: 'Server is missing Gemini API key.' }), {
       status: 500, headers: JSON_HEADERS
     });
+  }
+
+  // Rate limit before doing any work (only if Upstash env is configured)
+  if (perIpLimit && dayLimit) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon';
+    const perIp = await perIpLimit.limit(ip);
+    if (!perIp.success) {
+      return new Response(JSON.stringify({ error: 'Liiga palju päringuid. Proovi ~1 min pärast.' }), {
+        status: 429,
+        headers: { ...JSON_HEADERS, 'Retry-After': String(Math.max(1, Math.ceil((perIp.reset - Date.now()) / 1000))) },
+      });
+    }
+    const day = await dayLimit.limit('global');
+    if (!day.success) {
+      return new Response(JSON.stringify({ error: 'Päevane AI-limiit täis, proovi homme.' }), {
+        status: 429, headers: JSON_HEADERS,
+      });
+    }
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
