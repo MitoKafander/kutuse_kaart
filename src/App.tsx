@@ -5,6 +5,7 @@ import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
 import { PrivacyModal } from './components/PrivacyModal';
+import { TermsModal } from './components/TermsModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
@@ -43,6 +44,7 @@ function App() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
   
   // Data state
   const [stations, setStations] = useState<any[]>([]);
@@ -114,12 +116,13 @@ function App() {
     if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
     if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
+    if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -630,6 +633,8 @@ function App() {
         mapStyle={mapStyle}
         onMapStyleChange={setMapStyle}
         onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
+        onOpenPrivacy={() => setIsPrivacyOpen(true)}
+        onOpenTerms={() => setIsTermsOpen(true)}
         displayName={displayName}
         onDisplayNameChange={async (name) => {
           setDisplayName(name);
@@ -714,9 +719,19 @@ function App() {
       <PrivacyModal
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
+        onOpenTerms={() => { setIsPrivacyOpen(false); setIsTermsOpen(true); }}
       />
-      
-      <GdprBanner onOpenPrivacy={() => setIsPrivacyOpen(true)} />
+
+      <TermsModal
+        isOpen={isTermsOpen}
+        onClose={() => setIsTermsOpen(false)}
+        onOpenPrivacy={() => { setIsTermsOpen(false); setIsPrivacyOpen(true); }}
+      />
+
+      <GdprBanner
+        onOpenPrivacy={() => setIsPrivacyOpen(true)}
+        onOpenTerms={() => setIsTermsOpen(true)}
+      />
     </main>
   );
 }

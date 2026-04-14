@@ -123,6 +123,8 @@ export function ProfileDrawer({
   onOpenLeaderboard,
   displayName,
   onDisplayNameChange,
+  onOpenPrivacy,
+  onOpenTerms,
 }: {
   session: any;
   isOpen: boolean;
@@ -153,6 +155,8 @@ export function ProfileDrawer({
   onOpenLeaderboard?: () => void;
   displayName: string;
   onDisplayNameChange: (name: string) => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -792,8 +796,28 @@ export function ProfileDrawer({
 
         </div>
 
+        {/* Legal links */}
+        {(onOpenPrivacy || onOpenTerms) && (
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: '12px',
+            marginTop: '20px', fontSize: '0.78rem', color: 'var(--color-text-muted)'
+          }}>
+            {onOpenTerms && (
+              <button onClick={() => { onOpenTerms(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>
+                Kasutustingimused
+              </button>
+            )}
+            {onOpenPrivacy && onOpenTerms && <span>·</span>}
+            {onOpenPrivacy && (
+              <button onClick={() => { onOpenPrivacy(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>
+                Privaatsuspoliitika
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Action Bottom */}
-        <button 
+        <button
           onClick={async () => {
             await supabase.auth.signOut();
             onClose();

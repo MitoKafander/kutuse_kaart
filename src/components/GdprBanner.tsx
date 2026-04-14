@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function GdprBanner({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
+export function GdprBanner({ onOpenPrivacy, onOpenTerms }: { onOpenPrivacy: () => void, onOpenTerms?: () => void }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -25,38 +25,31 @@ export function GdprBanner({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
       right: '16px',
       backgroundColor: 'var(--color-overlay-bg)',
       padding: '16px',
-      zIndex: 2500, // High enough to cover map UI, but below modals
+      zIndex: 2500,
       display: 'flex',
       flexDirection: 'column',
       gap: '12px',
       boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
     }}>
       <p style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: '1.4', margin: 0 }}>
-        Kasutame küpsiseid, et hoida sind sisselogituna ning pakkuda turvalist kasutajakogemust. Loe meie andmekaitse põhimõtetest lähemalt.
+        Kyts kasutab ainult hädavajalikke küpsiseid (sisselogimine, eelistused). Kasutades nõustud{' '}
+        {onOpenTerms ? (
+          <button onClick={onOpenTerms} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>kasutustingimustega</button>
+        ) : 'kasutustingimustega'}
+        {' '}ja{' '}
+        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>privaatsuspoliitikaga</button>.
       </p>
-      
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button 
-          onClick={handleAccept}
-          style={{
-            flex: 1, background: 'var(--color-primary)', color: 'white', border: 'none',
-            borderRadius: 'var(--radius-md)', padding: '10px', fontSize: '0.95rem', fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-        >
-          Nõustun
-        </button>
-        <button 
-          onClick={onOpenPrivacy}
-          style={{
-            flex: 1, background: 'var(--color-overlay-button)', color: 'var(--color-text)', border: '1px solid var(--color-overlay-button-border)',
-            borderRadius: 'var(--radius-md)', padding: '10px', fontSize: '0.95rem', fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-        >
-          Privaatsuspoliitika
-        </button>
-      </div>
+
+      <button
+        onClick={handleAccept}
+        style={{
+          background: 'var(--color-primary)', color: 'white', border: 'none',
+          borderRadius: 'var(--radius-md)', padding: '10px', fontSize: '0.95rem', fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        Nõustun
+      </button>
     </div>
   );
 }
