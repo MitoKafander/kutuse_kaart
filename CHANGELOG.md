@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Ops, Legal & Analytics Hardening - 2026-04-15
+
+### Added ✨
+- 🔴 **Upstash Redis rate limiting on `/api/parse-prices`** (`api/parse-prices.ts`): 10 req/min per-IP sliding window + 1000 req/day global fixed window. Protects Gemini budget from abuse. Graceful no-op when Upstash env absent (local dev). Verified with hammer test: reqs 11–13 returned `429 + Retry-After`.
+- 🟡 **Sentry error monitoring** (`src/main.tsx`): `@sentry/react` init with `VITE_SENTRY_DSN`, 10% trace sampling, replays disabled (would require consent banner). Wrapped `<App />` in `Sentry.ErrorBoundary` with Estonian fallback UI. Graceful no-op when DSN absent.
+- 🟡 **PostHog cookieless analytics** (`src/utils/analytics.ts`, `src/main.tsx`, `src/components/ManualPriceModal.tsx`): EU Cloud (`eu.i.posthog.com`), `persistence: 'memory'`, autocapture/session-replay/surveys all off. No cookies, no localStorage — legally exempt from consent banner. Manual `capture()` calls on `ai_scan_success` and `price_submitted`. Opt-out helper reads `kyts:analytics-opt-out` localStorage flag for a future Settings toggle.
+- 🔴 **Terms of Service** (`src/components/TermsModal.tsx`): New modal covering service description (as-is, user-sourced), prohibited conduct (fake prices, scraping, commercial use without permission), liability cap, donations clause (no special rights, non-refundable), Estonian jurisdiction (Harju Maakohus). Cross-linked to Privacy.
+- 🟢 **Git safety tag** `v1.4.0-stable` on commit `4c592ef` — rollback anchor before ops hardening began.
+- 🟢 **`Notes/operations.md`** — rate limit setup, Redis prefix semantics, usage alert procedures, Sentry verification steps, rollback workflow.
+
+### Changed 🔧
+- 🔴 **Privacy Policy rewritten** (`src/components/PrivacyModal.tsx`): Now identifies data controller (Mikk Rosin, info@kyts.ee, www.kyts.ee), lists all sub-processors (Supabase, Vercel, Google, Upstash, Sentry, PostHog), adds retention periods, GDPR legal bases (art 6(1)(b) + (f)), and complaint route (aki.ee). Old text claimed cookies were used for tracking — corrected to reflect cookieless analytics.
+- 🟡 **GDPR banner copy** (`src/components/GdprBanner.tsx`): Replaced separate "Privaatsuspoliitika" button with inline links to both Kasutustingimused and Privaatsuspoliitika in banner text. Single "Nõustun" button.
+- 🟡 **Profile drawer footer** (`src/components/ProfileDrawer.tsx`): Added legal links row (Kasutustingimused · Privaatsuspoliitika) above Logi välja; new optional `onOpenPrivacy` / `onOpenTerms` props.
+
+### Key Decisions
+- **PostHog cookieless over Microsoft Clarity**: Clarity requires a consent banner (session recording + cookies). PostHog in memory-persistence mode needs no consent — better UX.
+- **No session replays anywhere**: Sentry + PostHog both explicitly disabled. Consent-banner-free policy only holds if no service records sessions.
+- **Entity-neutral legal docs**: Controller is private individual (Mikk Rosin). Docs can swap to MTÜ/OÜ later by editing a single line — no full rewrite.
+- **Vercel Hobby is our failure mode, not billing risk**: Hobby hard-caps at limits (site stops serving, no overage bill). Spend Management is Pro-only but unnecessary. Watch for the 75% usage email as the manual upgrade signal.
+- **Gemini budget alert is the real money backstop**: €5/mo budget in Google Cloud Billing with alerts at 50/90/100% — rate limits protect against abuse, budget protects against bugs.
+- **Buy Me a Coffee (upcoming #9) chosen over backend-routed donations**: No legal entity required. Bypasses Vercel Hobby's commercial-use clause because money never touches our infra.
+
+### Open Items
+- **#9 Donate button** — not yet built. Needs `buymeacoffee.com/kyts` account, then modal wires as external link.
+- **PostHog Settings opt-out toggle** — helpers exist (`setAnalyticsOptOut`, `isAnalyticsOptedOut`) but no UI. Not legally required (cookieless), nice-to-have.
+- **Upstash + PostHog usage alerts skipped** — both free tiers self-cap. Only Vercel (auto-email at 75/90%) and Gemini (manual €5 budget) alerts are actually wired.
+
+### Dashboard Setup Done This Session
+- Upstash Redis database (EU region) — creds in Vercel env.
+- Sentry project `kyts-web` (React) — DSN in Vercel env.
+- PostHog EU Cloud project — Product Analytics + Web Analytics only, autocapture/heatmaps/session replay OFF. Key in Vercel env.
+- Google Cloud Billing budget €5/mo with 50/90/100% alerts on the Gemini project.
+
+### New Vercel Environment Variables
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- `VITE_SENTRY_DSN`
+- `VITE_POSTHOG_KEY`
+
+### File Impact
+- **New**: `src/components/TermsModal.tsx`, `src/utils/analytics.ts`, `Notes/operations.md`
+- **Modified**: `api/parse-prices.ts`, `src/main.tsx`, `src/App.tsx`, `src/components/PrivacyModal.tsx`, `src/components/GdprBanner.tsx`, `src/components/ProfileDrawer.tsx`, `src/components/ManualPriceModal.tsx`, `package.json`, `package-lock.json`
+- **New deps**: `@upstash/ratelimit`, `@upstash/redis`, `@sentry/react`, `posthog-js`
+- **New git tag**: `v1.4.0-stable`
+
+---
+
 ## [Unreleased] - Desktop Click Reliability, Route Planner UX & Station Names - 2026-04-13
 
 ### Fixed 🐛
