@@ -3,7 +3,7 @@ import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
 import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessage, getBrand } from '../utils';
 import type { LoyaltyDiscounts, GeolocationErrorKind } from '../utils';
 
-const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel"];
+const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
 
 interface NearbyResult {

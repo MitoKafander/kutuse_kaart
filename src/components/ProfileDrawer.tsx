@@ -5,12 +5,46 @@ import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
 
 // --- Contributor Badge System ---
+// 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
+// early levels feel attainable and the late ones feel earned.
+const CONTRIBUTOR_TIERS: Array<{ min: number; label: string; emoji: string; color: string }> = [
+  { min: 0,    label: 'Turist',            emoji: '🌱', color: 'var(--color-text-muted)' },
+  { min: 1,    label: 'Uustulnuk',         emoji: '🐣', color: 'var(--color-text-muted)' },
+  { min: 3,    label: 'Pumbapiiluja',      emoji: '🔍', color: '#94a3b8' },
+  { min: 6,    label: 'Hinnakirjutaja',    emoji: '📝', color: '#3b82f6' },
+  { min: 10,   label: 'Kütusenuuskur',     emoji: '👃', color: '#3b82f6' },
+  { min: 15,   label: 'Tanklaspioon',      emoji: '🕵️', color: '#3b82f6' },
+  { min: 22,   label: 'Hinnajälitaja',     emoji: '🏃', color: '#8b5cf6' },
+  { min: 30,   label: 'Hinnatabaja',       emoji: '🎯', color: '#8b5cf6' },
+  { min: 42,   label: 'Pumbaprofessor',    emoji: '⛽', color: '#8b5cf6' },
+  { min: 58,   label: 'Diiselidiplomaat',  emoji: '💧', color: '#ec4899' },
+  { min: 80,   label: 'Tanklaskaut',       emoji: '🧭', color: '#ec4899' },
+  { min: 110,  label: 'Kütusekaardistaja', emoji: '🗺️', color: '#ec4899' },
+  { min: 150,  label: 'Hinnavõitja',       emoji: '🏆', color: '#f59e0b' },
+  { min: 200,  label: 'Pumbakuningas',     emoji: '👑', color: '#f59e0b' },
+  { min: 270,  label: 'Oktaanioraakel',    emoji: '💎', color: '#f59e0b' },
+  { min: 360,  label: 'Bensiinibaron',     emoji: '🔥', color: '#ef4444' },
+  { min: 480,  label: 'Tanklatäht',        emoji: '⭐', color: '#ef4444' },
+  { min: 640,  label: 'Hinnarakett',       emoji: '🚀', color: '#ef4444' },
+  { min: 850,  label: 'Kütuselegend',      emoji: '🌌', color: '#ef4444' },
+  { min: 1200, label: 'Kyts Jumal',        emoji: '😇', color: '#f59e0b' },
+];
+
 function getContributorBadge(priceCount: number, voteCount: number) {
   const total = priceCount + voteCount;
-  if (total >= 50) return { label: 'Legend', color: '#f59e0b', emoji: '🏆' };
-  if (total >= 20) return { label: 'Ekspert', color: '#8b5cf6', emoji: '💎' };
-  if (total >= 5)  return { label: 'Aktiivne', color: '#3b82f6', emoji: '⚡' };
-  return { label: 'Algaja', color: 'var(--color-text-muted)', emoji: '🌱' };
+  let current = CONTRIBUTOR_TIERS[0];
+  for (const tier of CONTRIBUTOR_TIERS) {
+    if (total >= tier.min) current = tier;
+    else break;
+  }
+  return current;
+}
+
+function getNextTier(total: number): typeof CONTRIBUTOR_TIERS[number] | null {
+  for (const tier of CONTRIBUTOR_TIERS) {
+    if (tier.min > total) return tier;
+  }
+  return null;
 }
 
 // --- Pure SVG Sparkline ---
@@ -377,22 +411,34 @@ export function ProfileDrawer({
                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Häält antud</div>
               </div>
             </div>
-            {badge.label !== 'Legend' && (
+            {(() => {
+              const total = userPricesCount + userVotesCount;
+              const next = getNextTier(total);
+              if (!next) {
+                return (
+                  <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{badge.emoji} {badge.label}</span>
+                    <span>Kõrgeim aste saavutatud</span>
+                  </div>
+                );
+              }
+              return (
               <div style={{ marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  <span>{badge.emoji} {badge.label}</span>
-                  <span>{getNextBadgeTarget(userPricesCount + userVotesCount)} panuseni järgmise astmeni</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px', gap: '8px' }}>
+                  <span style={{ whiteSpace: 'nowrap' }}>{badge.emoji} {badge.label}</span>
+                  <span style={{ textAlign: 'right' }}>{getNextBadgeTarget(total)} kuni {next.emoji} {next.label}</span>
                 </div>
                 <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--color-surface)' }}>
-                  <div style={{ 
-                    width: `${getBadgeProgress(userPricesCount + userVotesCount)}%`,
+                  <div style={{
+                    width: `${getBadgeProgress(total)}%`,
                     height: '100%', borderRadius: '2px',
                     background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
                     transition: 'width 0.5s ease'
                   }} />
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
 
           <div className="glass-panel" style={{ padding: '14px 16px' }}>
@@ -765,15 +811,20 @@ function getTimeAgo(dateStr: string): string {
 }
 
 function getNextBadgeTarget(total: number): number {
-  if (total < 5) return 5 - total;
-  if (total < 20) return 20 - total;
-  if (total < 50) return 50 - total;
-  return 0;
+  const next = getNextTier(total);
+  return next ? next.min - total : 0;
 }
 
 function getBadgeProgress(total: number): number {
-  if (total < 5) return (total / 5) * 100;
-  if (total < 20) return ((total - 5) / 15) * 100;
-  if (total < 50) return ((total - 20) / 30) * 100;
-  return 100;
+  const next = getNextTier(total);
+  if (!next) return 100;
+  // Find current tier's minimum to compute progress within the band.
+  let curMin = 0;
+  for (const tier of CONTRIBUTOR_TIERS) {
+    if (tier.min <= total) curMin = tier.min;
+    else break;
+  }
+  const span = next.min - curMin;
+  if (span <= 0) return 100;
+  return ((total - curMin) / span) * 100;
 }

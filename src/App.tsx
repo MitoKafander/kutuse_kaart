@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Fuel, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -353,8 +353,9 @@ function App() {
                   key={type}
                   onClick={() => setSelectedFuelType(isActive ? null : type)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '6px 14px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '6px 12px',
+                    minWidth: '36px',
                     borderRadius: '20px',
                     border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
                     background: isActive ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
@@ -369,7 +370,6 @@ function App() {
                     flexShrink: 0,
                   }}
                 >
-                  <Fuel size={14} />
                   {shortLabel}
                 </button>
               );
