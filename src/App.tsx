@@ -242,15 +242,26 @@ function App() {
       }
     });
 
-    // URL-bar show/hide on mobile fires visualViewport.resize but not window.resize,
-    // so forward it so Leaflet + any resize-sensitive UI stay in sync.
+    // Drive app height from JS. In standalone PWA mode on Android, `100dvh`
+    // can stay stale after returning from an OAuth redirect, so we set a
+    // --app-height CSS var from visualViewport/innerHeight and keep it in sync.
     const vv = window.visualViewport;
-    const onVVResize = () => window.dispatchEvent(new Event('resize'));
-    vv?.addEventListener('resize', onVVResize);
+    const setAppHeight = () => {
+      const h = vv?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${h}px`);
+    };
+    setAppHeight();
+    vv?.addEventListener('resize', setAppHeight);
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', setAppHeight);
+    window.addEventListener('pageshow', setAppHeight);
 
     return () => {
       subscription.unsubscribe();
-      vv?.removeEventListener('resize', onVVResize);
+      vv?.removeEventListener('resize', setAppHeight);
+      window.removeEventListener('resize', setAppHeight);
+      window.removeEventListener('orientationchange', setAppHeight);
+      window.removeEventListener('pageshow', setAppHeight);
     };
   }, []);
 
@@ -292,7 +303,7 @@ function App() {
   }, [stations, searchQuery]);
 
   return (
-    <main style={{ position: 'relative', width: '100vw', height: '100dvh', overflow: 'hidden' }}>
+    <main style={{ position: 'relative', width: '100vw', height: 'var(--app-height, 100dvh)', overflow: 'hidden' }}>
       <Map
         stations={filteredStations}
         prices={prices}
