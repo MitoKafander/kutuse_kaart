@@ -104,6 +104,9 @@ function App() {
   const [hideEmptyDots, setHideEmptyDots] = useState(() => {
     return localStorage.getItem('kyts-hide-empty-dots') === 'true';
   });
+  const [showLatvianStations, setShowLatvianStations] = useState(() => {
+    return localStorage.getItem('kyts-show-latvian-stations') !== 'false';
+  });
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
   });
@@ -220,7 +223,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -241,6 +244,10 @@ function App() {
       if (prof?.hide_empty_dots !== null && prof?.hide_empty_dots !== undefined) {
         setHideEmptyDots(prof.hide_empty_dots);
         localStorage.setItem('kyts-hide-empty-dots', String(prof.hide_empty_dots));
+      }
+      if (prof?.show_latvian_stations !== null && prof?.show_latvian_stations !== undefined) {
+        setShowLatvianStations(prof.show_latvian_stations);
+        localStorage.setItem('kyts-show-latvian-stations', String(prof.show_latvian_stations));
       }
       if (prof?.apply_loyalty !== null && prof?.apply_loyalty !== undefined) {
         setApplyLoyalty(prof.apply_loyalty);
@@ -311,11 +318,12 @@ function App() {
   // Compute filtered stations based on Brand Menu ONLY
   const filteredStations = useMemo(() => {
     return stations.filter(station => {
+      if (!showLatvianStations && station.country === 'LV') return false;
       // Filter by Brand Menu (canonical chain)
       if (selectedBrands.length > 0 && !selectedBrands.includes(getBrand(station.name))) return false;
       return true;
     });
-  }, [stations, selectedBrands]);
+  }, [stations, selectedBrands, showLatvianStations]);
 
   // Compute live search dropdown results (max 10 results to not overwhelm UI)
   const searchResults = useMemo(() => {
@@ -660,6 +668,8 @@ function App() {
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
         hideEmptyDots={hideEmptyDots}
         onHideEmptyDotsChange={(v) => { setHideEmptyDots(v); localStorage.setItem('kyts-hide-empty-dots', String(v)); }}
+        showLatvianStations={showLatvianStations}
+        onShowLatvianStationsChange={(v) => { setShowLatvianStations(v); localStorage.setItem('kyts-show-latvian-stations', String(v)); }}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}

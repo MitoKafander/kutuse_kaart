@@ -115,6 +115,8 @@ export function ProfileDrawer({
   onShowClustersChange,
   hideEmptyDots,
   onHideEmptyDotsChange,
+  showLatvianStations,
+  onShowLatvianStationsChange,
   showStaleDemo,
   onShowStaleDemoChange,
   allBrandsForLoyalty,
@@ -149,6 +151,8 @@ export function ProfileDrawer({
   onShowClustersChange: (show: boolean) => void;
   hideEmptyDots: boolean;
   onHideEmptyDotsChange: (hide: boolean) => void;
+  showLatvianStations: boolean;
+  onShowLatvianStationsChange: (show: boolean) => void;
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
   allBrandsForLoyalty: string[];
@@ -200,6 +204,14 @@ export function ProfileDrawer({
     onHideEmptyDotsChange(next);
     if (session?.user?.id) {
       await supabase.from('user_profiles').upsert({ id: session.user.id, hide_empty_dots: next });
+    }
+  };
+
+  const handleShowLatvianStationsToggle = async () => {
+    const next = !showLatvianStations;
+    onShowLatvianStationsChange(next);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, show_latvian_stations: next });
     }
   };
 
@@ -803,6 +815,33 @@ export function ProfileDrawer({
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
                         position: 'absolute', top: '2px', left: hideEmptyDots ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Show Latvian border-strip stations on the map */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <MapPin size={16} /> Näita Läti jaamu
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        Piiriäärsed jaamad Lätis
+                      </span>
+                    </div>
+                    <div
+                      onClick={handleShowLatvianStationsToggle}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: showLatvianStations ? 'var(--color-primary)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: showLatvianStations ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>
