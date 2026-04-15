@@ -165,6 +165,7 @@ export function ProfileDrawer({
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [brandsOpen, setBrandsOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName);
   useEffect(() => { setNameDraft(displayName); }, [displayName]);
 
@@ -591,12 +592,31 @@ export function ProfileDrawer({
                   </div>
                 </div>
 
-                {/* Preferred brands */}
+                {/* Preferred brands (collapsible) */}
                 <div>
-                  <h4 style={{ fontSize: '0.85rem', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <Building2 size={16} /> Eelistatud Tanklad
-                  </h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
+                  <button
+                    onClick={() => setBrandsOpen(!brandsOpen)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%', background: 'none', border: 'none',
+                      color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0,
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                      <Building2 size={16} /> Eelistatud Tanklad
+                      {preferredBrands.length > 0 && (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
+                          ({preferredBrands.length} valitud)
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown size={16} style={{
+                      transform: brandsOpen ? 'rotate(180deg)' : 'rotate(0)',
+                      transition: 'transform .2s',
+                    }} />
+                  </button>
+                  {brandsOpen && (<>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '10px 0' }}>
                     Vali ketid, mida "Odavaim lähedal" eelistab. Tühi = kõik.
                   </p>
                   <div style={{
@@ -629,6 +649,7 @@ export function ProfileDrawer({
                       );
                     })}
                   </div>
+                  </>)}
                 </div>
 
                 {/* Loyalty card discounts (collapsible) */}
