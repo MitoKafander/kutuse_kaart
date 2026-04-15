@@ -744,6 +744,7 @@ function App() {
             stations={stations}
             prices={prices}
             session={session}
+            onStationSelect={setSelectedStation}
           />
         )}
       </Suspense>

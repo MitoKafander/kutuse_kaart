@@ -15,13 +15,14 @@ function median(xs: number[]): number {
 }
 
 export function StatisticsDrawer({
-  isOpen, onClose, stations, prices, session,
+  isOpen, onClose, stations, prices, session, onStationSelect,
 }: {
   isOpen: boolean;
   onClose: () => void;
   stations: any[];
   prices: any[];
   session: any;
+  onStationSelect?: (station: any) => void;
 }) {
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
   const now = Date.now();
@@ -232,10 +233,24 @@ export function StatisticsDrawer({
           )}
 
           {cheapestNow && (
-            <div className="glass-panel" style={{
-              padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
-              background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.3)',
-            }}>
+            <button
+              type="button"
+              onClick={() => {
+                if (onStationSelect && cheapestNow) {
+                  onStationSelect(cheapestNow.station);
+                  onClose();
+                }
+              }}
+              disabled={!onStationSelect}
+              className="glass-panel"
+              style={{
+                padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
+                background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.3)',
+                display: 'block', width: '100%', textAlign: 'left',
+                color: 'var(--color-text)', font: 'inherit',
+                cursor: onStationSelect ? 'pointer' : 'default',
+              }}
+            >
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Odavaim hetkel</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{getStationDisplayName(cheapestNow.station)}</span>
@@ -249,7 +264,7 @@ export function StatisticsDrawer({
                   return `${Math.floor(h / 24)} päeva tagasi`;
                 })()}
               </div>
-            </div>
+            </button>
           )}
 
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Soodsaim bränd ({selectedFuel}, mediaan)</h3>
