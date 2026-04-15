@@ -429,6 +429,7 @@ export function Map({
   mapStyle,
   dotStyle,
   showClusters,
+  hideEmptyDots = false,
   loyaltyDiscounts = {},
   applyLoyalty = false,
   routePolyline = null,
@@ -446,6 +447,7 @@ export function Map({
   mapStyle: 'dark' | 'light',
   dotStyle: 'info' | 'brand',
   showClusters: boolean,
+  hideEmptyDots?: boolean,
   loyaltyDiscounts?: LoyaltyDiscounts,
   applyLoyalty?: boolean,
   routePolyline?: [number, number][] | null,
@@ -628,7 +630,7 @@ export function Map({
     return pillStations.filter(e => !demoted.has(e.station.id));
   }, [pillStations, mapInstance, zoomLevel, viewportBounds]);
 
-  const fadedDots = dotStations.filter(d => !d.hasFuelData);
+  const fadedDots = hideEmptyDots ? [] : dotStations.filter(d => !d.hasFuelData);
   const freshDots = dotStations.filter(d => d.hasFuelData);
 
   const isLight = mapStyle === 'light';

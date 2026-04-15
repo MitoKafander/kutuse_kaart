@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, CreditCard, Trophy } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -113,6 +113,8 @@ export function ProfileDrawer({
   onDotStyleChange,
   showClusters,
   onShowClustersChange,
+  hideEmptyDots,
+  onHideEmptyDotsChange,
   showStaleDemo,
   onShowStaleDemoChange,
   allBrandsForLoyalty,
@@ -145,6 +147,8 @@ export function ProfileDrawer({
   onDotStyleChange: (style: 'info' | 'brand') => void;
   showClusters: boolean;
   onShowClustersChange: (show: boolean) => void;
+  hideEmptyDots: boolean;
+  onHideEmptyDotsChange: (hide: boolean) => void;
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
   allBrandsForLoyalty: string[];
@@ -159,7 +163,7 @@ export function ProfileDrawer({
   onOpenTerms?: () => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName);
   useEffect(() => { setNameDraft(displayName); }, [displayName]);
@@ -187,6 +191,14 @@ export function ProfileDrawer({
     onShowClustersChange(next);
     if (session?.user?.id) {
       await supabase.from('user_profiles').upsert({ id: session.user.id, show_clusters: next });
+    }
+  };
+
+  const handleHideEmptyDotsToggle = async () => {
+    const next = !hideEmptyDots;
+    onHideEmptyDotsChange(next);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, hide_empty_dots: next });
     }
   };
 
@@ -271,8 +283,35 @@ export function ProfileDrawer({
           </button>
         </div>
 
+        {/* Profiil / Seaded tab bar */}
+        <div style={{ display: 'flex', gap: '6px', marginTop: '16px', marginBottom: '12px' }}>
+          {([
+            { key: 'profile', label: 'Profiil' },
+            { key: 'settings', label: 'Seaded' },
+          ] as const).map(t => {
+            const isActive = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                style={{
+                  flex: 1, padding: '10px', cursor: 'pointer',
+                  borderRadius: 'var(--radius-md)',
+                  border: isActive ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                  background: isActive ? 'rgba(59,130,246,0.15)' : 'var(--color-surface)',
+                  color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                  fontSize: '0.9rem', fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
+          {activeTab === 'profile' && (<>
           {/* Favorite Stations with Sparklines — PRIMARY use case, first */}
           <div className="glass-panel" style={{ padding: '16px' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
@@ -490,36 +529,15 @@ export function ProfileDrawer({
             </button>
           )}
 
-          {/* Collapsible Settings */}
-          <div className="glass-panel" style={{ padding: '16px' }}>
-            <button
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                width: '100%', background: 'none', border: 'none', color: 'var(--color-text-muted)',
-                cursor: 'pointer', fontSize: '1rem', padding: 0,
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Settings size={18} /> Seaded
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {!settingsOpen && (
-                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                    {defaultFuelType || 'Bensiin 95'}
-                    {preferredBrands.length > 0 && ` · ${preferredBrands.length} ketti`}
-                    {` · ${dotStyle === 'info' ? 'Info' : 'Bränd'}`}
-                  </span>
-                )}
-                <ChevronDown size={18} style={{
-                  transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0)',
-                  transition: 'transform 0.2s ease'
-                }} />
-              </span>
-            </button>
+          </>)}
 
-            {settingsOpen && (
-              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {activeTab === 'settings' && (<>
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '1rem', marginBottom: '16px' }}>
+              <Settings size={18} /> Seaded
+            </div>
+            {true && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Theme toggle */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', color: 'var(--color-text-muted)' }}>
@@ -742,6 +760,33 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
+                {/* Hide stations without fresh price data — cuts mobile clutter */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <EyeOff size={16} /> Peida jaamad ilma hindadeta
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        Kiirem pan/zoom, vähem segadust
+                      </span>
+                    </div>
+                    <div
+                      onClick={handleHideEmptyDotsToggle}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: hideEmptyDots ? 'var(--color-primary)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: hideEmptyDots ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
                 {/* Demo: show stale/expired prices (>24h) */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -771,9 +816,9 @@ export function ProfileDrawer({
               </div>
             )}
           </div>
+          </>)}
 
-          {/* Recent Activity Feed */}
-          {userPriceEntries.length > 0 && (
+          {activeTab === 'profile' && userPriceEntries.length > 0 && (
             <div className="glass-panel" style={{ padding: '16px' }}>
               <h3 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
                 <Clock size={18} /> Viimased Tegevused
@@ -796,8 +841,8 @@ export function ProfileDrawer({
 
         </div>
 
-        {/* Legal links */}
-        {(onOpenPrivacy || onOpenTerms) && (
+        {/* Legal links — surface on the Seaded tab alongside other preferences */}
+        {activeTab === 'settings' && (onOpenPrivacy || onOpenTerms) && (
           <div style={{
             display: 'flex', justifyContent: 'center', gap: '12px',
             marginTop: '20px', fontSize: '0.78rem', color: 'var(--color-text-muted)'

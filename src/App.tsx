@@ -79,6 +79,9 @@ function App() {
   const [showClusters, setShowClusters] = useState(() => {
     return localStorage.getItem('kyts-show-clusters') !== 'false';
   });
+  const [hideEmptyDots, setHideEmptyDots] = useState(() => {
+    return localStorage.getItem('kyts-hide-empty-dots') !== 'false';
+  });
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
   });
@@ -195,7 +198,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -212,6 +215,10 @@ function App() {
       if (prof?.show_clusters !== null && prof?.show_clusters !== undefined) {
         setShowClusters(prof.show_clusters);
         localStorage.setItem('kyts-show-clusters', String(prof.show_clusters));
+      }
+      if (prof?.hide_empty_dots !== null && prof?.hide_empty_dots !== undefined) {
+        setHideEmptyDots(prof.hide_empty_dots);
+        localStorage.setItem('kyts-hide-empty-dots', String(prof.hide_empty_dots));
       }
       if (prof?.apply_loyalty !== null && prof?.apply_loyalty !== undefined) {
         setApplyLoyalty(prof.apply_loyalty);
@@ -319,6 +326,7 @@ function App() {
         mapStyle={mapStyle}
         dotStyle={dotStyle}
         showClusters={showClusters}
+        hideEmptyDots={hideEmptyDots}
         showStaleDemo={showStaleDemo}
         loyaltyDiscounts={loyaltyDiscounts}
         applyLoyalty={applyLoyalty}
@@ -628,6 +636,8 @@ function App() {
         onDotStyleChange={(s) => { setDotStyle(s); localStorage.setItem('kyts-dot-style', s); }}
         showClusters={showClusters}
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
+        hideEmptyDots={hideEmptyDots}
+        onHideEmptyDotsChange={(v) => { setHideEmptyDots(v); localStorage.setItem('kyts-hide-empty-dots', String(v)); }}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}
