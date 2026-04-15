@@ -6,7 +6,7 @@ export const config = {
   // Node runtime so Gemini vision calls that take 20–40s don't get killed by the
   // 25s Edge ceiling. Node serverless maxDuration is 60s on Hobby as of 2024 —
   // comfortably above Gemini's p99 and below Vercel's bill-a-minute threshold.
-  runtime: 'nodejs20.x',
+  runtime: 'nodejs',
   maxDuration: 60,
 };
 
