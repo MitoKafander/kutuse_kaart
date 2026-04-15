@@ -85,14 +85,15 @@ body {
    button reads as tumbled glass rather than a flat sticker. */
 .glass-fab {
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 55%),
-    rgba(25, 30, 40, 0.30);
-  backdrop-filter: blur(28px) saturate(2.2) brightness(1.15);
-  -webkit-backdrop-filter: blur(28px) saturate(2.2) brightness(1.15);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 50%),
+    rgba(28, 36, 52, 0.48);
+  backdrop-filter: blur(24px) saturate(2.8) brightness(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(2.8) brightness(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow:
     0 4px 14px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 20px rgba(255, 255, 255, 0.04);
   transition: transform 0.12s ease, filter 0.2s ease;
 }
 .glass-fab:hover { filter: brightness(1.15); }
