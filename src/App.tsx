@@ -57,6 +57,7 @@ function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(20);
@@ -141,6 +142,7 @@ function App() {
   const openOverlays = useMemo(() => {
     const list: Array<{ id: string; close: () => void }> = [];
     if (isPriceModalOpen) list.push({ id: 'priceModal', close: () => setIsPriceModalOpen(false) });
+    if (isPhotoExpanded) list.push({ id: 'photoZoom', close: () => setIsPhotoExpanded(false) });
     if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
     if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
@@ -150,7 +152,7 @@ function App() {
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isCameraOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -635,6 +637,8 @@ function App() {
         isOpen={isPriceModalOpen}
         onClose={() => setIsPriceModalOpen(false)}
         onPricesSubmitted={() => loadData()}
+        photoExpanded={isPhotoExpanded}
+        onPhotoExpandedChange={setIsPhotoExpanded}
       />
 
       {/* Camera FAB mode: no pre-selected station, GPS auto-selects */}
@@ -644,6 +648,8 @@ function App() {
         onClose={() => setIsCameraOpen(false)}
         onPricesSubmitted={() => loadData()}
         allStations={stations}
+        photoExpanded={isPhotoExpanded}
+        onPhotoExpandedChange={setIsPhotoExpanded}
       />
 
       <ProfileDrawer

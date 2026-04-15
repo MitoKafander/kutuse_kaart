@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
+import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName, haversineKm, getCurrentPositionAsync } from '../utils';
 import { capture } from '../utils/analytics';
@@ -15,12 +15,16 @@ export function ManualPriceModal({
   onClose,
   onPricesSubmitted,
   allStations,
+  photoExpanded,
+  onPhotoExpandedChange,
 }: {
   station: any | null,
   isOpen: boolean,
   onClose: () => void,
   onPricesSubmitted: () => void,
   allStations?: any[],
+  photoExpanded: boolean,
+  onPhotoExpandedChange: (expanded: boolean) => void,
 }) {
   const [resolvedStation, setResolvedStation] = useState<any | null>(null);
   const [stationCandidates, setStationCandidates] = useState<any[] | null>(null);
@@ -33,11 +37,11 @@ export function ManualPriceModal({
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
   const [brandMismatch, setBrandMismatch] = useState<{ detected: string } | null>(null);
   const [autoSelectMsg, setAutoSelectMsg] = useState<string | null>(null);
-  const [photoExpanded, setPhotoExpanded] = useState(false);
   const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [pendingDetectedBrand, setPendingDetectedBrand] = useState<string | null>(null);
   const [pricesFromAi, setPricesFromAi] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Reset and initialise state when the modal opens/closes
   useEffect(() => {
@@ -49,7 +53,7 @@ export function ManualPriceModal({
       setScanError(null);
       setBrandMismatch(null);
       setAutoSelectMsg(null);
-      setPhotoExpanded(false);
+      onPhotoExpandedChange(false);
       setCapturedPosition(null);
       setPendingDetectedBrand(null);
       setPricesFromAi(false);
@@ -82,11 +86,30 @@ export function ManualPriceModal({
         await new Promise(r => setTimeout(r, 2000));
       }
 
-      const res = await fetch('/api/parse-prices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, stationName })
-      });
+      // Abort after 55 s — one tick under the Node serverless maxDuration (60 s)
+      // so the client surfaces a dedicated TIMEOUT error before Vercel drops the
+      // connection as a generic "Failed to fetch".
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), 55000);
+      let res: Response;
+      try {
+        res = await fetch('/api/parse-prices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, stationName }),
+          signal: ac.signal,
+        });
+      } catch (e: any) {
+        clearTimeout(timer);
+        if (e?.name === 'AbortError') {
+          if (attempt < MAX_RETRIES) continue;
+          throw new Error('TIMEOUT');
+        }
+        // Network-level failure (DNS, offline, connection dropped). Retry.
+        if (attempt < MAX_RETRIES) continue;
+        throw new Error('NETWORK');
+      }
+      clearTimeout(timer);
 
       if (res.ok) { capture('ai_scan_success'); return res.json(); }
       if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
@@ -420,7 +443,7 @@ export function ManualPriceModal({
         {/* Expanded photo overlay */}
         {photoExpanded && capturedPreviewUrl && (
           <div
-            onClick={() => setPhotoExpanded(false)}
+            onClick={() => onPhotoExpandedChange(false)}
             style={{
               position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
               backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 3000,
@@ -445,7 +468,7 @@ export function ManualPriceModal({
             <img
               src={capturedPreviewUrl}
               alt="Skaneeritud pilt"
-              onClick={() => setPhotoExpanded(true)}
+              onClick={() => onPhotoExpandedChange(true)}
               style={{
                 width: '80px', height: '80px', objectFit: 'cover',
                 borderRadius: 'var(--radius-md)', border: '1px solid var(--color-surface-border)',
@@ -460,12 +483,26 @@ export function ManualPriceModal({
             style={{
               background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-primary)',
               border: '1px solid rgba(59, 130, 246, 0.3)',
-              borderRadius: 'var(--radius-md)', padding: '16px', fontSize: '1rem', fontWeight: 'bold',
+              borderRadius: 'var(--radius-md)', padding: '16px', fontSize: '0.95rem', fontWeight: 'bold',
               flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             }}
           >
             {isAnalyzing ? <Loader2 size={20} className="spin" /> : <Camera size={20} />}
-            {retryStatus || (isAnalyzing ? 'Tehisintellekt loeb pilti...' : capturedPreviewUrl ? 'Skaneeri uuesti' : 'Skaneeri hinnad kaameraga')}
+            {retryStatus || (isAnalyzing ? 'AI loeb...' : capturedPreviewUrl ? 'Uuesti' : 'Kaameraga')}
+          </button>
+          <button
+            type="button"
+            disabled={isAnalyzing}
+            onClick={() => galleryInputRef.current?.click()}
+            style={{
+              background: 'rgba(59, 130, 246, 0.05)', color: 'var(--color-primary)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: 'var(--radius-md)', padding: '16px', fontSize: '0.95rem', fontWeight: 'bold',
+              flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            }}
+          >
+            <Upload size={20} />
+            Laadi pilt
           </button>
         </div>
 
@@ -474,6 +511,13 @@ export function ManualPriceModal({
           ref={fileInputRef}
           accept="image/*"
           capture="environment"
+          style={{ display: 'none' }}
+          onChange={handleCameraCapture}
+        />
+        <input
+          type="file"
+          ref={galleryInputRef}
+          accept="image/*"
           style={{ display: 'none' }}
           onChange={handleCameraCapture}
         />
@@ -512,6 +556,10 @@ export function ManualPriceModal({
                 ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
                 : scanError === 'NO_PRICES_READ'
                 ? 'AI ei suutnud hindu pildilt lugeda. Proovi otse totemi ette, väldi peegeldusi, või sisesta hinnad käsitsi.'
+                : scanError === 'TIMEOUT'
+                ? 'AI võttis liiga kaua aega. Proovi uuesti või sisesta hinnad käsitsi.'
+                : scanError === 'NETWORK'
+                ? 'Võrguviga. Kontrolli internetiühendust ja proovi uuesti.'
                 : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
             </span>
             <button
