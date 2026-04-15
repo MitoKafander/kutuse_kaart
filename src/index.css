@@ -83,30 +83,29 @@ body {
    glow but no distinct shapes show — heavy blur on anything behind,
    a milky ~45% fill, and a gentle top-to-bottom depth gradient so the
    button reads as tumbled glass rather than a flat sticker. */
+/* Frosted diffused light glass: acid-etched bathroom window. The body
+   is barely tinted — it's the *scattering* (massive backdrop-filter
+   blur) that hides shapes while still letting light and color through
+   as a soft, glare-free glow. */
 .glass-fab {
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 50%),
-    rgba(28, 36, 52, 0.48);
-  backdrop-filter: blur(24px) saturate(2.8) brightness(1.25);
-  -webkit-backdrop-filter: blur(24px) saturate(2.8) brightness(1.25);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(60px) saturate(1.4) brightness(1.05);
+  -webkit-backdrop-filter: blur(60px) saturate(1.4) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     0 4px 14px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 0 20px rgba(255, 255, 255, 0.04);
-  transition: transform 0.12s ease, filter 0.2s ease;
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.12s ease, background 0.2s ease;
 }
-.glass-fab:hover { filter: brightness(1.15); }
+.glass-fab:hover { background: rgba(255, 255, 255, 0.14); }
 .glass-fab:active { transform: scale(0.94); }
 
 [data-theme="light"] .glass-fab {
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.15) 55%),
-    rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 2px 10px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .frosted-pill {
