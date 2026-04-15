@@ -3,6 +3,7 @@ import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin } from 'luc
 import { supabase } from '../supabase';
 import { getStationDisplayName, haversineKm, getCurrentPositionAsync } from '../utils';
 import { capture } from '../utils/analytics';
+import * as Sentry from '@sentry/react';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
@@ -152,6 +153,23 @@ export function ManualPriceModal({
     setRetryStatus(null);
     try {
       const parsedJson = await callGemini(base64, stationNameHint);
+
+      // Server signals when Gemini returned valid JSON but no readable prices —
+      // different UX than network failure: keep the photo, show specific copy.
+      if (parsedJson && parsedJson.extractedAny === false) {
+        Sentry.captureMessage('AI scan returned no prices', {
+          level: 'warning',
+          extra: { detectedBrand: parsedJson.detectedBrand, stationHint: stationNameHint },
+        });
+        setScanError('NO_PRICES_READ');
+        if (!station && allStations && capturedPosition && !resolvedStation) {
+          resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon, parsedJson.detectedBrand || '');
+        } else if (!station && allStations && !capturedPosition) {
+          setPendingDetectedBrand(parsedJson.detectedBrand || '');
+        }
+        return;
+      }
+
       applyParsedPrices(parsedJson);
 
       if (!station && allStations) {
@@ -168,6 +186,13 @@ export function ManualPriceModal({
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
+      // Skip Sentry noise for known user-facing states (quota).
+      if (error?.message !== 'QUOTA_EXCEEDED') {
+        Sentry.captureException(error, {
+          tags: { feature: 'ai-scan' },
+          extra: { stationHint: stationNameHint },
+        });
+      }
       setScanError(error.message);
       // Still resolve station candidates on AI failure so user can enter prices manually
       if (!station && allStations && capturedPosition && !resolvedStation) {
@@ -485,6 +510,8 @@ export function ManualPriceModal({
                 ? 'Läheduses (500m raadiuses) ei leitud ühtegi tankla. Mine tankla juurde lähemale ja proovi uuesti.'
                 : scanError === 'NO_GPS'
                 ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
+                : scanError === 'NO_PRICES_READ'
+                ? 'AI ei suutnud hindu pildilt lugeda. Proovi otse totemi ette, väldi peegeldusi, või sisesta hinnad käsitsi.'
                 : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
             </span>
             <button

@@ -20,6 +20,23 @@ const dayLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(1000, '1 d'), analytics: true, prefix: 'kyts:parse:day' })
   : null;
 
+function repairAndParseJson(raw: string): Record<string, unknown> | null {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { /* fall through */ }
+
+  let s = raw.trim();
+  // Strip markdown code fences if present
+  const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) s = fenceMatch[1].trim();
+  // Fall back to the first {...} block the model emitted
+  const braceStart = s.indexOf('{');
+  const braceEnd = s.lastIndexOf('}');
+  if (braceStart !== -1 && braceEnd > braceStart) {
+    s = s.slice(braceStart, braceEnd + 1);
+  }
+  try { return JSON.parse(s); } catch { return null; }
+}
+
 export default async function handler(req: Request) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: JSON_HEADERS });
@@ -62,10 +79,11 @@ export default async function handler(req: Request) {
     }
 
     // Force strictly validated JSON parsing
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
+        temperature: 0,
       }
     });
 
@@ -117,12 +135,49 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       }
     ]);
 
-    const text = result.response.text();
-    return new Response(text, { 
-      status: 200, 
-      headers: JSON_HEADERS 
+    const rawText = result.response.text();
+
+    // Gemini occasionally wraps JSON in ```json fences or prepends commentary
+    // despite responseMimeType. Repair before parsing so one stray char doesn't
+    // turn into "AI lugemine ebaõnnestus" on the client.
+    const parsed = repairAndParseJson(rawText);
+    if (!parsed) {
+      console.error('[parse-prices] JSON parse failed. Raw response (truncated):', rawText.slice(0, 400));
+      return new Response(JSON.stringify({
+        error: 'AI_JSON_INVALID',
+        detail: 'Gemini returned a non-JSON response.',
+        rawPreview: rawText.slice(0, 200),
+      }), { status: 502, headers: JSON_HEADERS });
+    }
+
+    const FUEL_KEYS = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'] as const;
+    const prices: Record<string, number> = {};
+    for (const k of FUEL_KEYS) {
+      const v = parsed[k];
+      if (typeof v === 'number' && isFinite(v) && v > 0) prices[k] = v;
+      else if (typeof v === 'string') {
+        const num = parseFloat(v.replace(',', '.'));
+        if (isFinite(num) && num > 0) prices[k] = num;
+      }
+    }
+    const extractedAny = Object.keys(prices).length > 0;
+
+    if (!extractedAny) {
+      console.warn('[parse-prices] No prices extracted. Raw response (truncated):', rawText.slice(0, 400));
+    }
+
+    const normalized = {
+      detectedBrand: typeof parsed.detectedBrand === 'string' ? parsed.detectedBrand : null,
+      isBrandMatch: parsed.isBrandMatch !== false,
+      extractedAny,
+      ...prices,
+    };
+
+    return new Response(JSON.stringify(normalized), {
+      status: 200,
+      headers: JSON_HEADERS,
     });
-    
+
   } catch (error: any) {
     console.error('Vision API Error:', error);
     const msg = error.message || 'Unknown API Exception';
