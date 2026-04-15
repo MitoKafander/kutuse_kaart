@@ -494,7 +494,7 @@ function App() {
 
       {/* FAB stack (top → bottom): Camera, Nearby, Navigation, Stats */}
       <button
-        className="glass-fab flex-center"
+        className="flex-center"
         onClick={() => setIsCameraOpen(true)}
         title="Pildista hindu"
         style={{
@@ -502,13 +502,18 @@ function App() {
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-primary)',
+          background: 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid var(--color-surface-alpha-12)',
+          transition: 'all 0.2s ease',
         }}
       >
         <Camera size={22} />
       </button>
 
       <button
-        className="glass-fab flex-center"
+        className="flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
         title="Odavaim kütus lähedal"
         style={{
@@ -516,13 +521,18 @@ function App() {
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#facc15',
+          background: 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid var(--color-surface-alpha-12)',
+          transition: 'all 0.2s ease',
         }}
       >
         <Euro size={22} />
       </button>
 
       <button
-        className="glass-fab flex-center"
+        className="flex-center"
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
@@ -530,6 +540,11 @@ function App() {
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
+          background: 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid var(--color-surface-alpha-12)',
+          transition: 'all 0.2s ease',
         }}
       >
         <Navigation size={22} />
@@ -537,7 +552,7 @@ function App() {
 
       {routePolyline && (
         <button
-          className="glass-fab flex-center"
+          className="flex-center"
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title="Tühista marsruut"
           style={{
@@ -546,6 +561,11 @@ function App() {
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
             color: '#ef4444',
+            background: 'var(--color-surface-alpha-06)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--color-surface-alpha-12)',
+            transition: 'all 0.2s ease',
           }}
         >
           <X size={20} />
@@ -553,7 +573,7 @@ function App() {
       )}
 
       <button
-        className="glass-fab flex-center"
+        className="flex-center"
         onClick={() => setIsStatsOpen(true)}
         title="Statistika"
         style={{
@@ -561,6 +581,11 @@ function App() {
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
+          background: 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid var(--color-surface-alpha-12)',
+          transition: 'all 0.2s ease',
         }}
       >
         <TrendingUp size={22} />
