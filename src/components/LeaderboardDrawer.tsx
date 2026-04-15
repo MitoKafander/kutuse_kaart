@@ -47,7 +47,7 @@ export function LeaderboardDrawer({
     supabase
       .from(VIEW_BY_PERIOD[period])
       .select('user_id, display_name, prices_count, upvotes_received')
-      .limit(50)
+      .limit(100)
       .then(({ data }) => {
         if (cancelled) return;
         const sorted = (data ?? []).slice().sort((a: Row, b: Row) => score(b) - score(a));
