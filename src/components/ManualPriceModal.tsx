@@ -476,6 +476,26 @@ export function ManualPriceModal({
               }}
             />
           )}
+          {/* Upload-from-gallery is only offered when the user already picked a
+              station (the "muuda hindu" flow). The map FAB launches the camera
+              directly for live totem scans; offering a gallery button there would
+              just confuse the flow. */}
+          {!!station && (
+            <button
+              type="button"
+              disabled={isAnalyzing}
+              onClick={() => galleryInputRef.current?.click()}
+              style={{
+                background: 'rgba(59, 130, 246, 0.05)', color: 'var(--color-primary)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: 'var(--radius-md)', padding: '16px', fontSize: '0.95rem', fontWeight: 'bold',
+                flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              }}
+            >
+              <Upload size={20} />
+              Laadi pilt
+            </button>
+          )}
           <button
             type="button"
             disabled={isAnalyzing}
@@ -488,21 +508,7 @@ export function ManualPriceModal({
             }}
           >
             {isAnalyzing ? <Loader2 size={20} className="spin" /> : <Camera size={20} />}
-            {retryStatus || (isAnalyzing ? 'AI loeb...' : capturedPreviewUrl ? 'Uuesti' : 'Kaameraga')}
-          </button>
-          <button
-            type="button"
-            disabled={isAnalyzing}
-            onClick={() => galleryInputRef.current?.click()}
-            style={{
-              background: 'rgba(59, 130, 246, 0.05)', color: 'var(--color-primary)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
-              borderRadius: 'var(--radius-md)', padding: '16px', fontSize: '0.95rem', fontWeight: 'bold',
-              flex: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            }}
-          >
-            <Upload size={20} />
-            Laadi pilt
+            {retryStatus || (isAnalyzing ? 'AI loeb...' : capturedPreviewUrl ? 'Uuesti' : station ? 'Kaameraga' : 'Skaneeri hinnad kaameraga')}
           </button>
         </div>
 
