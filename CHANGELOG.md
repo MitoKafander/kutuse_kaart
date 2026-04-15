@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - iOS PWA session-loss fix via apex↔www swap - 2026-04-15
+
+### Fixed 🐛
+- 🔴 **iOS installed-PWA silent logout on "close" tap**: Vercel primary was `www.kyts.ee` with `kyts.ee` → 307 → www. Friend on iOS installed the PWA from `kyts.ee`, which locked the manifest scope to apex. Every launch hit the redirect out of scope → iOS rendered its "you left the app" Safari-style header with an X → tapping X tore down the standalone webview and wiped the session. Regular Safari was unaffected because Safari doesn't enforce manifest scope. **Fix:** Vercel Settings → Domains — made `kyts.ee` (apex) Production, set `www.kyts.ee` to 308 Permanent Redirect → `kyts.ee`. Verified: apex returns 200, www returns 308 with `location: https://kyts.ee/`.
+
+### Notes
+- **DNS Change Recommended badges in Vercel**: Vercel is rolling out a new IP range (`216.198.79.1` for apex A, per-project CNAME like `68532625e01bd565.vercel-dns-017.com` for www). Current records (`76.76.21.21` + `cname.vercel-dns.com`) still resolve correctly. Deferred — no urgency, will handle as its own focused change later.
+- **iOS PWA reinstall required** for users already on the home screen: delete old icon, revisit `https://kyts.ee`, Add to Home Screen again. Re-scopes the PWA to the (now consistently-serving) apex.
+
+### Open Items
+- Confirm with friend that after reinstall, the iOS PWA session persists across launches and no X badge appears.
+- DNS IP range migration (recommended by Vercel, not urgent).
+
+---
+
+## [Unreleased] - Leaderboard top 100 + Feedback.md triage - 2026-04-15
+
+### Changed 🔧
+- 🟢 **Edetabel: top 50 → top 100** (`src/components/LeaderboardDrawer.tsx`): Client-side `.limit(50)` → `.limit(100)` to show more community contributors. Supabase views `v_leaderboard_*` already capped at 100, no migration needed. Drawer list is already scrollable at 85vh.
+
+### Notes
+- **Messenger rich preview** (Feedback #3): confirmed resolved by the kyts.ee launch OG tags below. Facebook Sharing Debugger re-scraped successfully; re-sharing the link now renders title + logo + description. Missing `fb:app_id` warning intentionally skipped (we're on PostHog, not FB Insights).
+- **Multi-language EN** (Feedback #1): deferred to its own dedicated plan. Decisions captured for that plan: build for multiple languages from day 1 (extensible to RU/FI/LV later), translate both Terms + Privacy to English. Open for future plan: library choice + auto-detect vs toggle-only.
+
+### Dashboard Setup Done This Session
+- Sentry → Security & Privacy → **Allowed Domains**: added `kyts.ee` + `www.kyts.ee` (+ kept old `kutuse-kaart.vercel.app` during transition).
+
+---
+
 ## [Unreleased] - Custom domain launch (kyts.ee) - 2026-04-15
 
 ### Added ✨
