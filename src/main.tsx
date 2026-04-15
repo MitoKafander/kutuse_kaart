@@ -13,6 +13,24 @@ if (sentryDsn) {
     tracesSampleRate: 0.1,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
+    // Drop noise we can't fix and already handle in-app: stale chunk loads
+    // auto-reload (App.tsx lazyWithReload), and Samsung Internet rejects
+    // SW registration in private/incognito tabs with a bare "Rejected".
+    ignoreErrors: [
+      /Failed to fetch dynamically imported module/i,
+      /Importing a module script failed/i,
+    ],
+    beforeSend(event, hint) {
+      const err: any = hint?.originalException;
+      const msg = typeof err === 'string' ? err : err?.message;
+      if (msg === 'Rejected' || err === 'Rejected') {
+        const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
+        if (frames.some(f => (f.filename || '').includes('registerSW.js') || (f.function || '').includes('serviceWorker'))) {
+          return null;
+        }
+      }
+      return event;
+    },
   });
 }
 

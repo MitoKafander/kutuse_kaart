@@ -15,9 +15,31 @@ import { BrandPickerPill } from './components/BrandPickerPill';
 // Lazy-load panels that aren't on the critical first-paint path to keep the
 // initial JS bundle under the 500 kB Vercel warning. These are only fetched
 // when the user opens them.
-const LeaderboardDrawer = lazy(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
-const RoutePlanModal = lazy(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
-const StatisticsDrawer = lazy(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
+//
+// lazyWithReload: after a fresh deploy, old tabs hold an index.js that
+// references chunk hashes (e.g. StatisticsDrawer-D9lfdbbC.js) no longer on
+// the server. Clicking a lazy-loaded panel then throws "Failed to fetch
+// dynamically imported module". Instead of greeting the user with an error
+// boundary, reload once so they get the new index.
+function lazyWithReload<T extends React.ComponentType<any>>(factory: () => Promise<{ default: T }>) {
+  return lazy(async () => {
+    try { return await factory(); }
+    catch (err: any) {
+      const msg = String(err?.message || '');
+      if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(msg)
+          && !sessionStorage.getItem('kyts:chunk-reloaded')) {
+        sessionStorage.setItem('kyts:chunk-reloaded', '1');
+        window.location.reload();
+        return new Promise<never>(() => {}); // block render until reload kicks in
+      }
+      throw err;
+    }
+  });
+}
+
+const LeaderboardDrawer = lazyWithReload(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
+const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
+const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 import { supabase } from './supabase';
 import { getStationDisplayName, getBrand } from './utils';
 import type { LoyaltyDiscounts } from './utils';
