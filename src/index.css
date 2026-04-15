@@ -79,28 +79,36 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* Floating action buttons: visibly-milky frosted fill + backdrop blur.
-   We use ~30% alpha so the FAB reads as frosted glass even in browsers
-   where backdrop-filter is dropped (Brave with certain shields, some
-   PWA runtimes). Enough milk to hide busy dots underneath; still
-   translucent enough to feel like glass, not a solid button. */
+/* Floating action buttons: sea-glass. Light diffuses through as a soft
+   glow but no distinct shapes show — heavy blur on anything behind,
+   a milky ~45% fill, and a gentle top-to-bottom depth gradient so the
+   button reads as tumbled glass rather than a flat sticker. */
 .glass-fab {
-  background: rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(24px) saturate(1.8);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  transition: transform 0.12s ease, background 0.2s ease;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 55%),
+    rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  transition: transform 0.12s ease, filter 0.2s ease;
 }
-.glass-fab:hover { background: rgba(255, 255, 255, 0.38); }
+.glass-fab:hover { filter: brightness(1.08); }
 .glass-fab:active { transform: scale(0.94); }
 
 [data-theme="light"] .glass-fab {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.2) 55%),
+    rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
-[data-theme="light"] .glass-fab:hover { background: rgba(255, 255, 255, 0.72); }
 
 .frosted-pill {
   background: var(--color-surface-alpha-06);
