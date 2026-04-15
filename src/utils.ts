@@ -147,6 +147,15 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'premium 7',      canonical: 'Premium 7' },
   { match: 'hepa',           canonical: 'Hepa' },
   { match: 'thor',           canonical: 'Thor' }, // matches "Thor" and "Thori"
+  // Latvian chains (border-strip + future Latvia region)
+  { match: 'virsi',          canonical: 'Virši-A' }, // matches "Virši", "Virši-A", "Virsi"
+  { match: 'viada',          canonical: 'Viada' },
+  { match: 'kool',           canonical: 'KOOL' },
+  { match: 'astarte',        canonical: 'Astarte Nafta' },
+  { match: 'latvijas nafta', canonical: 'Latvijas Nafta' },
+  { match: 'propāna',        canonical: 'Latvijas Propāna Gāze' }, // collapses case variants
+  { match: 'lateva',         canonical: 'Lateva' },
+  { match: 'gotika',         canonical: 'Gotika Auto' },
 ];
 
 function normalizeBrandKey(s: string): string {
