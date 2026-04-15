@@ -80,7 +80,7 @@ function App() {
     return localStorage.getItem('kyts-show-clusters') !== 'false';
   });
   const [hideEmptyDots, setHideEmptyDots] = useState(() => {
-    return localStorage.getItem('kyts-hide-empty-dots') !== 'false';
+    return localStorage.getItem('kyts-hide-empty-dots') === 'true';
   });
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
