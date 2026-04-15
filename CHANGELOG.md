@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Latvia border-strip stations + user toggle - 2026-04-15
+
+### Added ✨
+- 🟡 **Latvian border-strip stations seeded** (`scripts/seed_latvia_border.js`, `migrations/schema_phase26_stations_country.sql`): 75 fuel stations from a ~20km strip south of the Estonia-Latvia border pulled via Overpass API (`area["name"="Latvija"]` + bbox `57.30,21.50,57.90,27.50`), upserted on `(latitude,longitude)` with `country='LV'`. New `stations.country` column defaults to `'EE'` (all existing rows backfilled implicitly). Reversible with one SQL line: `delete from stations where country='LV';`. Seed script is idempotent — safe to re-run.
+- 🟢 **Latvian chain canonicalization** (`src/utils.ts`): added 8 chains to `CHAIN_PATTERNS` — Virši-A, Viada, KOOL, Astarte Nafta, Latvijas Nafta, Latvijas Propāna Gāze, Lateva, Gotika Auto. Covers most of the seeded border inventory; unmatched names fall through to their raw form.
+- 🟡 **"Näita Läti jaamu" map toggle** (`migrations/schema_phase27_show_latvian_stations.sql`, `src/App.tsx`, `src/components/ProfileDrawer.tsx`): Profile → Seaded → Kuva gets a toggle to show/hide Latvian stations, **default on**. New `user_profiles.show_latvian_stations boolean not null default true` persists choice across devices; localStorage mirror keeps it snappy for anon users. Filter runs inside `filteredStations` useMemo alongside the brand filter — only affects the Map; CheapestNearby/Statistics/ProfileDrawer still see all stations (intentional — stats and favorites shouldn't silently drop rows).
+
+### Key Decisions
+- **Separate `country` column over separate tables**: keeps one `stations` table so brand canonicalization, price queries, and favorites don't fork. Promoting Latvia/Lithuania into proper regions later is a filter flip, not a migration.
+- **Bbox + Latvia area-filter guards against cross-border bleed**: bbox alone would grab Valga/Valka's Estonian side; the `area["name"="Latvija"]` clause ensures LV-only rows.
+- **Default ON, per-user opt-out**: most users drive near the border at least occasionally; those who never do can hide the clutter.
+
+### Migrations to Apply
+- `migrations/schema_phase26_stations_country.sql` — applied when Latvian stations were seeded.
+- `migrations/schema_phase27_show_latvian_stations.sql` — **pending**, run in Supabase SQL editor.
+
+### Open Items
+- Confirm 13 of 75 Latvian stations have usable display names (same "nameless OSM node" issue as the Estonian seed — fall-through to operator/name works, a few still label as "Tundmatu").
+- Price-reporting UX from the LV side is untested — no pricing flow for Latvian fuel units yet; users can submit but station names and brands are the immediate payoff.
+
+---
+
 ## [Unreleased] - iOS PWA session-loss fix via apex↔www swap - 2026-04-15
 
 ### Fixed 🐛

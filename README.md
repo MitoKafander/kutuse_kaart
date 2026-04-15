@@ -7,7 +7,7 @@ Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced app
 📱 Designed mobile-first. Installable as a Progressive Web App (PWA) on iOS & Android.
 
 ## Core Features
-1. **Interactive Map**: Seamless interface powered by Leaflet to explore 500+ gas stations across Estonia (Circle K, Neste, Olerex, etc.).
+1. **Interactive Map**: Seamless interface powered by Leaflet to explore 500+ gas stations across Estonia (Circle K, Neste, Olerex, etc.), plus a ~20km strip of Latvian border stations (toggle in Profile → Seaded → Kuva).
 2. **AI Vision Scanning**: Open your device's camera, snap a photo of a gas station totem, and local Vercel nodes pass the image securely to **Gemini 2.5 Flash** to automatically read and hydrate the form pricing — with automatic brand cross-validation. Includes auto-retry on server errors and photo persistence for manual verification.
 3. **Camera Quick-Scan**: A dedicated camera button on the main map lets you scan prices without first selecting a station. GPS + AI brand detection automatically matches the closest station.
 4. **Driving Mode**: On app launch, a "Cheapest Nearby" panel shows the cheapest station per fuel type (95, 98, Diesel, LPG) within a selectable radius (5/10/20 km) with one-tap navigation to Google Maps. Supports preferred brand filtering.
@@ -44,8 +44,8 @@ If you wish to spin up a local instance of the application:
 3. Run `npm install` then `npm run dev`.
 
 ### Database Schema
-The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase20_unknown_targeted.sql`).
-*   `stations` (Base OpenStreetMap derived locations)
+The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase27_show_latvian_stations.sql`).
+*   `stations` (Base OpenStreetMap derived locations + `country` column for EE/LV segmentation)
 *   `prices` (Tied to user_id for submission tracking)
 *   `votes` (Unique constraint across user_id + price_id)
 *   `user_profiles` (Default fuel type, preferred brands, auto-open toggle per user)
