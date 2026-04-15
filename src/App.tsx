@@ -256,9 +256,27 @@ function App() {
         localStorage.setItem('kyts-apply-loyalty', String(prof.apply_loyalty));
       }
     } else {
+      // Signed-out state: every preference that's synced from user_profiles
+      // must be reverted to its anonymous default AND its localStorage cache
+      // cleared — otherwise a user who previously toggled "hide empty dots"
+      // while logged in would keep seeing the hidden state as a guest on the
+      // next visit (issue #2).
       setFavorites([]);
       setDefaultFuelType(null);
       setPreferredBrands([]);
+      setDisplayName('');
+      setHideEmptyDots(false);
+      setShowClusters(true);
+      setShowLatvianStations(true);
+      setDotStyle('info');
+      setApplyLoyalty(true);
+      setLoyaltyDiscounts({});
+      localStorage.removeItem('kyts-hide-empty-dots');
+      localStorage.removeItem('kyts-show-clusters');
+      localStorage.removeItem('kyts-show-latvian-stations');
+      localStorage.removeItem('kyts-dot-style');
+      localStorage.removeItem('kyts-apply-loyalty');
+      localStorage.removeItem('kyts-loyalty-discounts');
     }
   };
 
