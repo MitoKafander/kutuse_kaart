@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Custom domain launch (kyts.ee) - 2026-04-15
+
+### Added ✨
+- 🟡 **Open Graph + Twitter card meta tags** (`index.html`): og:type/title/description/url/image/locale + twitter:card. Social previews now render correctly when `https://kyts.ee` is shared.
+- 🟡 **Canonical link** (`index.html`): `<link rel="canonical" href="https://kyts.ee/">` for SEO consolidation across `kyts.ee` / `www.kyts.ee` / old `*.vercel.app`.
+- 🟢 **Meta description + theme-color** (`index.html`): Estonian description copy; theme-color `#0a0a0a` for mobile browser chrome.
+
+### Changed 🔧
+- 🔴 **PWA manifest rebranded + identity stabilized** (`vite.config.ts`): `name` "KütuseKaart" → "Kyts — Kütusehinnad", `short_name` → "Kyts", Estonian `description`, added `id: '/'`, `start_url: '/'`, `scope: '/'`, `lang: 'et'`. The `id` field keys the install to a stable path so existing PWA installs aren't orphaned when the origin changes.
+- 🟡 **HTML lang attribute** (`index.html`): `lang="en"` → `lang="et"` (content is entirely Estonian; fixes screen readers + search indexing).
+- 🟡 **HTML title** (`index.html`): `kytuse_kaart` → "Kyts — Eesti kütusehinnad".
+- 🟢 **README live URL** (`README.md`): now points to `https://kyts.ee` instead of `kutuse-kaart.vercel.app`.
+
+### Dashboard Setup (user tasks this session)
+- DNS at veebimajutus.ee: added A `kyts.ee` → `76.76.21.21` and CNAME `www` → `cname.vercel-dns.com`; removed conflicting default A (`185.7.252.153`) and CNAME (`www` → `kyts.ee`). Email records (MX, SPF, DMARC, DKIM, elkdata, ftp, autoconfig) kept intact.
+- Supabase → Auth → URL Configuration: Site URL `https://kyts.ee` + Redirect URLs `https://kyts.ee/**`, `https://www.kyts.ee/**`.
+- Google Cloud Console → OAuth 2.0 Client: Authorised JavaScript origins for `https://kyts.ee` + `https://www.kyts.ee`. Client ID cross-verified against Supabase.
+
+### Open Items
+- **Sentry allowed domains** — add `kyts.ee` + `www.kyts.ee` in Project Settings → Security & Privacy → Allowed Domains once DNS propagates. Not code.
+- DNS still propagating at time of commit — verification happens once Vercel flips both domains to "Valid Configuration".
+- Old `kutuse-kaart.vercel.app` deployment still live as a redundancy; plan to leave as 301 redirect to `kyts.ee` for ~1 month.
+
+---
+
 ## [Unreleased] - Ops, Legal & Analytics Hardening - 2026-04-15
 
 ### Added ✨

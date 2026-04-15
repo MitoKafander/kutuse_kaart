@@ -3,7 +3,7 @@
 Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced application for tracking real-time fuel prices across Estonia. Built with a modern tech stack and progressive web app (PWA) capabilities, it allows users to find the absolute cheapest fuel, verify community data, and contribute to the ecosystem.
 
 ## Live Application
-🌍 **[https://kutuse-kaart.vercel.app](https://kutuse-kaart.vercel.app)**  
+🌍 **[https://kyts.ee](https://kyts.ee)**  
 📱 Designed mobile-first. Installable as a Progressive Web App (PWA) on iOS & Android.
 
 ## Core Features
