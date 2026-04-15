@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Feedback.md round 2 + PWA update propagation - 2026-04-16
+
+### Fixed 🐛
+- 🔴 **AI scan "Failed to fetch" on desktop** (`api/parse-prices.ts`, `src/components/ManualPriceModal.tsx`): Sentry KYTS-WEB-5/-6 showed repeated `TypeError: Failed to fetch` on `POST /api/parse-prices` with no HTTP status — connection killed mid-Gemini-call. Root cause: Edge runtime's 25s ceiling vs Gemini 2.5 Flash vision p99 ~30–40s. Switched the endpoint to Node serverless (`runtime: 'nodejs'`, `maxDuration: 60`). Client side added a 55s `AbortController` with dedicated `TIMEOUT`/`NETWORK` error codes + Estonian copy — no more silent "AI lugemine ebaõnnestus" when the real cause was a timeout.
+- 🟡 **Back button closing the whole price modal** (`src/App.tsx`, `src/components/ManualPriceModal.tsx`): `photoExpanded` was local state so popstate popped the outer `priceModal` instead of the zoom. Lifted to `App.tsx`, registered in `overlayStackRef` as `photoZoom`. Back now closes zoom → second back closes modal.
+- 🔴 **Installed PWA serving stale cache for days** (`vite.config.ts`): `registerType: 'autoUpdate'` downloaded the new SW but without `skipWaiting` it stayed in "waiting" until every client closed — installed PWAs on mobile rarely fully close. Added Workbox `skipWaiting` + `clientsClaim` + `cleanupOutdatedCaches` + NetworkFirst navigation fallback (4s network timeout on HTML). New deploys now reach users within one launch; old cache entries are wiped on activation.
+- 🔴 **Build failure on Vercel** (`api/parse-prices.ts`): `runtime: 'nodejs20.x'` rejected — Vercel only accepts `edge`/`experimental-edge`/`nodejs`. Fixed (`9bbd82e`).
+
+### Added ✨
+- 🟡 **"Laadi pilt" gallery-upload button** (`src/components/ManualPriceModal.tsx`): second file input without `capture="environment"` so users with a totem photo already in their gallery (or desktop users with no camera) get a logical path. Only rendered in the station-selected "muuda hindu" flow — the camera FAB stays a single-purpose scan button. Layout: upload on left, camera on right.
+
+### Sentry Access
+- 🟢 User generated a personal auth token with `project:read` + `event:read` + `org:read`, added to `.env` as `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT`. Confirmed working via `sentry.io/api/0/organizations/$ORG/issues/:id/events/latest/`. Organization Auth Token (create-only, CI/release scopes) deleted as unused.
+
+### Key Decisions
+- **Node runtime over Edge for Gemini-backed endpoints**: Edge's 25s cap is too tight for vision models; Node serverless maxDuration 60s on Hobby gives 2× safety margin with no ergonomic downside for this endpoint (Upstash Redis works identically in both runtimes).
+- **Upload button not in FAB mode**: the camera FAB is designed for live totem scans — offering a gallery picker there muddies the flow. Two buttons in the station-selected form only.
+- **skipWaiting over prompt-to-update UX**: for a 5-star fuel-price app with daily redeploys, a forced-update SW beats a "new version available" banner that users dismiss. Data loss risk is zero (no in-flight form is orphaned by the swap).
+
+### Open Items
+- **One-time nudge for already-installed PWAs**: users stuck on the pre-`de5a35f` SW need to either reinstall (iOS: delete & re-add home-screen icon) or clear app storage (Android Chrome) once. After that, all future updates propagate automatically.
+- Watch Sentry for a week — KYTS-WEB-5/-6 pattern should stop. If not, Gemini is likely >60s and we need to downshift to a smaller model or pre-classify the image.
+- Feedback.md could be cleared — all 5 items addressed this session and last. Leaving to user discretion.
+
+---
+
 ## [Unreleased] - Latvia border-strip stations + user toggle - 2026-04-15
 
 ### Added ✨
