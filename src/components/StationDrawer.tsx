@@ -148,13 +148,6 @@ export function StationDrawer({
 
   return (
     <>
-    {/* Transparent backdrop — outside-tap dismisses. Sits below the panel but
-        above the map so map interactions don't eat the dismiss tap. */}
-    <div
-      onClick={onClose}
-      style={{ position: 'absolute', inset: 0, zIndex: 999, background: 'transparent' }}
-      aria-hidden="true"
-    />
     <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" role="dialog" aria-modal="true" style={{
       position: 'absolute',
       bottom: 0, left: 0, right: 0,

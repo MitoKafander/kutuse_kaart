@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { X, TrendingUp } from 'lucide-react';
-import { getStationDisplayName, getBrand } from '../utils';
+import { getStationDisplayName, getBrand, FRESH_HOURS } from '../utils';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
 const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
@@ -74,27 +74,30 @@ export function StatisticsDrawer({
       .sort((a, b) => a.median - b.median);
   }, [recent, stationById, selectedFuel]);
 
-  // Latest price per station for the selected fuel (within DAYS horizon).
-  const latestByStation = useMemo(() => {
+  // Latest FRESH price per station for the selected fuel — used by "Odavaim hetkel"
+  // so we don't surface stale numbers as current. 5h matches the app's freshness bar.
+  const freshLatestByStation = useMemo(() => {
     const m = new Map<string, { price: number; reportedAt: number }>();
+    const freshCutoff = now - FRESH_HOURS * 60 * 60 * 1000;
     for (const p of recent) {
       if (p.fuel_type !== selectedFuel) continue;
       const t = new Date(p.reported_at).getTime();
+      if (t < freshCutoff) continue;
       const cur = m.get(p.station_id);
       if (!cur || t > cur.reportedAt) m.set(p.station_id, { price: p.price, reportedAt: t });
     }
     return m;
-  }, [recent, selectedFuel]);
+  }, [recent, selectedFuel, now]);
 
   const cheapestNow = useMemo(() => {
     let best: { station: any; price: number; reportedAt: number } | null = null;
-    for (const [stationId, v] of latestByStation) {
+    for (const [stationId, v] of freshLatestByStation) {
       const st = stationById.get(stationId);
       if (!st) continue;
       if (!best || v.price < best.price) best = { station: st, price: v.price, reportedAt: v.reportedAt };
     }
     return best;
-  }, [latestByStation, stationById]);
+  }, [freshLatestByStation, stationById]);
 
   // Biggest 7-day drops: compare latest price in 0–7d window vs. 7–14d window per (station, fuel).
   const biggestDrops = useMemo(() => {
@@ -216,6 +219,17 @@ export function StatisticsDrawer({
               </button>
             ))}
           </div>
+
+          {!cheapestNow && (
+            <div className="glass-panel" style={{
+              padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
+            }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Odavaim hetkel</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                Pole värsket hinda viimase {FRESH_HOURS} tunni jooksul.
+              </div>
+            </div>
+          )}
 
           {cheapestNow && (
             <div className="glass-panel" style={{
