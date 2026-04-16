@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
-import { KeypadHandIcon } from './components/icons/KeypadHandIcon';
+import { FuelPencilIcon } from './components/icons/FuelPencilIcon';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -552,7 +552,7 @@ function App() {
           transition: 'all 0.2s ease',
         }}
       >
-        <KeypadHandIcon size={22} />
+        <FuelPencilIcon size={22} />
       </button>
 
       <button
