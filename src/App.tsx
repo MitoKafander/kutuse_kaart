@@ -512,13 +512,16 @@ function App() {
         )}
       </div>
 
-      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats */}
+      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats.
+          Bottom of stack stays at 140px so the Stats FAB keeps ~60px of clear
+          space above the GPS locator button (which sits at bottom 30px in
+          Map.tsx). New FABs extend upward instead of downward. */}
       <button
         className="flex-center"
         onClick={() => setIsCameraOpen(true)}
         title="Pildista hindu"
         style={{
-          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-primary)',
@@ -537,7 +540,7 @@ function App() {
         onClick={() => setIsManualOpen(true)}
         title="Sisesta hinnad käsitsi"
         style={{
-          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#fb923c',
@@ -556,7 +559,7 @@ function App() {
         onClick={() => setIsCheapestNearbyOpen(true)}
         title="Odavaim kütus lähedal"
         style={{
-          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#facc15',
@@ -575,7 +578,7 @@ function App() {
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
-          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
@@ -595,7 +598,7 @@ function App() {
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title="Tühista marsruut"
           style={{
-            position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))',
+            position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
@@ -616,7 +619,7 @@ function App() {
         onClick={() => setIsStatsOpen(true)}
         title="Statistika"
         style={{
-          position: 'absolute', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
