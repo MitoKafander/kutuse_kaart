@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - GitHub Issues #1/#2 triage + LICENSE - 2026-04-16
+
+### Fixed 🐛
+- 🔴 **Logout leaked profile preferences into anonymous state** (`src/App.tsx`, issue #2): `loadData`'s signed-out branch only cleared favorites / defaultFuelType / preferredBrands — leaving `hideEmptyDots`, `showClusters`, `dotStyle`, `showLatvianStations`, `applyLoyalty`, `displayName`, and `loyaltyDiscounts` stuck at whatever the user had while logged in. Since each `useState` initializer also reads its own localStorage cache, the stale values re-applied on every page load. Anonymous visitors saw the previous account holder's "hide inactive dots" toggle persist across logout. Reset every server-synced setting to its anonymous default and wipe the matching localStorage keys when the session is null. Also explains the reported flakiness — races between localStorage-first render and async `onAuthStateChange` exposed the stale window before the profile load replaced it. Commit `a56e21a`, closes #2.
+- 🟡 **FAB buttons too see-through over busy map content** (`src/App.tsx`, `src/index.css`, issue #1): original FABs used `rgba(255,255,255,0.06)` + `blur(12px)` via `.glass-fab` class. Fine over calm basemap (like the top fuel-type pills) but colored station dots panning underneath made the icons unreadable. After several iterations (opaque pill-bg + sheen → 45% milky → 55% dark slate → blur(60px) scatter), settled on **matching the top pills byte-for-byte**: dropped the `.glass-fab` class entirely and inlined the same `var(--color-surface-alpha-06)` + `blur(12px)` + `var(--color-surface-alpha-12)` border directly on each FAB. DevTools now shows identical computed styles for FABs and pills. Over calm map they render identically; over colored dots they're see-through — accepted trade-off. Commit `7d10adf`, closes #1.
+
+### Added ✨
+- 🟢 **LICENSE file** (`LICENSE`): All Rights Reserved, personal-viewing only (viewing + forking for study allowed, redistribution + commercial use forbidden). Clarifies reuse terms now that the repo is public. Commit `857c22e`.
+
+### Key Decisions
+- **Repo stays public, not private**: transparency + issue-tracking-via-GitHub ergonomics outweigh the minor "nobody sees my half-baked experiments" benefit of private. Licensing covers legal reuse concerns.
+- **Git-history audit found no real secrets leaked**: `.env` was tracked in three early commits (`606a0b5`, `c51d72e`, `aa3623f`) but only contained `VITE_SUPABASE_URL` + publishable anon key (`sb_publishable_...`) — both public-by-design (VITE_ vars are inlined into the client bundle at build time anyway). Service role key, Gemini API key, Upstash tokens, Sentry token all only in Vercel env + local `.env` (gitignored), never committed.
+- **Pill-match over readability for FABs**: user explicitly preferred visual consistency with the top fuel-type pills over icon legibility over busy map content. Spent ~10 iterations attempting to give FABs their own glassy character (frosted/sea-glass/milky) before settling on the byte-identical pill recipe — the "glass" reads differently between FABs and pills regardless because of what sits behind them, not because of CSS.
+
+### GitHub Issues Workflow
+- **Issues #1 and #2 filed and closed this session** — first real end-to-end use of the Issue-Templates-based workflow set up yesterday. `Closes #N` in commit messages auto-closed both on push.
+
+### Open Items
+- **Users on desktop Brave need a one-time localStorage cleanup** to recover from the stale-preferences bug: Application tab → Local Storage → `https://kyts.ee` → delete `kyts-hide-empty-dots`, `kyts-show-clusters`, `kyts-show-latvian-stations`, `kyts-dot-style`, `kyts-apply-loyalty`, `kyts-loyalty-discounts`. After that, future logouts self-clean.
+- **`.glass-fab` CSS rule now unused** — removed from `src/index.css`. `.frosted-pill` sibling rule kept but still unused anywhere; safe to leave for now, can drop in a future cleanup pass.
+
+---
+
 ## [Unreleased] - Feedback.md round 2 + PWA update propagation - 2026-04-16
 
 ### Fixed 🐛
