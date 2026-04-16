@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload } from 'lucide-react';
+import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName, haversineKm, getCurrentPositionAsync } from '../utils';
+import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessage } from '../utils';
 import { capture } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
@@ -17,6 +17,7 @@ export function ManualPriceModal({
   allStations,
   photoExpanded,
   onPhotoExpandedChange,
+  mode,
 }: {
   station: any | null,
   isOpen: boolean,
@@ -25,7 +26,15 @@ export function ManualPriceModal({
   allStations?: any[],
   photoExpanded: boolean,
   onPhotoExpandedChange: (expanded: boolean) => void,
+  mode?: 'station' | 'camera' | 'manual',
 }) {
+  // Derive mode when not passed: back-compat with the two original call sites
+  // (pre-selected station vs camera FAB). Manual mode is only entered via the
+  // explicit prop from the new "Sisesta hinnad käsitsi" FAB.
+  const effectiveMode: 'station' | 'camera' | 'manual' =
+    mode ?? (station ? 'station' : 'camera');
+  const isManualMode = effectiveMode === 'manual';
+
   const [resolvedStation, setResolvedStation] = useState<any | null>(null);
   const [stationCandidates, setStationCandidates] = useState<any[] | null>(null);
   const [prices, setPrices] = useState<{ [key: string]: string }>(EMPTY_PRICES);
@@ -40,6 +49,8 @@ export function ManualPriceModal({
   const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [pendingDetectedBrand, setPendingDetectedBrand] = useState<string | null>(null);
   const [pricesFromAi, setPricesFromAi] = useState(false);
+  const [manualGpsError, setManualGpsError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,10 +68,15 @@ export function ManualPriceModal({
       setCapturedPosition(null);
       setPendingDetectedBrand(null);
       setPricesFromAi(false);
+      setManualGpsError(null);
+      setSubmitSuccess(false);
       setPrices(EMPTY_PRICES);
-      // Camera FAB mode: auto-open camera immediately
-      if (!station && allStations) {
+      if (effectiveMode === 'camera') {
+        // Camera FAB mode: auto-open camera immediately
         setTimeout(() => fileInputRef.current?.click(), 300);
+      } else if (effectiveMode === 'manual') {
+        capture('manual_opened');
+        captureLocationForManual();
       }
     }
   }, [isOpen]);
@@ -132,7 +148,8 @@ export function ManualPriceModal({
       const copy = { ...prev };
       for (const type of FUEL_TYPES) {
         if (parsedJson[type]) {
-          copy[type] = parsedJson[type].toString().replace(',', '.');
+          // Display with Estonian-locale comma so both flows match.
+          copy[type] = parsedJson[type].toString().replace('.', ',');
           gotAny = true;
         }
       }
@@ -185,6 +202,35 @@ export function ManualPriceModal({
     } else {
       setStationCandidates(candidates.slice(0, 10));
     }
+  };
+
+  // Manual mode: strict 500 m radius, no auto-select, no brand filter. Spec is
+  // explicit that a single tap of the manual FAB should land the user in a
+  // small, precise list they fully control.
+  const MANUAL_RADIUS_KM = 0.5;
+  const buildManualCandidates = (lat: number, lon: number) => {
+    if (!allStations?.length) { setStationCandidates([]); return; }
+    const withDist = allStations
+      .map(s => ({ ...s, _dist: haversineKm(lat, lon, s.latitude, s.longitude) }))
+      .filter(s => s._dist <= MANUAL_RADIUS_KM)
+      .sort((a, b) => a._dist - b._dist);
+    setStationCandidates(withDist);
+  };
+
+  const captureLocationForManual = () => {
+    setManualGpsError(null);
+    setStationCandidates(null);
+    setCapturedPosition(null);
+    getCurrentPositionAsync()
+      .then(pos => {
+        const p = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        setCapturedPosition(p);
+        buildManualCandidates(p.lat, p.lon);
+      })
+      .catch((e: any) => {
+        const kind = (e?.kind as 'permission' | 'unavailable' | 'timeout' | 'unsupported') || 'unavailable';
+        setManualGpsError(geolocationErrorMessage(kind));
+      });
   };
 
   const runScan = async (base64: string, stationNameHint: string) => {
@@ -302,6 +348,8 @@ export function ManualPriceModal({
     setCapturedPosition(null);
     setPendingDetectedBrand(null);
     setPricesFromAi(false);
+    setManualGpsError(null);
+    setSubmitSuccess(false);
     setPrices(EMPTY_PRICES);
     onClose();
   };
@@ -330,22 +378,33 @@ export function ManualPriceModal({
       return;
     }
 
+    const entryMethod = isManualMode ? 'manual' : 'camera';
     const inserts = parsed.map(p => ({
       station_id: activeStation.id,
       fuel_type: p.type,
       price: p.value,
-      user_id: user?.id || null
+      user_id: user?.id || null,
+      entry_method: entryMethod,
     }));
 
     if (inserts.length > 0) {
       const { error } = await supabase.from('prices').insert(inserts);
       if (error) {
         alert("Viga hinna salvestamisel!");
-      } else {
-        capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi });
-        onPricesSubmitted();
-        handleClose();
+        setLoading(false);
+        return;
       }
+      capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi, entry_method: entryMethod });
+      onPricesSubmitted();
+      if (isManualMode) {
+        // Manual flow: confirm save inline, then close after a short beat so
+        // the user sees the result instead of the modal disappearing mid-tap.
+        setSubmitSuccess(true);
+        setLoading(false);
+        setTimeout(() => handleClose(), 1200);
+        return;
+      }
+      handleClose();
     } else {
       handleClose();
     }
@@ -360,6 +419,13 @@ export function ManualPriceModal({
   // instead of blaming the user with "Vali esmalt tankla" in every state.
   const getSubmitLabel = () => {
     if (loading) return 'Salvestan...';
+    if (isManualMode) {
+      if (activeStation) return 'Salvesta';
+      if (manualGpsError) return 'Asukoht vajalik';
+      if (!capturedPosition) return 'Ootan GPS-signaali...';
+      if (stationCandidates && stationCandidates.length === 0) return 'Jaamu ei leitud';
+      return 'Vali tankla loendist';
+    }
     if (activeStation) return pricesFromAi ? 'Kinnita' : 'Salvesta';
     if (isAnalyzing) return 'AI loeb pilti...';
     if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return 'Ootan GPS-signaali...';
@@ -391,12 +457,118 @@ export function ManualPriceModal({
       }}>
         <div className="flex-between" style={{ marginBottom: '24px' }}>
           <h2 className="heading-1">
-            {activeStation ? `Uued Hinnad: ${getStationDisplayName(activeStation)}` : 'Skaneeri Hinnad'}
+            {activeStation
+              ? `Uued Hinnad: ${getStationDisplayName(activeStation)}`
+              : isManualMode
+                ? 'Sisesta hinnad'
+                : 'Skaneeri Hinnad'}
           </h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
           </button>
         </div>
+
+        {/* Manual mode: successful save confirmation (auto-closes shortly after). */}
+        {submitSuccess && (
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.4)',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem', color: 'var(--color-text)'
+          }}>
+            <Check size={18} style={{ color: '#22c55e', flexShrink: 0 }} />
+            Hinnad salvestatud
+          </div>
+        )}
+
+        {/* Manual mode: GPS permission / unavailable error. */}
+        {isManualMode && manualGpsError && !activeStation && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>{manualGpsError}</span>
+            <button
+              type="button"
+              onClick={captureLocationForManual}
+              style={{
+                background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#ef4444', borderRadius: '8px', padding: '6px 12px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '0.85rem', fontWeight: '600', flexShrink: 0
+              }}
+            >
+              <RefreshCw size={14} />
+              Proovi uuesti
+            </button>
+          </div>
+        )}
+
+        {/* Manual mode: waiting on first GPS fix. */}
+        {isManualMode && !manualGpsError && !capturedPosition && !activeStation && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            color: 'var(--color-text-muted)', fontSize: '0.9rem',
+            padding: '12px 4px', marginBottom: '8px'
+          }}>
+            <Loader2 size={16} className="spin" />
+            Asukohta tuvastatakse...
+          </div>
+        )}
+
+        {/* Manual mode: no stations within the 500 m radius. */}
+        {isManualMode && !activeStation && stationCandidates !== null && stationCandidates.length === 0 && !manualGpsError && (
+          <div style={{
+            background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+            borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '16px',
+            display: 'flex', flexDirection: 'column', gap: '12px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <MapPin size={18} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+              <span style={{ fontSize: '0.95rem', color: 'var(--color-text)' }}>
+                500 m raadiuses ei leitud ühtegi jaama.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { capture('manual_location_refreshed'); captureLocationForManual(); }}
+              style={{
+                background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)',
+                color: 'var(--color-primary)', borderRadius: '8px', padding: '10px 14px',
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px',
+                fontSize: '0.9rem', fontWeight: '600', alignSelf: 'flex-start'
+              }}
+            >
+              <RefreshCw size={14} />
+              Värskenda asukohta
+            </button>
+          </div>
+        )}
+
+        {/* Manual mode: "Muuda jaama" — return to picker, keeping draft prices. */}
+        {isManualMode && activeStation && (
+          <button
+            type="button"
+            onClick={() => {
+              setResolvedStation(null);
+              // Rebuild list from the last captured position rather than
+              // re-prompting GPS — the user just wants to pick a different
+              // station from what they already saw.
+              if (capturedPosition) buildManualCandidates(capturedPosition.lat, capturedPosition.lon);
+            }}
+            style={{
+              background: 'transparent', border: '1px solid var(--color-surface-border)',
+              color: 'var(--color-text-muted)', borderRadius: 'var(--radius-md)',
+              padding: '10px 14px', cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              fontSize: '0.9rem', fontWeight: '500', alignSelf: 'flex-start', marginBottom: '12px'
+            }}
+          >
+            <ArrowLeft size={14} />
+            Muuda jaama
+          </button>
+        )}
 
         {/* Auto-select confirmation toast */}
         {autoSelectMsg && (
@@ -410,8 +582,8 @@ export function ManualPriceModal({
           </div>
         )}
 
-        {/* Station picker (GPS FAB mode, multiple candidates) */}
-        {isFabMode && !activeStation && stationCandidates !== null && (
+        {/* Station picker (camera FAB or manual mode, at least one candidate) */}
+        {(isFabMode || isManualMode) && !activeStation && stationCandidates !== null && stationCandidates.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
             {pricesFromAi && (
               <div style={{
@@ -429,14 +601,34 @@ export function ManualPriceModal({
                 ))}
               </div>
             )}
-            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
-              Vali tankla, mille hindu uuendad:
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                {isManualMode ? 'Vali tankla, millele hindu lisad:' : 'Vali tankla, mille hindu uuendad:'}
+              </p>
+              {isManualMode && (
+                <button
+                  type="button"
+                  onClick={() => { capture('manual_location_refreshed'); captureLocationForManual(); }}
+                  title="Värskenda asukohta"
+                  style={{
+                    background: 'transparent', border: '1px solid var(--color-surface-border)',
+                    color: 'var(--color-text-muted)', borderRadius: '8px',
+                    padding: '6px 10px', cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    fontSize: '0.8rem', fontWeight: '500', flexShrink: 0
+                  }}
+                >
+                  <RefreshCw size={12} />
+                  Värskenda
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '40vh', overflowY: 'auto' }}>
               {stationCandidates.map(s => (
                 <button
                   key={s.id}
                   onClick={() => {
+                    if (isManualMode) capture('manual_station_selected');
                     setResolvedStation(s);
                     setStationCandidates(null);
                   }}
@@ -444,12 +636,21 @@ export function ManualPriceModal({
                     background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
                     borderRadius: 'var(--radius-md)', padding: '14px 16px', cursor: 'pointer',
                     color: 'var(--color-text)', textAlign: 'left', fontSize: '0.95rem', fontWeight: '500',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px'
                   }}
                 >
-                  <span>{getStationDisplayName(s)}</span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {getStationDisplayName(s)}
+                    </span>
+                    {isManualMode && (s.amenities?.['addr:street'] || s.amenities?.['addr:city']) && (
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '400' }}>
+                        {[s.amenities?.['addr:street'], s.amenities?.['addr:city']].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                  </span>
                   {s._dist != null && (
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '400', marginLeft: '12px', flexShrink: 0 }}>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontWeight: '400', flexShrink: 0 }}>
                       {s._dist < 1 ? `${Math.round(s._dist * 1000)}m` : `${s._dist.toFixed(1)}km`}
                     </span>
                   )}
@@ -481,7 +682,8 @@ export function ManualPriceModal({
           </div>
         )}
 
-        {/* Scan button + photo thumbnail */}
+        {/* Scan button + photo thumbnail — camera-based flows only. */}
+        {!isManualMode && (
         <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
           {capturedPreviewUrl && (
             <img
@@ -530,22 +732,27 @@ export function ManualPriceModal({
             {retryStatus || (isAnalyzing ? 'AI loeb...' : capturedPreviewUrl ? 'Uuesti' : station ? 'Kaameraga' : 'Skaneeri hinnad kaameraga')}
           </button>
         </div>
+        )}
 
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          capture="environment"
-          style={{ display: 'none' }}
-          onChange={handleCameraCapture}
-        />
-        <input
-          type="file"
-          ref={galleryInputRef}
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleCameraCapture}
-        />
+        {!isManualMode && (
+        <>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={handleCameraCapture}
+          />
+          <input
+            type="file"
+            ref={galleryInputRef}
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleCameraCapture}
+          />
+        </>
+        )}
 
         {/* Brand mismatch warning */}
         {brandMismatch && (
@@ -605,6 +812,7 @@ export function ManualPriceModal({
           </div>
         )}
 
+        {(!isManualMode || !!activeStation) && (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {FUEL_TYPES.map(type => (
             <div key={type} className="glass-panel flex-between" style={{ padding: '16px', borderRadius: 'var(--radius-md)' }}>
@@ -614,18 +822,28 @@ export function ManualPriceModal({
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="0.000"
+                  placeholder="0,000"
                   value={prices[type]}
                   onChange={e => {
-                    let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
-                    const prev = prices[type] || '';
-                    // Auto-insert decimal after first digit on typing (0–9 € range).
-                    if (!v.includes('.') && v.length === 2 && prev.length === 1) {
-                      v = v[0] + '.' + v[1];
+                    // Estonian locale uses comma as the decimal separator.
+                    // Accept either on input and normalise dots to commas so
+                    // the displayed string stays consistent; the submit path
+                    // swaps comma → dot before parseFloat.
+                    let v = e.target.value.replace(/[^\d.,]/g, '').replace(/\./g, ',');
+                    const firstSep = v.indexOf(',');
+                    if (firstSep >= 0) {
+                      // Only one separator allowed — drop any trailing commas.
+                      v = v.slice(0, firstSep + 1) + v.slice(firstSep + 1).replace(/,/g, '');
                     }
-                    // Cap to 4 decimals.
-                    const dot = v.indexOf('.');
-                    if (dot >= 0 && v.length - dot - 1 > 3) v = v.slice(0, dot + 4);
+                    const prev = prices[type] || '';
+                    // Auto-insert decimal comma after the first digit on typing
+                    // (fuel prices are always in the 0–9 € range).
+                    if (!v.includes(',') && v.length === 2 && prev.length === 1) {
+                      v = v[0] + ',' + v[1];
+                    }
+                    // Cap to 3 decimals (prices are quoted to the thousandth).
+                    const sep = v.indexOf(',');
+                    if (sep >= 0 && v.length - sep - 1 > 3) v = v.slice(0, sep + 4);
                     setPrices({ ...prices, [type]: v });
                   }}
                   style={{
@@ -653,6 +871,7 @@ export function ManualPriceModal({
             {getSubmitLabel()}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

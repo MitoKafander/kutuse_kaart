@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Pencil } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -59,6 +59,7 @@ function App() {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isManualOpen, setIsManualOpen] = useState(false);
   const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(20);
   const [isRouteOpen, setIsRouteOpen] = useState(false);
@@ -144,6 +145,7 @@ function App() {
     if (isPriceModalOpen) list.push({ id: 'priceModal', close: () => setIsPriceModalOpen(false) });
     if (isPhotoExpanded) list.push({ id: 'photoZoom', close: () => setIsPhotoExpanded(false) });
     if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
+    if (isManualOpen) list.push({ id: 'manual', close: () => setIsManualOpen(false) });
     if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
     if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
@@ -152,7 +154,7 @@ function App() {
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -510,7 +512,7 @@ function App() {
         )}
       </div>
 
-      {/* FAB stack (top → bottom): Camera, Nearby, Navigation, Stats */}
+      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats */}
       <button
         className="flex-center"
         onClick={() => setIsCameraOpen(true)}
@@ -532,10 +534,29 @@ function App() {
 
       <button
         className="flex-center"
+        onClick={() => setIsManualOpen(true)}
+        title="Sisesta hinnad käsitsi"
+        style={{
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          cursor: 'pointer',
+          color: '#fb923c',
+          background: 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid var(--color-surface-alpha-12)',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <Pencil size={22} />
+      </button>
+
+      <button
+        className="flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
         title="Odavaim kütus lähedal"
         style={{
-          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#facc15',
@@ -554,7 +575,7 @@ function App() {
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
         style={{
-          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
@@ -574,7 +595,7 @@ function App() {
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title="Tühista marsruut"
           style={{
-            position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
+            position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
@@ -595,7 +616,7 @@ function App() {
         onClick={() => setIsStatsOpen(true)}
         title="Statistika"
         style={{
-          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
@@ -689,6 +710,18 @@ function App() {
         station={null}
         isOpen={isCameraOpen}
         onClose={() => setIsCameraOpen(false)}
+        onPricesSubmitted={() => loadData()}
+        allStations={stations}
+        photoExpanded={isPhotoExpanded}
+        onPhotoExpandedChange={setIsPhotoExpanded}
+      />
+
+      {/* Manual FAB mode: GPS-first, 500 m strict nearby picker, no camera */}
+      <ManualPriceModal
+        mode="manual"
+        station={null}
+        isOpen={isManualOpen}
+        onClose={() => setIsManualOpen(false)}
         onPricesSubmitted={() => loadData()}
         allStations={stations}
         photoExpanded={isPhotoExpanded}
