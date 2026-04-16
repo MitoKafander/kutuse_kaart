@@ -397,12 +397,12 @@ function createClusterIcon(cluster: any) {
   const icon = L.divIcon({
     html: `<div style="
       width: ${size}px; height: ${size}px; border-radius: 50%;
-      background: rgba(59, 130, 246, 0.7);
-      border: 2px solid rgba(59, 130, 246, 0.9);
-      color: #fff; font-size: 12px; font-weight: 700;
+      background: rgba(59, 130, 246, 0.28);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 600;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Outfit', sans-serif;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     ">${count}</div>`,
     className: 'custom-cluster',
     iconSize: L.point(size, size),
