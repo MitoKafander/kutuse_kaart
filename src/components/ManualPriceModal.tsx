@@ -229,6 +229,16 @@ export function ManualPriceModal({
       })
       .catch((e: any) => {
         const kind = (e?.kind as 'permission' | 'unavailable' | 'timeout' | 'unsupported') || 'unavailable';
+        // Permission and unsupported are user-actionable; skip Sentry noise.
+        // Timeout/unavailable are the interesting failure modes — log so we can
+        // see browser/OS patterns when GPS silently fails inside the manual flow.
+        if (kind === 'timeout' || kind === 'unavailable') {
+          Sentry.captureMessage('Manual entry geolocation failed', {
+            level: 'warning',
+            tags: { feature: 'manual-entry-gps', kind },
+            extra: { code: e?.code, message: e?.message },
+          });
+        }
         setManualGpsError(geolocationErrorMessage(kind));
       });
   };
