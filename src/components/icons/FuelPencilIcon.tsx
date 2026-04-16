@@ -1,27 +1,45 @@
-import type { SVGProps } from 'react';
+import type { CSSProperties } from 'react';
+import { Fuel, Pencil } from 'lucide-react';
 
-type Props = { size?: number } & SVGProps<SVGSVGElement>;
+type Props = { size?: number; style?: CSSProperties };
 
-export function FuelPencilIcon({ size = 22, ...rest }: Props) {
+export function FuelPencilIcon({ size = 22, style }: Props) {
+  const badgeSize = Math.round(size * 0.58);
+  const pencilSize = Math.round(badgeSize * 0.75);
+  const nudge = -Math.round(badgeSize * 0.18);
+
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <span
       aria-hidden="true"
-      xmlns="http://www.w3.org/2000/svg"
-      {...rest}
+      style={{
+        position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        lineHeight: 0,
+        ...style,
+      }}
     >
-      <path d="M2 19h8" />
-      <path d="M10 19V4a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2 4v15" />
-      <path d="M10 10h1.5A1.5 1.5 0 0 1 13 11.5v1a1.5 1.5 0 0 0 3 0V8L14.5 6.5" />
-      <path d="M17 13l4 4-5 5h-4v-4z" />
-      <path d="M17 13l4 4" />
-    </svg>
+      <Fuel size={size} />
+      <span
+        style={{
+          position: 'absolute',
+          right: nudge,
+          bottom: nudge,
+          width: badgeSize,
+          height: badgeSize,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--color-bg)',
+          borderRadius: '50%',
+          lineHeight: 0,
+        }}
+      >
+        <Pencil size={pencilSize} strokeWidth={2.4} />
+      </span>
+    </span>
   );
 }
