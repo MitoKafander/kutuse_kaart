@@ -93,7 +93,12 @@ export function ManualPriceModal({
       const timer = setTimeout(() => ac.abort(), 55000);
       let res: Response;
       try {
-        res = await fetch('/api/parse-prices', {
+        // Pin to apex on production hostnames. Old PWA installs load from
+        // www.kyts.ee but Vercel 308-redirects /api/* to apex, and Safari aborts
+        // the cross-origin POST preflight on the redirected destination.
+        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+        const apiBase = host === 'kyts.ee' || host === 'www.kyts.ee' ? 'https://kyts.ee' : '';
+        res = await fetch(`${apiBase}/api/parse-prices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageBase64: base64, stationName }),
@@ -114,6 +119,7 @@ export function ManualPriceModal({
       if (res.ok) { capture('ai_scan_success'); return res.json(); }
       if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
       if (res.status === 503 && attempt < MAX_RETRIES) continue;
+      if (res.status === 503) throw new Error('AI_UPSTREAM_BUSY');
 
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `HTTP ${res.status}`);
@@ -221,8 +227,9 @@ export function ManualPriceModal({
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
-      // Skip Sentry noise for known user-facing states (quota).
-      if (error?.message !== 'QUOTA_EXCEEDED') {
+      // Skip Sentry noise for known user-facing states: quota and transient
+      // Gemini outages are already-handled, retried, and not actionable.
+      if (error?.message !== 'QUOTA_EXCEEDED' && error?.message !== 'AI_UPSTREAM_BUSY') {
         Sentry.captureException(error, {
           tags: { feature: 'ai-scan' },
           extra: { stationHint: stationNameHint },
@@ -568,6 +575,8 @@ export function ManualPriceModal({
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
               {scanError === 'QUOTA_EXCEEDED'
                 ? 'AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
+                : scanError === 'AI_UPSTREAM_BUSY'
+                ? 'AI teenus on hetkel ülekoormatud. Proovi paari minuti pärast uuesti või sisesta hinnad käsitsi.'
                 : scanError === 'NO_NEARBY_STATION'
                 ? 'Läheduses (5km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.'
                 : scanError === 'NO_GPS'

@@ -46,7 +46,17 @@ type NodeRes = {
 };
 
 export default async function handler(req: NodeReq, res: NodeRes) {
+  // Allow cross-origin POST from www.kyts.ee — installed PWAs from before the
+  // apex/www swap still load from www and would otherwise get 308'd to apex,
+  // which Safari refuses to follow for a JSON POST preflight.
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).json({});
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -185,6 +195,10 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     const msg = error.message || 'Unknown API Exception';
     const is503 = msg.includes('503') || /service.?unavailable|high demand/i.test(msg);
     const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
-    return res.status(is429 ? 429 : is503 ? 503 : 500).json({ error: msg });
+    // Collapse verbose Gemini messages into clean codes the client can branch on
+    // and keep out of Sentry — these are transient upstream conditions, not bugs.
+    if (is429) return res.status(429).json({ error: 'QUOTA_EXCEEDED' });
+    if (is503) return res.status(503).json({ error: 'AI_UPSTREAM_BUSY' });
+    return res.status(500).json({ error: msg });
   }
 }
