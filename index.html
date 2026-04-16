@@ -21,6 +21,14 @@
     <meta name="twitter:image" content="https://kyts.ee/logo.png" />
   </head>
   <body>
+    <script>
+      // Force apex: Vercel's www→apex 308 breaks Safari's POST /api/parse-prices
+      // (cross-origin redirect with Content-Type: application/json can't re-preflight).
+      // Must run before any fetch — put it before main.tsx.
+      if (location.hostname === 'www.kyts.ee') {
+        location.replace('https://kyts.ee' + location.pathname + location.search + location.hash);
+      }
+    </script>
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('kyts-map-style') || 'dark');</script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
