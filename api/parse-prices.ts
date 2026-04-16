@@ -10,11 +10,6 @@ export const config = {
   maxDuration: 60,
 };
 
-const JSON_HEADERS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-};
-
 const hasUpstash = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
 const redis = hasUpstash ? Redis.fromEnv() : null;
 const perIpLimit = redis
@@ -29,10 +24,8 @@ function repairAndParseJson(raw: string): Record<string, unknown> | null {
   try { return JSON.parse(raw); } catch { /* fall through */ }
 
   let s = raw.trim();
-  // Strip markdown code fences if present
   const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (fenceMatch) s = fenceMatch[1].trim();
-  // Fall back to the first {...} block the model emitted
   const braceStart = s.indexOf('{');
   const braceEnd = s.lastIndexOf('}');
   if (braceStart !== -1 && braceEnd > braceStart) {
@@ -41,45 +34,53 @@ function repairAndParseJson(raw: string): Record<string, unknown> | null {
   try { return JSON.parse(s); } catch { return null; }
 }
 
-export default async function handler(req: Request) {
+type NodeReq = {
+  method?: string;
+  headers: Record<string, string | string[] | undefined>;
+  body?: any;
+};
+type NodeRes = {
+  status: (code: number) => NodeRes;
+  setHeader: (name: string, value: string) => void;
+  json: (data: any) => void;
+};
+
+export default async function handler(req: NodeReq, res: NodeRes) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405, headers: JSON_HEADERS });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Server is missing Gemini API key.' }), {
-      status: 500, headers: JSON_HEADERS
-    });
+    return res.status(500).json({ error: 'Server is missing Gemini API key.' });
   }
 
-  // Rate limit before doing any work (only if Upstash env is configured)
   if (perIpLimit && dayLimit) {
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon';
+    const fwd = req.headers['x-forwarded-for'];
+    const fwdStr = Array.isArray(fwd) ? fwd[0] : fwd;
+    const ip = fwdStr?.split(',')[0]?.trim() ?? 'anon';
     const perIp = await perIpLimit.limit(ip);
     if (!perIp.success) {
-      return new Response(JSON.stringify({ error: 'Liiga palju päringuid. Proovi ~1 min pärast.' }), {
-        status: 429,
-        headers: { ...JSON_HEADERS, 'Retry-After': String(Math.max(1, Math.ceil((perIp.reset - Date.now()) / 1000))) },
-      });
+      res.setHeader('Retry-After', String(Math.max(1, Math.ceil((perIp.reset - Date.now()) / 1000))));
+      return res.status(429).json({ error: 'Liiga palju päringuid. Proovi ~1 min pärast.' });
     }
     const day = await dayLimit.limit('global');
     if (!day.success) {
-      return new Response(JSON.stringify({ error: 'Päevane AI-limiit täis, proovi homme.' }), {
-        status: 429, headers: JSON_HEADERS,
-      });
+      return res.status(429).json({ error: 'Päevane AI-limiit täis, proovi homme.' });
     }
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
-    const { imageBase64, stationName } = await req.json() as { imageBase64?: string; stationName?: string };
+    // Vercel's Node runtime auto-parses JSON bodies into req.body.
+    const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
+    const { imageBase64, stationName } = body as { imageBase64?: string; stationName?: string };
 
     if (!imageBase64) {
-      return new Response(JSON.stringify({ error: 'Missing imageBase64 payload.' }), { 
-        status: 400, headers: JSON_HEADERS 
-      });
+      return res.status(400).json({ error: 'Missing imageBase64 payload.' });
     }
 
     // Force strictly validated JSON parsing
@@ -147,11 +148,11 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     const parsed = repairAndParseJson(rawText);
     if (!parsed) {
       console.error('[parse-prices] JSON parse failed. Raw response (truncated):', rawText.slice(0, 400));
-      return new Response(JSON.stringify({
+      return res.status(502).json({
         error: 'AI_JSON_INVALID',
         detail: 'Gemini returned a non-JSON response.',
         rawPreview: rawText.slice(0, 200),
-      }), { status: 502, headers: JSON_HEADERS });
+      });
     }
 
     const FUEL_KEYS = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'] as const;
@@ -177,18 +178,13 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       ...prices,
     };
 
-    return new Response(JSON.stringify(normalized), {
-      status: 200,
-      headers: JSON_HEADERS,
-    });
+    return res.status(200).json(normalized);
 
   } catch (error: any) {
     console.error('Vision API Error:', error);
     const msg = error.message || 'Unknown API Exception';
     const is503 = msg.includes('503') || /service.?unavailable|high demand/i.test(msg);
     const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: is429 ? 429 : is503 ? 503 : 500, headers: JSON_HEADERS
-    });
+    return res.status(is429 ? 429 : is503 ? 503 : 500).json({ error: msg });
   }
 }
