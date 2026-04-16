@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - AI scan stability: Node handler + cross-origin + radius - 2026-04-16
+
+### Fixed 🐛
+- 🔴 **AI scan 100% broken since edge→node runtime switch** (`api/parse-prices.ts`): every `POST /api/parse-prices` was returning `FUNCTION_INVOCATION_FAILED` — Vercel's generic `text/plain` 500. Root cause: when `661d7d2` flipped `runtime: 'edge'` → `'nodejs'`, the handler body stayed Web Fetch–style (`req.headers.get(...)`, `req.json()`, `new Response(...)`). Vercel's classic Node runtime uses Node-style `(req, res)` where `req.headers` is a plain object with no `.get()` method. First rate-limit line threw a `TypeError` at cold start, crashing the function before any response could be written. Rewrote handler using Node-style signature — `req.headers['x-forwarded-for']`, parse `req.body` (Vercel auto-parses JSON), return via `res.status(N).json(...)`. Same rate limits, same Gemini call, same JSON contract to the client. Commit `f54963f`.
+- 🟡 **"Ei leitud ühtegi tankla 500m raadiuses" dead-end on FAB scan** (`src/components/ManualPriceModal.tsx`): friend was physically standing next to an Olerex but GPS skewed >500m (cold PWA fix + fuel-canopy multipath). Old code set `NO_NEARBY_STATION` and blocked with only a retry button — no recovery. Replaced with a tiered radius: 0.5km tight (unchanged auto-select for unambiguous match), 0.5–5km fallback that surfaces the picker so user confirms, >5km still blocks with revised copy pointing to GPS/manual selection. Picker already renders per-candidate distance ("780m" / "1.4km"). Commit `4022be2`.
+- 🟡 **Mobile Safari "TypeError: Load failed" on POSTs from www.kyts.ee** (`index.html`, Sentry KYTS-WEB-7/-8): friend's friend opened the app from `https://www.kyts.ee/` (old bookmark pre-apex-swap). Vercel 308-redirects that to apex. Same-origin `fetch('/api/parse-prices', ...)` hit the redirect, and Safari couldn't re-preflight a cross-origin POST with `Content-Type: application/json` on the redirected destination → fetch aborted sub-second. 5 events over ~4 minutes. Added a tiny boot-time `<script>` before `main.tsx`: if hostname is `www.kyts.ee`, `location.replace('https://kyts.ee' + path + search + hash)`. All subsequent `/api/*` calls now live on apex as same-origin. Commit `a5f25c8`.
+
+### Key Decisions
+- **Node-style over re-investigating Web-Fetch-on-Node support**: Vercel technically supports Web Fetch handlers on Node runtime via a newer Fluid Compute path, but our setup clearly doesn't resolve to that mode (the crash proved it). Node-style `(req, res)` is the well-trodden path and the rewrite touched fewer than 35 lines. Not worth a config excursion.
+- **5km fallback over tighter-then-error**: GPS is unreliable at fuel stations; better to offer a distance-labeled picker than block users who are actually present. Auto-select preserved for the tight-radius happy path keeps the fast flow for good-GPS users.
+- **Apex-force at client boot over server-side redirect exclusion**: Vercel's www→apex 308 is set at the domain-manager level and applies to all paths; can't easily carve out `/api/*`. A 3-line script in `index.html` runs before any fetch and fixes the problem for every user regardless of how they arrived.
+
+### Sentry Observations (14-day window)
+- **KYTS-WEB-7 (×4) + -8 (×1)** unresolved → should self-resolve after `a5f25c8` deploys; watching.
+- **KYTS-WEB-5/-6** resolved by the Node runtime switch yesterday (and subsequently the re-fix above).
+- **KYTS-WEB-4/-3** ignored — stale `kutuse-kaart.vercel.app` chunk-load failures from the old preview domain; harmless.
+- **KYTS-WEB-2** ignored — single "Error: Rejected", no recurrence.
+- **KYTS-WEB-1** ignored — the initial smoke test.
+
+### Open Items
+- **Verify KYTS-WEB-7/-8 stop firing** once `a5f25c8` has been live for 24h; resolve if clean.
+- **Sentry `userCount=0` on every issue** — user IDs not yet wired into Sentry. Low-priority observability gap; revisit when user base grows.
+- **Friend reported retry worked after first failure** — either deploy landed between attempts or one-off Safari/5G hiccup. Fix stands either way (strictly better than before).
+
+---
+
 ## [Unreleased] - GitHub Issues #1/#2 triage + LICENSE - 2026-04-16
 
 ### Fixed 🐛

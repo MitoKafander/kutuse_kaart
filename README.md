@@ -27,7 +27,7 @@ Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced app
 *   **Map Engine**: React-Leaflet
 *   **Backend & DB**: Supabase (PostgreSQL with Row Level Security)
 *   **Authentication**: Supabase Auth (Email / Password & Google OAuth)
-*   **Serverless**: Vercel Edge API Functions
+*   **Serverless**: Vercel Functions — Node runtime for AI endpoint (60s maxDuration for Gemini vision), Edge for lighter routes
 *   **Rate Limiting**: Upstash Redis + `@upstash/ratelimit` (sliding window per-IP + daily global cap)
 *   **Error Monitoring**: Sentry (`@sentry/react`, replays off)
 *   **Analytics**: PostHog EU Cloud (cookieless, memory persistence, autocapture off)
