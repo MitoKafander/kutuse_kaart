@@ -135,32 +135,44 @@ export function ManualPriceModal({
     if (gotAny) setPricesFromAi(true);
   };
 
-  // Resolve nearby station candidates from a known position
+  // Resolve nearby station candidates from a known position.
+  // Tiered radius: 0.5 km for auto-select confidence, then fall back to 5 km
+  // as a picker — fuel-station canopies and cold PWA fixes routinely skew GPS
+  // by >100 m, so a hard 500 m cap leaves users stuck at the station they're
+  // standing at.
   const resolveNearbyCandidates = (lat: number, lon: number, detectedBrand?: string) => {
     if (!allStations?.length) return;
 
-    const MAX_PHOTO_KM = 0.5;
-    const nearby = allStations.map(s => ({
+    const TIGHT_KM = 0.5;
+    const FALLBACK_KM = 5;
+    const withDist = allStations.map(s => ({
       ...s,
       _dist: haversineKm(lat, lon, s.latitude, s.longitude)
-    })).filter(s => s._dist <= MAX_PHOTO_KM).sort((a, b) => a._dist - b._dist);
+    })).sort((a, b) => a._dist - b._dist);
 
-    if (nearby.length === 0) {
+    const tight = withDist.filter(s => s._dist <= TIGHT_KM);
+    const fallback = withDist.filter(s => s._dist <= FALLBACK_KM);
+
+    if (fallback.length === 0) {
       setScanError('NO_NEARBY_STATION');
       return;
     }
 
-    let candidates = nearby;
+    const pool = tight.length > 0 ? tight : fallback;
+    let candidates = pool;
     if (detectedBrand) {
       const brandLower = detectedBrand.toLowerCase();
-      const brandMatches = nearby.filter(s =>
+      const brandMatches = pool.filter(s =>
         s.name?.toLowerCase().includes(brandLower) ||
         brandLower.includes(s.name?.toLowerCase())
       );
       if (brandMatches.length > 0) candidates = brandMatches;
     }
 
-    if (candidates.length === 1) {
+    // Only auto-select when we had a tight-radius match AND it's unambiguous.
+    // Fallback-radius results always go through the picker so the user
+    // confirms — GPS was already unreliable once, don't compound.
+    if (tight.length > 0 && candidates.length === 1) {
       setResolvedStation(candidates[0]);
       setAutoSelectMsg(`Valitud: ${getStationDisplayName(candidates[0])}`);
       setTimeout(() => setAutoSelectMsg(null), 4000);
@@ -557,7 +569,7 @@ export function ManualPriceModal({
               {scanError === 'QUOTA_EXCEEDED'
                 ? 'AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
                 : scanError === 'NO_NEARBY_STATION'
-                ? 'Läheduses (500m raadiuses) ei leitud ühtegi tankla. Mine tankla juurde lähemale ja proovi uuesti.'
+                ? 'Läheduses (5km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.'
                 : scanError === 'NO_GPS'
                 ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
                 : scanError === 'NO_PRICES_READ'
