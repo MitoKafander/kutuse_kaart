@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Pointer } from 'lucide-react';
+import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
+import { KeypadHandIcon } from './components/icons/KeypadHandIcon';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -551,7 +552,7 @@ function App() {
           transition: 'all 0.2s ease',
         }}
       >
-        <Pointer size={22} />
+        <KeypadHandIcon size={22} />
       </button>
 
       <button
