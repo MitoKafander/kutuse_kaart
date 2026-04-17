@@ -32,7 +32,7 @@ export function DiscoveryBadgeGrid({
         gap: 8,
       }}>
         {progress.perMaakond.map(entry => {
-          const { maakond, parishesDone, parishesTotal } = entry;
+          const { maakond, parishesDone, parishesTotal, stationsDone, stationsTotal } = entry;
           const hasStations = parishesTotal > 0;
           const isComplete = hasStations && parishesDone >= parishesTotal;
           const hasProgress = parishesDone > 0;
@@ -109,9 +109,18 @@ export function DiscoveryBadgeGrid({
               }}>
                 {maakond.name.replace(' maakond', '')}
               </span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                {hasStations ? `${parishesDone}/${parishesTotal} valda` : 'pole jaamu'}
-              </span>
+              {hasStations ? (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  gap: 1, fontSize: '0.68rem', color: 'var(--color-text-muted)',
+                  lineHeight: 1.2,
+                }}>
+                  <span>{stationsDone}/{stationsTotal} jaama</span>
+                  <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>{parishesDone}/{parishesTotal} valda</span>
+                </div>
+              ) : (
+                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>pole jaamu</span>
+              )}
             </button>
           );
         })}
