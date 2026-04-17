@@ -985,17 +985,22 @@ export function Map({
 
   const isLight = mapStyle === 'light';
 
+  // No-data stations render as hollow rings — same visual language as the
+  // Avastuskaart "unvisited" state, which gives a clear at-a-glance "no
+  // prices here" signal without competing with gray brand colors (Hepa).
   const getFadedIcon = (station: any, isSelected: boolean): L.DivIcon => {
-    const fillColor = dotStyle === 'info' ? '#ffffff' : getBrandColor(getBrand(station.name));
-    const key = `${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
+    const ringColor = isLight ? '#0f172a' : '#ffffff';
+    const key = `ring|${ringColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
     let icon = fadedIconCache.get(key);
     if (!icon) {
-      const fillOpacity = isSelected ? 0.85 : (dotStyle === 'info' ? 0.6 : 0.4);
-      const strokeColor = isSelected
-        ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)')
-        : (dotStyle === 'info' ? (isLight ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)') : undefined);
-      const strokeWidth = isSelected ? 2 : (dotStyle === 'info' ? 1 : 0);
-      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter: 12, strokeColor, strokeWidth, stationId: station.id });
+      icon = createDotIcon({
+        fillColor: '#ffffff',
+        fillOpacity: 0,
+        visibleDiameter: isSelected ? 13 : 11,
+        strokeColor: ringColor,
+        strokeWidth: isSelected ? 2.5 : 1.8,
+        stationId: station.id,
+      });
       fadedIconCache.set(key, icon);
     }
     return icon;
