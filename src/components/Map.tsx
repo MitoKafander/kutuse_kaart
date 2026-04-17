@@ -990,16 +990,18 @@ export function Map({
       }
       return icon;
     }
-    const fillColor = '#6b7280';
+    const fillColor = '#94a3b8';
     const key = `d|${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
     let icon = discoveryFadedCache.get(key);
     if (!icon) {
       icon = createDotIcon({
         fillColor,
-        fillOpacity: isSelected ? 0.6 : 0.32,
-        visibleDiameter: 10,
-        strokeColor: isSelected ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)') : undefined,
-        strokeWidth: isSelected ? 2 : 0,
+        fillOpacity: isSelected ? 0.9 : 0.75,
+        visibleDiameter: isSelected ? 14 : 12,
+        strokeColor: isSelected
+          ? (isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)')
+          : (isLight ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.7)'),
+        strokeWidth: isSelected ? 2 : 1.2,
         stationId: station.id,
       });
       discoveryFadedCache.set(key, icon);
