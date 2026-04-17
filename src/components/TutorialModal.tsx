@@ -27,7 +27,7 @@ const STEPS: Step[] = [
   {
     icon: <Euro size={44} color={COLOR_YELLOW} />,
     title: 'Leia soodsaim kütus',
-    body: 'Kollane nupp paremal näitab lähedal asuvaid odavaimaid jaamu – kõigi kütusetüüpide (95 / 98 / D / LPG) jaoks korraga. Brändide filter ja marsruudi-otsing on ülemises menüüs.',
+    body: 'Kollane nupp paremal näitab lähedal asuvaid odavaimaid jaamu – kõigi kütusetüüpide (95 / 98 / D / LPG) jaoks korraga. Roheline navigatsiooninupp leiab odavaima kütuse marsruudi peal. Brändide filter on ülemise menüü all.',
   },
   {
     icon: (
