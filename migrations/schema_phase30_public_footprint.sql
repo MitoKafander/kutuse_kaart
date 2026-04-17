@@ -30,7 +30,9 @@ grant execute on function public.get_user_footprint(uuid) to anon, authenticated
 
 -- 3. Expose share flag on the Avastajad leaderboard so the client can
 --    conditionally render a "Vaata kaarti" action next to opted-in rows.
-create or replace view v_discovery_leaderboard as
+--    Drop first — Postgres can't reorder/rename columns via create-or-replace.
+drop view if exists v_discovery_leaderboard;
+create view v_discovery_leaderboard as
 with parish_done as (
   select user_id, parish_id, maakond_id
   from v_user_parish_progress
