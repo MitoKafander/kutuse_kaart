@@ -1105,9 +1105,9 @@ export function Map({
       icon = createDotIcon({
         fillColor: '#ffffff',
         fillOpacity: 0,
-        visibleDiameter: isSelected ? 13 : 11,
+        visibleDiameter: isSelected ? 10 : 8,
         strokeColor: ringColor,
-        strokeWidth: isSelected ? 2.5 : 1.8,
+        strokeWidth: isSelected ? 2 : 1.5,
         stationId: station.id,
       });
       discoveryFadedCache.set(key, icon);
