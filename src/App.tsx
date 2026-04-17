@@ -464,7 +464,13 @@ function App() {
     setShowDiscoveryMap(v);
     localStorage.setItem('kyts-show-discovery-map', String(v));
     if (session?.user?.id) {
-      supabase.from('user_profiles').upsert({ id: session.user.id, show_discovery_map: v });
+      // Supabase's PostgrestFilterBuilder is thenable — it doesn't send the
+      // request until `.then()` is called. Without this, toggling off locally
+      // worked but the DB stayed true, so the next page load re-hydrated the
+      // old value and the toggle appeared to "come back".
+      void supabase.from('user_profiles')
+        .upsert({ id: session.user.id, show_discovery_map: v })
+        .then(() => {}, () => {});
     }
   };
 
