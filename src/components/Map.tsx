@@ -1089,18 +1089,20 @@ export function Map({
       }
       return icon;
     }
-    const fillColor = '#94a3b8';
-    const key = `d|${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
+    // Uncontributed stations render as hollow rings so they read as "to-do"
+    // and stay visually distinct from gray-branded (Hepa) dots on the normal
+    // view. Stroke color is theme-adaptive: white on dark tiles, near-black
+    // on light tiles, so the ring contrasts with either basemap.
+    const ringColor = isLight ? '#0f172a' : '#ffffff';
+    const key = `d|ring|${ringColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
     let icon = discoveryFadedCache.get(key);
     if (!icon) {
       icon = createDotIcon({
-        fillColor,
-        fillOpacity: isSelected ? 0.9 : 0.75,
-        visibleDiameter: isSelected ? 14 : 12,
-        strokeColor: isSelected
-          ? (isLight ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)')
-          : (isLight ? 'rgba(15,23,42,0.55)' : 'rgba(255,255,255,0.7)'),
-        strokeWidth: isSelected ? 2 : 1.2,
+        fillColor: '#ffffff',
+        fillOpacity: 0,
+        visibleDiameter: isSelected ? 13 : 11,
+        strokeColor: ringColor,
+        strokeWidth: isSelected ? 2.5 : 1.8,
         stationId: station.id,
       });
       discoveryFadedCache.set(key, icon);
