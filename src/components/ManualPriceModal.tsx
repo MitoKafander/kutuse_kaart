@@ -8,6 +8,10 @@ import * as Sentry from '@sentry/react';
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
 const EMPTY_PRICES = { "Bensiin 95": "", "Bensiin 98": "", "Diisel": "", "LPG": "" };
+// Hard cap on how far a submitter may be from the station they're reporting
+// for. Matches the server trigger in schema_phase31 so both client and DB
+// agree — any change here needs the same value in the migration.
+const MAX_SUBMIT_KM = 1;
 
 export function ManualPriceModal({
   station,
@@ -77,6 +81,11 @@ export function ManualPriceModal({
       } else if (effectiveMode === 'manual') {
         capture('manual_opened');
         captureLocationForManual();
+      } else if (effectiveMode === 'station') {
+        // Drawer path ("muuda hindu"): capture GPS so we can enforce the
+        // 1 km proximity cap at submit time. Without this, anyone could
+        // submit prices for any station in the country.
+        captureLocationForStation();
       }
     }
   }, [isOpen]);
@@ -159,15 +168,16 @@ export function ManualPriceModal({
   };
 
   // Resolve nearby station candidates from a known position.
-  // Tiered radius: 0.5 km for auto-select confidence, then fall back to 5 km
-  // as a picker — fuel-station canopies and cold PWA fixes routinely skew GPS
-  // by >100 m, so a hard 500 m cap leaves users stuck at the station they're
-  // standing at.
+  // Tiered radius: 0.5 km for auto-select confidence, then fall back to the
+  // submit cap (1 km) as a picker. GPS-skew headroom above 500 m exists so a
+  // canopy / cold-PWA fix doesn't strand the user at the station they're
+  // standing at, but anything beyond MAX_SUBMIT_KM would be rejected by the
+  // server's proximity trigger anyway — so don't offer it in the picker.
   const resolveNearbyCandidates = (lat: number, lon: number, detectedBrand?: string) => {
     if (!allStations?.length) return;
 
     const TIGHT_KM = 0.5;
-    const FALLBACK_KM = 5;
+    const FALLBACK_KM = MAX_SUBMIT_KM;
     const withDist = allStations.map(s => ({
       ...s,
       _dist: haversineKm(lat, lon, s.latitude, s.longitude)
@@ -236,6 +246,26 @@ export function ManualPriceModal({
           Sentry.captureMessage('Manual entry geolocation failed', {
             level: 'warning',
             tags: { feature: 'manual-entry-gps', kind },
+            extra: { code: e?.code, message: e?.message },
+          });
+        }
+        setManualGpsError(geolocationErrorMessage(kind));
+      });
+  };
+
+  const captureLocationForStation = () => {
+    setManualGpsError(null);
+    setCapturedPosition(null);
+    getCurrentPositionAsync()
+      .then(pos => {
+        setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      })
+      .catch((e: any) => {
+        const kind = (e?.kind as 'permission' | 'unavailable' | 'timeout' | 'unsupported') || 'unavailable';
+        if (kind === 'timeout' || kind === 'unavailable') {
+          Sentry.captureMessage('Station entry geolocation failed', {
+            level: 'warning',
+            tags: { feature: 'station-entry-gps', kind },
             extra: { code: e?.code, message: e?.message },
           });
         }
@@ -388,6 +418,27 @@ export function ManualPriceModal({
       return;
     }
 
+    // Proximity gate: submitter must be within MAX_SUBMIT_KM of the station.
+    // Prevents anyone from reporting prices for stations on the other side
+    // of the country. The server trigger re-checks the same invariant so
+    // direct-API writes can't bypass it.
+    if (!capturedPosition) {
+      alert('GPS-asukoht on vajalik hinna sisestamiseks. Luba asukoht ja proovi uuesti.');
+      setLoading(false);
+      return;
+    }
+    const submitDist = haversineKm(
+      capturedPosition.lat, capturedPosition.lon,
+      activeStation.latitude, activeStation.longitude
+    );
+    if (submitDist > MAX_SUBMIT_KM) {
+      const distStr = submitDist < 10 ? submitDist.toFixed(1) : Math.round(submitDist).toString();
+      alert(`Oled tanklast ${distStr} km kaugusel. Hindu saab sisestada vaid siis, kui oled tankla juures (kuni ${MAX_SUBMIT_KM} km).`);
+      capture('price_submit_blocked_distance', { distance_km: +submitDist.toFixed(2) });
+      setLoading(false);
+      return;
+    }
+
     const entryMethod = isManualMode ? 'manual' : 'camera';
     const inserts = parsed.map(p => ({
       station_id: activeStation.id,
@@ -395,6 +446,8 @@ export function ManualPriceModal({
       price: p.value,
       user_id: user?.id || null,
       entry_method: entryMethod,
+      submitted_lat: capturedPosition.lat,
+      submitted_lon: capturedPosition.lon,
     }));
 
     if (inserts.length > 0) {
@@ -424,6 +477,11 @@ export function ManualPriceModal({
 
   const activeStation = resolvedStation;
   const isFabMode = !station && !!allStations;
+  const isStationMode = effectiveMode === 'station';
+  const submitDistanceKm = (isStationMode && capturedPosition && activeStation)
+    ? haversineKm(capturedPosition.lat, capturedPosition.lon, activeStation.latitude, activeStation.longitude)
+    : null;
+  const tooFar = submitDistanceKm != null && submitDistanceKm > MAX_SUBMIT_KM;
 
   // Submit-button label: reflects what the app is actually waiting on,
   // instead of blaming the user with "Vali esmalt tankla" in every state.
@@ -436,7 +494,12 @@ export function ManualPriceModal({
       if (stationCandidates && stationCandidates.length === 0) return 'Jaamu ei leitud';
       return 'Vali tankla loendist';
     }
-    if (activeStation) return pricesFromAi ? 'Kinnita' : 'Salvesta';
+    if (activeStation) {
+      if (isStationMode && manualGpsError) return 'Asukoht vajalik';
+      if (isStationMode && !capturedPosition) return 'Ootan GPS-signaali...';
+      if (isStationMode && tooFar) return 'Oled liiga kaugel';
+      return pricesFromAi ? 'Kinnita' : 'Salvesta';
+    }
     if (isAnalyzing) return 'AI loeb pilti...';
     if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return 'Ootan GPS-signaali...';
     if (stationCandidates && stationCandidates.length > 0) return 'Vali tankla loendist';
@@ -477,6 +540,70 @@ export function ManualPriceModal({
             <X size={24} />
           </button>
         </div>
+
+        {/* Station-drawer mode: GPS permission / unavailable — submit is blocked. */}
+        {isStationMode && manualGpsError && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>{manualGpsError}</span>
+            <button
+              type="button"
+              onClick={captureLocationForStation}
+              style={{
+                background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#ef4444', borderRadius: '8px', padding: '6px 12px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '0.85rem', fontWeight: '600', flexShrink: 0
+              }}
+            >
+              <RefreshCw size={14} />
+              Proovi uuesti
+            </button>
+          </div>
+        )}
+
+        {/* Station-drawer mode: waiting on first GPS fix. */}
+        {isStationMode && !manualGpsError && !capturedPosition && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            color: 'var(--color-text-muted)', fontSize: '0.9rem',
+            padding: '12px 4px', marginBottom: '8px'
+          }}>
+            <Loader2 size={16} className="spin" />
+            Kontrollin asukohta...
+          </div>
+        )}
+
+        {/* Station-drawer mode: user is too far from the station. */}
+        {isStationMode && tooFar && submitDistanceKm != null && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <MapPin size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+              Oled tanklast {submitDistanceKm < 10 ? submitDistanceKm.toFixed(1) : Math.round(submitDistanceKm)} km kaugusel. Hindu saab sisestada vaid tankla juures (kuni {MAX_SUBMIT_KM} km).
+            </span>
+            <button
+              type="button"
+              onClick={captureLocationForStation}
+              style={{
+                background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#ef4444', borderRadius: '8px', padding: '6px 12px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                fontSize: '0.85rem', fontWeight: '600', flexShrink: 0
+              }}
+            >
+              <RefreshCw size={14} />
+              Värskenda
+            </button>
+          </div>
+        )}
 
         {/* Manual mode: successful save confirmation (auto-closes shortly after). */}
         {submitSuccess && (
@@ -795,7 +922,7 @@ export function ManualPriceModal({
                 : scanError === 'AI_UPSTREAM_BUSY'
                 ? 'AI teenus on hetkel ülekoormatud. Proovi paari minuti pärast uuesti või sisesta hinnad käsitsi.'
                 : scanError === 'NO_NEARBY_STATION'
-                ? 'Läheduses (5km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.'
+                ? `Läheduses (${MAX_SUBMIT_KM}km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.`
                 : scanError === 'NO_GPS'
                 ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
                 : scanError === 'NO_PRICES_READ'
@@ -868,12 +995,13 @@ export function ManualPriceModal({
 
           <button
             type="submit"
-            disabled={loading || !activeStation}
+            disabled={loading || !activeStation || (isStationMode && (!capturedPosition || !!manualGpsError || tooFar))}
             style={{
-              background: activeStation ? 'var(--color-primary)' : 'var(--color-surface)',
-              color: activeStation ? 'white' : 'var(--color-text-muted)',
+              background: activeStation && !(isStationMode && (!capturedPosition || !!manualGpsError || tooFar)) ? 'var(--color-primary)' : 'var(--color-surface)',
+              color: activeStation && !(isStationMode && (!capturedPosition || !!manualGpsError || tooFar)) ? 'white' : 'var(--color-text-muted)',
               border: 'none', borderRadius: 'var(--radius-md)',
-              padding: '16px', fontSize: '1.1rem', fontWeight: '600', width: '100%', marginTop: '8px', cursor: activeStation ? 'pointer' : 'not-allowed',
+              padding: '16px', fontSize: '1.1rem', fontWeight: '600', width: '100%', marginTop: '8px',
+              cursor: activeStation && !(isStationMode && (!capturedPosition || !!manualGpsError || tooFar)) ? 'pointer' : 'not-allowed',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
             }}
           >
