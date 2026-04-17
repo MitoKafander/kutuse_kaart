@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
+import type { RegionProgress } from '../hooks/useRegionProgress';
+import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
@@ -129,6 +131,9 @@ export function ProfileDrawer({
   onDisplayNameChange,
   onOpenPrivacy,
   onOpenTerms,
+  showDiscoveryMap,
+  onShowDiscoveryMapChange,
+  regionProgress,
 }: {
   session: any;
   isOpen: boolean;
@@ -165,6 +170,9 @@ export function ProfileDrawer({
   onDisplayNameChange: (name: string) => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
+  showDiscoveryMap: boolean;
+  onShowDiscoveryMapChange: (show: boolean) => void;
+  regionProgress: RegionProgress;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
@@ -204,6 +212,14 @@ export function ProfileDrawer({
     onHideEmptyDotsChange(next);
     if (session?.user?.id) {
       await supabase.from('user_profiles').upsert({ id: session.user.id, hide_empty_dots: next });
+    }
+  };
+
+  const handleDiscoveryMapToggle = async () => {
+    const next = !showDiscoveryMap;
+    onShowDiscoveryMapChange(next);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, show_discovery_map: next });
     }
   };
 
@@ -541,6 +557,44 @@ export function ProfileDrawer({
               <ChevronDown size={16} style={{ transform: 'rotate(-90deg)', color: 'var(--color-text-muted)' }} />
             </button>
           )}
+
+          <div className="glass-panel" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1rem', color: 'var(--color-text)' }}>
+                <Compass size={18} color="var(--color-primary)" /> Avastuskaart
+              </span>
+              <div
+                onClick={handleDiscoveryMapToggle}
+                style={{
+                  width: '44px', height: '24px', borderRadius: '12px',
+                  background: showDiscoveryMap ? 'var(--color-primary)' : 'var(--color-surface)',
+                  position: 'relative', transition: 'background 0.2s',
+                  border: '1px solid var(--color-surface-border)',
+                }}
+              >
+                <div style={{
+                  width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                  position: 'absolute', top: '1px', left: showDiscoveryMap ? '22px' : '2px', transition: 'left 0.2s'
+                }}/>
+              </div>
+            </label>
+            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
+              Vaata, millised jaamad oled avastanud. Täida valdu ja maakondi, et tõusta Avastajate edetabelis.
+            </p>
+
+            {showDiscoveryMap && (
+              <>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '4px 0' }}>
+                  {regionProgress.stations.done}/{regionProgress.stations.total} jaama
+                  {' · '}
+                  {regionProgress.parishes.done}/{regionProgress.parishes.total} valdu
+                  {' · '}
+                  {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
+                </div>
+                <DiscoveryBadgeGrid progress={regionProgress} />
+              </>
+            )}
+          </div>
 
           </>)}
 

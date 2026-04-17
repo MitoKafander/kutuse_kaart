@@ -130,9 +130,14 @@ type ClusterMarkerSpec = { id: string; lat: number; lng: number; icon: L.DivIcon
 function ClusterLayer({
   markers,
   iconCreateFunction,
+  refreshKey,
 }: {
   markers: ClusterMarkerSpec[];
   iconCreateFunction: (cluster: any) => L.DivIcon;
+  // When this changes, cluster icons are re-rendered without tearing down the
+  // whole layer — used by Avastuskaart to redraw arc fills when the user's
+  // contributed-station set changes or the discovery toggle flips.
+  refreshKey?: string;
 }) {
   const map = useMap();
   const groupRef = useRef<any>(null);
@@ -182,15 +187,28 @@ function ClusterLayer({
         marker = L.marker([spec.lat, spec.lng], {
           icon: spec.icon,
           bubblingMouseEvents: true,
+          // Stash the station id on marker.options so iconCreateFunction can
+          // tally contributed-vs-total without a closure over state.
+          stationId: spec.id,
         } as any);
         existing.set(spec.id, marker);
         toAdd.push(marker);
       } else {
         if ((marker.options as any).icon !== spec.icon) marker.setIcon(spec.icon);
+        (marker.options as any).stationId = spec.id;
       }
     }
     if (toAdd.length) group.addLayers(toAdd);
   }, [markers]);
+
+  useEffect(() => {
+    if (refreshKey === undefined) return;
+    const group = groupRef.current;
+    if (!group) return;
+    // refreshClusters re-runs iconCreateFunction on existing clusters without
+    // re-adding markers. Safe to call frequently; only touches cluster DOM.
+    if (typeof group.refreshClusters === 'function') group.refreshClusters();
+  }, [refreshKey]);
 
   return null;
 }
@@ -412,6 +430,49 @@ function createClusterIcon(cluster: any) {
   return icon;
 }
 
+// Discovery-mode cluster icon: same base circle, but wrapped in a conic-gradient
+// ring that shows (contributed / total) within the cluster. We can't close
+// over contributedStationIds because MCG caches the iconCreateFunction in its
+// options, so we read from a module-level ref that's updated on every render.
+const discoveryContributedRef: { current: Set<string> } = { current: new Set() };
+const discoveryClusterIconCache = new NativeMap<string, L.DivIcon>();
+function createDiscoveryClusterIcon(cluster: any) {
+  const count = cluster.getChildCount();
+  const children = cluster.getAllChildMarkers() as Array<{ options: any }>;
+  let collected = 0;
+  const contributed = discoveryContributedRef.current;
+  for (const m of children) {
+    const sid = m.options?.stationId;
+    if (sid && contributed.has(String(sid))) collected += 1;
+  }
+  const size = count < 10 ? 30 : count < 30 ? 36 : 42;
+  const outer = size + 10;
+  const pct = count > 0 ? Math.round((collected / count) * 100) : 0;
+  const key = `${size}|${count}|${collected}`;
+  const cached = discoveryClusterIconCache.get(key);
+  if (cached) return cached;
+  const icon = L.divIcon({
+    html: `<div style="
+      width: ${outer}px; height: ${outer}px; border-radius: 50%;
+      background: conic-gradient(#3b82f6 ${pct}%, rgba(255,255,255,0.14) 0);
+      padding: 5px; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    "><div style="
+      width: 100%; height: 100%; border-radius: 50%;
+      background: rgba(30, 41, 59, 0.88);
+      color: rgba(255,255,255,0.95); font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Outfit', sans-serif;
+    ">${count}</div></div>`,
+    className: 'custom-cluster discovery-cluster',
+    iconSize: L.point(outer, outer),
+    iconAnchor: L.point(outer / 2, outer / 2),
+  });
+  discoveryClusterIconCache.set(key, icon);
+  return icon;
+}
+
 const FUEL_TYPES_ALL = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const DEFAULT_FUELS = ["Bensiin 95", "Bensiin 98", "Diisel"];
 const TOP_N_PER_FUEL = 3;
@@ -434,6 +495,8 @@ export function Map({
   applyLoyalty = false,
   routePolyline = null,
   onUserLocationChange,
+  showDiscoveryMap = false,
+  contributedStationIds,
 }: {
   stations: any[],
   prices: any[],
@@ -452,7 +515,13 @@ export function Map({
   applyLoyalty?: boolean,
   routePolyline?: [number, number][] | null,
   onUserLocationChange?: (loc: { lat: number; lon: number } | null) => void,
+  showDiscoveryMap?: boolean,
+  contributedStationIds?: Set<string>,
 }) {
+  // Keep the module-level ref read by the discovery cluster icon function in
+  // sync with the latest prop — iconCreateFunction is cached inside MCG so we
+  // can't close over props the normal React way.
+  discoveryContributedRef.current = contributedStationIds || new Set();
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   useEffect(() => {
@@ -480,6 +549,10 @@ export function Map({
   // and clicks land on air while the element is being replaced.
   const fadedIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   const freshIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
+  // Separate caches for discovery mode keep the natural caches untouched so
+  // toggling the mode off returns the map to pixel-identical rendering.
+  const discoveryFadedCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
+  const discoveryFreshCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   // Pills depend on actual price rows too, so we key by stationId and keep a
   // content hash on the entry — icon is rebuilt only if rows/selection/fuel
   // filter actually change, not on every map re-render.
@@ -630,8 +703,22 @@ export function Map({
     return pillStations.filter(e => !demoted.has(e.station.id));
   }, [pillStations, mapInstance, zoomLevel, viewportBounds]);
 
-  const fadedDots = hideEmptyDots ? [] : dotStations.filter(d => !d.hasFuelData);
+  // In discovery mode we override hideEmptyDots: the whole point of
+  // Avastuskaart is to see which stations are still waiting to be collected,
+  // which includes stations that have no price data yet.
+  const fadedDots = (hideEmptyDots && !showDiscoveryMap) ? [] : dotStations.filter(d => !d.hasFuelData);
   const freshDots = dotStations.filter(d => d.hasFuelData);
+
+  // Discovery mode splits dots by "has this user ever contributed here"
+  // instead of by freshness. Both groups feed the same cluster layer so arc
+  // fills represent contributed-vs-total within the cluster.
+  const contributedSet = contributedStationIds || new Set<string>();
+  const discoveryDots = showDiscoveryMap
+    ? dotStations.map(d => ({
+        station: d.station,
+        isContributed: d.station.country === 'EE' && contributedSet.has(String(d.station.id)),
+      }))
+    : [];
 
   const isLight = mapStyle === 'light';
 
@@ -714,6 +801,65 @@ export function Map({
     [freshDots, selectedStation?.id, dotStyle, mapStyle]
   );
 
+  // Discovery-mode icons: contributed = full brand color (reuse getFreshIcon
+  // with isFresh=true so the dot is vibrant even without a recent price);
+  // uncontributed = faded grey (reuse getFadedIcon). LV stations always route
+  // through the faded path since they're excluded from the game per plan §4.
+  const getDiscoveryIcon = (station: any, isContributed: boolean, isSelected: boolean): L.DivIcon => {
+    if (isContributed) {
+      const brandColor = getBrandColor(getBrand(station.name));
+      const key = `d|${brandColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
+      let icon = discoveryFreshCache.get(key);
+      if (!icon) {
+        const strokeColor = isSelected
+          ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)')
+          : undefined;
+        icon = createDotIcon({
+          fillColor: brandColor,
+          fillOpacity: 0.95,
+          visibleDiameter: 14,
+          strokeColor,
+          strokeWidth: isSelected ? 3 : 0,
+          stationId: station.id,
+        });
+        discoveryFreshCache.set(key, icon);
+      }
+      return icon;
+    }
+    const fillColor = '#6b7280';
+    const key = `d|${fillColor}|${isSelected ? 1 : 0}|${String(station.id)}`;
+    let icon = discoveryFadedCache.get(key);
+    if (!icon) {
+      icon = createDotIcon({
+        fillColor,
+        fillOpacity: isSelected ? 0.6 : 0.32,
+        visibleDiameter: 10,
+        strokeColor: isSelected ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)') : undefined,
+        strokeWidth: isSelected ? 2 : 0,
+        stationId: station.id,
+      });
+      discoveryFadedCache.set(key, icon);
+    }
+    return icon;
+  };
+
+  const discoveryClusterMarkers = useMemo<ClusterMarkerSpec[]>(
+    () => discoveryDots.map(d => ({
+      id: String(d.station.id),
+      lat: d.station.latitude,
+      lng: d.station.longitude,
+      icon: getDiscoveryIcon(d.station, d.isContributed, selectedStation?.id === d.station.id),
+    })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [discoveryDots, selectedStation?.id, dotStyle, mapStyle, contributedSet]
+  );
+
+  // Stable signal for MCG to refresh cluster icon DOM when the set changes.
+  const discoveryRefreshKey = useMemo(
+    () => `${showDiscoveryMap ? 'on' : 'off'}|${contributedSet.size}`,
+    [showDiscoveryMap, contributedSet]
+  );
+
   const renderFreshDot = ({ station, isFresh, isCheapest }: { station: any; isFresh: boolean; isCheapest: boolean }) => {
     const isSelected = selectedStation?.id === station.id;
     return (
@@ -748,18 +894,43 @@ export function Map({
           <Polyline positions={routePolyline} pathOptions={{ color: '#22c55e', weight: 4, opacity: 0.75 }} />
         )}
 
-        {/* Layer 1: Faded dots (no data / expired) */}
-        {showClusters ? (
-          <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} />
+        {/* Discovery mode replaces Layers 1+2 with a single split:
+            contributed dots (full brand color) + uncontributed dots (grey).
+            Pills (Layer 3) still render on top as usual. */}
+        {showDiscoveryMap ? (
+          showClusters ? (
+            <ClusterLayer
+              markers={discoveryClusterMarkers}
+              iconCreateFunction={createDiscoveryClusterIcon}
+              refreshKey={discoveryRefreshKey}
+            />
+          ) : (
+            <>{discoveryDots.map(d => (
+              <Marker
+                key={d.station.id}
+                position={[d.station.latitude, d.station.longitude]}
+                icon={getDiscoveryIcon(d.station, d.isContributed, selectedStation?.id === d.station.id)}
+                bubblingMouseEvents={true}
+                interactive={true}
+              />
+            ))}</>
+          )
         ) : (
-          <>{fadedDots.map(renderFadedDot)}</>
-        )}
+          <>
+            {/* Layer 1: Faded dots (no data / expired) */}
+            {showClusters ? (
+              <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} />
+            ) : (
+              <>{fadedDots.map(renderFadedDot)}</>
+            )}
 
-        {/* Layer 2: Fresh/active dots — vibrant */}
-        {showClusters ? (
-          <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} />
-        ) : (
-          <>{freshDots.map(renderFreshDot)}</>
+            {/* Layer 2: Fresh/active dots — vibrant */}
+            {showClusters ? (
+              <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} />
+            ) : (
+              <>{freshDots.map(renderFreshDot)}</>
+            )}
+          </>
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered */}

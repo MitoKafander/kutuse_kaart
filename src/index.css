@@ -143,6 +143,44 @@ body {
   animation: spin 1s linear infinite;
 }
 
+/* Avastuskaart (Discovery Map) — celebrations + cluster arc */
+@keyframes slideInFade {
+  0%   { transform: translateY(12px); opacity: 0; }
+  15%  { transform: translateY(0);    opacity: 1; }
+  85%  { transform: translateY(0);    opacity: 1; }
+  100% { transform: translateY(-4px); opacity: 0; }
+}
+
+.discovery-toast {
+  animation: slideInFade 2s ease-out forwards;
+}
+
+@keyframes particleBurst {
+  0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  100% {
+    transform:
+      translate(calc(cos(var(--angle)) * var(--dist)), calc(sin(var(--angle)) * var(--dist)))
+      scale(1);
+    opacity: 0;
+  }
+}
+
+.discovery-particle {
+  animation: particleBurst 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes celebrationHeadline {
+  0%   { transform: scale(0.8); opacity: 0; }
+  20%  { transform: scale(1.08); opacity: 1; }
+  70%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.discovery-headline {
+  animation: celebrationHeadline 2.8s ease-out forwards;
+}
+
 /* Map Overrides */
 .leaflet-container {
   font-family: var(--font-family) !important;

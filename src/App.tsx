@@ -12,6 +12,8 @@ import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { BrandPickerPill } from './components/BrandPickerPill';
+import { CelebrationOverlay } from './components/CelebrationOverlay';
+import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 
 // Lazy-load panels that aren't on the critical first-paint path to keep the
 // initial JS bundle under the 500 kB Vercel warning. These are only fetched
@@ -119,6 +121,22 @@ function App() {
   });
   const [applyLoyalty, setApplyLoyalty] = useState(() => {
     return localStorage.getItem('kyts-apply-loyalty') !== 'false';
+  });
+  const [showDiscoveryMap, setShowDiscoveryMap] = useState(() => {
+    return localStorage.getItem('kyts-show-discovery-map') === 'true';
+  });
+  // Region catalog — loaded once, cached locally so toggle-ON is instant.
+  const [maakonnad, setMaakonnad] = useState<Maakond[]>(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('kyts-regions-v1') || 'null');
+      return Array.isArray(cached?.maakonnad) ? cached.maakonnad : [];
+    } catch { return []; }
+  });
+  const [parishes, setParishes] = useState<Parish[]>(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('kyts-regions-v1') || 'null');
+      return Array.isArray(cached?.parishes) ? cached.parishes : [];
+    } catch { return []; }
   });
 
   useEffect(() => {
@@ -228,7 +246,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -258,6 +276,10 @@ function App() {
         setApplyLoyalty(prof.apply_loyalty);
         localStorage.setItem('kyts-apply-loyalty', String(prof.apply_loyalty));
       }
+      if (prof?.show_discovery_map !== null && prof?.show_discovery_map !== undefined) {
+        setShowDiscoveryMap(prof.show_discovery_map);
+        localStorage.setItem('kyts-show-discovery-map', String(prof.show_discovery_map));
+      }
     } else {
       // Signed-out state: every preference that's synced from user_profiles
       // must be reverted to its anonymous default AND its localStorage cache
@@ -274,12 +296,15 @@ function App() {
       setDotStyle('info');
       setApplyLoyalty(true);
       setLoyaltyDiscounts({});
+      setShowDiscoveryMap(false);
       localStorage.removeItem('kyts-hide-empty-dots');
       localStorage.removeItem('kyts-show-clusters');
       localStorage.removeItem('kyts-show-latvian-stations');
       localStorage.removeItem('kyts-dot-style');
       localStorage.removeItem('kyts-apply-loyalty');
       localStorage.removeItem('kyts-loyalty-discounts');
+      localStorage.removeItem('kyts-show-discovery-map');
+      localStorage.removeItem('kyts-celebrated-regions');
     }
   };
 
@@ -326,6 +351,55 @@ function App() {
       window.removeEventListener('pageshow', setAppHeight);
     };
   }, []);
+
+  // Load region catalog (maakonnad + parishes) once; cache locally so Avastuskaart
+  // can render instantly on toggle-ON. Background-refresh from Supabase to keep
+  // station_count denormalization current.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: mk }, { data: pa }] = await Promise.all([
+        supabase.from('maakonnad').select('id, name, emoji, station_count'),
+        supabase.from('parishes').select('id, maakond_id, name, station_count'),
+      ]);
+      if (cancelled) return;
+      if (mk) setMaakonnad(mk as Maakond[]);
+      if (pa) setParishes(pa as Parish[]);
+      try {
+        localStorage.setItem('kyts-regions-v1', JSON.stringify({ maakonnad: mk, parishes: pa }));
+      } catch { /* quota */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // station.id -> parish.id, only for EE stations with a parish_id.
+  // `Map` is shadowed by the Map component import — use globalThis.Map.
+  const stationParishMap = useMemo(() => {
+    const m = new globalThis.Map<string, number>();
+    for (const s of stations) {
+      if (s.parish_id != null) m.set(String(s.id), s.parish_id);
+    }
+    return m;
+  }, [stations]);
+
+  // Every station this user has ever submitted a price at.
+  const userContributedStationIds = useMemo(() => {
+    const uid = session?.user?.id;
+    if (!uid) return new Set<string>();
+    const set = new Set<string>();
+    for (const p of prices) {
+      if (p.user_id === uid && p.station_id != null) set.add(String(p.station_id));
+    }
+    return set;
+  }, [prices, session?.user?.id]);
+
+  const { progress: regionProgress, events: celebrationEvents, consumeEvents } = useRegionProgress({
+    contributedStationIds: userContributedStationIds,
+    maakonnad,
+    parishes,
+    stationParishMap,
+    emitCelebrations: showDiscoveryMap,
+  });
 
   const handleOpenPriceForm = () => {
     setIsPriceModalOpen(true);
@@ -385,7 +459,11 @@ function App() {
         applyLoyalty={applyLoyalty}
         routePolyline={routePolyline}
         onUserLocationChange={setLiveUserLocation}
+        showDiscoveryMap={showDiscoveryMap}
+        contributedStationIds={userContributedStationIds}
       />
+
+      <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
 
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
@@ -763,6 +841,9 @@ function App() {
         onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
+        showDiscoveryMap={showDiscoveryMap}
+        onShowDiscoveryMapChange={(v) => { setShowDiscoveryMap(v); localStorage.setItem('kyts-show-discovery-map', String(v)); }}
+        regionProgress={regionProgress}
         displayName={displayName}
         onDisplayNameChange={async (name) => {
           setDisplayName(name);
