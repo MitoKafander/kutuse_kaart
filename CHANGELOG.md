@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Submitter-proximity gate + Mustakivi branding fix - 2026-04-17
+
+### Added ✨
+- 🔴 **1 km submitter-proximity gate on every price insert** (`src/components/ManualPriceModal.tsx`, `migrations/schema_phase31_price_proximity.sql`): closes the station-drawer abuse vector where anyone could report prices for any station in the country with no geographic constraint. Two new columns `submitted_lat`/`submitted_lon` ride along on every insert; a `BEFORE INSERT` trigger rejects inserts that omit them or sit more than 1 km from the station (spherical-law-of-cosines distance, no PostGIS / earthdistance dependency). RLS `prices_insert_validated` policy extended to require NOT NULL coords as defense in depth. Client adds `MAX_SUBMIT_KM = 1` constant, a new `captureLocationForStation()` that fires when the modal opens via the drawer "muuda hindu" flow, Estonian-language banners for the three new failure states (GPS pending / GPS error / too far from station), each with a "Värskenda" refresh button, and submit is disabled for all three. All three submit paths (station drawer, camera FAB, manual FAB) now block on the same rule. Commit `fb0c1e3`.
+- 🟢 **Phase 32: Mustakivi tee Neste → Alexela data fix** (`migrations/schema_phase32_mustakivi_alexela.sql`): one specific station in Lasnamäe, Tallinn was mis-branded by OSM upstream. Promoted to Alexela so it picks up the brand filter, loyalty discounts, and Alexela-chain styling. Tight `WHERE` (Neste + Mustakivi street + Tallinn bbox) matched exactly one row; trailing `SELECT` confirms. Migration run directly in Supabase SQL editor. Not yet committed.
+
+### Changed 🔧
+- 🟡 **FAB picker fallback radius 5 km → 1 km** (`src/components/ManualPriceModal.tsx`): the 5 km fallback was introduced in commit `4022be2` yesterday as GPS-skew headroom after a friend's canopy-multipath incident stranded them at 500 m. With the server now rejecting anything beyond 1 km, the fallback must match — otherwise the picker would offer stations the server will reject. Picker copy ("5km raadiuses" → "1km raadiuses") follows. Tight-radius 0.5 km auto-select path unchanged. The "Värskenda" button already exists in the picker as the safety valve when GPS is off.
+
+### Key Decisions
+- **Unified 1 km cap over per-path tolerance**: considered (a) 1 km drawer + 5 km FAB picker + 2 km server buffer, vs (b) 1 km everywhere. Went with (b) — the whole point of the client check is to match the server; having the picker offer stations the server rejects would just move the rejection from the picker to the submit button and confuse users. The recent 5 km headroom is a real loss for canopy-multipath edge cases but can be re-widened later if Sentry shows real users blocked.
+- **Spherical-law-of-cosines over PostGIS**: at Estonian latitudes the accuracy gap vs great-circle is <10 m — comfortably inside a 1 km gate. Avoiding the extension keeps the migration portable across Supabase projects and doesn't require any role beyond the default `authenticator`.
+- **`nullable` columns + trigger enforcement over `NOT NULL` constraint**: lets historical rows (which have no lat/lon) stay valid without a backfill, while the trigger still guarantees every *new* row has both coords.
+
+### Open Items
+- **Phase 32 migration not yet committed to git** — ran in Supabase, file exists locally. Bundle into the next commit.
+- **Sentry watch**: look for `submitted_lat/submitted_lon required` or `submitter is X.XX km from station` trigger errors in the first 24 h post-deploy. A spike means users on stale client bundles (shouldn't happen given NetworkFirst HTML + `skipWaiting`, but worth eyeballing).
+- **5 km → 1 km tradeoff accepted** — if real users legitimately at a station get blocked by GPS skew, reconsider widening the picker back to 2–3 km while keeping the server cap at 1 km. The server trigger becomes the single source of truth; the picker just stops offering obvious-reject candidates.
+- **GPS-denied users can no longer submit** at all (hard block). Alternative was a flagged "manual_no_gps" entry_method for audit; deferred unless real users complain.
+
+---
+
 ## [Unreleased] - AI scan stability: Node handler + cross-origin + radius - 2026-04-16
 
 ### Fixed 🐛

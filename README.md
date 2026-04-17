@@ -44,9 +44,9 @@ If you wish to spin up a local instance of the application:
 3. Run `npm install` then `npm run dev`.
 
 ### Database Schema
-The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase27_show_latvian_stations.sql`).
+The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase32_mustakivi_alexela.sql`).
 *   `stations` (Base OpenStreetMap derived locations + `country` column for EE/LV segmentation)
-*   `prices` (Tied to user_id for submission tracking)
+*   `prices` (Tied to user_id for submission tracking; carries `submitted_lat`/`submitted_lon` + a `BEFORE INSERT` trigger enforcing 1 km submitter proximity)
 *   `votes` (Unique constraint across user_id + price_id)
 *   `user_profiles` (Default fuel type, preferred brands, auto-open toggle per user)
 *   `user_favorites` (Bookmarked stations per user)
