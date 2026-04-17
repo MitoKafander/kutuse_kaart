@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp } from 'lucide-react';
 import { FuelPencilIcon } from './icons/FuelPencilIcon';
 import { capture } from '../utils/analytics';
 
@@ -16,6 +16,7 @@ type Step = {
 const COLOR_BLUE = '#3b82f6';
 const COLOR_ORANGE = '#fb923c';
 const COLOR_YELLOW = '#facc15';
+const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
 
 const STEPS: Step[] = [
@@ -23,6 +24,27 @@ const STEPS: Step[] = [
     icon: <Fuel size={44} color={COLOR_BLUE} />,
     title: 'Tere tulemast Kytsi!',
     body: 'Kogukonna-põhine kaart, kus näed Eesti tanklate hindu reaalajas. Leia soodsaim, panusta ise.',
+  },
+  {
+    icon: (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', maxWidth: '340px' }}>
+        <Camera size={32} color={COLOR_BLUE} />
+        <FuelPencilIcon size={32} style={{ color: COLOR_ORANGE }} />
+        <Euro size={32} color={COLOR_YELLOW} />
+        <Navigation size={32} color={COLOR_GREEN} />
+        <TrendingUp size={32} color={COLOR_PURPLE} />
+      </div>
+    ),
+    title: 'Nupud paremal',
+    body: (
+      <span style={{ display: 'block', textAlign: 'left' }}>
+        <span style={{ color: COLOR_BLUE, fontWeight: 600 }}>Sinine</span> – pildista totemit, AI loeb hinnad.{' '}
+        <span style={{ color: COLOR_ORANGE, fontWeight: 600 }}>Oranž</span> – sisesta hinnad käsitsi.{' '}
+        <span style={{ color: COLOR_YELLOW, fontWeight: 600 }}>Kollane</span> – odavaimad jaamad lähedal.{' '}
+        <span style={{ color: COLOR_GREEN, fontWeight: 600 }}>Roheline</span> – odavaim kütus marsruudil.{' '}
+        <span style={{ color: COLOR_PURPLE, fontWeight: 600 }}>Lilla</span> – statistika ja trendid.
+      </span>
+    ),
   },
   {
     icon: <Euro size={44} color={COLOR_YELLOW} />,
