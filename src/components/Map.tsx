@@ -336,18 +336,18 @@ function DiscoveryParishLayer({
 
   const hiddenStyle = useMemo(() => ({ opacity: 0, fillOpacity: 0, weight: 0 }), []);
   const dimStyle = useMemo(() => ({
-    color: isLight ? '#475569' : '#94a3b8',
-    weight: 0.6,
-    opacity: 0.35,
+    color: isLight ? '#334155' : '#cbd5e1',
+    weight: 1.2,
+    opacity: 0.65,
     fillOpacity: 0,
-    dashArray: '2,3',
+    dashArray: '3,3',
   }), [isLight]);
   const focusedParishStyle = useMemo(() => ({
-    color: isLight ? '#1e40af' : '#93c5fd',
-    weight: 0.9,
-    opacity: 0.7,
+    color: isLight ? '#1e40af' : '#bfdbfe',
+    weight: 1.6,
+    opacity: 0.95,
     fillOpacity: 0,
-    dashArray: '2,3',
+    dashArray: '3,3',
   }), [isLight]);
 
   useEffect(() => {
