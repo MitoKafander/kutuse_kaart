@@ -77,57 +77,6 @@ function createDotIcon({
   });
 }
 
-// Stale-price dot: vibrant brand-color ring with a dulled core. Total
-// visible diameter matches createDotIcon so stale and fresh dots are the
-// same size — only their fill tells them apart.
-function createRingedDotIcon({
-  ringColor,
-  coreColor,
-  coreOpacity,
-  outerDiameter,
-  ringWidth,
-  strokeColor,
-  strokeWidth = 0,
-  stationId,
-}: {
-  ringColor: string;
-  coreColor: string;
-  coreOpacity: number;
-  outerDiameter: number;
-  ringWidth: number;
-  strokeColor?: string;
-  strokeWidth?: number;
-  stationId?: string | number;
-}): L.DivIcon {
-  const coreDiameter = Math.max(0, outerDiameter - ringWidth * 2);
-  const coreBg = toRgba(coreColor, coreOpacity);
-  const border = strokeWidth > 0 && strokeColor
-    ? `border: ${strokeWidth}px solid ${strokeColor};`
-    : '';
-  const sid = stationId != null ? ` data-sid="${String(stationId).replace(/"/g, '')}"` : '';
-  return L.divIcon({
-    className: 'custom-dot',
-    html: `<div${sid} style="
-      width: ${DOT_HIT_SIZE}px; height: ${DOT_HIT_SIZE}px;
-      display: flex; align-items: center; justify-content: center;
-    "><div style="
-      width: ${outerDiameter}px; height: ${outerDiameter}px;
-      border-radius: 50%;
-      background: ${ringColor};
-      ${border}
-      box-sizing: content-box;
-      display: flex; align-items: center; justify-content: center;
-      pointer-events: none;
-    "><div style="
-      width: ${coreDiameter}px; height: ${coreDiameter}px;
-      border-radius: 50%;
-      background: ${coreBg};
-    "></div></div></div>`,
-    iconSize: [DOT_HIT_SIZE, DOT_HIT_SIZE],
-    iconAnchor: [DOT_HIT_SIZE / 2, DOT_HIT_SIZE / 2],
-  });
-}
-
 // Fixed-pixel location dot. Using a Marker with a divIcon instead of CircleMarker
 // avoids the zoom-flicker — CircleMarker re-projects its center on every zoom
 // animation frame, which made the dot jitter while the map zoomed.
@@ -1075,31 +1024,9 @@ export function Map({
     const key = `${brandColor}|${isSelected ? 1 : 0}|${isFresh ? 1 : 0}|${isCheapest ? 1 : 0}|${String(station.id)}`;
     let icon = freshIconCache.get(key);
     if (!icon) {
-      // Stale (has data but expired): vibrant brand ring, dull brand core.
-      // Gives a clear "there's data here" signal while still reading as
-      // lower-priority than fresh. Cheapest and selected take priority.
-      if (!isFresh && !isCheapest) {
-        const strokeColor = isSelected
-          ? (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)')
-          : undefined;
-        const strokeWidth = isSelected ? 3 : 0;
-        icon = createRingedDotIcon({
-          ringColor: brandColor,
-          coreColor: brandColor,
-          coreOpacity: 0.45,
-          outerDiameter: 12,
-          ringWidth: 2,
-          strokeColor,
-          strokeWidth,
-          stationId: station.id,
-        });
-        freshIconCache.set(key, icon);
-        return icon;
-      }
-
       let visibleDiameter = 12;
       let fillColor = brandColor;
-      let fillOpacity = 0.9;
+      let fillOpacity = isFresh ? 0.9 : 0.55;
       let strokeColor: string | undefined;
       let strokeWidth = 0;
 
