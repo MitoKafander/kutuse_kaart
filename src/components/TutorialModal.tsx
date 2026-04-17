@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus } from 'lucide-react';
 import { FuelPencilIcon } from './icons/FuelPencilIcon';
 import { capture } from '../utils/analytics';
 
@@ -27,7 +27,7 @@ const STEPS: Step[] = [
   {
     icon: <Euro size={44} color={COLOR_YELLOW} />,
     title: 'Leia soodsaim kütus',
-    body: 'Vali kütusetüüp (95 / 98 / D / LPG) ja kollane nupp näitab odavaima jaama sinu lähedal. Brändide filter ja marsruudi-otsing on ülemises menüüs.',
+    body: 'Kollane nupp paremal näitab lähedal asuvaid odavaimaid jaamu – kõigi kütusetüüpide (95 / 98 / D / LPG) jaoks korraga. Brändide filter ja marsruudi-otsing on ülemises menüüs.',
   },
   {
     icon: (
@@ -49,6 +49,11 @@ const STEPS: Step[] = [
     icon: <Compass size={44} color="var(--color-primary)" />,
     title: 'Avastuskaart',
     body: 'Lülita Seaded-menüüst sisse ja täida kõik 15 Eesti maakonda panusega. Kogu märke ja vaata, kuidas teised Eestit katavad.',
+  },
+  {
+    icon: <UserPlus size={44} color="var(--color-primary)" />,
+    title: 'Loo konto',
+    body: 'Sisselogimine avab hindade raporteerimise, hääletamise, lemmikjaamad, edetabeli ja kliendikaardi-soodustused. Su eelistused sünkitakse seadmete vahel. Vajuta profiili ikoonile üleval paremal.',
   },
 ];
 
@@ -142,7 +147,7 @@ export function TutorialModal({
               textDecoration: 'underline', fontSize: '0.88rem',
             }}
           >
-            Vahele jäta
+            Jäta vahele
           </button>
           <button
             onClick={() => onComplete('skipped', step)}
