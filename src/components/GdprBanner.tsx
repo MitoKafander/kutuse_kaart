@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function GdprBanner({ onOpenPrivacy, onOpenTerms }: { onOpenPrivacy: () => void, onOpenTerms?: () => void }) {
+export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPrivacy: () => void, onOpenTerms?: () => void, onAccept?: () => void }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -15,6 +15,7 @@ export function GdprBanner({ onOpenPrivacy, onOpenTerms }: { onOpenPrivacy: () =
   const handleAccept = () => {
     localStorage.setItem('gdpr_accepted', 'true');
     setIsVisible(false);
+    onAccept?.();
   };
 
   return (

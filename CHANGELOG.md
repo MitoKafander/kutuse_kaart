@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Tutorial onboarding - 2026-04-17
+
+### Added ✨
+- 🟡 **First-run tutorial modal** (`src/components/TutorialModal.tsx`, wired into `src/App.tsx`, `src/components/GdprBanner.tsx`, `src/components/ProfileDrawer.tsx`): 5-card deck walks new users through welcome → cheapest-fuel → price reporting (camera + manual + 1 km rule) → leaderboard badges → Avastuskaart. Opens automatically ~400 ms after GDPR consent for first-visit users; for returning users who already accepted GDPR, fires once on mount if `kyts:tutorial-seen` is unset. Persisted via `localStorage['kyts:tutorial-seen'] = '1'`. Settings-tab "Ava tutvustus" button (above "Saada tagasisidet", both with `HelpCircle`/`MessageSquare` icons) lets anyone revisit. Keyboard nav: Esc = skip, Arrow keys = prev/next. Tappable step dots for direct jump. Registered in the LIFO overlay stack so Android back button closes it cleanly. A11y: `role="dialog"`, `aria-modal`, `aria-labelledby`, `aria-current="step"` on active dot, safe-area bottom inset on footer. PostHog events: `tutorial_started` (once per open), `tutorial_completed` / `tutorial_skipped` (with `last_step` prop).
+
+### Key Decisions
+- **Card deck over spotlight tour**: DOM-anchored coach marks are fragile on mobile (viewport rotation, FAB re-layout, scroll-offset drift) and would need per-step position math that ages badly. Card deck is a pure modal — zero coupling to actual UI coordinates, survives future FAB reshuffles.
+- **Button nav only, no swipe gestures**: iOS Safari uses edge-swipe for back navigation; horizontal swipe-to-advance would collide with it. The tappable step dots give fast random access without a gesture layer.
+- **Lucide icons color-matched to real FABs over screenshots**: a screenshot asset pipeline (capture → optimize → keep in sync as UI evolves) is ongoing tax. Inline icons reuse the exact `#3b82f6` / `#fb923c` / `#facc15` / `#a855f7` color tokens the FABs already use, so the visual cue transfers without a maintenance burden.
+- **Split `onClose` and `onComplete` props**: lets the first-run path persist-and-analyze on close while the Settings-revisit path just closes without re-persisting — the revisit flow shouldn't keep firing `tutorial_completed` every time someone browses the tour.
+
+### Open Items
+- Per-step analytics (currently only fire start/end) — defer until DAU grows enough to make step-drop-off data signal rather than noise.
+- Cross-device sync of `kyts:tutorial-seen` via Supabase — a returning user on a new device gets the tutorial again; acceptable for now.
+- Resume-from-last-step: closing mid-tour and reopening restarts at step 0. Deferred; re-entry is cheap since content is terse.
+
+---
+
 ## [Unreleased] - User feedback channel - 2026-04-17
 
 ### Added ✨

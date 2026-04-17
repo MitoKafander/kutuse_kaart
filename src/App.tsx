@@ -8,6 +8,8 @@ import { ManualPriceModal } from './components/ManualPriceModal';
 import { PrivacyModal } from './components/PrivacyModal';
 import { TermsModal } from './components/TermsModal';
 import { FeedbackModal } from './components/FeedbackModal';
+import { TutorialModal } from './components/TutorialModal';
+import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
@@ -75,6 +77,7 @@ function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   
   // Data state
   const [stations, setStations] = useState<any[]>([]);
@@ -168,6 +171,24 @@ function App() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  // First-run tutorial: show once after GDPR is accepted. For returning users
+  // who accepted GDPR in a previous session, this fires on mount. For true
+  // first-visit users, GdprBanner.onAccept triggers it after they consent so
+  // the two overlays don't stack. The 400 ms delay lets the GDPR banner's
+  // slide-out animation finish first.
+  const tutorialArmedRef = useRef(false);
+  const openTutorialAfterGdpr = () => {
+    if (tutorialArmedRef.current) return;
+    if (localStorage.getItem('kyts:tutorial-seen')) return;
+    tutorialArmedRef.current = true;
+    setTimeout(() => setIsTutorialOpen(true), 400);
+  };
+  useEffect(() => {
+    if (localStorage.getItem('gdpr_accepted') === 'true') {
+      openTutorialAfterGdpr();
+    }
+  }, []);
+
   // Back button closes the topmost overlay instead of leaving the app.
   // LIFO stack keyed by overlay id: newly-opened overlays are pushed; popstate
   // always closes the most recently opened one. Previous implementation used a
@@ -186,12 +207,13 @@ function App() {
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
     if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
     if (isFeedbackOpen) list.push({ id: 'feedback', close: () => setIsFeedbackOpen(false) });
+    if (isTutorialOpen) list.push({ id: 'tutorial', close: () => setIsTutorialOpen(false) });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -968,6 +990,7 @@ function App() {
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
+        onOpenTutorial={() => setIsTutorialOpen(true)}
         showDiscoveryMap={showDiscoveryMap}
         onShowDiscoveryMapChange={handleShowDiscoveryMapChange}
         regionProgress={regionProgress}
@@ -1078,9 +1101,20 @@ function App() {
         session={session}
       />
 
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onComplete={(outcome, lastStep) => {
+          localStorage.setItem('kyts:tutorial-seen', '1');
+          capture('tutorial_' + outcome, { last_step: lastStep });
+          setIsTutorialOpen(false);
+        }}
+      />
+
       <GdprBanner
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onAccept={openTutorialAfterGdpr}
       />
     </main>
   );

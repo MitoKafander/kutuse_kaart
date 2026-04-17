@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -132,6 +132,7 @@ export function ProfileDrawer({
   onOpenPrivacy,
   onOpenTerms,
   onOpenFeedback,
+  onOpenTutorial,
   showDiscoveryMap,
   onShowDiscoveryMapChange,
   regionProgress,
@@ -175,6 +176,7 @@ export function ProfileDrawer({
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
   onOpenFeedback?: () => void;
+  onOpenTutorial?: () => void;
   showDiscoveryMap: boolean;
   onShowDiscoveryMapChange: (show: boolean) => void;
   regionProgress: RegionProgress;
@@ -989,13 +991,34 @@ export function ProfileDrawer({
 
         </div>
 
+        {/* Tutorial revisit — sits above Feedback so the two "meta" CTAs stack
+            together at the tab bottom, both visually distinct from the map
+            preference controls above. */}
+        {activeTab === 'settings' && onOpenTutorial && (
+          <button
+            onClick={() => { onOpenTutorial(); onClose(); }}
+            style={{
+              marginTop: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '12px',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-surface-border)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.95rem', fontWeight: '500', cursor: 'pointer',
+            }}
+          >
+            <HelpCircle size={18} /> Ava tutvustus
+          </button>
+        )}
+
         {/* Feedback CTA — same tab as Privaatsus/Tingimused so it lives with
             other "meta" links rather than competing with map preferences. */}
         {activeTab === 'settings' && onOpenFeedback && (
           <button
             onClick={() => { onOpenFeedback(); onClose(); }}
             style={{
-              marginTop: '16px',
+              marginTop: '10px',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '12px',
               background: 'var(--color-surface)',

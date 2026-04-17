@@ -17,8 +17,9 @@ Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced app
    - **Cheapest Finder**: Select a fuel type, and the app mathematically highlights the absolute cheapest station across the visible map with a glowing gold marker. The top-5 cheapest stations show price pills even when zoomed out.
 7. **Reputation & Voting**: Users must securely log in to submit a price or vote (Thumbs Up / Thumbs Down) on existing data. A strict one-vote-per-user database constraint ensures community integrity.
 8. **Geolocation**: One-tap locator passively traces your device's GPS hardware for instant 0-second re-centering.
-9. **GDPR Compliance**: Estonian-language Terms of Service + Privacy Policy, cookieless analytics (no consent banner required for tracking), and a first-visit acknowledgement for the essential auth cookies.
-10. **Ops Hardening**: Per-IP + global rate limits on the AI endpoint (Upstash Redis), error monitoring (Sentry), and anonymous product analytics (PostHog EU Cloud, memory persistence — no cookies).
+9. **First-run Tutorial**: A 5-card deck (welcome → cheapest → report → leaderboard → Avastuskaart) auto-opens after GDPR consent for new users, persisted via localStorage, and revisitable anytime via Profile → Seaded → Ava tutvustus.
+10. **GDPR Compliance**: Estonian-language Terms of Service + Privacy Policy, cookieless analytics (no consent banner required for tracking), and a first-visit acknowledgement for the essential auth cookies.
+11. **Ops Hardening**: Per-IP + global rate limits on the AI endpoint (Upstash Redis), error monitoring (Sentry), and anonymous product analytics (PostHog EU Cloud, memory persistence — no cookies).
 
 ## Tech Stack
 *   **Frontend**: React + TypeScript + Vite
