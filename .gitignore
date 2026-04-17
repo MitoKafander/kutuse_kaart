@@ -17,6 +17,9 @@ dist-ssr
 # Personal notes
 Notes/
 
+# Local brand source assets (exported into public/ as PWA icons)
+Images/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
