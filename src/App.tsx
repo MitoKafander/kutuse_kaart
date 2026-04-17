@@ -1103,7 +1103,6 @@ function App() {
 
       <TutorialModal
         isOpen={isTutorialOpen}
-        onClose={() => setIsTutorialOpen(false)}
         onComplete={(outcome, lastStep) => {
           localStorage.setItem('kyts:tutorial-seen', '1');
           capture('tutorial_' + outcome, { last_step: lastStep });

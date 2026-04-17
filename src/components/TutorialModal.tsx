@@ -54,11 +54,9 @@ const STEPS: Step[] = [
 
 export function TutorialModal({
   isOpen,
-  onClose,
   onComplete,
 }: {
   isOpen: boolean;
-  onClose: () => void;
   onComplete: (outcome: Outcome, lastStep: number) => void;
 }) {
   const [step, setStep] = useState(0);
