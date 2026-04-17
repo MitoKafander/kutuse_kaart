@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin } from 'lucide-react';
 import { FuelPencilIcon } from './icons/FuelPencilIcon';
 import { capture } from '../utils/analytics';
 
@@ -47,35 +47,24 @@ const STEPS: Step[] = [
     ),
   },
   {
-    icon: <Euro size={44} color={COLOR_YELLOW} />,
-    title: 'Leia soodsaim kütus',
-    body: 'Kollane nupp paremal näitab lähedal asuvaid odavaimaid jaamu – kõigi kütusetüüpide (95 / 98 / D / LPG) jaoks korraga. Roheline navigatsiooninupp leiab odavaima kütuse marsruudi peal. Brändide filter on ülemise menüü all.',
+    icon: <MapPin size={44} color={COLOR_ORANGE} />,
+    title: '1 km reegel',
+    body: 'Hindu saad sisestada ainult siis, kui oled jaamast kuni 1 km kaugusel. See väldib võltspanuseid üle riigi ja hoiab andmed usaldusväärsed.',
   },
   {
     icon: (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <Camera size={40} color={COLOR_BLUE} />
-        <span style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>või</span>
-        <FuelPencilIcon size={40} style={{ color: COLOR_ORANGE }} />
+        <Trophy size={40} color={COLOR_PURPLE} />
+        <Compass size={40} color="var(--color-primary)" />
       </div>
     ),
-    title: 'Raporteeri hinda',
-    body: 'Sinine nupp pildistab totemi ja AI loeb hinnad ise. Oranž nupp on käsitsi sisestamiseks. Pead olema kuni 1 km jaamast, et hinda salvestada.',
-  },
-  {
-    icon: <Trophy size={44} color={COLOR_PURPLE} />,
-    title: 'Edetabel ja märgid',
-    body: 'Iga hinnapanus ja hääletus teenib sulle tiitli (🌱 Turist → ♾️ Kyts Kõiksus). Ava Profiil → Edetabel, et näha oma kohta teiste seas.',
-  },
-  {
-    icon: <Compass size={44} color="var(--color-primary)" />,
-    title: 'Avastuskaart',
-    body: 'Lülita Seaded-menüüst sisse ja täida kõik 15 Eesti maakonda panusega. Kogu märke ja vaata, kuidas teised Eestit katavad.',
+    title: 'Panusta, teeni märgid',
+    body: 'Su hinnapanused teenivad tiitleid (🌱 Turist → ♾️ Kyts Kõiksus) ja tõstavad sind edetabelis. Lülita Seaded-menüüst sisse Avastuskaart ja kogu kõik 15 Eesti maakonna märgid.',
   },
   {
     icon: <UserPlus size={44} color="var(--color-primary)" />,
     title: 'Loo konto',
-    body: 'Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja Avastuskaardi edenemise. Eelistused sünkitakse seadmete vahel. Vajuta profiili ikoonile üleval paremal.',
+    body: 'Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja seadmetevahelise sünkroonimise. Profiili ikoon on üleval paremal.',
   },
 ];
 
