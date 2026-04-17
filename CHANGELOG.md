@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Clearable fuel preference - 2026-04-17
+
+### Changed 🔧
+- 🟢 **Fuel-type preference is now click-to-toggle** (`src/components/ProfileDrawer.tsx`): clicking the currently-selected fuel pill in Profile → Seaded → Sinu Auto Kütus now clears the preference (upserts `default_fuel_type = null`) instead of being a one-way set. Tooltip on the active pill hints at the behavior. Previously users had no way to unselect once chosen — they could only switch to a different fuel.
+
+---
+
 ## [Unreleased] - Submitter-proximity gate + Mustakivi branding fix - 2026-04-17
 
 ### Added ✨

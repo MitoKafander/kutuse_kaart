@@ -192,10 +192,11 @@ export function ProfileDrawer({
   const badge = getContributorBadge(userPricesCount, userVotesCount);
 
   const handleUpdateFuelPref = async (fuel: string) => {
-    onDefaultFuelTypeChange(fuel);
+    const next = defaultFuelType === fuel ? null : fuel;
+    onDefaultFuelTypeChange(next);
     await supabase
       .from('user_profiles')
-      .upsert({ id: session.user.id, default_fuel_type: fuel });
+      .upsert({ id: session.user.id, default_fuel_type: next });
   };
 
   const handleDotStyleChange = async (style: 'info' | 'brand') => {
@@ -670,6 +671,7 @@ export function ProfileDrawer({
                       <button
                         key={type}
                         onClick={() => handleUpdateFuelPref(type)}
+                        title={defaultFuelType === type ? 'Klõpsa uuesti eemaldamiseks' : undefined}
                         style={{
                           flex: '1 1 40%',
                           padding: '10px 0',
