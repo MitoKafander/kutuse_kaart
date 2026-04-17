@@ -13,6 +13,7 @@ import { ProfileDrawer } from './components/ProfileDrawer';
 import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
+import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 
 // Lazy-load panels that aren't on the critical first-paint path to keep the
@@ -138,6 +139,13 @@ function App() {
       return Array.isArray(cached?.parishes) ? cached.parishes : [];
     } catch { return []; }
   });
+  // Avastuskaart focus: when set, the map dims everything outside this
+  // maakond and flies to its bounds. Cleared by banner "X" or toggle-off.
+  const [focusedMaakondId, setFocusedMaakondId] = useState<number | null>(null);
+  // Lazy-loaded on first toggle-ON; cached in the bundle hash so repeat
+  // toggles are instant without a refetch.
+  const [maakondGeo, setMaakondGeo] = useState<any | null>(null);
+  const maakondGeoFetchRef = useRef(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mapStyle);
@@ -372,6 +380,24 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
+  // Clear focus when discovery mode is turned off — otherwise a stale
+  // focused-maakond state would filter stations silently the next time
+  // the user flipped the toggle back on.
+  useEffect(() => {
+    if (!showDiscoveryMap) setFocusedMaakondId(null);
+  }, [showDiscoveryMap]);
+
+  // Fetch maakond boundary geojson once, the first time discovery mode is
+  // enabled. Static asset from public/ — browser caches it aggressively.
+  useEffect(() => {
+    if (!showDiscoveryMap || maakondGeoFetchRef.current) return;
+    maakondGeoFetchRef.current = true;
+    fetch('/maakonnad.geojson')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data) setMaakondGeo(data); })
+      .catch(() => { /* non-critical */ });
+  }, [showDiscoveryMap]);
+
   // station.id -> parish.id, only for EE stations with a parish_id.
   // `Map` is shadowed by the Map component import — use globalThis.Map.
   const stationParishMap = useMemo(() => {
@@ -400,6 +426,34 @@ function App() {
     stationParishMap,
     emitCelebrations: showDiscoveryMap,
   });
+
+  // Station ids that belong to the focused maakond. Null when no focus set
+  // (Map.tsx treats null as "no filter").
+  const focusedMaakondStationIds = useMemo(() => {
+    if (focusedMaakondId == null) return null;
+    const parishIds = new Set<number>();
+    for (const p of parishes) {
+      if (p.maakond_id === focusedMaakondId) parishIds.add(p.id);
+    }
+    const set = new Set<string>();
+    for (const s of stations) {
+      if (s.parish_id != null && parishIds.has(s.parish_id)) set.add(String(s.id));
+    }
+    return set;
+  }, [focusedMaakondId, parishes, stations]);
+
+  const focusedMaakond = useMemo(
+    () => (focusedMaakondId != null ? maakonnad.find(m => m.id === focusedMaakondId) ?? null : null),
+    [focusedMaakondId, maakonnad],
+  );
+
+  const handleShowDiscoveryMapChange = (v: boolean) => {
+    setShowDiscoveryMap(v);
+    localStorage.setItem('kyts-show-discovery-map', String(v));
+    if (session?.user?.id) {
+      supabase.from('user_profiles').upsert({ id: session.user.id, show_discovery_map: v });
+    }
+  };
 
   const handleOpenPriceForm = () => {
     setIsPriceModalOpen(true);
@@ -461,7 +515,19 @@ function App() {
         onUserLocationChange={setLiveUserLocation}
         showDiscoveryMap={showDiscoveryMap}
         contributedStationIds={userContributedStationIds}
+        focusedMaakondId={focusedMaakondId}
+        focusedMaakondStationIds={focusedMaakondStationIds}
+        maakondGeo={maakondGeo}
       />
+
+      {showDiscoveryMap && (
+        <DiscoveryBanner
+          focusedMaakondName={focusedMaakond?.name ?? null}
+          focusedMaakondEmoji={focusedMaakond?.emoji ?? null}
+          onClearFocus={() => setFocusedMaakondId(null)}
+          onTurnOff={() => handleShowDiscoveryMapChange(false)}
+        />
+      )}
 
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
 
@@ -842,8 +908,12 @@ function App() {
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
         showDiscoveryMap={showDiscoveryMap}
-        onShowDiscoveryMapChange={(v) => { setShowDiscoveryMap(v); localStorage.setItem('kyts-show-discovery-map', String(v)); }}
+        onShowDiscoveryMapChange={handleShowDiscoveryMapChange}
         regionProgress={regionProgress}
+        onMaakondFocus={(id) => {
+          setFocusedMaakondId(id);
+          setIsProfileOpen(false);
+        }}
         displayName={displayName}
         onDisplayNameChange={async (name) => {
           setDisplayName(name);

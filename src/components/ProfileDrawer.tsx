@@ -134,6 +134,7 @@ export function ProfileDrawer({
   showDiscoveryMap,
   onShowDiscoveryMapChange,
   regionProgress,
+  onMaakondFocus,
 }: {
   session: any;
   isOpen: boolean;
@@ -173,6 +174,7 @@ export function ProfileDrawer({
   showDiscoveryMap: boolean;
   onShowDiscoveryMapChange: (show: boolean) => void;
   regionProgress: RegionProgress;
+  onMaakondFocus?: (maakondId: number) => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
@@ -215,12 +217,10 @@ export function ProfileDrawer({
     }
   };
 
-  const handleDiscoveryMapToggle = async () => {
-    const next = !showDiscoveryMap;
-    onShowDiscoveryMapChange(next);
-    if (session?.user?.id) {
-      await supabase.from('user_profiles').upsert({ id: session.user.id, show_discovery_map: next });
-    }
+  const handleDiscoveryMapToggle = () => {
+    // Supabase write + localStorage mirror are handled by the parent so the
+    // same toggle path is shared with the map banner.
+    onShowDiscoveryMapChange(!showDiscoveryMap);
   };
 
   const handleShowLatvianStationsToggle = async () => {
@@ -591,7 +591,7 @@ export function ProfileDrawer({
                   {' · '}
                   {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
                 </div>
-                <DiscoveryBadgeGrid progress={regionProgress} />
+                <DiscoveryBadgeGrid progress={regionProgress} onMaakondFocus={onMaakondFocus} />
               </>
             )}
           </div>

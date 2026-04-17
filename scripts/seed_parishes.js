@@ -274,6 +274,53 @@ function main() {
     const outPath = join(dirname(fileURLToPath(import.meta.url)), 'parishes_seed.sql');
     writeFileSync(outPath, lines.join('\n'), 'utf8');
     console.log(`Wrote ${outPath} (${stationAssignments.length} stations matched, ${unmatched.length} unmatched).`);
+
+    // Emit a thin GeoJSON with just the 15 maakond outlines + bbox for the
+    // Avastuskaart client layer. Parish polygons are intentionally omitted —
+    // would be ~10x the payload and we don't need parish borders rendered.
+    // Coords rounded to 3 decimals (~110 m) + Douglas-Peucker-ish dedup of
+    // near-collinear points to cut the payload down from ~1 MB to ~100 KB
+    // without visibly degrading national-scale borders.
+    const round = (n) => Math.round(n * 1000) / 1000;
+    function simplifyRing(ring, tol) {
+      // Drop points that are within `tol` degrees of the previous kept point.
+      // Trivial but effective for 1:1M-scale rendering.
+      if (ring.length < 3) return ring;
+      const out = [ring[0]];
+      for (let i = 1; i < ring.length - 1; i++) {
+        const [lon, lat] = ring[i];
+        const [plon, plat] = out[out.length - 1];
+        if (Math.abs(lon - plon) > tol || Math.abs(lat - plat) > tol) out.push(ring[i]);
+      }
+      out.push(ring[ring.length - 1]);
+      return out;
+    }
+    const maakondGeo = {
+      type: 'FeatureCollection',
+      features: sortedMaakonnad.map(m => {
+        let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+        const coordinates = m.rings.map(ring => {
+          const rounded = ring.map(([lon, lat]) => {
+            if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon;
+            if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+            return [round(lon), round(lat)];
+          });
+          return simplifyRing(rounded, 0.0015);
+        });
+        return {
+          type: 'Feature',
+          properties: {
+            id: m.smallintId,
+            name: m.name,
+            bbox: [round(minLon), round(minLat), round(maxLon), round(maxLat)],
+          },
+          geometry: { type: 'MultiPolygon', coordinates: coordinates.map(r => [r]) },
+        };
+      }),
+    };
+    const geoPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'maakonnad.geojson');
+    writeFileSync(geoPath, JSON.stringify(maakondGeo), 'utf8');
+    console.log(`Wrote ${geoPath} (${maakondGeo.features.length} maakond polygons).`);
   });
 }
 

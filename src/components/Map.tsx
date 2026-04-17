@@ -243,6 +243,76 @@ function MapClickDelegate({
   return null;
 }
 
+// Avastuskaart overlay: dim outline around every maakond, a thicker
+// primary-colored outline around the focused one, and a fly-to on focus
+// change. Lives under all markers (pane "overlayPane") so dots/pills stay
+// clickable. `interactive: false` keeps mouse events passing through.
+function DiscoveryRegionsLayer({
+  geo,
+  focusedMaakondId,
+  isLight,
+}: {
+  geo: any | null;
+  focusedMaakondId: number | null;
+  isLight: boolean;
+}) {
+  const map = useMap();
+  const layerRef = useRef<any>(null);
+
+  const focusedStyle = useMemo(() => ({
+    color: '#3b82f6',
+    weight: 2.5,
+    opacity: 0.95,
+    fillColor: '#3b82f6',
+    fillOpacity: 0.06,
+  }), []);
+
+  const baseStyle = useMemo(() => ({
+    color: isLight ? '#1e3a8a' : '#60a5fa',
+    weight: 1,
+    opacity: isLight ? 0.4 : 0.5,
+    fillOpacity: 0,
+  }), [isLight]);
+
+  useEffect(() => {
+    if (!geo) return;
+    const layer = L.geoJSON(geo, {
+      interactive: false,
+      style: baseStyle,
+    });
+    layer.addTo(map);
+    layerRef.current = layer;
+    return () => {
+      map.removeLayer(layer);
+      layerRef.current = null;
+    };
+  }, [geo, map, baseStyle]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!layer) return;
+    layer.eachLayer((sublayer: any) => {
+      const isFocused = sublayer.feature?.properties?.id === focusedMaakondId;
+      sublayer.setStyle(isFocused ? focusedStyle : baseStyle);
+      if (isFocused) sublayer.bringToFront();
+    });
+  }, [focusedMaakondId, baseStyle, focusedStyle]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!layer || focusedMaakondId == null) return;
+    layer.eachLayer((sublayer: any) => {
+      if (sublayer.feature?.properties?.id !== focusedMaakondId) return;
+      const bounds = sublayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [60, 60], animate: true, duration: 0.8 });
+      }
+    });
+  }, [focusedMaakondId, map]);
+
+  return null;
+}
+
 function StationPanController({ station, hasPriceLabels }: { station: any | null, hasPriceLabels: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -497,6 +567,9 @@ export function Map({
   onUserLocationChange,
   showDiscoveryMap = false,
   contributedStationIds,
+  focusedMaakondId = null,
+  focusedMaakondStationIds = null,
+  maakondGeo = null,
 }: {
   stations: any[],
   prices: any[],
@@ -517,7 +590,23 @@ export function Map({
   onUserLocationChange?: (loc: { lat: number; lon: number } | null) => void,
   showDiscoveryMap?: boolean,
   contributedStationIds?: Set<string>,
+  focusedMaakondId?: number | null,
+  focusedMaakondStationIds?: Set<string> | null,
+  maakondGeo?: any | null,
 }) {
+  // In discovery mode the "cheapest highlight" would collapse the map to a
+  // single dot, which breaks the whole footprint view. Force it off here
+  // rather than reaching back up the prop chain, so other modes keep the
+  // user's toggle intact.
+  const effectiveHighlightCheapest = showDiscoveryMap ? false : highlightCheapest;
+
+  // When a maakond is focused, restrict the working set so all downstream
+  // memos (pill candidates, dot lists, cluster markers) re-derive against
+  // only that maakond's stations. Cheaper than post-filtering five layers.
+  const workingStations = useMemo(() => {
+    if (!showDiscoveryMap || !focusedMaakondStationIds) return stations;
+    return stations.filter(s => focusedMaakondStationIds.has(String(s.id)));
+  }, [stations, showDiscoveryMap, focusedMaakondStationIds]);
   // Keep the module-level ref read by the discovery cluster icon function in
   // sync with the latest prop — iconCreateFunction is cached inside MCG so we
   // can't close over props the normal React way.
@@ -530,9 +619,9 @@ export function Map({
 
   const stationsById = useMemo(() => {
     const m: NativeMap<string, any> = new NativeMap();
-    for (const s of stations) m.set(String(s.id), s);
+    for (const s of workingStations) m.set(String(s.id), s);
     return m;
-  }, [stations]);
+  }, [workingStations]);
 
   const stationsByIdRef = useRef(stationsById);
   stationsByIdRef.current = stationsById;
@@ -571,7 +660,7 @@ export function Map({
   // isFresh is carried for pill styling. null if no showable price for that fuel.
   const freshPriceByStationFuel = useMemo(() => {
     const map: NativeMap<string, NativeMap<string, { price: number; isFresh: boolean }>> = new NativeMap();
-    stations.forEach(station => {
+    workingStations.forEach(station => {
       const inner: NativeMap<string, { price: number; isFresh: boolean }> = new NativeMap();
       FUEL_TYPES_ALL.forEach(ft => {
         const recent = prices
@@ -587,7 +676,7 @@ export function Map({
       if (inner.size > 0) map.set(station.id, inner);
     });
     return map;
-  }, [stations, prices, allVotes, showOnlyFresh, showStaleDemo]);
+  }, [workingStations, prices, allVotes, showOnlyFresh, showStaleDemo]);
 
   // Top-N cheapest stations per fuel type within the current viewport bounds.
   // Zoom-gated: when no fuel filter and zoomed out (<12), collapse each station's
@@ -598,7 +687,7 @@ export function Map({
 
     fuels.forEach(ft => {
       const candidates: { stationId: string; brand: string; gross: number; net: number; isFresh: boolean; discounted: boolean }[] = [];
-      stations.forEach(station => {
+      workingStations.forEach(station => {
         if (viewportBounds && !viewportBounds.contains([station.latitude, station.longitude])) return;
         const data = freshPriceByStationFuel.get(station.id)?.get(ft);
         if (!data) return;
@@ -638,24 +727,24 @@ export function Map({
     }
 
     return result;
-  }, [stations, freshPriceByStationFuel, focusedFuelType, viewportBounds, loyaltyDiscounts, applyLoyalty, zoomLevel]);
+  }, [workingStations, freshPriceByStationFuel, focusedFuelType, viewportBounds, loyaltyDiscounts, applyLoyalty, zoomLevel]);
 
   // Split markers: stations that earned pill rows get pills; others get dots.
   // `highlightCheapest` (when focused fuel): keep only the single cheapest station.
   const pillStations: { station: any; rows: PillRow[] }[] = [];
   const dotStations: { station: any; isFresh: boolean; isCheapest: boolean; hasFuelData: boolean }[] = [];
 
-  stations.forEach(station => {
+  workingStations.forEach(station => {
     const rows = pillRowsByStation.get(station.id);
     if (rows && rows.length > 0) {
-      if (highlightCheapest && focusedFuelType && !rows[0].isCheapest) {
+      if (effectiveHighlightCheapest && focusedFuelType && !rows[0].isCheapest) {
         // hide non-cheapest in highlight mode
         return;
       }
       pillStations.push({ station, rows });
       return;
     }
-    if (highlightCheapest && focusedFuelType) return;
+    if (effectiveHighlightCheapest && focusedFuelType) return;
     // Determine dot freshness based on most relevant fuel data (for brand/info styling)
     const fuelMap = freshPriceByStationFuel.get(station.id);
     const hasFuelData = !!fuelMap && fuelMap.size > 0;
@@ -933,8 +1022,19 @@ export function Map({
           </>
         )}
 
-        {/* Layer 3: Price pills — always on top, never clustered */}
-        {visiblePillStations.map(({ station, rows }) => {
+        {/* Region outlines — drawn beneath markers via overlayPane */}
+        {showDiscoveryMap && (
+          <DiscoveryRegionsLayer
+            geo={maakondGeo}
+            focusedMaakondId={focusedMaakondId}
+            isLight={isLight}
+          />
+        )}
+
+        {/* Layer 3: Price pills — always on top, never clustered.
+            Hidden in discovery mode: the point of Avastuskaart is the
+            footprint, and price pills would drown out the dot split. */}
+        {!showDiscoveryMap && visiblePillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
           const showFuelLabel = !focusedFuelType;
           const rowsHash = rows.map(r => `${r.fuelType},${r.price},${r.grossPrice},${r.isFresh ? 1 : 0},${r.isCheapest ? 1 : 0},${r.discounted ? 1 : 0}`).join(';');

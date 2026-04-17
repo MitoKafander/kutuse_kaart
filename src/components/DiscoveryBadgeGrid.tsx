@@ -7,7 +7,13 @@ import type { RegionProgress } from '../hooks/useRegionProgress';
 // ProfileDrawer (emoji + accent color + subtle border) so the two feel
 // like they're from the same "game" vocabulary.
 
-export function DiscoveryBadgeGrid({ progress }: { progress: RegionProgress }) {
+export function DiscoveryBadgeGrid({
+  progress,
+  onMaakondFocus,
+}: {
+  progress: RegionProgress;
+  onMaakondFocus?: (maakondId: number) => void;
+}) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (!progress.perMaakond.length) {
@@ -36,7 +42,13 @@ export function DiscoveryBadgeGrid({ progress }: { progress: RegionProgress }) {
           return (
             <button
               key={maakond.id}
-              onClick={() => setExpandedId(isExpanded ? null : maakond.id)}
+              onClick={() => {
+                // Tile click does double duty: focus the map on this
+                // maakond AND expand the parish accordion inline, so the
+                // user can see the list while the map zooms in.
+                if (hasStations && onMaakondFocus) onMaakondFocus(maakond.id);
+                setExpandedId(isExpanded ? null : maakond.id);
+              }}
               style={{
                 position: 'relative',
                 padding: '10px 8px',
