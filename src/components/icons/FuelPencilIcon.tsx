@@ -22,10 +22,10 @@ export function FuelPencilIcon({ size = 22, style }: Props) {
       <path d="M6.5 27 V10 a3.5 3.5 0 0 1 3.5 -3.5 h4 a3.5 3.5 0 0 1 3.5 3.5 V27 Z" />
       <path d="M5 27 h14.5" />
       <rect x="8.5" y="10" width="7" height="5.5" rx="0.4" />
-      <g transform="rotate(-45 24 17)">
-        <rect x="20" y="16.7" width="8" height="2.6" rx="0.4" />
-        <path d="M20 16.7 L18 18 L20 19.3 Z" />
-        <path d="M27 16.7 v2.6" />
+      <g transform="rotate(-45 24 15)">
+        <rect x="18" y="15.5" width="10" height="3" rx="0.5" />
+        <path d="M18 15.5 L15.5 17 L18 18.5 Z" />
+        <path d="M27 15.5 v3" />
       </g>
     </svg>
   );
