@@ -873,12 +873,14 @@ export function Map({
 
   // Discovery mode splits dots by "has this user ever contributed here"
   // instead of by freshness. Both groups feed the same cluster layer so arc
-  // fills represent contributed-vs-total within the cluster.
+  // fills represent contributed-vs-total within the cluster. Source from
+  // workingStations directly — the pill/dot split above would drop stations
+  // with fresh prices at zoom-in, and pills are hidden in discovery mode.
   const contributedSet = contributedStationIds || new Set<string>();
   const discoveryDots = showDiscoveryMap
-    ? dotStations.map(d => ({
-        station: d.station,
-        isContributed: d.station.country === 'EE' && contributedSet.has(String(d.station.id)),
+    ? workingStations.map(station => ({
+        station,
+        isContributed: station.country === 'EE' && contributedSet.has(String(station.id)),
       }))
     : [];
 
