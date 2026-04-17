@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -131,6 +131,7 @@ export function ProfileDrawer({
   onDisplayNameChange,
   onOpenPrivacy,
   onOpenTerms,
+  onOpenFeedback,
   showDiscoveryMap,
   onShowDiscoveryMapChange,
   regionProgress,
@@ -173,6 +174,7 @@ export function ProfileDrawer({
   onDisplayNameChange: (name: string) => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
+  onOpenFeedback?: () => void;
   showDiscoveryMap: boolean;
   onShowDiscoveryMapChange: (show: boolean) => void;
   regionProgress: RegionProgress;
@@ -986,6 +988,26 @@ export function ProfileDrawer({
           )}
 
         </div>
+
+        {/* Feedback CTA — same tab as Privaatsus/Tingimused so it lives with
+            other "meta" links rather than competing with map preferences. */}
+        {activeTab === 'settings' && onOpenFeedback && (
+          <button
+            onClick={() => { onOpenFeedback(); onClose(); }}
+            style={{
+              marginTop: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '12px',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              border: '1px solid var(--color-surface-border)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.95rem', fontWeight: '500', cursor: 'pointer',
+            }}
+          >
+            <MessageSquare size={18} /> Saada tagasisidet
+          </button>
+        )}
 
         {/* Legal links — surface on the Seaded tab alongside other preferences */}
         {activeTab === 'settings' && (onOpenPrivacy || onOpenTerms) && (

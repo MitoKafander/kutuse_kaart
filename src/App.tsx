@@ -7,6 +7,7 @@ import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
 import { PrivacyModal } from './components/PrivacyModal';
 import { TermsModal } from './components/TermsModal';
+import { FeedbackModal } from './components/FeedbackModal';
 import { GdprBanner } from './components/GdprBanner';
 import { FilterDrawer } from './components/FilterDrawer';
 import { ProfileDrawer } from './components/ProfileDrawer';
@@ -73,6 +74,7 @@ function App() {
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
   // Data state
   const [stations, setStations] = useState<any[]>([]);
@@ -183,12 +185,13 @@ function App() {
     if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
     if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
+    if (isFeedbackOpen) list.push({ id: 'feedback', close: () => setIsFeedbackOpen(false) });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -964,6 +967,7 @@ function App() {
         onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
         showDiscoveryMap={showDiscoveryMap}
         onShowDiscoveryMapChange={handleShowDiscoveryMapChange}
         regionProgress={regionProgress}
@@ -1066,6 +1070,12 @@ function App() {
         isOpen={isTermsOpen}
         onClose={() => setIsTermsOpen(false)}
         onOpenPrivacy={() => { setIsTermsOpen(false); setIsPrivacyOpen(true); }}
+      />
+
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        session={session}
       />
 
       <GdprBanner

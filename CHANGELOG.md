@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - User feedback channel - 2026-04-17
+
+### Added ✨
+- 🟢 **In-app user feedback** (`migrations/schema_phase33_feedback.sql`, `src/components/FeedbackModal.tsx`, wired into `src/components/ProfileDrawer.tsx` + `src/App.tsx`): new "Saada tagasisidet" button on the Seaded tab opens a minimal textarea modal. Submissions land in a new `feedback` Supabase table (insert-only from clients — RLS has no SELECT policy, so triage happens via the Supabase SQL editor). Attaches `user_id` when authed, captures the `user_agent` for platform-specific debugging. DB-layer `CHECK (char_length BETWEEN 3 AND 2000)` blocks dump attacks. PostHog events: `feedback_submitted` / `feedback_submit_failed`.
+
+### Key Decisions
+- **Supabase table over PostHog Surveys / GitHub Issues**: considered a PostHog survey (zero new infra but vendor-owned data + no public roadmap feel) and a hybrid "textarea POSTs to Vercel → creates GitHub Issue" (free triage but bot-PAT + spam surface). Went with the Supabase path because it owns the data, works for anon users, leaks no PAT, and the triage UI (the SQL editor) already exists in the stack.
+- **No SELECT RLS policy at all** over a more elaborate admin view: you already use the Supabase dashboard daily for other tables — a custom admin UI would be pure ceremony until volume justifies it.
+
+---
+
 ## [Unreleased] - Sentry inbox cleanup - 2026-04-17
 
 ### Fixed 🐛
