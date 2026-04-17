@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Sentry inbox cleanup - 2026-04-17
+
+### Fixed 🐛
+- 🟡 **AI-scan body-read failures no longer escape the retry band** (`src/components/ManualPriceModal.tsx`): iOS Safari can truncate the response stream *after* the fetch headers arrive, throwing `TypeError: Load failed` inside `res.json()`. That was outside the inner try/catch, so it bypassed retries and surfaced as a raw Sentry error. Wrapped the body read in the same continue/NETWORK fallback the fetch already uses. Root cause of 7-event KYTS-WEB-7 cluster.
+- 🟢 **Safari stale-chunk MIME variant now auto-reloads** (`src/App.tsx`, `src/main.tsx`): when Vercel serves `index.html` for a 404'd hashed asset after a deploy, Safari rejects the HTML with `'text/html' is not a valid JavaScript MIME type`. The existing `lazyWithReload` regex and Sentry `ignoreErrors` only caught the Chromium/Firefox wording (`Failed to fetch dynamically imported module`). Extended both with the Safari variant so affected iOS users get the same one-time auto-reload instead of a broken component. Root cause of KYTS-WEB-A and KYTS-WEB-C.
+
+### Changed 🔧
+- 🟢 **Retry-exhausted NETWORK/TIMEOUT errors no longer go to Sentry** (`src/components/ManualPriceModal.tsx`): extended the capture-skip set from `{QUOTA_EXCEEDED, AI_UPSTREAM_BUSY}` to also include `NETWORK` and `TIMEOUT`. Both are already retried (2 attempts) and surface user-facing error copy; a Sentry row for each client-side connection drop is noise, not signal. PostHog `ai_scan_failure` still tracks these for product analytics.
+
+### Key Decisions
+- **Fix root causes over ignoreErrors shotgun**: considered adding `/Load failed/i` globally to `ignoreErrors`, rejected it — too broad, would hide real Safari bugs in other code paths (Supabase calls, etc). Caught the symptom at the AI-scan call site where the retry logic already lives, so the classification stays localized.
+
+---
+
 ## [Unreleased] - Clearable fuel preference - 2026-04-17
 
 ### Changed 🔧

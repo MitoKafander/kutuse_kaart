@@ -141,7 +141,17 @@ export function ManualPriceModal({
       }
       clearTimeout(timer);
 
-      if (res.ok) { capture('ai_scan_success'); return res.json(); }
+      if (res.ok) {
+        capture('ai_scan_success');
+        // Wrap body-read: iOS Safari can truncate the response stream and throw
+        // "TypeError: Load failed" here, which otherwise escapes the fetch
+        // try/catch above and surfaces as a raw Sentry error.
+        try { return await res.json(); }
+        catch {
+          if (attempt < MAX_RETRIES) continue;
+          throw new Error('NETWORK');
+        }
+      }
       if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
       if (res.status === 503 && attempt < MAX_RETRIES) continue;
       if (res.status === 503) throw new Error('AI_UPSTREAM_BUSY');
@@ -313,9 +323,11 @@ export function ManualPriceModal({
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
-      // Skip Sentry noise for known user-facing states: quota and transient
-      // Gemini outages are already-handled, retried, and not actionable.
-      if (error?.message !== 'QUOTA_EXCEEDED' && error?.message !== 'AI_UPSTREAM_BUSY') {
+      // Skip Sentry noise for known user-facing states: quota, transient Gemini
+      // outages, and retry-exhausted client network drops. All four already
+      // surface UX copy and are not actionable beyond "connection was bad."
+      const skipSentry = new Set(['QUOTA_EXCEEDED', 'AI_UPSTREAM_BUSY', 'NETWORK', 'TIMEOUT']);
+      if (!skipSentry.has(error?.message)) {
         Sentry.captureException(error, {
           tags: { feature: 'ai-scan' },
           extra: { stationHint: stationNameHint },

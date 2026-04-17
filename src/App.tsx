@@ -30,7 +30,7 @@ function lazyWithReload<T extends React.ComponentType<any>>(factory: () => Promi
     try { return await factory(); }
     catch (err: any) {
       const msg = String(err?.message || '');
-      if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(msg)
+      if (/Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(msg)
           && !sessionStorage.getItem('kyts:chunk-reloaded')) {
         sessionStorage.setItem('kyts:chunk-reloaded', '1');
         window.location.reload();

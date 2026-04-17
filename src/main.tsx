@@ -19,6 +19,9 @@ if (sentryDsn) {
     ignoreErrors: [
       /Failed to fetch dynamically imported module/i,
       /Importing a module script failed/i,
+      // Safari variant of the same stale-chunk symptom: Vercel serves index.html
+      // for a 404'd hashed asset, Safari rejects the HTML at MIME-type parse.
+      /is not a valid JavaScript MIME type/i,
     ],
     beforeSend(event, hint) {
       const err: any = hint?.originalException;
