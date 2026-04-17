@@ -53,7 +53,7 @@ const STEPS: Step[] = [
   {
     icon: <UserPlus size={44} color="var(--color-primary)" />,
     title: 'Loo konto',
-    body: 'Sisselogimine avab hindade raporteerimise, hääletamise, lemmikjaamad, edetabeli ja kliendikaardi-soodustused. Su eelistused sünkitakse seadmete vahel. Vajuta profiili ikoonile üleval paremal.',
+    body: 'Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja Avastuskaardi edenemise. Eelistused sünkitakse seadmete vahel. Vajuta profiili ikoonile üleval paremal.',
   },
 ];
 
