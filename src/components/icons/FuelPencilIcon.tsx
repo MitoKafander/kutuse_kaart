@@ -11,10 +11,10 @@ export function FuelPencilIcon({ size = 22, style }: Props) {
       aria-hidden="true"
       width={size}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="0 0 40 40"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={2.25}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={style}
@@ -22,10 +22,10 @@ export function FuelPencilIcon({ size = 22, style }: Props) {
       <path d="M6.5 27 V10 a3.5 3.5 0 0 1 3.5 -3.5 h4 a3.5 3.5 0 0 1 3.5 3.5 V27 Z" />
       <path d="M5 27 h14.5" />
       <rect x="8.5" y="10" width="7" height="5.5" rx="0.4" />
-      <g transform="rotate(-45 24 15)">
-        <rect x="18" y="15.5" width="10" height="3" rx="0.5" />
-        <path d="M18 15.5 L15.5 17 L18 18.5 Z" />
-        <path d="M27 15.5 v3" />
+      <g transform="translate(20 24) rotate(-45)">
+        <rect x="3" y="-3" width="20" height="6" rx="1" />
+        <path d="M3 -3 L-2 0 L3 3 Z" />
+        <path d="M21 -3 v6" />
       </g>
     </svg>
   );
