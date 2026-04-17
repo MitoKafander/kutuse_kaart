@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
@@ -384,6 +384,99 @@ function DiscoveryParishLayer({
   return null;
 }
 
+// Labels for maakonnad / vallad on the Avastuskaart. A label renders only
+// when the text comfortably fits inside the feature's bbox at the current
+// zoom, which keeps country-scale views uncluttered (too small → hidden)
+// and surfaces the name as the user zooms into a region (bbox grows →
+// label fits). Irregular shapes use bbox as a rough proxy — fine enough
+// given the 30% padding margin below.
+function RegionLabelsLayer({
+  geo,
+  isLight,
+  fontSize,
+  fontWeight,
+  featureVisible,
+  widthRatio,
+  heightRatio,
+}: {
+  geo: any | null;
+  isLight: boolean;
+  fontSize: number;
+  fontWeight: number;
+  featureVisible?: (f: any, zoom: number) => boolean;
+  widthRatio: number;
+  heightRatio: number;
+}) {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const fire = () => setTick(t => t + 1);
+    map.on('zoomend', fire);
+    map.on('moveend', fire);
+    return () => {
+      map.off('zoomend', fire);
+      map.off('moveend', fire);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (!geo) return;
+    const group = L.layerGroup();
+    group.addTo(map);
+    layerRef.current = group;
+    return () => {
+      map.removeLayer(group);
+      layerRef.current = null;
+    };
+  }, [geo, map]);
+
+  useEffect(() => {
+    const group = layerRef.current;
+    if (!group || !geo) return;
+    group.clearLayers();
+
+    const zoom = map.getZoom();
+    const viewBounds = map.getBounds();
+    const textColor = isLight ? '#0f172a' : '#f1f5f9';
+    const haloColor = isLight ? 'rgba(255,255,255,0.95)' : 'rgba(15,23,42,0.95)';
+
+    for (const f of geo.features || []) {
+      const bb = f.properties?.bbox;
+      const name: string | undefined = f.properties?.name;
+      if (!bb || !name) continue;
+      if (featureVisible && !featureVisible(f, zoom)) continue;
+
+      const [minLng, minLat, maxLng, maxLat] = bb;
+      const featBounds = L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
+      if (!viewBounds.intersects(featBounds)) continue;
+
+      const pxSW = map.latLngToContainerPoint([minLat, minLng]);
+      const pxNE = map.latLngToContainerPoint([maxLat, maxLng]);
+      const pxWidth = Math.abs(pxNE.x - pxSW.x);
+      const pxHeight = Math.abs(pxSW.y - pxNE.y);
+
+      const approxWidth = name.length * fontSize * 0.56 + 6;
+      const approxHeight = fontSize + 2;
+
+      if (approxWidth > pxWidth * widthRatio) continue;
+      if (approxHeight > pxHeight * heightRatio) continue;
+
+      const center: L.LatLngExpression = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+      const icon = L.divIcon({
+        className: 'region-label',
+        html: `<span style="color:${textColor};font-size:${fontSize}px;font-weight:${fontWeight};letter-spacing:0.2px;text-shadow:0 0 3px ${haloColor},0 0 3px ${haloColor},0 0 3px ${haloColor};white-space:nowrap;user-select:none;pointer-events:none;">${name}</span>`,
+        iconSize: [approxWidth, approxHeight],
+        iconAnchor: [approxWidth / 2, approxHeight / 2],
+      });
+      L.marker(center, { icon, interactive: false, keyboard: false }).addTo(group);
+    }
+  }, [geo, tick, isLight, map, featureVisible, fontSize, fontWeight, widthRatio, heightRatio]);
+
+  return null;
+}
+
 function StationPanController({ station, hasPriceLabels }: { station: any | null, hasPriceLabels: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -672,6 +765,12 @@ export function Map({
   // rather than reaching back up the prop chain, so other modes keep the
   // user's toggle intact.
   const effectiveHighlightCheapest = showDiscoveryMap ? false : highlightCheapest;
+
+  const parishLabelVisible = useCallback(
+    (f: any, z: number) =>
+      z >= 9 || (focusedMaakondId != null && f.properties?.maakond_id === focusedMaakondId),
+    [focusedMaakondId]
+  );
 
   // When a maakond is focused, restrict the working set so all downstream
   // memos (pill candidates, dot lists, cluster markers) re-derive against
@@ -1112,6 +1211,23 @@ export function Map({
               geo={maakondGeo}
               focusedMaakondId={focusedMaakondId}
               isLight={isLight}
+            />
+            <RegionLabelsLayer
+              geo={parishGeo}
+              isLight={isLight}
+              fontSize={11}
+              fontWeight={500}
+              widthRatio={0.75}
+              heightRatio={0.55}
+              featureVisible={parishLabelVisible}
+            />
+            <RegionLabelsLayer
+              geo={maakondGeo}
+              isLight={isLight}
+              fontSize={13}
+              fontWeight={700}
+              widthRatio={0.6}
+              heightRatio={0.4}
             />
           </>
         )}
