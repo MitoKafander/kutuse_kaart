@@ -321,6 +321,39 @@ function main() {
     const geoPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'maakonnad.geojson');
     writeFileSync(geoPath, JSON.stringify(maakondGeo), 'utf8');
     console.log(`Wrote ${geoPath} (${maakondGeo.features.length} maakond polygons).`);
+
+    // Parish outlines — coarser tolerance than maakonnad (0.0025 vs 0.0015)
+    // since parishes are rendered at closer zooms and there are 5× as many
+    // of them. Same rounding strategy keeps the payload tight.
+    const parishGeo = {
+      type: 'FeatureCollection',
+      features: parishes
+        .filter(p => p.maakondId != null)
+        .map(p => {
+          let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+          const coordinates = p.rings.map(ring => {
+            const rounded = ring.map(([lon, lat]) => {
+              if (lon < minLon) minLon = lon; if (lon > maxLon) maxLon = lon;
+              if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+              return [round(lon), round(lat)];
+            });
+            return simplifyRing(rounded, 0.0025);
+          });
+          return {
+            type: 'Feature',
+            properties: {
+              id: p.id,
+              maakond_id: p.maakondId,
+              name: p.name,
+              bbox: [round(minLon), round(minLat), round(maxLon), round(maxLat)],
+            },
+            geometry: { type: 'MultiPolygon', coordinates: coordinates.map(r => [r]) },
+          };
+        }),
+    };
+    const parishGeoPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'parishes.geojson');
+    writeFileSync(parishGeoPath, JSON.stringify(parishGeo), 'utf8');
+    console.log(`Wrote ${parishGeoPath} (${parishGeo.features.length} parish polygons).`);
   });
 }
 

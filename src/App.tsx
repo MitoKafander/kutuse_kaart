@@ -145,7 +145,9 @@ function App() {
   // Lazy-loaded on first toggle-ON; cached in the bundle hash so repeat
   // toggles are instant without a refetch.
   const [maakondGeo, setMaakondGeo] = useState<any | null>(null);
+  const [parishGeo, setParishGeo] = useState<any | null>(null);
   const maakondGeoFetchRef = useRef(false);
+  const parishGeoFetchRef = useRef(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mapStyle);
@@ -398,6 +400,17 @@ function App() {
       .catch(() => { /* non-critical */ });
   }, [showDiscoveryMap]);
 
+  // Parish outlines are bigger (~150 KB gzipped) than maakonnad so we fetch
+  // them separately and the map layer hides them until zoom ≥ 9 regardless.
+  useEffect(() => {
+    if (!showDiscoveryMap || parishGeoFetchRef.current) return;
+    parishGeoFetchRef.current = true;
+    fetch('/parishes.geojson')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data) setParishGeo(data); })
+      .catch(() => { /* non-critical */ });
+  }, [showDiscoveryMap]);
+
   // station.id -> parish.id, only for EE stations with a parish_id.
   // `Map` is shadowed by the Map component import — use globalThis.Map.
   const stationParishMap = useMemo(() => {
@@ -518,6 +531,7 @@ function App() {
         focusedMaakondId={focusedMaakondId}
         focusedMaakondStationIds={focusedMaakondStationIds}
         maakondGeo={maakondGeo}
+        parishGeo={parishGeo}
       />
 
       {showDiscoveryMap && (

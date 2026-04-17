@@ -313,6 +313,77 @@ function DiscoveryRegionsLayer({
   return null;
 }
 
+// Parish outlines overlay. Always loaded with the layer, but visibility is
+// toggled by zoom: at country-scale zoom (<9) the 78 parish outlines add
+// too much noise on top of the maakond outlines, so we hide them via Leaflet
+// pane opacity and only fade them in as the user zooms closer. If a maakond
+// is focused we still want to see its internal parish structure even if the
+// user zoomed back out a bit, so we keep parishes of the focused maakond
+// visible regardless of zoom.
+function DiscoveryParishLayer({
+  geo,
+  focusedMaakondId,
+  zoom,
+  isLight,
+}: {
+  geo: any | null;
+  focusedMaakondId: number | null;
+  zoom: number;
+  isLight: boolean;
+}) {
+  const map = useMap();
+  const layerRef = useRef<any>(null);
+
+  const hiddenStyle = useMemo(() => ({ opacity: 0, fillOpacity: 0, weight: 0 }), []);
+  const dimStyle = useMemo(() => ({
+    color: isLight ? '#475569' : '#94a3b8',
+    weight: 0.6,
+    opacity: 0.35,
+    fillOpacity: 0,
+    dashArray: '2,3',
+  }), [isLight]);
+  const focusedParishStyle = useMemo(() => ({
+    color: isLight ? '#1e40af' : '#93c5fd',
+    weight: 0.9,
+    opacity: 0.7,
+    fillOpacity: 0,
+    dashArray: '2,3',
+  }), [isLight]);
+
+  useEffect(() => {
+    if (!geo) return;
+    const layer = L.geoJSON(geo, {
+      interactive: false,
+      style: hiddenStyle,
+    });
+    layer.addTo(map);
+    layerRef.current = layer;
+    return () => {
+      map.removeLayer(layer);
+      layerRef.current = null;
+    };
+  }, [geo, map, hiddenStyle]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!layer) return;
+    const showAtZoom = zoom >= 9;
+    layer.eachLayer((sublayer: any) => {
+      const props = sublayer.feature?.properties;
+      const inFocused = focusedMaakondId != null && props?.maakond_id === focusedMaakondId;
+      if (inFocused) {
+        sublayer.setStyle(focusedParishStyle);
+      } else if (showAtZoom) {
+        sublayer.setStyle(dimStyle);
+      } else {
+        sublayer.setStyle(hiddenStyle);
+      }
+    });
+  }, [zoom, focusedMaakondId, dimStyle, focusedParishStyle, hiddenStyle]);
+
+  return null;
+}
+
 function StationPanController({ station, hasPriceLabels }: { station: any | null, hasPriceLabels: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -570,6 +641,7 @@ export function Map({
   focusedMaakondId = null,
   focusedMaakondStationIds = null,
   maakondGeo = null,
+  parishGeo = null,
 }: {
   stations: any[],
   prices: any[],
@@ -593,6 +665,7 @@ export function Map({
   focusedMaakondId?: number | null,
   focusedMaakondStationIds?: Set<string> | null,
   maakondGeo?: any | null,
+  parishGeo?: any | null,
 }) {
   // In discovery mode the "cheapest highlight" would collapse the map to a
   // single dot, which breaks the whole footprint view. Force it off here
@@ -1024,11 +1097,19 @@ export function Map({
 
         {/* Region outlines — drawn beneath markers via overlayPane */}
         {showDiscoveryMap && (
-          <DiscoveryRegionsLayer
-            geo={maakondGeo}
-            focusedMaakondId={focusedMaakondId}
-            isLight={isLight}
-          />
+          <>
+            <DiscoveryParishLayer
+              geo={parishGeo}
+              focusedMaakondId={focusedMaakondId}
+              zoom={zoomLevel}
+              isLight={isLight}
+            />
+            <DiscoveryRegionsLayer
+              geo={maakondGeo}
+              focusedMaakondId={focusedMaakondId}
+              isLight={isLight}
+            />
+          </>
         )}
 
         {/* Layer 3: Price pills — always on top, never clustered.
