@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Trophy, Star, Compass } from 'lucide-react';
+import { X, Trophy, Star, Compass, Map as MapIcon } from 'lucide-react';
 import { supabase } from '../supabase';
 
 type Period = '7d' | '30d' | 'all';
@@ -20,6 +20,7 @@ type DiscoveryRow = {
   maakonnad_completed: number;
   parishes_completed: number;
   stations_contributed: number;
+  share_discovery_publicly: boolean;
 };
 
 type Row = ActivityRow | DiscoveryRow;
@@ -44,10 +45,12 @@ export function LeaderboardDrawer({
   isOpen,
   onClose,
   currentUserId,
+  onViewFootprint,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentUserId?: string | null;
+  onViewFootprint?: (userId: string, displayName: string) => void;
 }) {
   const [dimension, setDimension] = useState<Dimension>('activity');
   const [period, setPeriod] = useState<Period>('30d');
@@ -75,11 +78,15 @@ export function LeaderboardDrawer({
     } else {
       supabase
         .from('v_discovery_leaderboard')
-        .select('user_id, display_name, maakonnad_completed, parishes_completed, stations_contributed')
+        .select('user_id, display_name, maakonnad_completed, parishes_completed, stations_contributed, share_discovery_publicly')
         .limit(100)
         .then(({ data }) => {
           if (cancelled) return;
-          const mapped: DiscoveryRow[] = (data ?? []).map((r: any) => ({ kind: 'discovery', ...r }));
+          const mapped: DiscoveryRow[] = (data ?? []).map((r: any) => ({
+            kind: 'discovery',
+            ...r,
+            share_discovery_publicly: !!r.share_discovery_publicly,
+          }));
           // View is pre-ordered, but sort client-side defensively.
           mapped.sort((a, b) =>
             b.maakonnad_completed - a.maakonnad_completed ||
@@ -208,6 +215,26 @@ export function LeaderboardDrawer({
                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
                   {r.kind === 'activity' ? activityScore(r).toFixed(1) : `${r.maakonnad_completed}/15`}
                 </div>
+                {r.kind === 'discovery' && r.share_discovery_publicly && !isMe && onViewFootprint && (
+                  <button
+                    onClick={() => onViewFootprint(r.user_id, r.display_name || 'Anonüümne')}
+                    title="Vaata selle kasutaja avastuskaarti"
+                    style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-surface-border)',
+                      color: 'var(--color-primary)',
+                      borderRadius: 8,
+                      padding: '6px 8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.72rem',
+                    }}
+                  >
+                    <MapIcon size={13} /> Vaata
+                  </button>
+                )}
               </div>
             );
           })}

@@ -1,4 +1,4 @@
-import { Compass, X } from 'lucide-react';
+import { Compass, Eye, X } from 'lucide-react';
 
 // Thin pill that sits above the FAB stack whenever Avastuskaart is on.
 // Its job is twofold: make it obvious that the map is in a special mode
@@ -10,13 +10,16 @@ export function DiscoveryBanner({
   focusedMaakondEmoji,
   onClearFocus,
   onTurnOff,
+  viewedUserName,
 }: {
   focusedMaakondName: string | null;
   focusedMaakondEmoji: string | null;
   onClearFocus: () => void;
   onTurnOff: () => void;
+  viewedUserName?: string | null;
 }) {
   const hasFocus = !!focusedMaakondName;
+  const isViewing = !!viewedUserName;
   return (
     <div
       className="glass-panel"
@@ -30,26 +33,32 @@ export function DiscoveryBanner({
         display: 'flex',
         alignItems: 'center',
         gap: 10,
-        border: '1px solid rgba(59,130,246,0.45)',
-        background: 'rgba(59,130,246,0.18)',
+        border: isViewing ? '1px solid rgba(168,85,247,0.55)' : '1px solid rgba(59,130,246,0.45)',
+        background: isViewing ? 'rgba(168,85,247,0.2)' : 'rgba(59,130,246,0.18)',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
         color: 'var(--color-text)',
         fontSize: '0.82rem',
       }}
     >
-      <Compass size={16} color="var(--color-primary)" style={{ flexShrink: 0 }} />
+      {isViewing
+        ? <Eye size={16} color="#c084fc" style={{ flexShrink: 0 }} />
+        : <Compass size={16} color="var(--color-primary)" style={{ flexShrink: 0 }} />}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-        <span style={{ fontWeight: 600 }}>
-          {hasFocus
-            ? <>{focusedMaakondEmoji ? `${focusedMaakondEmoji} ` : ''}{focusedMaakondName}</>
-            : 'Avastusrežiim'}
+        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {isViewing
+            ? <>Vaatad: {viewedUserName}</>
+            : hasFocus
+              ? <>{focusedMaakondEmoji ? `${focusedMaakondEmoji} ` : ''}{focusedMaakondName}</>
+              : 'Avastusrežiim'}
         </span>
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-          {hasFocus ? 'Puuduta X, et näha kõiki maakondi' : 'Hinnad on peidetud'}
+          {isViewing
+            ? 'Teise kasutaja avastuskaart'
+            : hasFocus ? 'Puuduta X, et näha kõiki maakondi' : 'Hinnad on peidetud'}
         </span>
       </div>
-      {hasFocus && (
+      {hasFocus && !isViewing && (
         <button
           onClick={onClearFocus}
           title="Eemalda maakonna fookus"
@@ -80,7 +89,7 @@ export function DiscoveryBanner({
           whiteSpace: 'nowrap',
         }}
       >
-        Lülita välja
+        {isViewing ? 'Sulge' : 'Lülita välja'}
       </button>
     </div>
   );

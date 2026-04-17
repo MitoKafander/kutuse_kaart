@@ -126,6 +126,11 @@ function App() {
   const [showDiscoveryMap, setShowDiscoveryMap] = useState(() => {
     return localStorage.getItem('kyts-show-discovery-map') === 'true';
   });
+  const [sharePublicly, setSharePublicly] = useState(false);
+  // When a row on the Avastajad leaderboard is clicked, the map enters a
+  // "viewing someone else's footprint" mode. Personal toggle state is
+  // preserved — exiting the view restores it.
+  const [viewedUser, setViewedUser] = useState<{ id: string; name: string; stationIds: Set<string> } | null>(null);
   // Region catalog — loaded once, cached locally so toggle-ON is instant.
   const [maakonnad, setMaakonnad] = useState<Maakond[]>(() => {
     try {
@@ -256,7 +261,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -290,6 +295,9 @@ function App() {
         setShowDiscoveryMap(prof.show_discovery_map);
         localStorage.setItem('kyts-show-discovery-map', String(prof.show_discovery_map));
       }
+      if (prof?.share_discovery_publicly !== null && prof?.share_discovery_publicly !== undefined) {
+        setSharePublicly(prof.share_discovery_publicly);
+      }
     } else {
       // Signed-out state: every preference that's synced from user_profiles
       // must be reverted to its anonymous default AND its localStorage cache
@@ -307,6 +315,8 @@ function App() {
       setApplyLoyalty(true);
       setLoyaltyDiscounts({});
       setShowDiscoveryMap(false);
+      setSharePublicly(false);
+      setViewedUser(null);
       localStorage.removeItem('kyts-hide-empty-dots');
       localStorage.removeItem('kyts-show-clusters');
       localStorage.removeItem('kyts-show-latvian-stations');
@@ -474,6 +484,27 @@ function App() {
     }
   };
 
+  const handleSharePubliclyChange = (v: boolean) => {
+    setSharePublicly(v);
+    if (session?.user?.id) {
+      void supabase.from('user_profiles')
+        .upsert({ id: session.user.id, share_discovery_publicly: v })
+        .then(() => {}, () => {});
+    }
+  };
+
+  // Fetch another user's footprint via the phase30 SECURITY DEFINER RPC.
+  // The RPC itself gates on the target's share_discovery_publicly flag, so
+  // an opt-out user's ids never leave the database.
+  const handleViewUserFootprint = async (userId: string, displayName: string) => {
+    const { data, error } = await supabase.rpc('get_user_footprint', { target_user_id: userId });
+    if (error || !data) return;
+    const ids = new Set<string>((data as any[]).map(r => String(r.station_id)));
+    setViewedUser({ id: userId, name: displayName, stationIds: ids });
+    setIsLeaderboardOpen(false);
+    setFocusedMaakondId(null);
+  };
+
   const handleOpenPriceForm = () => {
     setIsPriceModalOpen(true);
   };
@@ -532,20 +563,26 @@ function App() {
         applyLoyalty={applyLoyalty}
         routePolyline={routePolyline}
         onUserLocationChange={setLiveUserLocation}
-        showDiscoveryMap={showDiscoveryMap}
-        contributedStationIds={userContributedStationIds}
+        showDiscoveryMap={showDiscoveryMap || !!viewedUser}
+        contributedStationIds={viewedUser ? viewedUser.stationIds : userContributedStationIds}
         focusedMaakondId={focusedMaakondId}
         focusedMaakondStationIds={focusedMaakondStationIds}
         maakondGeo={maakondGeo}
         parishGeo={parishGeo}
       />
 
-      {showDiscoveryMap && (
+      {(showDiscoveryMap || viewedUser) && (
         <DiscoveryBanner
           focusedMaakondName={focusedMaakond?.name ?? null}
           focusedMaakondEmoji={focusedMaakond?.emoji ?? null}
           onClearFocus={() => setFocusedMaakondId(null)}
-          onTurnOff={() => handleShowDiscoveryMapChange(false)}
+          onTurnOff={() => {
+            // When viewing someone else, "turn off" just exits the view and
+            // leaves the personal toggle untouched.
+            if (viewedUser) setViewedUser(null);
+            else handleShowDiscoveryMapChange(false);
+          }}
+          viewedUserName={viewedUser?.name ?? null}
         />
       )}
 
@@ -930,6 +967,8 @@ function App() {
         showDiscoveryMap={showDiscoveryMap}
         onShowDiscoveryMapChange={handleShowDiscoveryMapChange}
         regionProgress={regionProgress}
+        sharePublicly={sharePublicly}
+        onSharePubliclyChange={handleSharePubliclyChange}
         onMaakondFocus={(id) => {
           setFocusedMaakondId(id);
           setIsProfileOpen(false);
@@ -969,6 +1008,7 @@ function App() {
             isOpen={isLeaderboardOpen}
             onClose={() => setIsLeaderboardOpen(false)}
             currentUserId={session?.user?.id}
+            onViewFootprint={handleViewUserFootprint}
           />
         )}
       </Suspense>

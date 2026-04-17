@@ -135,6 +135,8 @@ export function ProfileDrawer({
   onShowDiscoveryMapChange,
   regionProgress,
   onMaakondFocus,
+  sharePublicly,
+  onSharePubliclyChange,
 }: {
   session: any;
   isOpen: boolean;
@@ -175,6 +177,8 @@ export function ProfileDrawer({
   onShowDiscoveryMapChange: (show: boolean) => void;
   regionProgress: RegionProgress;
   onMaakondFocus?: (maakondId: number) => void;
+  sharePublicly: boolean;
+  onSharePubliclyChange: (v: boolean) => void;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
@@ -592,6 +596,32 @@ export function ProfileDrawer({
                   {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
                 </div>
                 <DiscoveryBadgeGrid progress={regionProgress} onMaakondFocus={onMaakondFocus} />
+
+                <label style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  cursor: 'pointer', paddingTop: 12, borderTop: '1px solid var(--color-surface-border)', marginTop: 4,
+                }}>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--color-text)' }}>Jaga avalikult</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.35 }}>
+                      Teised näevad su nimel klõpsates, millised jaamad oled avastanud.
+                    </span>
+                  </span>
+                  <div
+                    onClick={() => onSharePubliclyChange(!sharePublicly)}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: sharePublicly ? 'var(--color-primary)' : 'var(--color-surface)',
+                      position: 'relative', transition: 'background 0.2s',
+                      border: '1px solid var(--color-surface-border)', flexShrink: 0, marginLeft: 10,
+                    }}
+                  >
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                      position: 'absolute', top: '1px', left: sharePublicly ? '22px' : '2px', transition: 'left 0.2s'
+                    }}/>
+                  </div>
+                </label>
               </>
             )}
           </div>
