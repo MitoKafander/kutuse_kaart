@@ -316,9 +316,32 @@ export function ProfileDrawer({
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
-            <X size={24} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {session && (
+              <button
+                onClick={async () => {
+                  if (!window.confirm('Kas oled kindel, et soovid välja logida?')) return;
+                  await supabase.auth.signOut();
+                  onClose();
+                }}
+                title="Logi välja"
+                aria-label="Logi välja"
+                style={{
+                  background: 'none', border: 'none',
+                  color: 'var(--color-stale)',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
+                <LogOut size={20} />
+              </button>
+            )}
+            <button onClick={onClose} aria-label="Sulge" style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Profiil / Seaded tab bar */}
@@ -1052,21 +1075,6 @@ export function ProfileDrawer({
           </div>
         )}
 
-        {/* Action Bottom */}
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            onClose();
-          }}
-          style={{
-            marginTop: '16px',
-            background: 'none', border: '1px solid var(--color-stale)', color: 'var(--color-stale)',
-            borderRadius: 'var(--radius-md)', padding: '14px', fontSize: '1rem', fontWeight: '500',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-          }}
-        >
-          <LogOut size={18} /> Logi välja
-        </button>
       </div>
     </div>
   );

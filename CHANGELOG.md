@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Logout button relocated - 2026-04-18
+
+### Changed 🔧
+- 🟢 **Logout moved from profile bottom to header icon + added confirm** (`src/components/ProfileDrawer.tsx`): the full-width "Logi välja" button at the bottom of the Profiil tab is gone; replaced by a small `LogOut` icon button in the header next to the X close button (only shown when a session exists). Frees vertical space in the drawer, keeps the control in a non-scrolling region, and distances it from high-touch content areas. Added a native `confirm()` ("Kas oled kindel, et soovid välja logida?") so accidental taps next to the X don't blow away someone's session.
+
+---
+
 ## [Unreleased] - Cheapest-nearby price age - 2026-04-18
 
 ### Added ✨
