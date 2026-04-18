@@ -70,7 +70,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added ✨
 - 🟡 **Static `/privacy.html` + `/terms.html` pages** (`public/privacy.html`, `public/terms.html`): standalone HTML pages mirroring `PrivacyModal.tsx` and `TermsModal.tsx` 1:1. Needed because the Google OAuth consent screen requires public URLs for privacy policy and terms of service — in-app modals won't do, Google fetches the URL server-side. Pages are pure HTML + inline CSS with `prefers-color-scheme` for dark/light support, 720px max-width, header nav back to `/`, and canonical URL tags. Corrected a stale "www.kyts.ee" → "kyts.ee" prose item in the privacy copy while porting.
-- 🟢 **Google Auth Platform branding configured**: app name set to "Kyts" (was "KütuseKaart"), support email `mikk.rosin@gmail.com`, home/privacy/terms URLs pointed at `https://kyts.ee`. Consent screen now shows "Kyts" instead of the raw `sdtwolcoibcobpzgfqxx.supabase.co` subdomain. Authorised domains list left alone — `sdtwolcoibcobpzgfqxx.supabase.co` is load-bearing (it's the OAuth callback) and `kutuse-kaart.vercel.app` is still referenced by the client's JS origins.
+- 🟢 **Google Auth Platform branding configured**: app name set to "Kyts" (was "KütuseKaart"), support email `kyts@mikkrosin.ee`, home/privacy/terms URLs pointed at `https://kyts.ee`. Consent screen now shows "Kyts" instead of the raw `sdtwolcoibcobpzgfqxx.supabase.co` subdomain. Authorised domains list left alone — `sdtwolcoibcobpzgfqxx.supabase.co` is load-bearing (it's the OAuth callback) and `kutuse-kaart.vercel.app` is still referenced by the client's JS origins.
 
 ### Key Decisions
 - **Static HTML over React routes**: Google's verification bots hit the URL directly; SPA shells with client-side routing would serve an empty `<div id="root">` with no detectable legal copy. Putting the files in `public/` lets Vercel serve them straight from the CDN at `/privacy.html` and `/terms.html` with zero SPA involvement.
@@ -387,7 +387,7 @@ All notable changes to this project will be documented in this file.
 - 🟢 **`Notes/operations.md`** — rate limit setup, Redis prefix semantics, usage alert procedures, Sentry verification steps, rollback workflow.
 
 ### Changed 🔧
-- 🔴 **Privacy Policy rewritten** (`src/components/PrivacyModal.tsx`): Now identifies data controller (Mikk Rosin, info@kyts.ee, www.kyts.ee), lists all sub-processors (Supabase, Vercel, Google, Upstash, Sentry, PostHog), adds retention periods, GDPR legal bases (art 6(1)(b) + (f)), and complaint route (aki.ee). Old text claimed cookies were used for tracking — corrected to reflect cookieless analytics.
+- 🔴 **Privacy Policy rewritten** (`src/components/PrivacyModal.tsx`): Now identifies data controller (Mikk Rosin, kyts@mikkrosin.ee, www.kyts.ee), lists all sub-processors (Supabase, Vercel, Google, Upstash, Sentry, PostHog), adds retention periods, GDPR legal bases (art 6(1)(b) + (f)), and complaint route (aki.ee). Old text claimed cookies were used for tracking — corrected to reflect cookieless analytics.
 - 🟡 **GDPR banner copy** (`src/components/GdprBanner.tsx`): Replaced separate "Privaatsuspoliitika" button with inline links to both Kasutustingimused and Privaatsuspoliitika in banner text. Single "Nõustun" button.
 - 🟡 **Profile drawer footer** (`src/components/ProfileDrawer.tsx`): Added legal links row (Kasutustingimused · Privaatsuspoliitika) above Logi välja; new optional `onOpenPrivacy` / `onOpenTerms` props.
 

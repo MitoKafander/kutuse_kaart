@@ -13,7 +13,7 @@ export function TermsModal({ isOpen, onClose, onOpenPrivacy }: { isOpen: boolean
     strong: <strong />,
     em: <em />,
     br: <br />,
-    a: <a href="mailto:info@mikkrosin.ee" style={{ color: 'var(--color-primary)' }} />,
+    a: <a href="mailto:kyts@mikkrosin.ee" style={{ color: 'var(--color-primary)' }} />,
   };
 
   return (
