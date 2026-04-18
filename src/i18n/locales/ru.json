@@ -4,6 +4,12 @@
       "label": "Язык"
     }
   },
+  "fuelType": {
+    "bensiin95": "Бензин 95",
+    "bensiin98": "Бензин 98",
+    "diisel": "Дизель",
+    "lpg": "СНГ"
+  },
   "auth": {
     "heading": {
       "signIn": "Войти",

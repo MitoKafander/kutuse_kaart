@@ -4,6 +4,12 @@
       "label": "Kieli"
     }
   },
+  "fuelType": {
+    "bensiin95": "Bensiini 95",
+    "bensiin98": "Bensiini 98",
+    "diisel": "Diesel",
+    "lpg": "Nestekaasu"
+  },
   "auth": {
     "heading": {
       "signIn": "Kirjaudu sisään",

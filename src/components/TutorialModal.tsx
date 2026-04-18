@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import i18n, { LANGUAGES, type SupportedLanguage } from '../i18n';
 import { capture } from '../utils/analytics';
 
 type Outcome = 'completed' | 'skipped';
@@ -18,13 +19,55 @@ const COLOR_YELLOW = '#facc15';
 const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
 
-const STEPS_LENGTH = 5;
+const STEPS_LENGTH = 6;
 
-function buildSteps(t: TFunction): Step[] {
+// Multilingual title rendered before any language has been picked, so it has to
+// read right in every supported tongue at the same time. Native names of the
+// six supported languages, separated by middle dots.
+const LANGUAGE_STEP_TITLE = 'Keel · Language · Kieli · Язык · Valoda · Kalba';
+
+function LanguagePickerBody({ currentLng, onPick }: { currentLng: string; onPick: (code: SupportedLanguage) => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '320px', margin: '0 auto' }}>
+      {LANGUAGES.map(({ code, nativeName, flag }) => {
+        const active = currentLng === code;
+        return (
+          <button
+            key={code}
+            onClick={() => onPick(code)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: active ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+              background: active ? 'var(--color-primary-glow)' : 'var(--color-surface)',
+              color: 'var(--color-text)',
+              fontSize: '0.95rem',
+              fontWeight: active ? 600 : 400,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{flag}</span>
+            <span>{nativeName}</span>
+            {active && <Check size={16} style={{ marginLeft: 'auto', color: 'var(--color-primary)' }} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: SupportedLanguage) => void): Step[] {
   const colorSpan = (color: string, text: string) => (
     <span style={{ color, fontWeight: 600 }}>{text}</span>
   );
   return [
+    {
+      icon: <Globe size={44} color={COLOR_BLUE} />,
+      title: LANGUAGE_STEP_TITLE,
+      body: <LanguagePickerBody currentLng={currentLng} onPick={onPickLanguage} />,
+    },
     {
       icon: <Fuel size={44} color={COLOR_BLUE} />,
       title: t('tutorial.step1.title'),
@@ -85,6 +128,12 @@ export function TutorialModal({
   const [step, setStep] = useState(0);
   const startedRef = useRef(false);
 
+  const handlePickLanguage = (code: SupportedLanguage) => {
+    if (i18n.language !== code) {
+      i18n.changeLanguage(code);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setStep(0);
@@ -120,7 +169,7 @@ export function TutorialModal({
 
   if (!isOpen) return null;
 
-  const STEPS = buildSteps(t);
+  const STEPS = buildSteps(t, i18n.resolvedLanguage ?? i18n.language ?? 'et', handlePickLanguage);
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];
 
@@ -180,9 +229,9 @@ export function TutorialModal({
           <h2 id="tutorial-title" className="heading-1" style={{ marginBottom: '10px' }}>
             {current.title}
           </h2>
-          <p style={{ color: 'var(--color-text-muted)', lineHeight: '1.5', fontSize: '0.95rem', margin: 0 }}>
+          <div style={{ color: 'var(--color-text-muted)', lineHeight: '1.5', fontSize: '0.95rem', margin: 0 }}>
             {current.body}
-          </p>
+          </div>
           {isLast && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', marginTop: '18px', fontStyle: 'italic' }}>
               {t('tutorial.hint.findAgain')}

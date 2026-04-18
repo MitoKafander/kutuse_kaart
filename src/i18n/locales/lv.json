@@ -4,6 +4,12 @@
       "label": "Valoda"
     }
   },
+  "fuelType": {
+    "bensiin95": "Benzīns 95",
+    "bensiin98": "Benzīns 98",
+    "diisel": "Dīzelis",
+    "lpg": "LPG"
+  },
   "auth": {
     "heading": {
       "signIn": "Pierakstīties",

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey } from '../utils';
+import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey, fuelLabel } from '../utils';
 import { capture } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
@@ -1037,7 +1037,7 @@ export function ManualPriceModal({
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {FUEL_TYPES.map(type => (
             <div key={type} className="glass-panel flex-between" style={{ padding: '16px', borderRadius: 'var(--radius-md)' }}>
-              <span style={{ fontWeight: '500' }}>{type}</span>
+              <span style={{ fontWeight: '500' }}>{fuelLabel(type, t)}</span>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }}>€</span>
                 <input

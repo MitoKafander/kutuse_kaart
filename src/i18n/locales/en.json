@@ -4,6 +4,12 @@
       "label": "Language"
     }
   },
+  "fuelType": {
+    "bensiin95": "Petrol 95",
+    "bensiin98": "Petrol 98",
+    "diisel": "Diesel",
+    "lpg": "LPG"
+  },
   "auth": {
     "heading": {
       "signIn": "Log in",

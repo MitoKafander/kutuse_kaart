@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
-import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel } from '../utils';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 
@@ -744,7 +744,7 @@ export function ProfileDrawer({
                           fontWeight: defaultFuelType === type ? 'bold' : 'normal'
                         }}
                       >
-                        {type}
+                        {fuelLabel(type, t)}
                       </button>
                     ))}
                   </div>

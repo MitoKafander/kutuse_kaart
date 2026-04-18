@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { X, Check, CreditCard } from 'lucide-react';
+import { fuelLabel } from '../utils';
 
 export function FilterDrawer({
   isOpen, 
@@ -118,7 +119,7 @@ export function FilterDrawer({
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  {type}
+                  {fuelLabel(type, t)}
                 </button>
               ))}
             </div>

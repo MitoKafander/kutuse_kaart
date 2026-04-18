@@ -4,6 +4,12 @@
       "label": "Kalba"
     }
   },
+  "fuelType": {
+    "bensiin95": "Benzinas 95",
+    "bensiin98": "Benzinas 98",
+    "diisel": "Dyzelinas",
+    "lpg": "LPG"
+  },
   "auth": {
     "heading": {
       "signIn": "Prisijungti",

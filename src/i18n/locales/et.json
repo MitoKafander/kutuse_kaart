@@ -4,6 +4,12 @@
       "label": "Keel"
     }
   },
+  "fuelType": {
+    "bensiin95": "Bensiin 95",
+    "bensiin98": "Bensiin 98",
+    "diisel": "Diisel",
+    "lpg": "LPG"
+  },
   "auth": {
     "heading": {
       "signIn": "Logi sisse",

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { X, TrendingUp } from 'lucide-react';
-import { getStationDisplayName, getBrand, FRESH_HOURS } from '../utils';
+import { getStationDisplayName, getBrand, FRESH_HOURS, fuelLabel } from '../utils';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
 const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
@@ -167,7 +167,7 @@ export function StatisticsDrawer({
               if (!pts || pts.length < 2) {
                 return (
                   <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
-                    <div style={{ fontSize: '0.85rem' }}>{f}</div>
+                    <div style={{ fontSize: '0.85rem' }}>{fuelLabel(f, t)}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('stats.trends.notEnoughData')}</div>
                   </div>
                 );
@@ -184,7 +184,7 @@ export function StatisticsDrawer({
               const delta = latest - earliest;
               return (
                 <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{f}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{fuelLabel(f, t)}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                     <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{latest.toFixed(3)}</span>
                     <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>

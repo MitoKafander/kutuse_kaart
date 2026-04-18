@@ -4,7 +4,7 @@ import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } f
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
-import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS } from '../utils';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel } from '../utils';
 
 export function StationDrawer({ 
   station, 
@@ -193,7 +193,7 @@ export function StationDrawer({
               position: 'relative',
               opacity: isDisputed || isExpired ? 0.5 : 1,
             }}>
-              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{type}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{fuelLabel(type, t)}</div>
               <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
                 {!recentPrice || isDisputed ? '---' : `€${recentPrice.price.toFixed(3)}`}
               </div>
@@ -275,7 +275,7 @@ export function StationDrawer({
                   color: historyFuelType === type ? 'var(--color-primary)' : 'var(--color-text-muted)'
                 }}
               >
-                {type}
+                {fuelLabel(type, t)}
               </button>
             ))}
           </div>

@@ -1,8 +1,21 @@
 export const FUEL_TYPES_ALL = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'] as const;
 export const DEFAULT_FUELS = ['Bensiin 95', 'Bensiin 98', 'Diisel'] as const;
 
-export function fuelLabel(type: string): string {
-  return type;
+const FUEL_LABEL_KEYS: Record<string, string> = {
+  'Bensiin 95': 'fuelType.bensiin95',
+  'Bensiin 98': 'fuelType.bensiin98',
+  'Diisel': 'fuelType.diisel',
+  'LPG': 'fuelType.lpg',
+};
+
+// `t` is optional so data-layer callers (no React context) keep the canonical
+// Estonian identifier. UI callers should pass a translator to render localised
+// labels while the underlying string-id ('Bensiin 95' etc.) stays the DB key.
+export function fuelLabel(type: string, t?: (key: string) => string): string {
+  const key = FUEL_LABEL_KEYS[type];
+  if (!key || !t) return type;
+  const out = t(key);
+  return out === key ? type : out;
 }
 
 export function priceUnit(_type: string): string {
