@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Tutorial back-button fix - 2026-04-18
+
+### Fixed 🐛
+- 🟡 **Tutorial "Valmis" no longer navigates off-site on first visit** (`src/App.tsx`): the LIFO overlay stack called `window.history.go(-1)` on every programmatic overlay close to unwind the matching `pushState`. On a fresh visit where the tutorial was the first (and only) overlay ever pushed, that rewind could land on the page the user had before `kyts.ee` — the final "Valmis" button appeared to act like a browser back button. Added an optional `skipRewind?: boolean` flag to overlay stack entries and marked the tutorial with it. The tutorial still registers a `pushState` on open (Android back button still closes it via `popstate`), but programmatic close via "Valmis" / "Jäta vahele" / backdrop / Esc skips the rewind. Trade-off: one stale history entry leaks per tutorial session, silently consumed by a future back press; vastly preferable to an off-site navigation.
+
+---
+
 ## [Unreleased] - Logout button relocated - 2026-04-18
 
 ### Changed 🔧

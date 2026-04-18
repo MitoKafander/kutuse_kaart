@@ -194,11 +194,11 @@ function App() {
   // always closes the most recently opened one. Previous implementation used a
   // count + hard-coded priority chain, which picked the wrong overlay to close
   // whenever the user's open order didn't match that priority.
-  const overlayStackRef = useRef<Array<{ id: string; close: () => void }>>([]);
+  const overlayStackRef = useRef<Array<{ id: string; close: () => void; skipRewind?: boolean }>>([]);
   const suppressPopRef = useRef(0);
 
   const openOverlays = useMemo(() => {
-    const list: Array<{ id: string; close: () => void }> = [];
+    const list: Array<{ id: string; close: () => void; skipRewind?: boolean }> = [];
     if (isPriceModalOpen) list.push({ id: 'priceModal', close: () => setIsPriceModalOpen(false) });
     if (isPhotoExpanded) list.push({ id: 'photoZoom', close: () => setIsPhotoExpanded(false) });
     if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
@@ -207,7 +207,12 @@ function App() {
     if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
     if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
     if (isFeedbackOpen) list.push({ id: 'feedback', close: () => setIsFeedbackOpen(false) });
-    if (isTutorialOpen) list.push({ id: 'tutorial', close: () => setIsTutorialOpen(false) });
+    // Tutorial is marked skipRewind: on first visit it's the first overlay
+    // ever pushed, and rewinding one step on Valmis can navigate off-site
+    // when the user reached kyts.ee via a real navigation (not a direct
+    // tab). We keep the pushState (so Android back still closes it), but
+    // accept one leaked history entry on programmatic close instead.
+    if (isTutorialOpen) list.push({ id: 'tutorial', close: () => setIsTutorialOpen(false), skipRewind: true });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
@@ -219,13 +224,18 @@ function App() {
     const stack = overlayStackRef.current;
     const openIds = new Set(openOverlays.map(o => o.id));
     // 1. Drop any stack entries that are no longer open (programmatic close).
-    //    Each removal costs one history entry we must rewind, suppressing our
-    //    own popstate handler for that tick so we don't re-close something.
+    //    Each rewindable removal costs one history entry we must rewind,
+    //    suppressing our own popstate handler for that tick so we don't
+    //    re-close something. Entries flagged skipRewind leave a stale
+    //    history entry behind on purpose (see tutorial comment above).
     const removed = stack.filter(e => !openIds.has(e.id));
     if (removed.length) {
       overlayStackRef.current = stack.filter(e => openIds.has(e.id));
-      suppressPopRef.current += removed.length;
-      window.history.go(-removed.length);
+      const rewindCount = removed.filter(e => !e.skipRewind).length;
+      if (rewindCount > 0) {
+        suppressPopRef.current += rewindCount;
+        window.history.go(-rewindCount);
+      }
     }
     // 2. Append newly-opened overlays in open order + push history per entry.
     const known = new Set(overlayStackRef.current.map(e => e.id));
