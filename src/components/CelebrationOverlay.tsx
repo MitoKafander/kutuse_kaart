@@ -27,16 +27,19 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
   useEffect(() => {
     if (!activeStation) return;
     // Matches the `slideInFade` keyframe duration on `.discovery-toast`.
-    const t = setTimeout(() => setStationQueue(q => q.slice(1)), 2000);
+    const t = setTimeout(() => setStationQueue(q => q.slice(1)), 5000);
     return () => clearTimeout(t);
   }, [activeStation]);
 
   const activeToast = toastQueue[0];
   useEffect(() => {
     if (!activeToast) return;
-    const t = setTimeout(() => setToastQueue(q => q.slice(1)), 2000);
+    const t = setTimeout(() => setToastQueue(q => q.slice(1)), 5000);
     return () => clearTimeout(t);
   }, [activeToast]);
+
+  const dismissStation = () => setStationQueue(q => q.slice(1));
+  const dismissParish  = () => setToastQueue(q => q.slice(1));
 
   const activeMaakond = maakondQueue[0];
   useEffect(() => {
@@ -47,28 +50,43 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 
   return (
     <>
+      <div
+        style={{
+          // Center-screen stack so both toasts can coexist vertically if a
+          // single submission triggers new-station + vald-completion.
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 4000,
+          pointerEvents: 'none',
+          maxWidth: 'calc(100vw - 40px)',
+          width: 'max-content',
+        }}
+      >
       {activeStation && activeStation.kind === 'station' && (
         <div
           className="discovery-toast"
+          onClick={dismissStation}
           style={{
-            position: 'fixed',
-            left: '20px',
-            // Sits above the parish toast slot so they can coexist if a
-            // single submission triggers both (new station + completed vald).
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 160px)',
             background: 'var(--color-surface)',
             color: 'var(--color-text)',
             borderRadius: 12,
-            padding: '10px 14px',
+            padding: '12px 16px',
             display: 'flex',
             flexDirection: 'column',
             gap: 6,
-            boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
             border: '1px solid var(--color-primary)',
             backdropFilter: 'blur(12px)',
-            zIndex: 4000,
-            minWidth: 220,
+            minWidth: 240,
             maxWidth: 'calc(100vw - 40px)',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -116,22 +134,21 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
       {activeToast && activeToast.kind === 'parish' && (
         <div
           className="discovery-toast"
+          onClick={dismissParish}
           style={{
-            position: 'fixed',
-            left: '20px',
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 90px)',
             background: 'var(--color-surface)',
             color: 'var(--color-text)',
             borderRadius: 12,
-            padding: '10px 14px',
+            padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
             border: '1px solid var(--color-surface-border)',
             backdropFilter: 'blur(12px)',
-            zIndex: 4000,
             maxWidth: 'calc(100vw - 40px)',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
           }}
         >
           <span style={{ fontSize: 22 }}>{activeToast.emoji}</span>
@@ -145,6 +162,8 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
           </div>
         </div>
       )}
+
+      </div>
 
       {activeMaakond && activeMaakond.kind === 'maakond' && (
         <MaakondBurst event={activeMaakond} onDismiss={() => setMaakondQueue(q => q.slice(1))} />
