@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Hepa Kehtna dedupe - 2026-04-18
+
+### Fixed 🐛
+- 🟢 **Ghost "Hepa" station in Kehtna alevik merged into the real HEPA row** (`migrations/schema_phase34_hepa_kehtna_dedupe.sql`): OSM had two separate nodes for the same physical tankla — the real one tagged `HEPA` (uppercase) and a ghost ~20–30 m north tagged `Hepa` (title case). Migration pins both ids in a temp table, moves `prices` + `user_favorites` from the ghost to the real row, deletes the ghost, and leaves the display name as `HEPA`. Aborts with a clear `RAISE EXCEPTION` if the Kehtna bbox catches anything other than exactly one `HEPA` + one `Hepa`, so a stale name rename couldn't silently clobber data. Ran in Supabase 2026-04-18; verify SELECT shows one row with 3 prices retained. Brand canonicalizer at `src/utils.ts:148` already collapses both spellings to the `Hepa` brand, so filtering/loyalty was unaffected throughout.
+
+---
+
 ## [Unreleased] - Update banner "Värskendan…" hang fix - 2026-04-18
 
 ### Fixed 🐛
