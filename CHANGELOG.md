@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Vald hover highlight on Avastuskaart - 2026-04-18
+
+### Added ✨
+- 🟢 **Valds (parishes) now glow subtly blue when hovered on the Avastuskaart** (`src/components/Map.tsx`): desktop users hovering a mouse over a vald polygon see a soft blue wash — lighter than the green "completed" state so the two read as different kinds of highlight (reward vs "you're pointing at this"). Light mode `#3b82f6` fill @ 10% + `#2563eb` stroke; dark mode `#60a5fa` fill @ 14% + `#93c5fd` stroke. `DiscoveryParishLayer` flipped from `interactive: false` → `interactive: true` with `onEachFeature` binding `mouseover`/`mouseout` handlers per sublayer. The handlers read the current base-style classifier and hover-style via refs, so completed/focused/dim transitions and theme toggles update without rebinding events. Hover is suppressed on valds that are currently hidden (zoomed out and not inside a focused maakond) so the cursor doesn't light up empty space at country scale. Mobile is unaffected (no hover events). Refactor bonus: the base-style picker (hidden / completed / focused / dim) is now a single function reused by both the mouseout reset and the prop-change style-application effect, deduplicating what used to be two copies of the same classifier.
+
+---
+
 ## [Unreleased] - Kasutajanimi moved to Edetabel - 2026-04-18
 
 ### Changed 🔧

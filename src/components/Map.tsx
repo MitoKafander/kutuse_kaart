@@ -361,12 +361,57 @@ function DiscoveryParishLayer({
     fillColor: isLight ? '#22c55e' : '#4ade80',
     fillOpacity: isLight ? 0.18 : 0.22,
   }), [isLight]);
+  // Hover wash — deliberately lighter than completed so the two states read
+  // as different kinds of highlight (reward vs "you're pointing at this").
+  const hoverStyle = useMemo(() => ({
+    color: isLight ? '#2563eb' : '#93c5fd',
+    weight: 1.6,
+    opacity: 0.9,
+    fillColor: isLight ? '#3b82f6' : '#60a5fa',
+    fillOpacity: isLight ? 0.10 : 0.14,
+  }), [isLight]);
+
+  // Refs let the mouseover/mouseout handlers read the current style set
+  // without rebinding on every prop change — the layer is only created once
+  // per `geo` load, but the styles + completion set change freely.
+  const hoverStyleRef = useRef(hoverStyle);
+  useEffect(() => { hoverStyleRef.current = hoverStyle; }, [hoverStyle]);
+
+  const baseStyleForRef = useRef<(sublayer: any) => any>(() => hiddenStyle);
+  useEffect(() => {
+    baseStyleForRef.current = (sublayer: any) => {
+      const props = sublayer.feature?.properties;
+      const inFocused = focusedMaakondId != null && props?.maakond_id === focusedMaakondId;
+      const isCompleted = props?.id != null && completedParishIds?.has(props.id);
+      const showAtZoom = zoom >= 9;
+      // Completed trumps focused trumps dim. Still gated by showAtZoom /
+      // focused-maakond visibility — a country-scale wash of specks would be
+      // noise, not reward.
+      if (!showAtZoom && !inFocused) return hiddenStyle;
+      if (isCompleted) return completedStyle;
+      if (inFocused) return focusedParishStyle;
+      return dimStyle;
+    };
+  }, [zoom, focusedMaakondId, completedParishIds, hiddenStyle, completedStyle, focusedParishStyle, dimStyle]);
 
   useEffect(() => {
     if (!geo) return;
     const layer = L.geoJSON(geo, {
-      interactive: false,
+      interactive: true,
       style: hiddenStyle,
+      onEachFeature: (_feature, sublayer: any) => {
+        sublayer.on('mouseover', () => {
+          const base = baseStyleForRef.current(sublayer);
+          // Don't highlight valds that are currently hidden (zoomed out, not
+          // in focused maakond) — the cursor would otherwise light up empty
+          // space at country scale.
+          if (!base || base.weight === 0) return;
+          sublayer.setStyle(hoverStyleRef.current);
+        });
+        sublayer.on('mouseout', () => {
+          sublayer.setStyle(baseStyleForRef.current(sublayer));
+        });
+      },
     });
     layer.addTo(map);
     layerRef.current = layer;
@@ -379,23 +424,8 @@ function DiscoveryParishLayer({
   useEffect(() => {
     const layer = layerRef.current;
     if (!layer) return;
-    const showAtZoom = zoom >= 9;
     layer.eachLayer((sublayer: any) => {
-      const props = sublayer.feature?.properties;
-      const inFocused = focusedMaakondId != null && props?.maakond_id === focusedMaakondId;
-      const isCompleted = props?.id != null && completedParishIds?.has(props.id);
-      // Completed trumps focused trumps dim. Still gated by showAtZoom /
-      // focused-maakond visibility — a country-scale wash of green specks
-      // would be noise, not reward.
-      if (!showAtZoom && !inFocused) {
-        sublayer.setStyle(hiddenStyle);
-      } else if (isCompleted) {
-        sublayer.setStyle(completedStyle);
-      } else if (inFocused) {
-        sublayer.setStyle(focusedParishStyle);
-      } else {
-        sublayer.setStyle(dimStyle);
-      }
+      sublayer.setStyle(baseStyleForRef.current(sublayer));
     });
   }, [zoom, focusedMaakondId, completedParishIds, dimStyle, focusedParishStyle, completedStyle, hiddenStyle]);
 
