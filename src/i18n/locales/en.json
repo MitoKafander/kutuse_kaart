@@ -10,6 +10,13 @@
     "diisel": "Diesel",
     "lpg": "LPG"
   },
+  "region": {
+    "suffix": {
+      "maakond": "County",
+      "vald": "Parish",
+      "linn": "City"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Log in",

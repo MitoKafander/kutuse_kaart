@@ -10,6 +10,13 @@
     "diisel": "Diesel",
     "lpg": "Nestekaasu"
   },
+  "region": {
+    "suffix": {
+      "maakond": "maakunta",
+      "vald": "kunta",
+      "linn": "kaupunki"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Kirjaudu sisään",

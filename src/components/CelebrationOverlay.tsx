@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CelebrationEvent } from '../hooks/useRegionProgress';
+import { localizeRegionName } from '../utils';
 
 // Splits incoming events into a parish toast queue (shown serially) and a
 // maakond overlay queue (shown one at a time, coalesced if several fire at
@@ -156,10 +157,10 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
           <span style={{ fontSize: 22 }}>{activeToast.emoji}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
-              {t('celebration.parishCovered', { name: activeToast.name })}
+              {t('celebration.parishCovered', { name: localizeRegionName(activeToast.name, t) })}
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-              {activeToast.maakondName}
+              {localizeRegionName(activeToast.maakondName, t)}
             </span>
           </div>
         </div>
@@ -244,7 +245,7 @@ function MaakondBurst({ event, onDismiss }: { event: CelebrationEvent & { kind: 
       >
         <div style={{ fontSize: 48, marginBottom: 6 }}>{event.emoji}</div>
         <div style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: 0.3 }}>
-          {t('celebration.maakondDiscovered', { name: event.name })}
+          {t('celebration.maakondDiscovered', { name: localizeRegionName(event.name, t) })}
         </div>
         <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginTop: 6 }}>
           {t('celebration.allStationsCovered')}

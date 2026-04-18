@@ -10,6 +10,13 @@
     "diisel": "Dīzelis",
     "lpg": "LPG"
   },
+  "region": {
+    "suffix": {
+      "maakond": "apriņķis",
+      "vald": "pagasts",
+      "linn": "pilsēta"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Pierakstīties",

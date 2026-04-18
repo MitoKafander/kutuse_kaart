@@ -18,6 +18,34 @@ export function fuelLabel(type: string, t?: (key: string) => string): string {
   return out === key ? type : out;
 }
 
+const REGION_SUFFIXES = ['maakond', 'vald', 'linn'] as const;
+type RegionSuffix = typeof REGION_SUFFIXES[number];
+
+// Region names ship from the DB as Estonian strings — "Harju maakond",
+// "Jõelähtme vald", "Narva linn". The proper-name part stays as-is in every
+// locale; only the trailing administrative noun gets swapped via region.suffix.*
+// keys. Falls back to the original string when no translator is supplied.
+export function localizeRegionName(name: string, t?: (key: string) => string): string {
+  if (!t) return name;
+  const lastSpace = name.lastIndexOf(' ');
+  if (lastSpace === -1) return name;
+  const suffix = name.slice(lastSpace + 1) as RegionSuffix;
+  if (!REGION_SUFFIXES.includes(suffix)) return name;
+  const translated = t(`region.suffix.${suffix}`);
+  if (translated === `region.suffix.${suffix}`) return name;
+  return `${name.slice(0, lastSpace)} ${translated}`;
+}
+
+// Same swap as localizeRegionName but strips the suffix entirely — used by
+// compact tiles where the type is implied by context (e.g. the maakond grid).
+export function stripRegionSuffix(name: string): string {
+  const lastSpace = name.lastIndexOf(' ');
+  if (lastSpace === -1) return name;
+  const suffix = name.slice(lastSpace + 1) as RegionSuffix;
+  if (!REGION_SUFFIXES.includes(suffix)) return name;
+  return name.slice(0, lastSpace);
+}
+
 export function priceUnit(_type: string): string {
   return '€/L';
 }

@@ -10,6 +10,13 @@
     "diisel": "Дизель",
     "lpg": "СНГ"
   },
+  "region": {
+    "suffix": {
+      "maakond": "уезд",
+      "vald": "волость",
+      "linn": "город"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Войти",

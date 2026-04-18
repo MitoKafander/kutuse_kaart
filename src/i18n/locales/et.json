@@ -10,6 +10,13 @@
     "diisel": "Diisel",
     "lpg": "LPG"
   },
+  "region": {
+    "suffix": {
+      "maakond": "maakond",
+      "vald": "vald",
+      "linn": "linn"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Logi sisse",

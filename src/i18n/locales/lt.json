@@ -10,6 +10,13 @@
     "diisel": "Dyzelinas",
     "lpg": "LPG"
   },
+  "region": {
+    "suffix": {
+      "maakond": "apskritis",
+      "vald": "valsčius",
+      "linn": "miestas"
+    }
+  },
   "auth": {
     "heading": {
       "signIn": "Prisijungti",

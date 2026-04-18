@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Compass, Eye, X } from 'lucide-react';
+import { localizeRegionName } from '../utils';
 
 // Thin pill that sits above the FAB stack whenever Avastuskaart is on.
 // Its job is twofold: make it obvious that the map is in a special mode
@@ -68,7 +69,7 @@ export function DiscoveryBanner({
           {isViewing
             ? t('discoveryBanner.viewing', { name: viewedUserName })
             : hasFocus
-              ? <>{focusedMaakondEmoji ? `${focusedMaakondEmoji} ` : ''}{focusedMaakondName}</>
+              ? <>{focusedMaakondEmoji ? `${focusedMaakondEmoji} ` : ''}{localizeRegionName(focusedMaakondName, t)}</>
               : t('discoveryBanner.modeLabel')}
         </span>
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>

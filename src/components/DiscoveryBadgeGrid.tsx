@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown } from 'lucide-react';
 import type { RegionProgress } from '../hooks/useRegionProgress';
+import { localizeRegionName, stripRegionSuffix } from '../utils';
 
 // 3-column grid of 15 maakond tiles + inline-expandable parish list per tile.
 // Visual language deliberately mirrors the contributor-tier badge in
@@ -109,7 +110,7 @@ export function DiscoveryBadgeGrid({
                 fontWeight: isComplete ? 600 : 500,
                 lineHeight: 1.1,
               }}>
-                {maakond.name.replace(' maakond', '')}
+                {stripRegionSuffix(maakond.name)}
               </span>
               {hasStations ? (
                 <div style={{
@@ -148,7 +149,7 @@ export function DiscoveryBadgeGrid({
             }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16 }}>{entry.maakond.emoji || '📍'}</span>
-                {entry.maakond.name}
+                {localizeRegionName(entry.maakond.name, t)}
               </span>
               <button
                 onClick={() => setExpandedId(null)}
@@ -165,7 +166,7 @@ export function DiscoveryBadgeGrid({
                   <div key={p.parish.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
                       <span style={{ color: done ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                        {done ? '✓ ' : ''}{p.parish.name}
+                        {done ? '✓ ' : ''}{localizeRegionName(p.parish.name, t)}
                       </span>
                       <span style={{ color: 'var(--color-text-muted)' }}>
                         {p.stationsDone}/{p.stationsTotal}
