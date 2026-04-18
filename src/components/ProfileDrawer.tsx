@@ -320,7 +320,7 @@ export function ProfileDrawer({
     });
 
   // Build recent activity (last 8 items)
-  const userPriceEntries = prices
+  const userPriceEntries = !session ? [] : prices
     .filter(p => p.user_id === session.user.id)
     .slice(0, 8)
     .map(p => {
