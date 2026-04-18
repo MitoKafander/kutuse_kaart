@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - OAuth consent branding + static legal pages - 2026-04-18
+
+### Added ✨
+- 🟡 **Static `/privacy.html` + `/terms.html` pages** (`public/privacy.html`, `public/terms.html`): standalone HTML pages mirroring `PrivacyModal.tsx` and `TermsModal.tsx` 1:1. Needed because the Google OAuth consent screen requires public URLs for privacy policy and terms of service — in-app modals won't do, Google fetches the URL server-side. Pages are pure HTML + inline CSS with `prefers-color-scheme` for dark/light support, 720px max-width, header nav back to `/`, and canonical URL tags. Corrected a stale "www.kyts.ee" → "kyts.ee" prose item in the privacy copy while porting.
+- 🟢 **Google Auth Platform branding configured**: app name set to "Kyts" (was "KütuseKaart"), support email `mikk.rosin@gmail.com`, home/privacy/terms URLs pointed at `https://kyts.ee`. Consent screen now shows "Kyts" instead of the raw `sdtwolcoibcobpzgfqxx.supabase.co` subdomain. Authorised domains list left alone — `sdtwolcoibcobpzgfqxx.supabase.co` is load-bearing (it's the OAuth callback) and `kutuse-kaart.vercel.app` is still referenced by the client's JS origins.
+
+### Key Decisions
+- **Static HTML over React routes**: Google's verification bots hit the URL directly; SPA shells with client-side routing would serve an empty `<div id="root">` with no detectable legal copy. Putting the files in `public/` lets Vercel serve them straight from the CDN at `/privacy.html` and `/terms.html` with zero SPA involvement.
+- **Mirrored modal copy verbatim**: if we diverge, users get different legal text depending on whether they click the in-app button or the consent-screen link. Single source of truth (for now) = the modals; HTML pages are the mirror. If this becomes painful, we'll extract a shared Markdown source later.
+- **Chose option 1 (brand existing OAuth client) over Supabase Pro custom auth domain ($25/mo)**: free, works for the non-critical trust-gap we have today. Revisit if we ever need `auth.kyts.ee` for deliverability or compliance reasons.
+
+---
+
 ## [Unreleased] - Price submit retry + diagnostics - 2026-04-18
 
 ### Fixed 🐛
