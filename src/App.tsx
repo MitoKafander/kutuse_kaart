@@ -1048,6 +1048,7 @@ function App() {
 
       <ProfileDrawer
         session={session}
+        displayName={displayName}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         favorites={favorites}

@@ -142,8 +142,10 @@ export function ProfileDrawer({
   sharePublicly,
   onSharePubliclyChange,
   pendingAvastuskaartFocus,
+  displayName,
 }: {
   session: any;
+  displayName?: string;
   isOpen: boolean;
   onClose: () => void;
   favorites: any[];
@@ -337,7 +339,23 @@ export function ProfileDrawer({
       }}>
         <div className="flex-between" style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <UserCircle size={28} color="var(--color-primary)" />
+            {session?.user?.user_metadata?.avatar_url ? (
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                overflow: 'hidden', flexShrink: 0
+              }}>
+                <img src={session.user.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: 'var(--color-primary)', color: '#fff',
+                fontSize: '1.2rem', fontWeight: 600, flexShrink: 0
+              }}>
+                {displayName ? displayName.charAt(0).toUpperCase() : (session?.user?.email ? session.user.email.charAt(0).toUpperCase() : <UserCircle size={24} />)}
+              </div>
+            )}
             <div>
               <h2 className="heading-1" style={{ marginBottom: '2px' }}>{t('profile.header.title')}</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
