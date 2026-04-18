@@ -144,10 +144,12 @@ export function ProfileDrawer({
   pendingAvastuskaartFocus,
   displayName,
   onDisplayNameChange,
+  onOpenAuth,
 }: {
   session: any;
   displayName?: string;
   onDisplayNameChange?: (name: string) => void | Promise<void>;
+  onOpenAuth?: () => void;
   isOpen: boolean;
   onClose: () => void;
   favorites: any[];
@@ -197,7 +199,8 @@ export function ProfileDrawer({
 }) {
   const { t, i18n } = useTranslation();
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
-  const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(session ? 'profile' : 'settings');
+  useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
 
@@ -228,7 +231,7 @@ export function ProfileDrawer({
     return () => clearTimeout(t);
   }, [pendingAvastuskaartFocus]);
 
-  if (!isOpen || !session) return null;
+  if (!isOpen) return null;
 
   const badge = getContributorBadge(userPricesCount, userVotesCount);
 
@@ -350,6 +353,39 @@ export function ProfileDrawer({
         display: 'flex',
         flexDirection: 'column'
       }}>
+        {!session ? (
+          <div className="flex-between" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '40px', height: '40px', borderRadius: '50%',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-muted)', flexShrink: 0,
+              }}>
+                <Settings size={20} />
+              </div>
+              <h2 className="heading-1" style={{ margin: 0 }}>{t('profile.header.anonymousTitle')}</h2>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {onOpenAuth && (
+                <button
+                  onClick={onOpenAuth}
+                  style={{
+                    background: 'var(--color-primary)', color: '#fff',
+                    border: 'none', borderRadius: 'var(--radius-md)',
+                    padding: '8px 14px', fontSize: '0.9rem', fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('profile.header.signIn')}
+                </button>
+              )}
+              <button onClick={onClose} aria-label={t('common.close')} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="flex-between" style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {session?.user?.user_metadata?.avatar_url ? (
@@ -489,8 +525,10 @@ export function ProfileDrawer({
             </button>
           </div>
         </div>
+        )}
 
-        {/* Profiil / Seaded tab bar */}
+        {/* Profiil / Seaded tab bar — signed in only */}
+        {session && (
         <div style={{ display: 'flex', gap: '6px', marginTop: '16px', marginBottom: '12px' }}>
           {([
             { key: 'profile', label: t('profile.tabs.profile') },
@@ -515,6 +553,7 @@ export function ProfileDrawer({
             );
           })}
         </div>
+        )}
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -824,6 +863,7 @@ export function ProfileDrawer({
                   </div>
                 </div>
 
+                {session && (<>
                 {/* Fuel type preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
@@ -980,6 +1020,7 @@ export function ProfileDrawer({
                   </>
                   )}
                 </div>
+                </>)}
 
                 {/* Dot style preference */}
                 <div>

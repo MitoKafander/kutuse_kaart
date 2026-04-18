@@ -1,12 +1,23 @@
 import { useState } from 'react';
-import { X, Mail, Key } from 'lucide-react';
+import { X, Mail, Key, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabase';
+import { LANGUAGES, type SupportedLanguage } from '../i18n';
 
 type Msg = { kind: 'success' | 'error'; text: string } | null;
 
-export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-  const { t } = useTranslation();
+export function AuthModal({
+  isOpen,
+  onClose,
+  mapStyle,
+  onMapStyleChange,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  mapStyle?: 'dark' | 'light';
+  onMapStyleChange?: (s: 'dark' | 'light') => void;
+}) {
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
@@ -126,6 +137,60 @@ export function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () =>
             {isLogin ? t('auth.toggle.toSignUp') : t('auth.toggle.toSignIn')}
           </button>
         </p>
+
+        <div style={{ height: '1px', background: 'var(--color-surface-border)', margin: '20px 0 16px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1 1 160px', minWidth: 140 }}>
+            <Languages size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <select
+              value={i18n.resolvedLanguage}
+              onChange={e => { void i18n.changeLanguage(e.target.value as SupportedLanguage); }}
+              aria-label={t('seaded.language.label')}
+              style={{
+                width: '100%',
+                padding: '8px 32px 8px 30px',
+                border: '1px solid var(--color-surface-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 10px center',
+              }}
+            >
+              {LANGUAGES.map(({ code, nativeName, flag }) => (
+                <option key={code} value={code}>{flag} {nativeName}</option>
+              ))}
+            </select>
+          </div>
+          {onMapStyleChange && (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {(['dark', 'light'] as const).map(s => {
+                const active = mapStyle === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => onMapStyleChange(s)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: active ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                      background: active ? 'rgba(59,130,246,0.15)' : 'var(--color-surface)',
+                      color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                      fontSize: '0.85rem', fontWeight: active ? 600 : 400,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {s === 'dark' ? t('profile.settings.theme.dark') : t('profile.settings.theme.light')}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
       </div>
     </div>

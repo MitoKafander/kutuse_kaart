@@ -736,7 +736,7 @@ function App() {
                 )}
               </button>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} style={{ 
+              <button onClick={() => setIsProfileOpen(true)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '36px', height: '36px', borderRadius: '50%',
                 background: 'var(--color-surface-alpha-12)',
@@ -1016,9 +1016,11 @@ function App() {
         }}
       />
       
-      <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        mapStyle={mapStyle}
+        onMapStyleChange={(s) => { setMapStyle(s); localStorage.setItem('kyts-map-style', s); }}
       />
 
       <ManualPriceModal
@@ -1057,6 +1059,7 @@ function App() {
         session={session}
         displayName={displayName}
         onDisplayNameChange={handleDisplayNameChange}
+        onOpenAuth={() => { setIsProfileOpen(false); setIsAuthOpen(true); }}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         favorites={favorites}

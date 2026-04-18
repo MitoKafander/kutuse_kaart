@@ -174,6 +174,8 @@
     },
     "header": {
       "title": "Ваш профиль",
+      "anonymousTitle": "Настройки",
+      "signIn": "Войти",
       "editName": "Изменить имя",
       "logout": "Выйти",
       "logoutConfirm": "Вы уверены, что хотите выйти?"

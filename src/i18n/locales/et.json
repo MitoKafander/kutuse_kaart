@@ -362,6 +362,8 @@
   "profile": {
     "header": {
       "title": "Sinu profiil",
+      "anonymousTitle": "Seaded",
+      "signIn": "Logi sisse",
       "editName": "Muuda nime",
       "logout": "Logi välja",
       "logoutConfirm": "Kas oled kindel, et soovid välja logida?"
