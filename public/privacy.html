@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index,follow">
+  <title>Privaatsuspoliitika — Kyts</title>
+  <link rel="canonical" href="https://kyts.ee/privacy.html">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.6;
+      background: #0a0a0a;
+      color: #e4e4e7;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    header a {
+      color: #3b82f6;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    header a:hover { text-decoration: underline; }
+    h1 {
+      font-size: 1.75rem;
+      margin: 20px 0 8px;
+      color: #fafafa;
+    }
+    .effective {
+      font-size: 0.82rem;
+      color: #a1a1aa;
+      margin-bottom: 24px;
+    }
+    h2 {
+      font-size: 1.05rem;
+      color: #fafafa;
+      margin: 24px 0 8px;
+    }
+    p, ul { margin: 0 0 12px; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 4px; }
+    a { color: #60a5fa; }
+    strong { color: #fafafa; }
+    em { color: #d4d4d8; }
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #27272a;
+      font-size: 0.85rem;
+      color: #a1a1aa;
+    }
+    footer a { color: #60a5fa; }
+    @media (prefers-color-scheme: light) {
+      body { background: #fafafa; color: #27272a; }
+      h1, h2, strong { color: #09090b; }
+      .effective, footer { color: #52525b; }
+      footer { border-top-color: #e4e4e7; }
+      em { color: #3f3f46; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header><a href="/">← kyts.ee</a></header>
+    <h1>Privaatsuspoliitika</h1>
+    <p class="effective">Kehtib alates: 15.04.2026</p>
+
+    <h2>1. Vastutav töötleja</h2>
+    <p>Kyts on kogukonnaprojekt, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a href="mailto:info@kyts.ee">info@kyts.ee</a>. Koduleht: <a href="https://kyts.ee">kyts.ee</a>.</p>
+
+    <h2>2. Milliseid andmeid me kogume</h2>
+    <ul>
+      <li><strong>Konto andmed:</strong> e-posti aadress ja Supabase poolt genereeritud kasutaja ID (kui logid sisse Google OAuth'iga või e-postiga).</li>
+      <li><strong>Kasutajanimi:</strong> valikuline avalik kuvanimi, mille sa ise määrad.</li>
+      <li><strong>Panused:</strong> sinu esitatud kütusehinnad ja hääletused (avalikud, seotud sinu kasutaja ID-ga).</li>
+      <li><strong>Eelistused:</strong> lemmikjaamad, eelistatud kütusetüüp, lemmikbrändid, boonuskaardi soodustused — salvestatud sinu kontole.</li>
+      <li><strong>Tehnilised logid:</strong> IP-aadress (ajutiselt, rate limit'i jaoks), vea-stack'id (Sentry), aggregeeritud sündmused (PostHog).</li>
+    </ul>
+
+    <h2>3. Milleks me andmeid kasutame</h2>
+    <ul>
+      <li>Teenuse toimimiseks (autentimine, sinu eelistuste meelespidamine).</li>
+      <li>Kuritarvituste tõrjeks (hinnaskännide rate limit per-IP).</li>
+      <li>Vigade tuvastamiseks (Sentry — automaatselt kogutud stack trace'id).</li>
+      <li>Kasutuse mõõtmiseks (PostHog — anonüümsed agregaadid, ei salvesta brauserisse midagi).</li>
+    </ul>
+
+    <h2>4. Õiguslikud alused (GDPR art 6)</h2>
+    <ul>
+      <li><strong>Leping (art 6(1)(b)):</strong> konto haldamine ja teenuse pakkumine.</li>
+      <li><strong>Õigustatud huvi (art 6(1)(f)):</strong> turvalisus, pettuse tõrje, teenuse parendamine anonüümse statistika kaudu.</li>
+    </ul>
+
+    <h2>5. Alltöötlejad (sub-processors)</h2>
+    <p>Andmete töötlemisel kasutame järgmisi teenuseid:</p>
+    <ul>
+      <li><strong>Supabase</strong> (EL) — andmebaas ja autentimine.</li>
+      <li><strong>Vercel</strong> (EL edge) — veebimajutus ja API funktsioonid.</li>
+      <li><strong>Google</strong> — OAuth autentimine ning Gemini AI (kütusetotemi pildituvastus).</li>
+      <li><strong>Upstash Redis</strong> (EL) — rate limit counter'id.</li>
+      <li><strong>Sentry</strong> — vigade agregaator.</li>
+      <li><strong>PostHog</strong> (EU Cloud) — anonüümne produktianalüütika.</li>
+    </ul>
+
+    <h2>6. Pilditöötlus (AI)</h2>
+    <p>Kaamera-skaneerimisel saadetakse pilt turvaliselt Google Gemini AI-le hinnatuvastuseks. Pilti <strong>ei salvestata</strong> meie serverites ega andmebaasis — see töödeldakse koheselt ja kustutatakse pärast JSON-vastuse tagastamist.</p>
+
+    <h2>7. Asukohaandmed</h2>
+    <p>Kaardi "Asukoha" ja "Odavaim lähedal" funktsioonid kasutavad brauseri GPS-i ainult sinu seadmes. Sinu koordinaate <strong>ei saadeta</strong> meie serveritesse.</p>
+
+    <h2>8. Küpsised ja kohalik salvestus</h2>
+    <p>Kasutame ainult <em>hädavajalikke</em> küpsiseid: Supabase Auth sessioonitokenid (hoiab sind sisselogituna) ning localStorage kirjed sinu eelistuste salvestamiseks (nt boonuskaardid, kaardi stiil). Analüütikaks <strong>küpsiseid ei salvestata</strong> — PostHog töötab mälu-režiimis. Seetõttu ei nõua me nõusolekubanner'it.</p>
+
+    <h2>9. Säilitusajad</h2>
+    <ul>
+      <li>Konto + eelistused: kuni kustutad konto.</li>
+      <li>Hinnapostitused: avalik ajalugu säilib, et võrdlused töötaksid.</li>
+      <li>Vealogid (Sentry): 30 päeva.</li>
+      <li>Analüütika (PostHog): 1 aasta, agregeeritud.</li>
+      <li>Rate limit counter'id (Upstash): 1 päev.</li>
+    </ul>
+
+    <h2>10. Sinu õigused (GDPR)</h2>
+    <p>Sul on õigus: oma andmeid vaadata, parandada, kustutada ning eksportida. Samuti esitada vastuväide töötlemisele ja kaebus Andmekaitse Inspektsioonile (aki.ee). Taotluse jaoks kirjuta: <a href="mailto:info@kyts.ee">info@kyts.ee</a>. Vastame 30 päeva jooksul.</p>
+
+    <h2>11. Muudatused</h2>
+    <p>Olulistest muudatustest teavitame rakenduses. Kehtiv versioon on alati käesolev dokument.</p>
+
+    <footer>
+      Vaata ka: <a href="/terms.html">Kasutustingimused</a> · <a href="/">Tagasi rakendusse</a>
+    </footer>
+  </main>
+</body>
+</html>
