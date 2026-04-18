@@ -634,7 +634,7 @@ function App() {
       <UpdateBanner />
 
       {/* Top Search & Action Bar */}
-      <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>
+      <div style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', right: '20px', zIndex: 1000 }}>
         <header className="glass-panel" style={{
           padding: '8px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',

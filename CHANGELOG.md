@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - iOS notch safe-area fix for top search bar - 2026-04-18
+
+### Fixed 🐛
+- 🟡 **Top search bar no longer hides under iOS status bar/notch** (`src/App.tsx`): friend reported the iPhone status bar (time, signal, battery) was overlaying the search bar on an installed PWA. `viewport-fit=cover` was already set in `index.html` (edge-to-edge rendering) and every other fixed-position element in the app respects `env(safe-area-inset-bottom)`, but the top search bar sat at a hard `top: '20px'` and had no `safe-area-inset-top` counterpart — so on devices with a notch/dynamic island (iPhone X+), it rendered under the 44–59 px status area. Changed to `top: 'calc(20px + env(safe-area-inset-top))'`. The filter pills row, search dropdown, and DiscoveryBanner are all positioned relative to the same parent or already use the inset, so the gap below stays consistent. `env()` resolves to `0px` on non-notched devices, so no visual change for desktop/Android.
+
+---
+
 ## [Unreleased] - OAuth consent branding + static legal pages - 2026-04-18
 
 ### Added ✨
