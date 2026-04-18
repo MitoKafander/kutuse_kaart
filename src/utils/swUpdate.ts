@@ -4,12 +4,7 @@
 // avoids pulling in a state-management library for one bool.
 
 let available = false;
-let applyFn: ((reload?: boolean) => Promise<void>) | null = null;
 const listeners = new Set<(v: boolean) => void>();
-
-export function registerApply(fn: (reload?: boolean) => Promise<void>) {
-  applyFn = fn;
-}
 
 export function notifyUpdateAvailable() {
   if (available) return;

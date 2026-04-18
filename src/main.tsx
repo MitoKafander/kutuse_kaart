@@ -5,7 +5,7 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 import { initAnalytics } from './utils/analytics'
-import { notifyUpdateAvailable, registerApply } from './utils/swUpdate'
+import { notifyUpdateAvailable } from './utils/swUpdate'
 
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 if (sentryDsn) {
@@ -46,7 +46,7 @@ initAnalytics();
 // UpdateBanner component. onRegisteredSW adds a visibilitychange listener
 // so a background PWA tab re-checks for updates the moment the user
 // foregrounds it (default SW only updates on hard navigation + every 24h).
-const updateSW = registerSW({
+registerSW({
   onNeedRefresh() { notifyUpdateAvailable(); },
   onRegisteredSW(_swUrl, registration) {
     if (!registration) return;
@@ -57,7 +57,6 @@ const updateSW = registerSW({
     });
   },
 });
-registerApply(updateSW);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
