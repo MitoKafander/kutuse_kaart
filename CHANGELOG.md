@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Avastuskaart stats + banner shortcut - 2026-04-18
+
+### Changed 🔧
+- 🟡 **Avastuskaart stats accordion is now independent of the map-mode toggle** (`src/components/ProfileDrawer.tsx`, `src/App.tsx`): users can expand the 15-maakond tile grid without actually turning on the map mode (which hides station prices). A new "stats row" button in the Avastuskaart panel — showing `X/Y jaama · X/Y valda · X/Y maakonda` with a chevron — toggles a local `statsExpanded` state. Tapping a tile while map mode is off auto-enables it before focusing (`onMaakondFocus` in App.tsx flips `showDiscoveryMap` to `true` first). Previously the grid was hard-gated behind the toggle, so curious users had to turn the map mode on just to see their progress, and lost their price view in the process.
+- 🟡 **DiscoveryBanner body is now a tappable shortcut to Avastuskaart settings** (`src/components/DiscoveryBanner.tsx`, `src/App.tsx`): the icon + title + subtitle region is a `<button>` when the new `onOpenSettings` prop is provided. Tapping it opens the profile drawer, switches to the Profiil tab, auto-expands the stats accordion, and scrolls the Avastuskaart panel into view — plumbed via a `pendingAvastuskaartFocus` counter prop on `ProfileDrawer` so a `useEffect` fires the whole flow in one pass. Previously, changing which maakond was focused took 4+ taps (banner X to clear focus → profile → Profiil tab → scroll → new tile); now it's 1 tap to the drawer + 1 tile tap. The X (clear focus) and "Lülita välja" action buttons remain separate click targets. Viewing-someone-else state doesn't expose the shortcut (no self-settings to open).
+
+### Key Decisions
+- **Counter-prop over open-to-section prop**: using a monotonically incrementing `pendingAvastuskaartFocus` counter as the trigger means re-tapping the banner re-fires the scroll even if the drawer is already open (drawer-already-open is the most common path after first use). A `section?: 'avastuskaart'` string prop would need separate "consumed" tracking to avoid re-firing on every render.
+- **50 ms `setTimeout` before `scrollIntoView`**: the profile tab's DOM hasn't mounted yet in the same tick the `useEffect` sets `activeTab='profile'`. A tick delay is cheaper than a layout-effect ref observer.
+- **Auto-enable map mode on tile click instead of gating the tile**: a disabled-looking tile that says "turn on mode first" would have been worse UX — tiles that react are what users already expect from the visual language.
+
+---
+
 ## [Unreleased] - Manual FAB icon simplified - 2026-04-18
 
 ### Changed 🔧

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
@@ -139,6 +139,7 @@ export function ProfileDrawer({
   onMaakondFocus,
   sharePublicly,
   onSharePubliclyChange,
+  pendingAvastuskaartFocus,
 }: {
   session: any;
   isOpen: boolean;
@@ -183,6 +184,11 @@ export function ProfileDrawer({
   onMaakondFocus?: (maakondId: number) => void;
   sharePublicly: boolean;
   onSharePubliclyChange: (v: boolean) => void;
+  // Counter-prop: each increment triggers a jump-to-Avastuskaart flow —
+  // switch to Profiil tab, expand the stats accordion, scroll into view.
+  // Used by the DiscoveryBanner to let the user change focused maakond
+  // in one tap instead of drawer→tab→scroll→expand.
+  pendingAvastuskaartFocus?: number;
 }) {
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
@@ -190,6 +196,22 @@ export function ProfileDrawer({
   const [brandsOpen, setBrandsOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName);
   useEffect(() => { setNameDraft(displayName); }, [displayName]);
+
+  // Stats grid is a standalone accordion, unlinked from the map-view toggle
+  // so users can browse their progress without blanking out the map.
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const avastuskaartRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!pendingAvastuskaartFocus) return;
+    setActiveTab('profile');
+    setStatsExpanded(true);
+    // Tick delay lets React mount the profile-tab DOM before we scroll.
+    const t = setTimeout(() => {
+      avastuskaartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [pendingAvastuskaartFocus]);
 
   if (!isOpen || !session) return null;
 
@@ -590,7 +612,7 @@ export function ProfileDrawer({
             </button>
           )}
 
-          <div className="glass-panel" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div ref={avastuskaartRef} className="glass-panel" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1rem', color: 'var(--color-text)' }}>
                 <Compass size={18} color="var(--color-primary)" /> Avastuskaart
@@ -614,15 +636,35 @@ export function ProfileDrawer({
               Vaata, millised jaamad oled avastanud. Täida valdu ja maakondi, et tõusta Avastajate edetabelis.
             </p>
 
-            {showDiscoveryMap && (
+            <button
+              onClick={() => setStatsExpanded(e => !e)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+                borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)',
+                fontSize: '0.8rem', width: '100%', textAlign: 'left',
+              }}
+              aria-expanded={statsExpanded}
+            >
+              <span>
+                {regionProgress.stations.done}/{regionProgress.stations.total} jaama
+                {' · '}
+                {regionProgress.parishes.done}/{regionProgress.parishes.total} valdu
+                {' · '}
+                {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
+              </span>
+              <ChevronDown
+                size={16}
+                style={{
+                  color: 'var(--color-text-muted)',
+                  transform: statsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </button>
+
+            {statsExpanded && (
               <>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '4px 0' }}>
-                  {regionProgress.stations.done}/{regionProgress.stations.total} jaama
-                  {' · '}
-                  {regionProgress.parishes.done}/{regionProgress.parishes.total} valdu
-                  {' · '}
-                  {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
-                </div>
                 <DiscoveryBadgeGrid progress={regionProgress} onMaakondFocus={onMaakondFocus} />
 
                 <label style={{

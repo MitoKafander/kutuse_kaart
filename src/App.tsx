@@ -151,6 +151,10 @@ function App() {
   // Avastuskaart focus: when set, the map dims everything outside this
   // maakond and flies to its bounds. Cleared by banner "X" or toggle-off.
   const [focusedMaakondId, setFocusedMaakondId] = useState<number | null>(null);
+  // Increment to signal "open Avastuskaart section" to the profile drawer —
+  // used by the DiscoveryBanner tap and when a tile in the stats grid is
+  // clicked while the map mode was already on (no-op then, but cheap).
+  const [avastuskaartFocusTrigger, setAvastuskaartFocusTrigger] = useState(0);
   // Lazy-loaded on first toggle-ON; cached in the bundle hash so repeat
   // toggles are instant without a refetch.
   const [maakondGeo, setMaakondGeo] = useState<any | null>(null);
@@ -617,6 +621,10 @@ function App() {
             else handleShowDiscoveryMapChange(false);
           }}
           viewedUserName={viewedUser?.name ?? null}
+          onOpenSettings={() => {
+            setAvastuskaartFocusTrigger(n => n + 1);
+            setIsProfileOpen(true);
+          }}
         />
       )}
 
@@ -1006,9 +1014,13 @@ function App() {
         sharePublicly={sharePublicly}
         onSharePubliclyChange={handleSharePubliclyChange}
         onMaakondFocus={(id) => {
+          // Tile click while stats grid was open but map mode was off:
+          // auto-enable the map mode so the focus is actually visible.
+          if (!showDiscoveryMap) handleShowDiscoveryMapChange(true);
           setFocusedMaakondId(id);
           setIsProfileOpen(false);
         }}
+        pendingAvastuskaartFocus={avastuskaartFocusTrigger}
         displayName={displayName}
         onDisplayNameChange={async (name) => {
           setDisplayName(name);

@@ -11,15 +11,22 @@ export function DiscoveryBanner({
   onClearFocus,
   onTurnOff,
   viewedUserName,
+  onOpenSettings,
 }: {
   focusedMaakondName: string | null;
   focusedMaakondEmoji: string | null;
   onClearFocus: () => void;
   onTurnOff: () => void;
   viewedUserName?: string | null;
+  // When provided, the main banner body becomes a tap target that jumps
+  // to the Avastuskaart section of the profile drawer — the primary way
+  // to switch focused maakond without backtracking through the settings.
+  // Omit when viewing someone else's map (no self-settings to open).
+  onOpenSettings?: () => void;
 }) {
   const hasFocus = !!focusedMaakondName;
   const isViewing = !!viewedUserName;
+  const canOpenSettings = !!onOpenSettings && !isViewing;
   return (
     <div
       className="glass-panel"
@@ -44,7 +51,17 @@ export function DiscoveryBanner({
       {isViewing
         ? <Eye size={16} color="#c084fc" style={{ flexShrink: 0 }} />
         : <Compass size={16} color="var(--color-primary)" style={{ flexShrink: 0 }} />}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+      <button
+        onClick={canOpenSettings ? onOpenSettings : undefined}
+        disabled={!canOpenSettings}
+        title={canOpenSettings ? 'Ava avastuskaart' : undefined}
+        style={{
+          flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2,
+          background: 'none', border: 'none', padding: 0, margin: 0, textAlign: 'left',
+          color: 'inherit', font: 'inherit',
+          cursor: canOpenSettings ? 'pointer' : 'default',
+        }}
+      >
         <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {isViewing
             ? <>Vaatad: {viewedUserName}</>
@@ -55,9 +72,11 @@ export function DiscoveryBanner({
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
           {isViewing
             ? 'Teise kasutaja avastuskaart'
-            : hasFocus ? 'Puuduta X, et näha kõiki maakondi' : 'Hinnad on peidetud'}
+            : canOpenSettings
+              ? (hasFocus ? 'Puuduta, et vahetada maakonda' : 'Puuduta, et avada avastuskaart')
+              : hasFocus ? 'Puuduta X, et näha kõiki maakondi' : 'Hinnad on peidetud'}
         </span>
-      </div>
+      </button>
       {hasFocus && !isViewing && (
         <button
           onClick={onClearFocus}
