@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Kasutajanimi moved to Edetabel - 2026-04-18
+
+### Changed 🔧
+- 🟢 **Display-name editor relocated from ProfileDrawer into LeaderboardDrawer** (`src/components/LeaderboardDrawer.tsx`, `src/components/ProfileDrawer.tsx`, `src/App.tsx`): the nickname field now lives where it's actually surfaced to other users — inside the Edetabel, as a compact inline row (UserCircle icon + "Sina:" label + text input) above the ranking list. Saves on blur + Enter, same 32-char cap and `Anonüümne` placeholder as before. Only renders when signed in and a handler is wired (`currentUserId && onDisplayNameChange`). The standalone "Kasutajanimi (nähtav edetabelis)" `glass-panel` card in ProfileDrawer's Profiil tab is gone along with its `nameDraft` state and sync effect, and `displayName` / `onDisplayNameChange` props moved from the `<ProfileDrawer>` call-site to `<LeaderboardDrawer>` in `App.tsx`. Rationale: the label was technically correct in the old location but users only think about their name when they *see* the leaderboard, so editing inline there removes a drawer-hop.
+
+---
+
 ## [Unreleased] - Profile drawer tidy-up - 2026-04-18
 
 ### Changed 🔧

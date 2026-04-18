@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Trophy, Star, Compass, Map as MapIcon } from 'lucide-react';
+import { X, Trophy, Star, Compass, Map as MapIcon, UserCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 
 type Period = '7d' | '30d' | 'all';
@@ -46,16 +46,22 @@ export function LeaderboardDrawer({
   onClose,
   currentUserId,
   onViewFootprint,
+  displayName,
+  onDisplayNameChange,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentUserId?: string | null;
   onViewFootprint?: (userId: string, displayName: string) => void;
+  displayName?: string;
+  onDisplayNameChange?: (name: string) => void;
 }) {
   const [dimension, setDimension] = useState<Dimension>('activity');
   const [period, setPeriod] = useState<Period>('30d');
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
+  const [nameDraft, setNameDraft] = useState(displayName ?? '');
+  useEffect(() => { setNameDraft(displayName ?? ''); }, [displayName]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -163,6 +169,40 @@ export function LeaderboardDrawer({
         {dimension === 'discovery' && (
           <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
             Järjestatud maakondade, siis valdade, siis jaamade järgi — kõik aeg.
+          </div>
+        )}
+
+        {/* Inline "your name in the leaderboard" editor — lives here because
+            this is the one place in the app where the name actually surfaces
+            to other users. Save on blur + Enter. Only shown when signed in
+            and a handler is wired. */}
+        {currentUserId && onDisplayNameChange && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 12px', marginBottom: 10, borderRadius: 10,
+            background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+          }}>
+            <UserCircle size={16} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+              Sina:
+            </span>
+            <input
+              type="text"
+              value={nameDraft}
+              maxLength={32}
+              placeholder="Anonüümne"
+              onChange={e => setNameDraft(e.target.value)}
+              onBlur={() => {
+                const trimmed = nameDraft.trim();
+                if (trimmed !== (displayName ?? '')) onDisplayNameChange(trimmed);
+              }}
+              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+              style={{
+                flex: 1, minWidth: 0, padding: '6px 10px',
+                background: 'var(--color-bg)', border: '1px solid var(--color-surface-border)',
+                borderRadius: 6, color: 'var(--color-text)', fontSize: '0.88rem', outline: 'none',
+              }}
+            />
           </div>
         )}
 

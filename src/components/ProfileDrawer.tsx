@@ -127,8 +127,6 @@ export function ProfileDrawer({
   mapStyle,
   onMapStyleChange,
   onOpenLeaderboard,
-  displayName,
-  onDisplayNameChange,
   onOpenPrivacy,
   onOpenTerms,
   onOpenFeedback,
@@ -172,8 +170,6 @@ export function ProfileDrawer({
   mapStyle: 'dark' | 'light';
   onMapStyleChange: (s: 'dark' | 'light') => void;
   onOpenLeaderboard?: () => void;
-  displayName: string;
-  onDisplayNameChange: (name: string) => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
   onOpenFeedback?: () => void;
@@ -194,8 +190,6 @@ export function ProfileDrawer({
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
-  const [nameDraft, setNameDraft] = useState(displayName);
-  useEffect(() => { setNameDraft(displayName); }, [displayName]);
 
   // Stats grid is a standalone accordion, unlinked from the map-view toggle
   // so users can browse their progress without blanking out the map.
@@ -550,28 +544,6 @@ export function ProfileDrawer({
                 })}
               </div>
             )}
-          </div>
-
-          <div className="glass-panel" style={{ padding: '14px 16px' }}>
-            <label style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: 6 }}>
-              Kasutajanimi (nähtav edetabelis)
-            </label>
-            <input
-              type="text"
-              value={nameDraft}
-              maxLength={32}
-              placeholder="Anonüümne"
-              onChange={e => setNameDraft(e.target.value)}
-              onBlur={() => {
-                const trimmed = nameDraft.trim();
-                if (trimmed !== displayName) onDisplayNameChange(trimmed);
-              }}
-              style={{
-                width: '100%', padding: '8px 10px',
-                background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
-                borderRadius: 8, color: 'var(--color-text)', fontSize: '0.9rem', outline: 'none',
-              }}
-            />
           </div>
 
           {onOpenLeaderboard && (

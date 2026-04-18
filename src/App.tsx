@@ -1044,13 +1044,6 @@ function App() {
           setIsProfileOpen(false);
         }}
         pendingAvastuskaartFocus={avastuskaartFocusTrigger}
-        displayName={displayName}
-        onDisplayNameChange={async (name) => {
-          setDisplayName(name);
-          if (session?.user?.id) {
-            await supabase.from('user_profiles').upsert({ id: session.user.id, display_name: name });
-          }
-        }}
         allBrandsForLoyalty={uniqueBrands}
         loyaltyDiscounts={loyaltyDiscounts}
         onLoyaltyChange={async (brand, cents) => {
@@ -1080,6 +1073,11 @@ function App() {
             onClose={() => setIsLeaderboardOpen(false)}
             currentUserId={session?.user?.id}
             onViewFootprint={handleViewUserFootprint}
+            displayName={displayName}
+            onDisplayNameChange={session?.user?.id ? async (name) => {
+              setDisplayName(name);
+              await supabase.from('user_profiles').upsert({ id: session.user.id, display_name: name });
+            } : undefined}
           />
         )}
       </Suspense>
