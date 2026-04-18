@@ -406,6 +406,48 @@ export function ManualPriceModal({
     onClose();
   };
 
+  // Transient Supabase failures (Postgrest 5xx, dropped TCP, edge-router
+  // hiccup) are the root cause of user-reported "submitted, got an error,
+  // tried again and it worked". A single in-band retry after 800 ms hides
+  // those without the user having to think about it. Deterministic errors
+  // (RLS deny, trigger violation, unique key) are not retried — they'd
+  // just fail the same way and waste a second of UX.
+  const submitPricesWithRetry = async (inserts: any[]) => {
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const { error } = await supabase.from('prices').insert(inserts);
+      if (!error) return { error: null, attempts: attempt };
+      lastError = error;
+      const code: string = error.code || '';
+      // Postgres SQLSTATE class 23 = integrity violations; 42501 = RLS deny.
+      // These are deterministic on the same input — no point retrying.
+      const deterministic = code === '42501' || code.startsWith('23');
+      if (deterministic) break;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    return { error: lastError, attempts: 2 };
+  };
+
+  // Convert a Supabase/Postgres error into user-facing Estonian copy. The
+  // distance-rejection case is the only common deterministic miss (client
+  // and server sometimes disagree by a few metres at the 1 km edge); the
+  // rest collapse into a generic retry prompt since the auto-retry above
+  // already burned one attempt on transient failures.
+  const friendlyPriceSubmitError = (err: any): string => {
+    const code: string = err?.code || '';
+    const msg: string = err?.message || '';
+    if (msg.includes('km from station')) {
+      return 'Oled tanklast liiga kaugel. Liigu tankla juurde ja proovi uuesti.';
+    }
+    if (code === '42501') {
+      return 'Sisestus ei läbinud kontrolli. Kontrolli hindu ja proovi uuesti.';
+    }
+    if (msg.includes('station') && msg.includes('not found')) {
+      return 'Tanklat ei leitud. Vali uuesti tankla ja proovi uuesti.';
+    }
+    return 'Salvestamine ebaõnnestus. Proovi veel kord — kui see kordub, kontrolli võrguühendust.';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const activeStation = resolvedStation;
@@ -463,13 +505,36 @@ export function ManualPriceModal({
     }));
 
     if (inserts.length > 0) {
-      const { error } = await supabase.from('prices').insert(inserts);
+      const { error, attempts } = await submitPricesWithRetry(inserts);
       if (error) {
-        alert("Viga hinna salvestamisel!");
+        alert(friendlyPriceSubmitError(error));
+        // Capture to Sentry + PostHog so we stop flying blind on intermittent
+        // failures. Warning level (not error) because the user isn't broken,
+        // just blocked; we don't want to pollute the Sentry inbox with
+        // every transient hiccup that the retry didn't save.
+        Sentry.captureMessage('price_submit_failed', {
+          level: 'warning',
+          tags: { feature: 'price-submit' },
+          extra: {
+            code: error.code,
+            message: error.message,
+            hint: error.hint,
+            details: error.details,
+            attempts,
+            station_id: activeStation.id,
+            fuel_types: parsed.map(p => p.type),
+            entry_method: entryMethod,
+          },
+        });
+        capture('price_submit_failed', {
+          code: error.code || 'unknown',
+          entry_method: entryMethod,
+          attempts,
+        });
         setLoading(false);
         return;
       }
-      capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi, entry_method: entryMethod });
+      capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi, entry_method: entryMethod, attempts });
       onPricesSubmitted();
       if (isManualMode) {
         // Manual flow: confirm save inline, then close after a short beat so
@@ -543,7 +608,7 @@ export function ManualPriceModal({
         <div className="flex-between" style={{ marginBottom: '24px' }}>
           <h2 className="heading-1">
             {activeStation
-              ? `Uued Hinnad: ${getStationDisplayName(activeStation)}`
+              ? `Uued hinnad: ${getStationDisplayName(activeStation)}`
               : isManualMode
                 ? 'Sisesta hinnad'
                 : 'Skaneeri Hinnad'}

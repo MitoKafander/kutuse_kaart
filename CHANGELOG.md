@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Price submit retry + diagnostics - 2026-04-18
+
+### Fixed 🐛
+- 🔴 **Price submits now retry transiently + log failures to Sentry** (`src/components/ManualPriceModal.tsx`): user reported intermittent "Viga hinna salvestamisel!" errors requiring multiple attempts before the save went through. Sentry had zero events for this path because the failure branch at the old line 468 just called `alert()` and returned — the Supabase error object was silently dropped. Two fixes in one:
+  - `submitPricesWithRetry` auto-retries non-deterministic failures once after 800 ms. SQLSTATE class 23 (integrity violations) and 42501 (RLS deny) are treated as deterministic and not retried. Transient Postgrest 5xx / TCP drops / edge-router hiccups — which were the root cause per the user's "after multiple tries it works" observation — now self-heal silently within the same submit attempt.
+  - When both attempts fail, we `Sentry.captureMessage('price_submit_failed', { level: 'warning' })` with code / message / hint / station_id / fuel_types / entry_method / attempts, and mirror a `price_submit_failed` PostHog event. Warning-not-error keeps the Sentry inbox clean but still gives us a queryable record. `price_submitted` also gained an `attempts` prop so we can watch the retry-saved rate in PostHog.
+  - Friendly-error helper converts the Supabase error into specific Estonian copy when we can classify it (distance rejection, RLS, missing station); otherwise a generic "proovi veel kord" prompt.
+
+### Changed 🔧
+- 🟢 **"Uued hinnad" heading** (`src/components/ManualPriceModal.tsx`): was "Uued Hinnad" — sentence-case to match the ProfileDrawer convention.
+
+---
+
 ## [Unreleased] - Update banner for stale PWA users - 2026-04-18
 
 ### Added ✨
