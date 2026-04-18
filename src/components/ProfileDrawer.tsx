@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap } from '../utils';
@@ -143,9 +143,11 @@ export function ProfileDrawer({
   onSharePubliclyChange,
   pendingAvastuskaartFocus,
   displayName,
+  onDisplayNameChange,
 }: {
   session: any;
   displayName?: string;
+  onDisplayNameChange?: (name: string) => void | Promise<void>;
   isOpen: boolean;
   onClose: () => void;
   favorites: any[];
@@ -203,6 +205,17 @@ export function ProfileDrawer({
   // so users can browse their progress without blanking out the map.
   const [statsExpanded, setStatsExpanded] = useState(false);
   const avastuskaartRef = useRef<HTMLDivElement | null>(null);
+
+  const [nameEditing, setNameEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState(displayName ?? '');
+  useEffect(() => { setNameDraft(displayName ?? ''); }, [displayName]);
+  const commitName = () => {
+    const trimmed = nameDraft.trim();
+    if (onDisplayNameChange && trimmed !== (displayName ?? '')) {
+      void onDisplayNameChange(trimmed);
+    }
+    setNameEditing(false);
+  };
 
   useEffect(() => {
     if (!pendingAvastuskaartFocus) return;
@@ -356,8 +369,73 @@ export function ProfileDrawer({
                 {displayName ? displayName.charAt(0).toUpperCase() : (session?.user?.email ? session.user.email.charAt(0).toUpperCase() : <UserCircle size={24} />)}
               </div>
             )}
-            <div>
-              <h2 className="heading-1" style={{ marginBottom: '2px' }}>{t('profile.header.title')}</h2>
+            <div style={{ minWidth: 0 }}>
+              {nameEditing && onDisplayNameChange ? (
+                <input
+                  autoFocus
+                  type="text"
+                  value={nameDraft}
+                  maxLength={32}
+                  placeholder={t('leaderboard.anonymous')}
+                  onChange={e => setNameDraft(e.target.value)}
+                  onBlur={commitName}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    else if (e.key === 'Escape') {
+                      setNameDraft(displayName ?? '');
+                      setNameEditing(false);
+                    }
+                  }}
+                  className="heading-1"
+                  style={{
+                    marginBottom: '2px', width: '100%', maxWidth: '280px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid var(--color-primary)',
+                    borderRadius: 0,
+                    padding: '0 0 2px 0',
+                    color: 'var(--color-text)', outline: 'none',
+                  }}
+                />
+              ) : (
+                <div
+                  onClick={() => onDisplayNameChange && setNameEditing(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    marginBottom: '2px',
+                    cursor: onDisplayNameChange ? 'pointer' : 'default',
+                    minWidth: 0,
+                  }}
+                >
+                  <h2
+                    className="heading-1"
+                    style={{
+                      margin: 0,
+                      color: displayName ? 'var(--color-text)' : 'var(--color-text-muted)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      minWidth: 0,
+                    }}
+                  >
+                    {displayName || t('profile.header.title')}
+                  </h2>
+                  {onDisplayNameChange && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setNameEditing(true); }}
+                      aria-label={t('profile.header.editName')}
+                      title={t('profile.header.editName')}
+                      style={{
+                        background: 'none', border: 'none',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'pointer', padding: '4px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.8rem' }}>{badge.emoji}</span>
                 <span style={{ fontSize: '0.8rem', color: badge.color, fontWeight: '600' }}>{t(`profile.tiers.${badge.slug}`)}</span>

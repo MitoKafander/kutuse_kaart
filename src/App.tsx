@@ -595,6 +595,13 @@ function App() {
     setIsPriceModalOpen(true);
   };
 
+  const handleDisplayNameChange = session?.user?.id
+    ? async (name: string) => {
+        setDisplayName(name);
+        await supabase.from('user_profiles').upsert({ id: session.user!.id, display_name: name });
+      }
+    : undefined;
+
   // Derive all unique brands dynamically
   const uniqueBrands = useMemo(() => {
     const brands = new Set<string>();
@@ -1049,6 +1056,7 @@ function App() {
       <ProfileDrawer
         session={session}
         displayName={displayName}
+        onDisplayNameChange={handleDisplayNameChange}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         favorites={favorites}
@@ -1124,10 +1132,7 @@ function App() {
             currentUserId={session?.user?.id}
             onViewFootprint={handleViewUserFootprint}
             displayName={displayName}
-            onDisplayNameChange={session?.user?.id ? async (name) => {
-              setDisplayName(name);
-              await supabase.from('user_profiles').upsert({ id: session.user.id, display_name: name });
-            } : undefined}
+            onDisplayNameChange={handleDisplayNameChange}
           />
         )}
       </Suspense>

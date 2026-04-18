@@ -362,6 +362,7 @@
   "profile": {
     "header": {
       "title": "Sinu profiil",
+      "editName": "Muuda nime",
       "logout": "Logi välja",
       "logoutConfirm": "Kas oled kindel, et soovid välja logida?"
     },
