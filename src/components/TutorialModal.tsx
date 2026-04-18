@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin } from 'lucide-react';
-import { FuelPencilIcon } from './icons/FuelPencilIcon';
 import { capture } from '../utils/analytics';
 
 type Outcome = 'completed' | 'skipped';
@@ -29,7 +28,7 @@ const STEPS: Step[] = [
     icon: (
       <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', maxWidth: '340px' }}>
         <Camera size={32} color={COLOR_BLUE} />
-        <FuelPencilIcon size={32} style={{ color: COLOR_ORANGE }} />
+        <Fuel size={32} color={COLOR_ORANGE} />
         <Euro size={32} color={COLOR_YELLOW} />
         <Navigation size={32} color={COLOR_GREEN} />
         <TrendingUp size={32} color={COLOR_PURPLE} />

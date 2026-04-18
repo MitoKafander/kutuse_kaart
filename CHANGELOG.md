@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Manual FAB icon simplified - 2026-04-18
+
+### Changed 🔧
+- 🟢 **Manual-entry FAB now uses plain Lucide `Fuel` icon** (`src/App.tsx`, `src/components/TutorialModal.tsx`, deleted `src/components/icons/FuelPencilIcon.tsx`): the custom pump+pencil composite icon is gone; the orange FAB and the tutorial legend both render the stock `Fuel` icon. The pencil overlay implied "edit existing data" when the button actually means "add new data"; the Fuel icon is also closer to what users already recognize from the Camera/Euro/Navigation/TrendingUp siblings (all single-glyph Lucide). Color token (`#fb923c`) unchanged — orange still distinguishes manual from the blue camera FAB.
+
+---
+
 ## [Unreleased] - Tutorial back-button fix - 2026-04-18
 
 ### Fixed 🐛

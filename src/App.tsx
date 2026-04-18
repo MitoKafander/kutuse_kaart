@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X } from 'lucide-react';
-import { FuelPencilIcon } from './components/icons/FuelPencilIcon';
+import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -788,7 +787,7 @@ function App() {
           transition: 'all 0.2s ease',
         }}
       >
-        <FuelPencilIcon size={22} />
+        <Fuel size={22} />
       </button>
 
       <button
