@@ -396,21 +396,61 @@ function DiscoveryParishLayer({
 
   useEffect(() => {
     if (!geo) return;
+    const HOLD_MS = 350;
     const layer = L.geoJSON(geo, {
       interactive: true,
       style: hiddenStyle,
       onEachFeature: (_feature, sublayer: any) => {
-        sublayer.on('mouseover', () => {
+        // Per-sublayer hold state — one timer per vald so adjacent presses
+        // don't cross-cancel. Leaflet fires `mousedown`/`mouseup` for touch
+        // on paths too, so this covers desktop click-hold and mobile
+        // tap-and-hold with the same code path.
+        let holdTimer: ReturnType<typeof setTimeout> | null = null;
+        let isHolding = false;
+        let isOver = false;
+        const clearTimer = () => {
+          if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        };
+        const applyBase = () => {
+          sublayer.setStyle(baseStyleForRef.current(sublayer));
+        };
+        const applyHover = () => {
           const base = baseStyleForRef.current(sublayer);
           // Don't highlight valds that are currently hidden (zoomed out, not
           // in focused maakond) — the cursor would otherwise light up empty
           // space at country scale.
-          if (!base || base.weight === 0) return;
+          if (!base || base.weight === 0) return false;
           sublayer.setStyle(hoverStyleRef.current);
-        });
+          return true;
+        };
+
+        sublayer.on('mouseover', () => { isOver = true; applyHover(); });
         sublayer.on('mouseout', () => {
-          sublayer.setStyle(baseStyleForRef.current(sublayer));
+          isOver = false;
+          clearTimer();
+          isHolding = false;
+          applyBase();
         });
+        sublayer.on('mousedown', () => {
+          clearTimer();
+          holdTimer = setTimeout(() => {
+            holdTimer = null;
+            if (applyHover()) isHolding = true;
+          }, HOLD_MS);
+        });
+        sublayer.on('mouseup', () => {
+          clearTimer();
+          if (isHolding) {
+            isHolding = false;
+            // Desktop: finger-style click-hold ends with cursor still over,
+            // so restore hover rather than dropping back to dim.
+            if (isOver) applyHover(); else applyBase();
+          }
+        });
+        // Pan-drag over a pressed polygon fires mousemove — cancel the
+        // pending hold so a flick-pan doesn't leave a stray highlight on
+        // whichever vald happened to be under the start of the gesture.
+        sublayer.on('mousemove', () => { if (holdTimer) clearTimer(); });
       },
     });
     layer.addTo(map);
