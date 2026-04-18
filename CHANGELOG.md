@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Profile drawer tidy-up - 2026-04-18
+
+### Changed 🔧
+- 🟢 **Next-badge progress bar moved into the profile header** (`src/components/ProfileDrawer.tsx`): the thin progress bar + "X kuni 🌲 Sprinter" hint now sits directly under the current badge label, capped at `maxWidth: 180px` so it doesn't crowd the logout/X buttons. Hides entirely at the max tier (`getNextTier` returns null). Shows for viewed-user mode too since it reads from the same `userPricesCount + userVotesCount` props.
+- 🟢 **Removed the "Sinu panus" card** (`src/components/ProfileDrawer.tsx`): the two big number tiles (Hinda edastatud / Häält antud) + duplicate progress bar are gone. Panuse skoor (prices+votes) is already shown in the Edetabel next to every user, and per-station contribution footprint lives in Avastuskaart — the card was redundant once those two features landed. The `Award` icon import is dropped along with it.
+
+---
+
 ## [Unreleased] - Avastuskaart completed-vald highlight - 2026-04-18
 
 ### Added ✨

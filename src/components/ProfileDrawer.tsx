@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, Award, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle } from 'lucide-react';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -336,6 +336,26 @@ export function ProfileDrawer({
                 <span style={{ fontSize: '0.8rem' }}>{badge.emoji}</span>
                 <span style={{ fontSize: '0.8rem', color: badge.color, fontWeight: '600' }}>{badge.label}</span>
               </div>
+              {(() => {
+                const total = userPricesCount + userVotesCount;
+                const next = getNextTier(total);
+                if (!next) return null;
+                return (
+                  <div style={{ marginTop: '6px', maxWidth: '180px' }}>
+                    <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--color-surface)' }}>
+                      <div style={{
+                        width: `${getBadgeProgress(total)}%`,
+                        height: '100%', borderRadius: '2px',
+                        background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
+                        transition: 'width 0.5s ease'
+                      }} />
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '3px' }}>
+                      {getNextBadgeTarget(total)} kuni {next.emoji} {next.label}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -530,51 +550,6 @@ export function ProfileDrawer({
                 })}
               </div>
             )}
-          </div>
-
-          {/* Gamification / Contribution Score + Badge */}
-          <div className="glass-panel" style={{ padding: '16px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Award size={18} /> Sinu panus
-            </h3>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{userPricesCount}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Hinda edastatud</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-fresh)' }}>{userVotesCount}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Häält antud</div>
-              </div>
-            </div>
-            {(() => {
-              const total = userPricesCount + userVotesCount;
-              const next = getNextTier(total);
-              if (!next) {
-                return (
-                  <div style={{ marginTop: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{badge.emoji} {badge.label}</span>
-                    <span>Kõrgeim aste saavutatud</span>
-                  </div>
-                );
-              }
-              return (
-              <div style={{ marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '4px', gap: '8px' }}>
-                  <span style={{ whiteSpace: 'nowrap' }}>{badge.emoji} {badge.label}</span>
-                  <span style={{ textAlign: 'right' }}>{getNextBadgeTarget(total)} kuni {next.emoji} {next.label}</span>
-                </div>
-                <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--color-surface)' }}>
-                  <div style={{
-                    width: `${getBadgeProgress(total)}%`,
-                    height: '100%', borderRadius: '2px',
-                    background: `linear-gradient(90deg, ${badge.color}, var(--color-primary))`,
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-              </div>
-              );
-            })()}
           </div>
 
           <div className="glass-panel" style={{ padding: '14px 16px' }}>
