@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
+import i18n from './i18n'
 import App from './App.tsx'
 import { initAnalytics } from './utils/analytics'
 import { notifyUpdateAvailable } from './utils/swUpdate'
@@ -60,7 +61,7 @@ registerSW({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Sentry.ErrorBoundary fallback={<div style={{ padding: 24, color: '#fff', background: '#111', minHeight: '100vh' }}>Midagi läks valesti. Palun värskenda lehte.</div>}>
+    <Sentry.ErrorBoundary fallback={<div style={{ padding: 24, color: '#fff', background: '#111', minHeight: '100vh' }}>{i18n.t('app.errorBoundary')}</div>}>
       <App />
     </Sentry.ErrorBoundary>
   </StrictMode>,

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Compass, Eye, X } from 'lucide-react';
 
 // Thin pill that sits above the FAB stack whenever Avastuskaart is on.
@@ -24,6 +25,7 @@ export function DiscoveryBanner({
   // Omit when viewing someone else's map (no self-settings to open).
   onOpenSettings?: () => void;
 }) {
+  const { t } = useTranslation();
   const hasFocus = !!focusedMaakondName;
   const isViewing = !!viewedUserName;
   const canOpenSettings = !!onOpenSettings && !isViewing;
@@ -54,7 +56,7 @@ export function DiscoveryBanner({
       <button
         onClick={canOpenSettings ? onOpenSettings : undefined}
         disabled={!canOpenSettings}
-        title={canOpenSettings ? 'Ava avastuskaart' : undefined}
+        title={canOpenSettings ? t('discoveryBanner.openTitle') : undefined}
         style={{
           flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2,
           background: 'none', border: 'none', padding: 0, margin: 0, textAlign: 'left',
@@ -64,23 +66,23 @@ export function DiscoveryBanner({
       >
         <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {isViewing
-            ? <>Vaatad: {viewedUserName}</>
+            ? t('discoveryBanner.viewing', { name: viewedUserName })
             : hasFocus
               ? <>{focusedMaakondEmoji ? `${focusedMaakondEmoji} ` : ''}{focusedMaakondName}</>
-              : 'Avastusrežiim'}
+              : t('discoveryBanner.modeLabel')}
         </span>
         <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
           {isViewing
-            ? 'Teise kasutaja avastuskaart'
+            ? t('discoveryBanner.viewingHelp')
             : canOpenSettings
-              ? (hasFocus ? 'Puuduta, et vahetada maakonda' : 'Puuduta, et avada avastuskaart')
-              : hasFocus ? 'Puuduta X, et näha kõiki maakondi' : 'Hinnad on peidetud'}
+              ? (hasFocus ? t('discoveryBanner.tapToChange') : t('discoveryBanner.tapToOpen'))
+              : hasFocus ? t('discoveryBanner.tapXForAll') : t('discoveryBanner.pricesHidden')}
         </span>
       </button>
       {hasFocus && !isViewing && (
         <button
           onClick={onClearFocus}
-          title="Eemalda maakonna fookus"
+          title={t('discoveryBanner.removeFocus')}
           style={{
             background: 'var(--color-surface)',
             border: '1px solid var(--color-surface-border)',
@@ -108,7 +110,7 @@ export function DiscoveryBanner({
           whiteSpace: 'nowrap',
         }}
       >
-        {isViewing ? 'Sulge' : 'Lülita välja'}
+        {isViewing ? t('common.close') : t('discoveryBanner.turnOff')}
       </button>
     </div>
   );

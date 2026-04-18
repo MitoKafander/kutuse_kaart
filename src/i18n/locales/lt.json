@@ -1,0 +1,528 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Kalba"
+    }
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Prisijungti",
+      "signUp": "Sukurti paskyrą"
+    },
+    "aria": {
+      "close": "Uždaryti"
+    },
+    "continueWithGoogle": "Tęsti su Google",
+    "divider": {
+      "or": "arba"
+    },
+    "email": {
+      "placeholder": "El. paštas"
+    },
+    "password": {
+      "placeholder": "Slaptažodis"
+    },
+    "button": {
+      "loading": "Įkeliama...",
+      "signIn": "Prisijungti",
+      "signUp": "Sukurti paskyrą"
+    },
+    "toggle": {
+      "noAccount": "Neturite paskyros?",
+      "haveAccount": "Jau esate vartotojas?",
+      "toSignUp": "Registruokitės čia",
+      "toSignIn": "Prisijungti"
+    },
+    "signupSuccess": "Paskyra sukurta! Patikrinkite savo el. paštą."
+  },
+  "gdpr": {
+    "body": "Kyts naudoja tik būtinus slapukus (prisijungimas, nustatymai). Naudodamiesi sutinkate su <terms>naudojimosi sąlygomis</terms> ir <privacy>privatumo politika</privacy>.",
+    "accept": "Sutinku"
+  },
+  "update": {
+    "title": "Prieinama nauja versija",
+    "body": "Atnaujinkite, kad galėtumėte naudotis naujausiu Kyts.",
+    "button": {
+      "reload": "Atnaujinti",
+      "reloading": "Atnaujinama..."
+    }
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Praleisti",
+      "close": "Uždaryti mokymą",
+      "back": "Atgal",
+      "next": "Pirmyn",
+      "done": "Atlikta"
+    },
+    "aria": {
+      "steps": "Mokymo žingsniai",
+      "stepN": "Žingsnis {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "Mokymą vėliau rasite per Nustatymai → Mokymas."
+    },
+    "step1": {
+      "title": "Sveiki atvykę į Kyts!",
+      "body": "Bendruomenės kuriamas žemėlapis, kuriame realiu laiku matomos kuro kainos Estijoje. Raskite pigiausią, prisidėkite patys."
+    },
+    "step2": {
+      "title": "Mygtukai dešinėje",
+      "color": {
+        "blue": "Mėlyna",
+        "orange": "Oranžinė",
+        "yellow": "Geltona",
+        "green": "Žalia",
+        "purple": "Violetinė"
+      },
+      "desc": {
+        "blue": "nufotografuokite stendą, dirbtinis intelektas nuskaito kainas.",
+        "orange": "įveskite kainas rankiniu būdu.",
+        "yellow": "pigiausios degalinės netoliese.",
+        "green": "pigiausias kuras maršrute.",
+        "purple": "statistika ir tendencijos."
+      }
+    },
+    "step3": {
+      "title": "1 km taisyklė",
+      "body": "Kainas galite įvesti tik jei esate iki 1 km atstumu nuo degalinės. Tai užkerta kelią netikriems pranešimams visoje šalyje ir išlaiko duomenis patikimus."
+    },
+    "step4": {
+      "title": "Prisidėkite, uždirbkite ženklelius",
+      "body": "Jūsų įvestos kainos uždirba titulus (🌱 Turistas → ♾️ Kyts Visata) ir perkelia jus aukštyn lyderių lentelėje. Nustatymuose įjunkite Atradimų žemėlapį (Discovery map) ir surinkite visus 15 Estijos apskričių ženklelių."
+    },
+    "step5": {
+      "title": "Sukurti paskyrą",
+      "body": "Kainas pranešti ir už jas balsuoti galite ir be paskyros. Prisijungus atsiranda mėgstamiausios degalinės, vieta lyderių lentelėje, klientų kortelių nuolaidos ir sinchronizavimas tarp įrenginių. Profilio ikona yra viršuje dešinėje."
+    }
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Profilis",
+      "settings": "Nustatymai"
+    },
+    "settings": {
+      "title": "Nustatymai",
+      "theme": {
+        "title": "Žemėlapio tema",
+        "dark": "Tamsi",
+        "light": "Šviesi"
+      },
+      "fuel": {
+        "title": "Jūsų automobilio degalai",
+        "removeTooltip": "Paspauskite dar kartą, kad pašalintumėte"
+      },
+      "brands": {
+        "title": "Pageidaujamos degalinės",
+        "selectedCount": "({{count}} pasirinkta)",
+        "help": "Pasirinkite tinklus, kuriems teikia pirmenybę \"Pigiausia netoliese\". Tuščia = visi."
+      },
+      "loyalty": {
+        "title": "Kliento kortelės",
+        "activeCount": "({{count}} aktyvios)",
+        "help": "Įveskite nuolaidą centais už litrą (pvz., Alexela kliento kortelė -4). Ji bus rodoma žemėlapyje, ir \"Pigiausia netoliese\" naudos nuolaidos kainą reitingavimui."
+      },
+      "dots": {
+        "title": "Žemėlapio taškai",
+        "info": {
+          "label": "Info",
+          "desc": "Pilki = trūksta duomenų"
+        },
+        "brand": {
+          "label": "Prekės ženklas",
+          "desc": "Visi prekės ženklo spalva"
+        }
+      },
+      "cluster": {
+        "label": "Grupuoti artimas degalines"
+      },
+      "hideEmpty": {
+        "label": "Slėpti degalines be kainų",
+        "desc": "Greitesnis poslinkis/mastelis, mažiau netvarkos"
+      },
+      "latvian": {
+        "label": "Rodyti Latvijos degalines",
+        "desc": "Pasienio degalinės Latvijoje"
+      },
+      "staleDemo": {
+        "label": "Rodyti pasenusias kainas (demo)",
+        "desc": "Taip pat rodo >24h senumo kainas"
+      },
+      "openTutorial": "Atidaryti mokymą",
+      "feedback": "Siųsti atsiliepimą",
+      "legal": {
+        "terms": "Naudojimosi sąlygos",
+        "privacy": "Privatumo politika"
+      }
+    },
+    "header": {
+      "title": "Jūsų profilis",
+      "logout": "Atsijungti",
+      "logoutConfirm": "Ar tikrai norite atsijungti?"
+    },
+    "untilNextTier": "Liko {{count}} iki {{emoji}} {{label}}",
+    "tiers": {
+      "turist": "Turistas",
+      "uustulnuk": "Naujokas",
+      "pumbapiiluja": "Siurblio Šnipinėtojas",
+      "hinnakirjutaja": "Kainų Rašytojas",
+      "kutusenuuskur": "Degalų Uostytojas",
+      "tanklaspioon": "Degalinės Šnipas",
+      "bensiinikoer": "Benzino Šuo",
+      "hinnajalitaja": "Kainų Seklys",
+      "hinnatabaja": "Kainų Gaudytojas",
+      "diiselidentist": "Dyzelino Odontologas",
+      "pumbaprofessor": "Siurblio Profesorius",
+      "diiselidiplomaat": "Dyzelino Diplomatas",
+      "pumbapoeet": "Siurblio Poetas",
+      "tanklaskaut": "Degalinės Skautas",
+      "kutusekaardistaja": "Degalų Kartografas",
+      "kutuseryuutel": "Degalų Riteris",
+      "hinnavoitja": "Kainų Nugalėtojas",
+      "pumbakuningas": "Siurblio Karalius",
+      "pumbanoid": "Siurblio Ragana",
+      "oktaanioraakel": "Oktano Orakulas",
+      "hinnaprohvet": "Kainų Pranašas",
+      "bensiinibaron": "Benzino Baronas",
+      "tanklataht": "Degalinės Žvaigždė",
+      "kuttesultan": "Degalų Sultonas",
+      "hinnarakett": "Kainų Raketa",
+      "liiterlord": "Litrų Lordas",
+      "kutuselegend": "Degalų Legenda",
+      "diiselpaavst": "Dyzelino Popiežius",
+      "kytsJumal": "Kyts Dievas",
+      "kytsKoiksus": "Kyts Visata"
+    },
+    "favorites": {
+      "title": "Mėgstamiausios degalinės",
+      "stationCount": "{{count}} degalinės",
+      "empty": "Kol kas nėra mėgstamiausių degalinių. Paspauskite širdutę ant degalinių, kad pridėtumėte.",
+      "navigate": "Naviguoti",
+      "sort": {
+        "nameAsc": "Pavadinimas A→Z",
+        "nameDesc": "Pavadinimas Z→A",
+        "priceAsc": "Kaina ↑",
+        "priceDesc": "Kaina ↓",
+        "fresh": "Šviežios"
+      },
+      "time": {
+        "expired": "Pasenusios",
+        "justNow": "Ką tik",
+        "today": "Šiandien {{time}}",
+        "yesterday": "Vakar {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Lyderių lentelė"
+    },
+    "discovery": {
+      "title": "Atradimų žemėlapis",
+      "description": "Pažiūrėkite, kurias degalines atradote. Užpildykite valsčius ir apskritis, kad pakiltumėte atradėjų lyderių lentelėje.",
+      "stats": {
+        "stations": "{{done}}/{{total}} degalinės",
+        "parishes": "{{done}}/{{total}} valsčiai",
+        "maakonnad": "{{done}}/{{total}} apskritys"
+      },
+      "shareLabel": "Dalintis viešai",
+      "shareDesc": "Kiti matys jūsų atrastas degalines, paspaudę ant jūsų vardo."
+    },
+    "activity": {
+      "title": "Paskutinė veikla"
+    }
+  },
+  "common": {
+    "close": "Uždaryti",
+    "unknownBrand": "Nežinomas"
+  },
+  "time": {
+    "expired": "Pasenusios",
+    "justNow": "Ką tik",
+    "today": "Šiandien {{time}}",
+    "yesterday": "Vakar {{time}}",
+    "hoursAgo": "Prieš {{count}} val.",
+    "daysAgo": "Prieš {{count}} d."
+  },
+  "discoveryGrid": {
+    "loading": "Regionai dar neįkelti…",
+    "tile": {
+      "noStations": "nėra degalinių",
+      "stations": "{{done}}/{{total}} degalinės",
+      "parishes": "{{done}}/{{total}} valsčiai"
+    }
+  },
+  "app": {
+    "search": {
+      "placeholder": "Ieškoti degalinių, miesto...",
+      "fallbackCountry": "Estija"
+    },
+    "fab": {
+      "camera": "Nufotografuoti kainas",
+      "manual": "Įveskite kainas rankiniu būdu",
+      "cheapestNearby": "Pigiausi degalai netoliese",
+      "routeFind": "Pigiausi degalai maršrute",
+      "routeResults": "Rodyti maršruto rezultatus",
+      "cancelRoute": "Atšaukti maršrutą",
+      "stats": "Statistika"
+    },
+    "errorBoundary": "Kažkas nutiko. Prašome atnaujinti puslapį."
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS užrakintas — paspauskite dar kartą, kad atlaisvintumėte",
+      "tapToLock": "Paspauskite dar kartą, kad užrakintumėte GPS",
+      "findLocation": "Rasti mano buvimo vietą"
+    },
+    "zoom": {
+      "in": "Priartinti",
+      "out": "Nutolinti"
+    }
+  },
+  "brandPicker": {
+    "label": "Tinklas",
+    "labelWithCount": "Tinklas · {{count}}",
+    "clear": "Išvalyti pasirinkimą"
+  },
+  "discoveryBanner": {
+    "openTitle": "Atidaryti atradimų žemėlapį",
+    "viewing": "Žiūrima: {{name}}",
+    "modeLabel": "Atradimų režimas",
+    "viewingHelp": "Kito vartotojo atradimų žemėlapis",
+    "tapToChange": "Palieskite, kad pakeistumėte apskritį",
+    "tapToOpen": "Palieskite, kad atidarytumėte atradimų žemėlapį",
+    "tapXForAll": "Palieskite X, kad pamatytumėte visas apskritis",
+    "pricesHidden": "Kainos paslėptos",
+    "removeFocus": "Pašalinti apskrities fokusavimą",
+    "turnOff": "Išjungti"
+  },
+  "manualPrice": {
+    "title": {
+      "update": "Naujos kainos: {{station}}",
+      "manual": "Įvesti kainas",
+      "scan": "Skenuoti kainas"
+    },
+    "gps": {
+      "tooFar": "Jūs esate {{distance}} km atstumu nuo degalinės. Kainas galima įvesti tik prie degalinės (iki {{max}} km).",
+      "refresh": "Atnaujinti",
+      "retry": "Bandyti dar kartą",
+      "checking": "Tikrinama vieta...",
+      "detecting": "Nustatoma vieta..."
+    },
+    "manual": {
+      "noStations": "500 m spinduliu degalinių nerasta.",
+      "changeStation": "Pakeisti degalinę",
+      "savedConfirm": "Kainos išsaugotos",
+      "refreshLocation": "Atnaujinti vietą"
+    },
+    "picker": {
+      "aiDetected": "AI atpažino kainas:",
+      "promptManual": "Pasirinkite degalinę, kuriai pridedate kainas:",
+      "promptUpdate": "Pasirinkite degalinę, kuriai atnaujinate kainas:",
+      "refreshTitle": "Atnaujinti vietą",
+      "autoSelected": "Pasirinkta: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Įkelti nuotrauką",
+      "aiReading": "AI skaito...",
+      "retake": "Dar kartą",
+      "scanPrices": "Su kamera",
+      "scanPricesLong": "Skenuoti kainas kamera",
+      "retryStatus": "Bandoma dar kartą... ({{attempt}}/{{max}})",
+      "scannedAlt": "Skenuota nuotrauka"
+    },
+    "brandMismatch": {
+      "message": "Nuotraukoje matosi <strong>{{detected}}</strong> degalinė, bet jūs atnaujinate <strong>{{station}}</strong> kainas. Patikrinkite, ar kainos teisingos.",
+      "fallback": "kitas tinklas"
+    },
+    "scanError": {
+      "quotaExceeded": "AI paslaugos limitas išnaudotas. Bandykite vėliau arba įveskite kainas rankiniu būdu.",
+      "aiUpstreamBusy": "AI paslauga šiuo metu perkrauta. Bandykite po kelių minučių arba įveskite kainas rankiniu būdu.",
+      "noNearbyStation": "Netoliese degalinių nerasta ({{max}}km spinduliu). Patikrinkite GPS leidimus arba pasirinkite degalinę rankiniu būdu.",
+      "noGps": "Nėra GPS signalo. Patikrinkite vietos leidimus ir bandykite dar kartą.",
+      "noPricesRead": "AI nepavyko nuskaityti kainų iš nuotraukos. Bandykite tiesiai priešais stendą, venkite atspindžių, arba įveskite kainas rankiniu būdu.",
+      "timeout": "AI užtruko per ilgai. Bandykite dar kartą arba įveskite kainas rankiniu būdu.",
+      "network": "Tinklo klaida. Patikrinkite interneto ryšį ir bandykite dar kartą.",
+      "generic": "AI skaitymas nepavyko. Įveskite kainas rankiniu būdu arba bandykite dar kartą."
+    },
+    "submit": {
+      "saving": "Išsaugoma...",
+      "save": "Išsaugoti",
+      "confirm": "Patvirtinti",
+      "locationNeeded": "Reikalinga vieta",
+      "waitingGps": "Laukiama GPS signalo...",
+      "noStations": "Degalinių nerasta",
+      "choosePrompt": "Pasirinkite degalinę iš sąrašo",
+      "tooFar": "Esate per toli",
+      "aiReading": "AI skenuoja nuotrauką...",
+      "takePhoto": "Nufotografuokite kainų stendą",
+      "firstChoose": "Pirmiausia pasirinkite degalinę"
+    },
+    "alert": {
+      "priceRange": "Kaina turi būti nuo 0 iki 10 € ({{type}}: {{value}}).",
+      "gpsRequired": "GPS vieta būtina norint įvesti kainą. Leiskite nustatyti vietą ir bandykite dar kartą.",
+      "tooFar": "Jūs esate {{distance}} km atstumu nuo degalinės. Kainas galima įvesti tik tada, kai esate prie degalinės (iki {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "Esate per toli nuo degalinės. Priartėkite prie degalinės ir bandykite dar kartą.",
+      "rls": "Įvestis nepraėjo patikrinimo. Patikrinkite kainas ir bandykite dar kartą.",
+      "notFound": "Degalinė nerasta. Iš naujo pasirinkite degalinę ir bandykite dar kartą.",
+      "generic": "Išsaugojimas nepavyko. Bandykite dar kartą — jei kartojasi, patikrinkite tinklo ryšį."
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Vieta nepasiekiama. Leiskite programėlei naudoti vietą ir bandykite dar kartą.",
+      "timeout": "Vietos nustatymas užtrunka ilgiau nei tikėtasi. Bandykite dar kartą.",
+      "unsupported": "Jūsų naršyklė nepalaiko vietos nustatymo.",
+      "unavailable": "Nepavyko rasti vietos. Bandykite dar kartą."
+    }
+  },
+  "stationDrawer": {
+    "disputed": "Ginčijama",
+    "priceConfirmed": "Kaina patvirtinta ✓",
+    "notEnoughHistory": "Šiam kurui nepakanka istorijos.",
+    "priceLabel": "Kaina",
+    "voteFailed": "Balsavimas nepavyko.",
+    "updatePrices": "Atnaujinti kainas",
+    "aria": {
+      "confirm": "Patvirtinti kainą",
+      "dispute": "Ginčyti kainą"
+    },
+    "titles": {
+      "history": "Rodyti kainų istoriją",
+      "navigate": "Naviguoti"
+    }
+  },
+  "cheapest": {
+    "title": "Pigiausi degalai šalia jūsų",
+    "fallbackLocation": "Naudojama žemėlapio vieta — naujų GPS duomenų dar nėra.",
+    "radius": "Spindulys:",
+    "filtered": "Filtruota:",
+    "locating": "Ieškoma jūsų vietos...",
+    "empty": "Šiame spindulyje kainų nerasta. Išbandykite didesnį spindulį.",
+    "loyaltyTag": "kliento kortelė",
+    "fresh": "šviežia",
+    "stale": "sena",
+    "outsideRadius": "už spindulio ribų",
+    "go": "Važiuoti",
+    "retry": "Bandyti dar kartą"
+  },
+  "route": {
+    "title": "Kur važiuojate?",
+    "searchPlaceholder": "Tikslas (pvz., Talinas, Tartu)",
+    "clearSearch": "Išvalyti",
+    "destination": "Tikslas:",
+    "corridor": "Koridorius:",
+    "fuel": "Degalai:",
+    "locating": "Ieškoma jūsų vietos...",
+    "computing": "Skaičiuojamas maršrutas...",
+    "retry": "Bandyti dar kartą",
+    "error": {
+      "notFound": "Maršrutas nerastas. Išbandykite kitą tikslą arba patikrinkite interneto ryšį.",
+      "computeFailed": "Maršruto skaičiavimas nepavyko. Bandyti dar kartą.",
+      "locationMissing": "Vieta nerasta. Maršruto planavimui reikalingas pradžios taškas.",
+      "noStations": "Šalia maršruto nerasta degalinių su šiais degalais. Išbandykite platesnį koridorių."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}} m nuo maršruto",
+      "fromRouteKm": "{{km}} km nuo maršruto",
+      "fromOriginKm": "{{km}} km nuo pradžios taško"
+    }
+  },
+  "leaderboard": {
+    "title": "Lyderių lentelė",
+    "period": {
+      "week": "Savaitė",
+      "month": "Mėnuo",
+      "all": "Visi laikai"
+    },
+    "dimension": {
+      "activity": "Aktyviausi",
+      "discovery": "Atradėjai"
+    },
+    "discoveryHint": "Surikiuota pagal apskritis, tada valsčius, tada degalines — visi laikai.",
+    "youLabel": "Jūs:",
+    "anonymous": "Anonimas",
+    "loading": "Įkeliama...",
+    "empty": {
+      "discovery": "Niekas dar nieko neatrado. Būkite pirmas!",
+      "activity": "Šiam laikotarpiui duomenų dar nėra."
+    },
+    "youSuffix": "(jūs)",
+    "stats": {
+      "prices": "{{count}} kainos",
+      "maakonnad": "{{done}}/{{total}} apskritys",
+      "parishes": "{{count}} valsčiai",
+      "stations": "{{count}} degalinės"
+    },
+    "viewFootprint": {
+      "title": "Žiūrėti šio vartotojo atradimų žemėlapį",
+      "label": "Žiūrėti"
+    }
+  },
+  "stats": {
+    "title": "Statistika ({{days}} dienos)",
+    "trends": {
+      "heading": "Kainų tendencijos",
+      "notEnoughData": "nepakanka duomenų"
+    },
+    "fuelLabel": "Degalai:",
+    "cheapestNow": {
+      "heading": "Pigiausia šiuo metu",
+      "noFresh": "Per paskutines {{hours}} valandas nėra naujų kainų."
+    },
+    "brandMedians": {
+      "heading": "Pigiausias prekės ženklas ({{fuel}}, mediana)",
+      "empty": "Nepakanka kainų."
+    },
+    "drops": {
+      "heading": "Didžiausi kainų kritimai (7 dienos)",
+      "empty": "Kainų kritimų neaptikta."
+    },
+    "contribution": {
+      "heading": "Mano indėlis",
+      "body": "Pranešėte apie <strong>{{count}}</strong> kainas per paskutines {{days}} dienas.",
+      "signIn": "Prisijunkite, kad pamatytumėte savo indėlį."
+    }
+  },
+  "celebration": {
+    "newStation": "Atrasta nauja degalinė!",
+    "stationProgress": "Surinkta {{done}} / {{total}} degalinių",
+    "parishCovered": "{{name}} įveikta!",
+    "maakondDiscovered": "{{name}} atrasta!",
+    "allStationsCovered": "Visos degalinės įveiktos"
+  },
+  "feedback": {
+    "title": "Atsiliepimai",
+    "intro": "Pagyrimai, kritika, pranešimai apie klaidas ar idėjos — viskas laukiama.",
+    "introSignedIn": "Jūsų vartotojo ID pridėtas prie žinutės, kad galėtume atsakyti, jei prireiks.",
+    "introSignedOut": "Jei laukiate atsakymo, pirmiausia prisijunkite arba pridėkite savo el. paštą prie žinutės.",
+    "placeholder": "Kas jums rūpi?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Per ilgas: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Siųsti",
+      "sending": "Siunčiama..."
+    },
+    "sent": {
+      "thanks": "Ačiū!",
+      "body": "Jūsų atsiliepimai mus pasiekė. Atsakysime, jei reikės."
+    },
+    "error": {
+      "submit": "Išsiųsti nepavyko. Bandykite dar kartą šiek tiek vėliau."
+    }
+  },
+  "filter": {
+    "title": "Ko ieškote?",
+    "resetAll": "Atkurti viską",
+    "fuelType": "Degalų Tipas",
+    "advanced": "Papildomi Filtrai",
+    "hideStale": "Slėpti pasenusias kainas (>24h)",
+    "loyaltyPrices": "Rodyti kainas su kliento kortele",
+    "findCheapest": "Rasti pigiausius degalus",
+    "brand": "Tinklas",
+    "clearCount": "Išvalyti ({{count}})",
+    "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą"
+  }
+}

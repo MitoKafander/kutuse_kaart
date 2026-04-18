@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CelebrationEvent } from '../hooks/useRegionProgress';
 
 // Splits incoming events into a parish toast queue (shown serially) and a
@@ -6,6 +7,7 @@ import type { CelebrationEvent } from '../hooks/useRegionProgress';
 // once). Pure CSS animations — the keyframes live in src/index.css.
 
 export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEvent[]; onDrain: () => void }) {
+  const { t } = useTranslation();
   const [stationQueue, setStationQueue] = useState<CelebrationEvent[]>([]);
   const [toastQueue, setToastQueue] = useState<CelebrationEvent[]>([]);
   const [maakondQueue, setMaakondQueue] = useState<CelebrationEvent[]>([]);
@@ -93,7 +95,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
             <span style={{ fontSize: 22 }}>🎉</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
-                Uus jaam avastatud!
+                {t('celebration.newStation')}
               </span>
               <span
                 style={{
@@ -124,7 +126,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
                 />
               </div>
               <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
-                {activeStation.done} / {activeStation.total} jaama kogutud
+                {t('celebration.stationProgress', { done: activeStation.done, total: activeStation.total })}
               </span>
             </div>
           )}
@@ -154,7 +156,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
           <span style={{ fontSize: 22 }}>{activeToast.emoji}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
-              {activeToast.name} kaetud!
+              {t('celebration.parishCovered', { name: activeToast.name })}
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
               {activeToast.maakondName}
@@ -173,6 +175,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 }
 
 function MaakondBurst({ event, onDismiss }: { event: CelebrationEvent & { kind: 'maakond' }; onDismiss: () => void }) {
+  const { t } = useTranslation();
   // Pre-compute particles once per mount so each render doesn't re-randomize.
   const particles = useMemo(() => {
     const list: Array<{ angle: number; dist: number; size: number; hue: number; delay: number }> = [];
@@ -241,10 +244,10 @@ function MaakondBurst({ event, onDismiss }: { event: CelebrationEvent & { kind: 
       >
         <div style={{ fontSize: 48, marginBottom: 6 }}>{event.emoji}</div>
         <div style={{ fontSize: '1.4rem', fontWeight: 700, letterSpacing: 0.3 }}>
-          {event.name} avastatud!
+          {t('celebration.maakondDiscovered', { name: event.name })}
         </div>
         <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginTop: 6 }}>
-          Kõik jaamad kaetud
+          {t('celebration.allStationsCovered')}
         </div>
       </div>
     </div>

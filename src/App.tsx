@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
 import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
@@ -18,6 +19,7 @@ import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
+import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 
 // Lazy-load panels that aren't on the critical first-paint path to keep the
 // initial JS bundle under the 500 kB Vercel warning. These are only fetched
@@ -55,6 +57,7 @@ import './index.css';
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
 function App() {
+  const { t } = useTranslation();
   const [session, setSession] = useState<any>(null);
   
   // Modals state
@@ -300,7 +303,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -337,6 +340,10 @@ function App() {
       if (prof?.share_discovery_publicly !== null && prof?.share_discovery_publicly !== undefined) {
         setSharePublicly(prof.share_discovery_publicly);
       }
+      if (prof?.language && (SUPPORTED_LANGUAGES as readonly string[]).includes(prof.language)) {
+        if (i18n.language !== prof.language) i18n.changeLanguage(prof.language);
+        localStorage.setItem('kyts-language', prof.language);
+      }
     } else {
       // Signed-out state: every preference that's synced from user_profiles
       // must be reverted to its anonymous default AND its localStorage cache
@@ -364,6 +371,7 @@ function App() {
       localStorage.removeItem('kyts-loyalty-discounts');
       localStorage.removeItem('kyts-show-discovery-map');
       localStorage.removeItem('kyts-celebrated-regions');
+      localStorage.removeItem('kyts-language');
     }
   };
 
@@ -678,7 +686,7 @@ function App() {
             <Search size={20} color="var(--color-text-muted)" />
             <input 
               type="text" 
-              placeholder="Otsi jaamu, linna..." 
+              placeholder={t('app.search.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ 
@@ -782,7 +790,7 @@ function App() {
               >
                 <span style={{ fontWeight: 500 }}>{getStationDisplayName(station)}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  {station.amenities?.['addr:street'] || station.amenities?.['addr:city'] || 'Eesti'}
+                  {station.amenities?.['addr:street'] || station.amenities?.['addr:city'] || t('app.search.fallbackCountry')}
                 </span>
               </button>
             ))}
@@ -797,7 +805,7 @@ function App() {
       <button
         className="flex-center"
         onClick={() => setIsCameraOpen(true)}
-        title="Pildista hindu"
+        title={t('app.fab.camera')}
         style={{
           position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
@@ -816,7 +824,7 @@ function App() {
       <button
         className="flex-center"
         onClick={() => setIsManualOpen(true)}
-        title="Sisesta hinnad käsitsi"
+        title={t('app.fab.manual')}
         style={{
           position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
@@ -835,7 +843,7 @@ function App() {
       <button
         className="flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
-        title="Odavaim kütus lähedal"
+        title={t('app.fab.cheapestNearby')}
         style={{
           position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
@@ -854,7 +862,7 @@ function App() {
       <button
         className="flex-center"
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
-        title={routePolyline ? "Näita marsruudi tulemusi" : "Odavaim kütus marsruudil"}
+        title={routePolyline ? t('app.fab.routeResults') : t('app.fab.routeFind')}
         style={{
           position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
@@ -874,7 +882,7 @@ function App() {
         <button
           className="flex-center"
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
-          title="Tühista marsruut"
+          title={t('app.fab.cancelRoute')}
           style={{
             position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
@@ -895,7 +903,7 @@ function App() {
       <button
         className="flex-center"
         onClick={() => setIsStatsOpen(true)}
-        title="Statistika"
+        title={t('app.fab.stats')}
         style={{
           position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { subscribeToUpdate, applyUpdate } from '../utils/swUpdate';
 
 // Sits at z 2500 — above every map/FAB overlay but below modals (3000) so
@@ -8,6 +9,7 @@ import { subscribeToUpdate, applyUpdate } from '../utils/swUpdate';
 // days; giving them an "X" defeats the point. If users complain, add a
 // dismiss that re-shows on the next session.
 export function UpdateBanner() {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const [reloading, setReloading] = useState(false);
   useEffect(() => subscribeToUpdate(v => setShow(v)), []);
@@ -36,9 +38,9 @@ export function UpdateBanner() {
     >
       <RefreshCw size={18} color="var(--color-primary)" style={{ flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Uus versioon saadaval</div>
+        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{t('update.title')}</div>
         <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-          Värskenda, et kasutada uusimat Kytsi.
+          {t('update.body')}
         </div>
       </div>
       <button
@@ -58,7 +60,7 @@ export function UpdateBanner() {
           flexShrink: 0,
         }}
       >
-        {reloading ? 'Värskendan…' : 'Värskenda'}
+        {reloading ? t('update.button.reloading') : t('update.button.reload')}
       </button>
     </div>
   );

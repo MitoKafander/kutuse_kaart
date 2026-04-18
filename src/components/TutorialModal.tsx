@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { capture } from '../utils/analytics';
 
 type Outcome = 'completed' | 'skipped';
@@ -10,62 +12,67 @@ type Step = {
   body: ReactNode;
 };
 
-// Colors mirror the actual FAB backgrounds so the icon in the tutorial matches
-// what the user will see on the map — that's the whole "visual cue" budget.
 const COLOR_BLUE = '#3b82f6';
 const COLOR_ORANGE = '#fb923c';
 const COLOR_YELLOW = '#facc15';
 const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
 
-const STEPS: Step[] = [
-  {
-    icon: <Fuel size={44} color={COLOR_BLUE} />,
-    title: 'Tere tulemast Kytsi!',
-    body: 'Kogukonna-põhine kaart, kus näed Eesti tanklate hindu reaalajas. Leia soodsaim, panusta ise.',
-  },
-  {
-    icon: (
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', maxWidth: '340px' }}>
-        <Camera size={32} color={COLOR_BLUE} />
-        <Fuel size={32} color={COLOR_ORANGE} />
-        <Euro size={32} color={COLOR_YELLOW} />
-        <Navigation size={32} color={COLOR_GREEN} />
-        <TrendingUp size={32} color={COLOR_PURPLE} />
-      </div>
-    ),
-    title: 'Nupud paremal',
-    body: (
-      <span style={{ display: 'block', textAlign: 'left' }}>
-        <span style={{ color: COLOR_BLUE, fontWeight: 600 }}>Sinine</span> – pildista totemit, AI loeb hinnad.{' '}
-        <span style={{ color: COLOR_ORANGE, fontWeight: 600 }}>Oranž</span> – sisesta hinnad käsitsi.{' '}
-        <span style={{ color: COLOR_YELLOW, fontWeight: 600 }}>Kollane</span> – odavaimad jaamad lähedal.{' '}
-        <span style={{ color: COLOR_GREEN, fontWeight: 600 }}>Roheline</span> – odavaim kütus marsruudil.{' '}
-        <span style={{ color: COLOR_PURPLE, fontWeight: 600 }}>Lilla</span> – statistika ja trendid.
-      </span>
-    ),
-  },
-  {
-    icon: <MapPin size={44} color={COLOR_ORANGE} />,
-    title: '1 km reegel',
-    body: 'Hindu saad sisestada ainult siis, kui oled jaamast kuni 1 km kaugusel. See väldib võltspanuseid üle riigi ja hoiab andmed usaldusväärsed.',
-  },
-  {
-    icon: (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <Trophy size={40} color={COLOR_PURPLE} />
-        <Compass size={40} color="var(--color-primary)" />
-      </div>
-    ),
-    title: 'Panusta, teeni märgid',
-    body: 'Su hinnapanused teenivad tiitleid (🌱 Turist → ♾️ Kyts Kõiksus) ja tõstavad sind edetabelis. Lülita Seaded-menüüst sisse Avastuskaart ja kogu kõik 15 Eesti maakonna märgid.',
-  },
-  {
-    icon: <UserPlus size={44} color="var(--color-primary)" />,
-    title: 'Loo konto',
-    body: 'Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja seadmetevahelise sünkroonimise. Profiili ikoon on üleval paremal.',
-  },
-];
+const STEPS_LENGTH = 5;
+
+function buildSteps(t: TFunction): Step[] {
+  const colorSpan = (color: string, text: string) => (
+    <span style={{ color, fontWeight: 600 }}>{text}</span>
+  );
+  return [
+    {
+      icon: <Fuel size={44} color={COLOR_BLUE} />,
+      title: t('tutorial.step1.title'),
+      body: t('tutorial.step1.body'),
+    },
+    {
+      icon: (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', maxWidth: '340px' }}>
+          <Camera size={32} color={COLOR_BLUE} />
+          <Fuel size={32} color={COLOR_ORANGE} />
+          <Euro size={32} color={COLOR_YELLOW} />
+          <Navigation size={32} color={COLOR_GREEN} />
+          <TrendingUp size={32} color={COLOR_PURPLE} />
+        </div>
+      ),
+      title: t('tutorial.step2.title'),
+      body: (
+        <span style={{ display: 'block', textAlign: 'left' }}>
+          {colorSpan(COLOR_BLUE, t('tutorial.step2.color.blue'))} – {t('tutorial.step2.desc.blue')}{' '}
+          {colorSpan(COLOR_ORANGE, t('tutorial.step2.color.orange'))} – {t('tutorial.step2.desc.orange')}{' '}
+          {colorSpan(COLOR_YELLOW, t('tutorial.step2.color.yellow'))} – {t('tutorial.step2.desc.yellow')}{' '}
+          {colorSpan(COLOR_GREEN, t('tutorial.step2.color.green'))} – {t('tutorial.step2.desc.green')}{' '}
+          {colorSpan(COLOR_PURPLE, t('tutorial.step2.color.purple'))} – {t('tutorial.step2.desc.purple')}
+        </span>
+      ),
+    },
+    {
+      icon: <MapPin size={44} color={COLOR_ORANGE} />,
+      title: t('tutorial.step3.title'),
+      body: t('tutorial.step3.body'),
+    },
+    {
+      icon: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <Trophy size={40} color={COLOR_PURPLE} />
+          <Compass size={40} color="var(--color-primary)" />
+        </div>
+      ),
+      title: t('tutorial.step4.title'),
+      body: t('tutorial.step4.body'),
+    },
+    {
+      icon: <UserPlus size={44} color="var(--color-primary)" />,
+      title: t('tutorial.step5.title'),
+      body: t('tutorial.step5.body'),
+    },
+  ];
+}
 
 export function TutorialModal({
   isOpen,
@@ -74,10 +81,10 @@ export function TutorialModal({
   isOpen: boolean;
   onComplete: (outcome: Outcome, lastStep: number) => void;
 }) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const startedRef = useRef(false);
 
-  // Reset on close so next open starts at step 0; arm startedRef for next run.
   useEffect(() => {
     if (!isOpen) {
       setStep(0);
@@ -85,7 +92,6 @@ export function TutorialModal({
     }
   }, [isOpen]);
 
-  // Fire tutorial_started once per open.
   useEffect(() => {
     if (isOpen && !startedRef.current) {
       startedRef.current = true;
@@ -93,7 +99,6 @@ export function TutorialModal({
     }
   }, [isOpen]);
 
-  // Keyboard nav: Esc = skip, Arrows = prev/next. Only attach when open.
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -102,7 +107,7 @@ export function TutorialModal({
         onComplete('skipped', step);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        if (step < STEPS.length - 1) setStep(step + 1);
+        if (step < STEPS_LENGTH - 1) setStep(step + 1);
         else onComplete('completed', step);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -115,6 +120,7 @@ export function TutorialModal({
 
   if (!isOpen) return null;
 
+  const STEPS = buildSteps(t);
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];
 
@@ -146,7 +152,6 @@ export function TutorialModal({
           display: 'flex', flexDirection: 'column',
         }}
       >
-        {/* Header */}
         <div className="flex-between" style={{ marginBottom: '16px' }}>
           <button
             onClick={() => onComplete('skipped', step)}
@@ -157,18 +162,17 @@ export function TutorialModal({
               textDecoration: 'underline', fontSize: '0.88rem',
             }}
           >
-            Jäta vahele
+            {t('tutorial.buttons.skip')}
           </button>
           <button
             onClick={() => onComplete('skipped', step)}
-            aria-label="Sulge tutvustus"
+            aria-label={t('tutorial.buttons.close')}
             style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}
           >
             <X size={22} />
           </button>
         </div>
 
-        {/* Card body */}
         <div style={{ textAlign: 'center', padding: '12px 0 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px', minHeight: '48px', alignItems: 'center' }}>
             {current.icon}
@@ -181,15 +185,14 @@ export function TutorialModal({
           </p>
           {isLast && (
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem', marginTop: '18px', fontStyle: 'italic' }}>
-              Tutvustuse leiad hiljem Seaded → Tutvustus.
+              {t('tutorial.hint.findAgain')}
             </p>
           )}
         </div>
 
-        {/* Step dots — tappable to jump directly to a step */}
         <div
           role="tablist"
-          aria-label="Tutvustuse sammud"
+          aria-label={t('tutorial.aria.steps')}
           style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}
         >
           {STEPS.map((_, i) => {
@@ -198,7 +201,7 @@ export function TutorialModal({
               <button
                 key={i}
                 onClick={() => setStep(i)}
-                aria-label={`Samm ${i + 1} / ${STEPS.length}`}
+                aria-label={t('tutorial.aria.stepN', { current: i + 1, total: STEPS.length })}
                 aria-current={active ? 'step' : undefined}
                 style={{
                   width: active ? '22px' : '8px',
@@ -215,7 +218,6 @@ export function TutorialModal({
           })}
         </div>
 
-        {/* Footer buttons */}
         <div style={{ display: 'flex', gap: '10px' }}>
           {step > 0 && (
             <button
@@ -232,7 +234,7 @@ export function TutorialModal({
                 display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
-              <ChevronLeft size={18} /> Tagasi
+              <ChevronLeft size={18} /> {t('tutorial.buttons.back')}
             </button>
           )}
           <button
@@ -250,7 +252,7 @@ export function TutorialModal({
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
             }}
           >
-            {isLast ? (<><Check size={18} /> Valmis</>) : (<>Järgmine <ChevronRight size={18} /></>)}
+            {isLast ? (<><Check size={18} /> {t('tutorial.buttons.done')}</>) : (<>{t('tutorial.buttons.next')} <ChevronRight size={18} /></>)}
           </button>
         </div>
       </div>

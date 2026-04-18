@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown } from 'lucide-react';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 
@@ -14,12 +15,13 @@ export function DiscoveryBadgeGrid({
   progress: RegionProgress;
   onMaakondFocus?: (maakondId: number) => void;
 }) {
+  const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (!progress.perMaakond.length) {
     return (
       <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', padding: '8px 0' }}>
-        Regioone pole veel laetud…
+        {t('discoveryGrid.loading')}
       </div>
     );
   }
@@ -115,11 +117,11 @@ export function DiscoveryBadgeGrid({
                   gap: 1, fontSize: '0.68rem', color: 'var(--color-text-muted)',
                   lineHeight: 1.2,
                 }}>
-                  <span>{stationsDone}/{stationsTotal} jaama</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>{parishesDone}/{parishesTotal} valda</span>
+                  <span>{t('discoveryGrid.tile.stations', { done: stationsDone, total: stationsTotal })}</span>
+                  <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>{t('discoveryGrid.tile.parishes', { done: parishesDone, total: parishesTotal })}</span>
                 </div>
               ) : (
-                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>pole jaamu</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{t('discoveryGrid.tile.noStations')}</span>
               )}
             </button>
           );

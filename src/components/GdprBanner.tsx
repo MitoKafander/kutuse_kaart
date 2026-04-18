@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 
 export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPrivacy: () => void, onOpenTerms?: () => void, onAccept?: () => void }) {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -18,6 +20,11 @@ export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPri
     onAccept?.();
   };
 
+  const linkBtnStyle: React.CSSProperties = {
+    background: 'none', border: 'none', color: 'var(--color-primary)',
+    cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline',
+  };
+
   return (
     <div className="glass-panel animate-slide-up" style={{
       position: 'fixed',
@@ -33,12 +40,15 @@ export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPri
       boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
     }}>
       <p style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: '1.4', margin: 0 }}>
-        Kyts kasutab ainult hädavajalikke küpsiseid (sisselogimine, eelistused). Kasutades nõustud{' '}
-        {onOpenTerms ? (
-          <button onClick={onOpenTerms} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>kasutustingimustega</button>
-        ) : 'kasutustingimustega'}
-        {' '}ja{' '}
-        <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>privaatsuspoliitikaga</button>.
+        <Trans
+          i18nKey="gdpr.body"
+          components={{
+            terms: onOpenTerms
+              ? <button onClick={onOpenTerms} style={linkBtnStyle} />
+              : <span />,
+            privacy: <button onClick={onOpenPrivacy} style={linkBtnStyle} />,
+          }}
+        />
       </p>
 
       <button
@@ -49,7 +59,7 @@ export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPri
           cursor: 'pointer'
         }}
       >
-        Nõustun
+        {t('gdpr.accept')}
       </button>
     </div>
   );

@@ -1,0 +1,528 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Kieli"
+    }
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Kirjaudu sisään",
+      "signUp": "Luo tili"
+    },
+    "aria": {
+      "close": "Sulje"
+    },
+    "continueWithGoogle": "Jatka Googlella",
+    "divider": {
+      "or": "tai"
+    },
+    "email": {
+      "placeholder": "Sähköposti"
+    },
+    "password": {
+      "placeholder": "Salasana"
+    },
+    "button": {
+      "loading": "Ladataan...",
+      "signIn": "Kirjaudu sisään",
+      "signUp": "Luo tili"
+    },
+    "toggle": {
+      "noAccount": "Eikö sinulla ole tiliä?",
+      "haveAccount": "Oletko jo käyttäjä?",
+      "toSignUp": "Luo tili tästä",
+      "toSignIn": "Kirjaudu sisään"
+    },
+    "signupSuccess": "Tili luotu! Tarkista sähköpostisi."
+  },
+  "gdpr": {
+    "body": "Kyts käyttää vain välttämättömiä evästeitä (kirjautuminen, asetukset). Käyttämällä palvelua hyväksyt <terms>käyttöehdot</terms> ja <privacy>tietosuojakäytännön</privacy>.",
+    "accept": "Hyväksyn"
+  },
+  "update": {
+    "title": "Uusi versio saatavilla",
+    "body": "Päivitä käyttääksesi uusinta Kytsiä.",
+    "button": {
+      "reload": "Päivitä",
+      "reloading": "Päivitetään..."
+    }
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Ohita",
+      "close": "Sulje opastus",
+      "back": "Takaisin",
+      "next": "Seuraava",
+      "done": "Valmis"
+    },
+    "aria": {
+      "steps": "Opastuksen vaiheet",
+      "stepN": "Vaihe {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "Löydät opastuksen myöhemmin kohdasta Asetukset → Opastus."
+    },
+    "step1": {
+      "title": "Tervetuloa Kytsiin!",
+      "body": "Yhteisöpohjainen kartta, josta näet Viron huoltoasemien hinnat reaaliajassa. Löydä halvin, osallistu itse."
+    },
+    "step2": {
+      "title": "Painikkeet oikealla",
+      "color": {
+        "blue": "Sininen",
+        "orange": "Oranssi",
+        "yellow": "Keltainen",
+        "green": "Vihreä",
+        "purple": "Violetti"
+      },
+      "desc": {
+        "blue": "ota kuva hintataulusta, tekoäly lukee hinnat.",
+        "orange": "syötä hinnat manuaalisesti.",
+        "yellow": "halvimmat asemat lähellä.",
+        "green": "halvin polttoaine reitillä.",
+        "purple": "tilastot ja trendit."
+      }
+    },
+    "step3": {
+      "title": "1 km sääntö",
+      "body": "Voit syöttää hintoja vain, kun olet enintään 1 km etäisyydellä asemasta. Tämä estää tekaistut ilmoitukset ympäri maata ja pitää tiedot luotettavina."
+    },
+    "step4": {
+      "title": "Osallistu, ansaitse merkkejä",
+      "body": "Hintailmoituksesi ansaitsevat titteleitä (🌱 Turisti → ♾️ Kyts-universumi) ja nostavat sinua tulostaululla. Laita Löytökartta (Discovery map) päälle Asetuksista ja kerää kaikki 15 Viron maakuntamerkkiä."
+    },
+    "step5": {
+      "title": "Luo tili",
+      "body": "Voit ilmoittaa ja äänestää hintoja myös ilman tiliä. Kirjautuminen avaa suosikkiasemat, paikan tulostaululla, kanta-asiakasalennukset ja synkronoinnin laitteiden välillä. Profiilikuvake on oikealla ylhäällä."
+    }
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Profiili",
+      "settings": "Asetukset"
+    },
+    "settings": {
+      "title": "Asetukset",
+      "theme": {
+        "title": "Kartan teema",
+        "dark": "Tumma",
+        "light": "Vaalea"
+      },
+      "fuel": {
+        "title": "Autosi polttoaine",
+        "removeTooltip": "Napsauta uudelleen poistaaksesi"
+      },
+      "brands": {
+        "title": "Suosikkiasemat",
+        "selectedCount": "({{count}} valittu)",
+        "help": "Valitse ketjut, joita \"Halvin lähellä\" suosii. Tyhjä = kaikki."
+      },
+      "loyalty": {
+        "title": "Kanta-asiakaskortit",
+        "activeCount": "({{count}} aktiivista)",
+        "help": "Syötä alennus sentteinä per litra (esim. Alexelan kanta-asiakaskortti -4). Se näkyy kartalla, ja \"Halvin lähellä\" käyttää alennettua hintaa luokittelussa."
+      },
+      "dots": {
+        "title": "Kartan pisteet",
+        "info": {
+          "label": "Info",
+          "desc": "Harmaa = tiedot puuttuvat"
+        },
+        "brand": {
+          "label": "Brändi",
+          "desc": "Kaikki brändin värissä"
+        }
+      },
+      "cluster": {
+        "label": "Ryhmittele lähellä olevat asemat"
+      },
+      "hideEmpty": {
+        "label": "Piilota asemat ilman hintoja",
+        "desc": "Nopeampi siirto/zoomaus, vähemmän sotkua"
+      },
+      "latvian": {
+        "label": "Näytä Latvian asemat",
+        "desc": "Raja-asemat Latviassa"
+      },
+      "staleDemo": {
+        "label": "Näytä vanhentuneet hinnat (demo)",
+        "desc": "Näyttää myös >24h vanhat hinnat"
+      },
+      "openTutorial": "Avaa opastus",
+      "feedback": "Lähetä palautetta",
+      "legal": {
+        "terms": "Käyttöehdot",
+        "privacy": "Tietosuojakäytäntö"
+      }
+    },
+    "header": {
+      "title": "Profiilisi",
+      "logout": "Kirjaudu ulos",
+      "logoutConfirm": "Haluatko varmasti kirjautua ulos?"
+    },
+    "untilNextTier": "Vielä {{count}} tasoon {{emoji}} {{label}}",
+    "tiers": {
+      "turist": "Turisti",
+      "uustulnuk": "Tulokas",
+      "pumbapiiluja": "Pumppukurkkija",
+      "hinnakirjutaja": "Hintakirjoittaja",
+      "kutusenuuskur": "Polttoainenuuskija",
+      "tanklaspioon": "Asemavakooja",
+      "bensiinikoer": "Bensiinikoira",
+      "hinnajalitaja": "Hintaseuraaja",
+      "hinnatabaja": "Hintanappaaja",
+      "diiselidentist": "Dieseldentisti",
+      "pumbaprofessor": "Pumppuprofessori",
+      "diiselidiplomaat": "Dieseldiplomaatti",
+      "pumbapoeet": "Pumppurunoilija",
+      "tanklaskaut": "Asemapartiolainen",
+      "kutusekaardistaja": "Polttoainekartoittaja",
+      "kutuseryuutel": "Polttoaineritari",
+      "hinnavoitja": "Hintavoittaja",
+      "pumbakuningas": "Pumppukuningas",
+      "pumbanoid": "Pumppunoita",
+      "oktaanioraakel": "Oktaanioraakkeli",
+      "hinnaprohvet": "Hintaprofeetta",
+      "bensiinibaron": "Bensiiniparomi",
+      "tanklataht": "Asematähti",
+      "kuttesultan": "Polttoainesultaani",
+      "hinnarakett": "Hintaraketti",
+      "liiterlord": "Litralordi",
+      "kutuselegend": "Polttoainelegenda",
+      "diiselpaavst": "Dieselpaavi",
+      "kytsJumal": "Kyts Jumala",
+      "kytsKoiksus": "Kyts-universumi"
+    },
+    "favorites": {
+      "title": "Suosikkiasemat",
+      "stationCount": "{{count}} asemaa",
+      "empty": "Ei vielä suosikkiasemia. Paina sydäntä asemissa lisätäksesi.",
+      "navigate": "Navigoi",
+      "sort": {
+        "nameAsc": "Nimi A→Z",
+        "nameDesc": "Nimi Z→A",
+        "priceAsc": "Hinta ↑",
+        "priceDesc": "Hinta ↓",
+        "fresh": "Tuoreet"
+      },
+      "time": {
+        "expired": "Vanhentunut",
+        "justNow": "Juuri nyt",
+        "today": "Tänään {{time}}",
+        "yesterday": "Eilen {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Tulostaulu"
+    },
+    "discovery": {
+      "title": "Löytökartta",
+      "description": "Katso, mitkä asemat olet löytänyt. Täytä kunnat ja maakunnat noustaksesi löytäjien tulostaululla.",
+      "stats": {
+        "stations": "{{done}}/{{total}} asemaa",
+        "parishes": "{{done}}/{{total}} kuntaa",
+        "maakonnad": "{{done}}/{{total}} maakuntaa"
+      },
+      "shareLabel": "Jaa julkisesti",
+      "shareDesc": "Muut näkevät löytämäsi asemat napsauttamalla nimeäsi."
+    },
+    "activity": {
+      "title": "Viimeisin toiminta"
+    }
+  },
+  "common": {
+    "close": "Sulje",
+    "unknownBrand": "Tuntematon"
+  },
+  "time": {
+    "expired": "Vanhentunut",
+    "justNow": "Juuri nyt",
+    "today": "Tänään {{time}}",
+    "yesterday": "Eilen {{time}}",
+    "hoursAgo": "{{count}}h sitten",
+    "daysAgo": "{{count}}p sitten"
+  },
+  "discoveryGrid": {
+    "loading": "Alueita ei ole vielä ladattu…",
+    "tile": {
+      "noStations": "ei asemia",
+      "stations": "{{done}}/{{total}} asemaa",
+      "parishes": "{{done}}/{{total}} kuntaa"
+    }
+  },
+  "app": {
+    "search": {
+      "placeholder": "Hae asemia, kaupunkia...",
+      "fallbackCountry": "Viro"
+    },
+    "fab": {
+      "camera": "Ota kuva hinnoista",
+      "manual": "Syötä hinnat manuaalisesti",
+      "cheapestNearby": "Halvin polttoaine lähellä",
+      "routeFind": "Halvin polttoaine reitillä",
+      "routeResults": "Näytä reitin tulokset",
+      "cancelRoute": "Peruuta reitti",
+      "stats": "Tilastot"
+    },
+    "errorBoundary": "Jotain meni pieleen. Päivitä sivu."
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS lukittu — paina uudelleen vapauttaaksesi",
+      "tapToLock": "Paina uudelleen lukitaksesi GPS:n",
+      "findLocation": "Etsi sijaintini"
+    },
+    "zoom": {
+      "in": "Lähennä",
+      "out": "Loitonna"
+    }
+  },
+  "brandPicker": {
+    "label": "Ketju",
+    "labelWithCount": "Ketju · {{count}}",
+    "clear": "Tyhjennä valinta"
+  },
+  "discoveryBanner": {
+    "openTitle": "Avaa löytökartta",
+    "viewing": "Katsotaan: {{name}}",
+    "modeLabel": "Löytötila",
+    "viewingHelp": "Toisen käyttäjän löytökartta",
+    "tapToChange": "Napauta vaihtaaksesi maakuntaa",
+    "tapToOpen": "Napauta avataksesi löytökartan",
+    "tapXForAll": "Napauta X nähdäksesi kaikki maakunnat",
+    "pricesHidden": "Hinnat on piilotettu",
+    "removeFocus": "Poista maakunnan kohdistus",
+    "turnOff": "Käännä pois päältä"
+  },
+  "manualPrice": {
+    "title": {
+      "update": "Uudet hinnat: {{station}}",
+      "manual": "Syötä hinnat",
+      "scan": "Skannaa hinnat"
+    },
+    "gps": {
+      "tooFar": "Olet {{distance}} km etäisyydellä asemasta. Hintoja voi syöttää vain aseman luona (enintään {{max}} km).",
+      "refresh": "Päivitä",
+      "retry": "Yritä uudelleen",
+      "checking": "Tarkistetaan sijaintia...",
+      "detecting": "Tunnistetaan sijaintia..."
+    },
+    "manual": {
+      "noStations": "Yhtään asemaa ei löytynyt 500 metrin säteellä.",
+      "changeStation": "Vaihda asemaa",
+      "savedConfirm": "Hinnat tallennettu",
+      "refreshLocation": "Päivitä sijainti"
+    },
+    "picker": {
+      "aiDetected": "Tekoäly tunnisti hinnat:",
+      "promptManual": "Valitse asema, jolle lisäät hintoja:",
+      "promptUpdate": "Valitse asema, jonka hintoja päivität:",
+      "refreshTitle": "Päivitä sijainti",
+      "autoSelected": "Valittu: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Lataa kuva",
+      "aiReading": "Tekoäly lukee...",
+      "retake": "Uudestaan",
+      "scanPrices": "Kameralla",
+      "scanPricesLong": "Skannaa hinnat kameralla",
+      "retryStatus": "Yritetään uudelleen... ({{attempt}}/{{max}})",
+      "scannedAlt": "Skannattu kuva"
+    },
+    "brandMismatch": {
+      "message": "Kuvassa näyttää olevan <strong>{{detected}}</strong> asema, mutta päivität aseman <strong>{{station}}</strong> hintoja. Tarkista, että hinnat ovat oikein.",
+      "fallback": "toinen ketju"
+    },
+    "scanError": {
+      "quotaExceeded": "Tekoälypalvelun raja on täynnä. Yritä myöhemmin uudelleen tai syötä hinnat manuaalisesti.",
+      "aiUpstreamBusy": "Tekoälypalvelu on tällä hetkellä ylikuormitettu. Yritä parin minuutin päästä uudelleen tai syötä hinnat manuaalisesti.",
+      "noNearbyStation": "Lähistöltä ei löytynyt asemaa ({{max}}km säteellä). Tarkista GPS-oikeudet tai valitse asema manuaalisesti.",
+      "noGps": "GPS-signaalia ei saatu. Tarkista sijaintioikeudet ja yritä uudelleen.",
+      "noPricesRead": "Tekoäly ei pystynyt lukemaan hintoja kuvasta. Yritä suoraan hintataulun edessä, vältä heijastuksia tai syötä hinnat manuaalisesti.",
+      "timeout": "Tekoälyllä kesti liian kauan. Yritä uudelleen tai syötä hinnat manuaalisesti.",
+      "network": "Verkkovirhe. Tarkista internetyhteys ja yritä uudelleen.",
+      "generic": "Tekoälyn luku epäonnistui. Syötä hinnat manuaalisesti tai yritä uudelleen."
+    },
+    "submit": {
+      "saving": "Tallennetaan...",
+      "save": "Tallenna",
+      "confirm": "Vahvista",
+      "locationNeeded": "Sijainti vaaditaan",
+      "waitingGps": "Odotetaan GPS-signaalia...",
+      "noStations": "Asemia ei löytynyt",
+      "choosePrompt": "Valitse asema luettelosta",
+      "tooFar": "Olet liian kaukana",
+      "aiReading": "Tekoäly lukee kuvaa...",
+      "takePhoto": "Ota kuva hintataulusta",
+      "firstChoose": "Valitse ensin asema"
+    },
+    "alert": {
+      "priceRange": "Hinnan on oltava välillä 0–10 € ({{type}}: {{value}}).",
+      "gpsRequired": "GPS-sijainti vaaditaan hinnan syöttämiseen. Salli sijainti ja yritä uudelleen.",
+      "tooFar": "Olet {{distance}} km etäisyydellä asemasta. Hintoja voi syöttää vain silloin, kun olet aseman luona (enintään {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "Olet liian kaukana asemasta. Siirry aseman luo ja yritä uudelleen.",
+      "rls": "Syöte ei läpäissyt tarkistusta. Tarkista hinnat ja yritä uudelleen.",
+      "notFound": "Asemaa ei löytynyt. Valitse asema uudelleen ja yritä uudelleen.",
+      "generic": "Tallennus epäonnistui. Yritä vielä kerran — jos tämä toistuu, tarkista verkkoyhteys."
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Sijainti ei ole saatavilla. Salli sovelluksen käyttää sijaintia ja yritä uudelleen.",
+      "timeout": "Sijainnin löytäminen kestää odotettua kauemmin. Yritä uudelleen.",
+      "unsupported": "Selaimesi ei tue sijainnin määritystä.",
+      "unavailable": "Sijaintia ei löydetty. Yritä uudelleen."
+    }
+  },
+  "stationDrawer": {
+    "disputed": "Kiistetty",
+    "priceConfirmed": "Hinta vahvistettu ✓",
+    "notEnoughHistory": "Ei tarpeeksi historiaa tälle polttoaineelle.",
+    "priceLabel": "Hinta",
+    "voteFailed": "Äänestäminen epäonnistui.",
+    "updatePrices": "Päivitä hinnat",
+    "aria": {
+      "confirm": "Vahvista hinta",
+      "dispute": "Kiistä hinta"
+    },
+    "titles": {
+      "history": "Näytä hintahistoria",
+      "navigate": "Navigoi"
+    }
+  },
+  "cheapest": {
+    "title": "Halvin polttoaine lähelläsi",
+    "fallbackLocation": "Käytetään kartan sijaintia — tuoretta GPS:ää ei ole vielä saatu.",
+    "radius": "Säde:",
+    "filtered": "Suodatettu:",
+    "locating": "Etsitään sijaintiasi...",
+    "empty": "Tällä säteellä ei löytynyt hintoja. Kokeile suurempaa sädettä.",
+    "loyaltyTag": "kanta-asiakaskortti",
+    "fresh": "tuore",
+    "stale": "vanhentunut",
+    "outsideRadius": "säteen ulkopuolella",
+    "go": "Mene",
+    "retry": "Yritä uudelleen"
+  },
+  "route": {
+    "title": "Minne ajat?",
+    "searchPlaceholder": "Määränpää (esim. Tallinna, Tartto)",
+    "clearSearch": "Tyhjennä",
+    "destination": "Määränpää:",
+    "corridor": "Käytävä:",
+    "fuel": "Polttoaine:",
+    "locating": "Etsitään sijaintiasi...",
+    "computing": "Lasketaan reittiä...",
+    "retry": "Yritä uudelleen",
+    "error": {
+      "notFound": "Reittiä ei löytynyt. Kokeile toista määränpäätä tai tarkista internetyhteys.",
+      "computeFailed": "Reitin laskeminen epäonnistui. Yritä uudelleen.",
+      "locationMissing": "Sijaintia ei löytynyt. Reitin suunnitteluun tarvitaan lähtöpaikka.",
+      "noStations": "Reitin läheltä ei löytynyt asemia tälle polttoaineelle. Kokeile leveämpää käytävää."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}} m reitiltä",
+      "fromRouteKm": "{{km}} km reitiltä",
+      "fromOriginKm": "{{km}} km lähtöpaikasta"
+    }
+  },
+  "leaderboard": {
+    "title": "Tulostaulu",
+    "period": {
+      "week": "Viikko",
+      "month": "Kuukausi",
+      "all": "Kaikki"
+    },
+    "dimension": {
+      "activity": "Aktiivisimmat",
+      "discovery": "Löytäjät"
+    },
+    "discoveryHint": "Järjestetty maakuntien, sitten kuntien, sitten asemien mukaan — kaikkina aikoina.",
+    "youLabel": "Sinä:",
+    "anonymous": "Nimetön",
+    "loading": "Ladataan...",
+    "empty": {
+      "discovery": "Kukaan ei ole vielä löytänyt mitään. Ole ensimmäinen!",
+      "activity": "Tälle jaksolle ei ole vielä tietoja."
+    },
+    "youSuffix": "(sinä)",
+    "stats": {
+      "prices": "{{count}} hintaa",
+      "maakonnad": "{{done}}/{{total}} maakuntaa",
+      "parishes": "{{count}} kuntaa",
+      "stations": "{{count}} asemaa"
+    },
+    "viewFootprint": {
+      "title": "Katso tämän käyttäjän löytökartta",
+      "label": "Katso"
+    }
+  },
+  "stats": {
+    "title": "Tilastot ({{days}} päivää)",
+    "trends": {
+      "heading": "Hintatrendit",
+      "notEnoughData": "ei tarpeeksi tietoja"
+    },
+    "fuelLabel": "Polttoaine:",
+    "cheapestNow": {
+      "heading": "Halvin tällä hetkellä",
+      "noFresh": "Ei tuoretta hintaa viimeisen {{hours}} tunnin aikana."
+    },
+    "brandMedians": {
+      "heading": "Halvin brändi ({{fuel}}, mediaani)",
+      "empty": "Ei tarpeeksi hintoja."
+    },
+    "drops": {
+      "heading": "Suurimmat hinnanlaskut (7 päivää)",
+      "empty": "Hinnanlaskuja ei havaittu."
+    },
+    "contribution": {
+      "heading": "Minun panokseni",
+      "body": "Olet ilmoittanut <strong>{{count}}</strong> hintaa viimeisen {{days}} päivän aikana.",
+      "signIn": "Kirjaudu sisään nähdäksesi panoksesi."
+    }
+  },
+  "celebration": {
+    "newStation": "Uusi asema löydetty!",
+    "stationProgress": "{{done}} / {{total}} asemaa kerätty",
+    "parishCovered": "{{name}} katettu!",
+    "maakondDiscovered": "{{name}} löydetty!",
+    "allStationsCovered": "Kaikki asemat katettu"
+  },
+  "feedback": {
+    "title": "Palaute",
+    "intro": "Kiitokset, kritiikki, virheraportit tai ideat — kaikki ovat tervetulleita.",
+    "introSignedIn": "Käyttäjätunnuksesi on liitetty viestiin, jotta voimme vastata tarvittaessa.",
+    "introSignedOut": "Jos odotat vastausta, kirjaudu ensin sisään tai lisää sähköpostiosoitteesi viestiin.",
+    "placeholder": "Mitä on mielessä?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Liian pitkä: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Lähetä",
+      "sending": "Lähetetään..."
+    },
+    "sent": {
+      "thanks": "Kiitos!",
+      "body": "Palautteesi on saapunut meille. Vastaamme tarvittaessa."
+    },
+    "error": {
+      "submit": "Lähettäminen epäonnistui. Yritä uudelleen hetken kuluttua."
+    }
+  },
+  "filter": {
+    "title": "Mitä etsit?",
+    "resetAll": "Nollaa kaikki",
+    "fuelType": "Polttoaineen Tyyppi",
+    "advanced": "Lisäsuodattimet",
+    "hideStale": "Piilota vanhentuneet hinnat (>24h)",
+    "loyaltyPrices": "Näytä hinta kanta-asiakaskortilla",
+    "findCheapest": "Etsi halvin polttoaine",
+    "brand": "Ketju",
+    "clearCount": "Tyhjennä ({{count}})",
+    "findCheapestHint": "*Valitse ensin polttoainetyyppi"
+  }
+}

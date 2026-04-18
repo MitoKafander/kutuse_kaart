@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { X, TrendingUp } from 'lucide-react';
 import { getStationDisplayName, getBrand, FRESH_HOURS } from '../utils';
 
@@ -24,6 +25,7 @@ export function StatisticsDrawer({
   session: any;
   onStationSelect?: (station: any) => void;
 }) {
+  const { t } = useTranslation();
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
   const now = Date.now();
   const horizonMs = DAYS * DAY_MS;
@@ -150,7 +152,7 @@ export function StatisticsDrawer({
         <div className="flex-between">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <TrendingUp size={20} style={{ color: 'var(--color-primary)' }} />
-            <h2 className="heading-1">Statistika ({DAYS} päeva)</h2>
+            <h2 className="heading-1">{t('stats.title', { days: DAYS })}</h2>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -158,7 +160,7 @@ export function StatisticsDrawer({
         </div>
 
         <div>
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Hinnatrendid</h3>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.trends.heading')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {FUEL_TYPES.map(f => {
               const pts = trendsByFuel[f];
@@ -166,7 +168,7 @@ export function StatisticsDrawer({
                 return (
                   <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontSize: '0.85rem' }}>{f}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>pole piisavalt andmeid</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('stats.trends.notEnoughData')}</div>
                   </div>
                 );
               }
@@ -200,7 +202,7 @@ export function StatisticsDrawer({
 
         <div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Kütus:</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{t('stats.fuelLabel')}</span>
             {FUEL_TYPES.map(f => (
               <button
                 key={f}
@@ -225,9 +227,9 @@ export function StatisticsDrawer({
             <div className="glass-panel" style={{
               padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
             }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Odavaim hetkel</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>{t('stats.cheapestNow.heading')}</div>
               <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-                Pole värsket hinda viimase {FRESH_HOURS} tunni jooksul.
+                {t('stats.cheapestNow.noFresh', { hours: FRESH_HOURS })}
               </div>
             </div>
           )}
@@ -251,7 +253,7 @@ export function StatisticsDrawer({
                 cursor: onStationSelect ? 'pointer' : 'default',
               }}
             >
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>Odavaim hetkel</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>{t('stats.cheapestNow.heading')}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{getStationDisplayName(cheapestNow.station)}</span>
                 <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{cheapestNow.price.toFixed(3)}</span>
@@ -259,15 +261,15 @@ export function StatisticsDrawer({
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {(() => {
                   const h = Math.floor((now - cheapestNow.reportedAt) / (60 * 60 * 1000));
-                  if (h < 1) return 'vähem kui tund tagasi';
-                  if (h < 24) return `${h} tundi tagasi`;
-                  return `${Math.floor(h / 24)} päeva tagasi`;
+                  if (h < 1) return t('time.justNow');
+                  if (h < 24) return t('time.hoursAgo', { count: h });
+                  return t('time.daysAgo', { count: Math.floor(h / 24) });
                 })()}
               </div>
             </button>
           )}
 
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Soodsaim bränd ({selectedFuel}, mediaan)</h3>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.brandMedians.heading', { fuel: selectedFuel })}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {brandMedians.slice(0, 10).map((b, i) => (
               <div key={b.brand} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px',
@@ -278,13 +280,13 @@ export function StatisticsDrawer({
               </div>
             ))}
             {brandMedians.length === 0 && (
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Pole piisavalt hindu.</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{t('stats.brandMedians.empty')}</div>
             )}
           </div>
         </div>
 
         <div>
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Suurimad hinnalangused (7 päeva)</h3>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.drops.heading')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {biggestDrops.map(d => (
               <div key={`${d.station.id}-${d.fuel}`} style={{
@@ -306,18 +308,22 @@ export function StatisticsDrawer({
               </div>
             ))}
             {biggestDrops.length === 0 && (
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Hinnalangusi ei tuvastatud.</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{t('stats.drops.empty')}</div>
             )}
           </div>
         </div>
 
         <div>
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>Minu panus</h3>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.contribution.heading')}</h3>
           <div className="glass-panel" style={{ padding: 12, borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
             {session ? (
-              <>Oled raporteerinud <strong>{userCount}</strong> hinda viimase {DAYS} päeva jooksul.</>
+              <Trans
+                i18nKey="stats.contribution.body"
+                values={{ count: userCount, days: DAYS }}
+                components={{ strong: <strong /> }}
+              />
             ) : (
-              <span style={{ color: 'var(--color-text-muted)' }}>Logi sisse, et näha oma panust.</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>{t('stats.contribution.signIn')}</span>
             )}
           </div>
         </div>

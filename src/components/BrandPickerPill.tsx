@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Check } from 'lucide-react';
 
 const QUICK_BRANDS = ['Circle K', 'Neste', 'Olerex', 'Alexela', 'Terminal'];
@@ -8,6 +9,7 @@ export function BrandPickerPill({ selected, onChange }: {
   selected: string[];
   onChange: (brands: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -42,7 +44,7 @@ export function BrandPickerPill({ selected, onChange }: {
   }, [open]);
 
   const activeCount = selected.filter(s => QUICK_BRANDS.includes(s)).length;
-  const label = activeCount > 0 ? `Kett · ${activeCount}` : 'Kett';
+  const label = activeCount > 0 ? t('brandPicker.labelWithCount', { count: activeCount }) : t('brandPicker.label');
 
   const toggle = (b: string) => {
     if (selected.includes(b)) onChange(selected.filter(x => x !== b));
@@ -106,7 +108,7 @@ export function BrandPickerPill({ selected, onChange }: {
                 cursor: 'pointer', fontSize: '0.78rem',
               }}
             >
-              Tühista valik
+              {t('brandPicker.clear')}
             </button>
           )}
         </div>,

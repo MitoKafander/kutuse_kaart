@@ -1,0 +1,607 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Keel"
+    }
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Logi sisse",
+      "signUp": "Loo konto"
+    },
+    "aria": {
+      "close": "Sulge"
+    },
+    "continueWithGoogle": "Jätka Google'iga",
+    "divider": {
+      "or": "või"
+    },
+    "email": {
+      "placeholder": "Email"
+    },
+    "password": {
+      "placeholder": "Parool"
+    },
+    "button": {
+      "loading": "Laadimine...",
+      "signIn": "Logi sisse",
+      "signUp": "Loo konto"
+    },
+    "toggle": {
+      "noAccount": "Pole kontot?",
+      "haveAccount": "Juba kasutaja?",
+      "toSignUp": "Lood konto siin",
+      "toSignIn": "Logi sisse"
+    },
+    "signupSuccess": "Konto loodud! Kontrolli emaili."
+  },
+  "gdpr": {
+    "body": "Kyts kasutab ainult hädavajalikke küpsiseid (sisselogimine, eelistused). Kasutades nõustud <terms>kasutustingimustega</terms> ja <privacy>privaatsuspoliitikaga</privacy>.",
+    "accept": "Nõustun"
+  },
+  "update": {
+    "title": "Uus versioon saadaval",
+    "body": "Värskenda, et kasutada uusimat Kytsi.",
+    "button": {
+      "reload": "Värskenda",
+      "reloading": "Värskendan…"
+    }
+  },
+  "common": {
+    "close": "Sulge",
+    "unknownBrand": "Tundmatu"
+  },
+  "filter": {
+    "title": "Mida otsid?",
+    "resetAll": "Lähtesta kõik",
+    "fuelType": "Kütuse Tüüp",
+    "advanced": "Täpsemad Filtrid",
+    "hideStale": "Peida aegunud hinnad (>24h)",
+    "loyaltyPrices": "Näita hindu sooduskaardiga",
+    "findCheapest": "Leia odavaim kütus",
+    "findCheapestHint": "*Vali esmalt kütuse tüüp",
+    "brand": "Kett",
+    "clearCount": "Tühjenda ({{count}})"
+  },
+  "feedback": {
+    "title": "Tagasiside",
+    "intro": "Kiitus, kriitika, vigade teated või ideed — kõik tulevad kasuks.",
+    "introSignedIn": "Sinu kasutaja ID on sõnumi külge lisatud, et saaksime vajadusel vastata.",
+    "introSignedOut": "Kui ootad vastust, logi enne sisse või lisa sõnumisse oma e-post.",
+    "placeholder": "Mis on meeles?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Liiga pikk: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Saada",
+      "sending": "Saadan..."
+    },
+    "sent": {
+      "thanks": "Aitäh!",
+      "body": "Sinu tagasiside on meieni jõudnud. Vastame, kui vaja."
+    },
+    "error": {
+      "submit": "Saatmine ebaõnnestus. Proovi veidi hiljem uuesti."
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Asukoht pole saadaval. Luba rakendusele asukoha kasutamine ja proovi uuesti.",
+      "timeout": "Asukoha leidmine võtab oodatust kauem. Proovi uuesti.",
+      "unsupported": "Sinu brauser ei toeta asukoha määramist.",
+      "unavailable": "Asukohta ei õnnestunud leida. Proovi uuesti."
+    }
+  },
+  "manualPrice": {
+    "title": {
+      "update": "Uued hinnad: {{station}}",
+      "manual": "Sisesta hinnad",
+      "scan": "Skaneeri Hinnad"
+    },
+    "gps": {
+      "checking": "Kontrollin asukohta...",
+      "detecting": "Asukohta tuvastatakse...",
+      "tooFar": "Oled tanklast {{distance}} km kaugusel. Hindu saab sisestada vaid tankla juures (kuni {{max}} km).",
+      "refresh": "Värskenda",
+      "retry": "Proovi uuesti"
+    },
+    "manual": {
+      "noStations": "500 m raadiuses ei leitud ühtegi jaama.",
+      "refreshLocation": "Värskenda asukohta",
+      "changeStation": "Muuda jaama",
+      "savedConfirm": "Hinnad salvestatud"
+    },
+    "picker": {
+      "aiDetected": "AI tuvastas hinnad:",
+      "promptManual": "Vali tankla, millele hindu lisad:",
+      "promptUpdate": "Vali tankla, mille hindu uuendad:",
+      "refreshTitle": "Värskenda asukohta",
+      "autoSelected": "Valitud: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Laadi pilt",
+      "aiReading": "AI loeb...",
+      "retake": "Uuesti",
+      "scanPrices": "Kaameraga",
+      "scanPricesLong": "Skaneeri hinnad kaameraga",
+      "retryStatus": "Uuesti proovimas... ({{attempt}}/{{max}})",
+      "scannedAlt": "Skaneeritud pilt"
+    },
+    "brandMismatch": {
+      "message": "Pildil tundub olevat <strong>{{detected}}</strong> tankla, aga uuendad <strong>{{station}}</strong> hindu. Kontrolli, kas hinnad on õiged.",
+      "fallback": "teine kett"
+    },
+    "scanError": {
+      "quotaExceeded": "AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.",
+      "aiUpstreamBusy": "AI teenus on hetkel ülekoormatud. Proovi paari minuti pärast uuesti või sisesta hinnad käsitsi.",
+      "noNearbyStation": "Läheduses ({{max}}km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.",
+      "noGps": "GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.",
+      "noPricesRead": "AI ei suutnud hindu pildilt lugeda. Proovi otse totemi ette, väldi peegeldusi, või sisesta hinnad käsitsi.",
+      "timeout": "AI võttis liiga kaua aega. Proovi uuesti või sisesta hinnad käsitsi.",
+      "network": "Võrguviga. Kontrolli internetiühendust ja proovi uuesti.",
+      "generic": "AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti."
+    },
+    "submit": {
+      "saving": "Salvestan...",
+      "save": "Salvesta",
+      "confirm": "Kinnita",
+      "locationNeeded": "Asukoht vajalik",
+      "waitingGps": "Ootan GPS-signaali...",
+      "noStations": "Jaamu ei leitud",
+      "choosePrompt": "Vali tankla loendist",
+      "tooFar": "Oled liiga kaugel",
+      "aiReading": "AI loeb pilti...",
+      "takePhoto": "Pildista hinnaposti",
+      "firstChoose": "Vali esmalt tankla"
+    },
+    "alert": {
+      "priceRange": "Hind peab olema vahemikus 0–10 € ({{type}}: {{value}}).",
+      "gpsRequired": "GPS-asukoht on vajalik hinna sisestamiseks. Luba asukoht ja proovi uuesti.",
+      "tooFar": "Oled tanklast {{distance}} km kaugusel. Hindu saab sisestada vaid siis, kui oled tankla juures (kuni {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "Oled tanklast liiga kaugel. Liigu tankla juurde ja proovi uuesti.",
+      "rls": "Sisestus ei läbinud kontrolli. Kontrolli hindu ja proovi uuesti.",
+      "notFound": "Tanklat ei leitud. Vali uuesti tankla ja proovi uuesti.",
+      "generic": "Salvestamine ebaõnnestus. Proovi veel kord — kui see kordub, kontrolli võrguühendust."
+    }
+  },
+  "app": {
+    "errorBoundary": "Midagi läks valesti. Palun värskenda lehte.",
+    "search": {
+      "placeholder": "Otsi jaamu, linna...",
+      "fallbackCountry": "Eesti"
+    },
+    "fab": {
+      "camera": "Pildista hindu",
+      "manual": "Sisesta hinnad käsitsi",
+      "cheapestNearby": "Odavaim kütus lähedal",
+      "routeFind": "Odavaim kütus marsruudil",
+      "routeResults": "Näita marsruudi tulemusi",
+      "cancelRoute": "Tühista marsruut",
+      "stats": "Statistika"
+    }
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS lukus — vajuta uuesti vabastamiseks",
+      "tapToLock": "Vajuta uuesti GPS lukustamiseks",
+      "findLocation": "Leia minu asukoht"
+    },
+    "zoom": {
+      "in": "Suumi sisse",
+      "out": "Suumi välja"
+    }
+  },
+  "brandPicker": {
+    "label": "Kett",
+    "labelWithCount": "Kett · {{count}}",
+    "clear": "Tühista valik"
+  },
+  "discoveryBanner": {
+    "openTitle": "Ava avastuskaart",
+    "viewing": "Vaatad: {{name}}",
+    "modeLabel": "Avastusrežiim",
+    "viewingHelp": "Teise kasutaja avastuskaart",
+    "tapToChange": "Puuduta, et vahetada maakonda",
+    "tapToOpen": "Puuduta, et avada avastuskaart",
+    "tapXForAll": "Puuduta X, et näha kõiki maakondi",
+    "pricesHidden": "Hinnad on peidetud",
+    "removeFocus": "Eemalda maakonna fookus",
+    "turnOff": "Lülita välja"
+  },
+  "time": {
+    "justNow": "Just praegu",
+    "hoursAgo": "{{count}}h tagasi",
+    "daysAgo": "{{count}}p tagasi",
+    "expired": "Aegunud",
+    "today": "Täna {{time}}",
+    "yesterday": "Eile {{time}}"
+  },
+  "stationDrawer": {
+    "disputed": "Vaidlustatud",
+    "priceConfirmed": "Hind kinnitatud ✓",
+    "notEnoughHistory": "Selle kütuse kohta pole piisavalt ajalugu.",
+    "priceLabel": "Hind",
+    "voteFailed": "Hääletamine ebaõnnestus.",
+    "updatePrices": "Uuenda Hinnad",
+    "aria": {
+      "confirm": "Kinnita hind",
+      "dispute": "Vaidlusta hind"
+    },
+    "titles": {
+      "history": "Näita hinnaajalugu",
+      "navigate": "Navigeeri"
+    }
+  },
+  "cheapest": {
+    "title": "Odavaim kütus sinu lähedal",
+    "fallbackLocation": "Kasutan kaardi asukohta — värske GPS pole veel saabunud.",
+    "radius": "Raadius:",
+    "filtered": "Filtreeritud:",
+    "locating": "Otsib sinu asukohta...",
+    "retry": "Proovi uuesti",
+    "empty": "Selles raadiuses hindu ei leitud. Proovi suuremat raadiust.",
+    "loyaltyTag": "sooduskaart",
+    "fresh": "värske",
+    "stale": "vana",
+    "outsideRadius": "väljaspool raadiust",
+    "go": "Mine"
+  },
+  "route": {
+    "title": "Kuhu sõidad?",
+    "searchPlaceholder": "Sihtkoht (nt Tartu, Pärnu)",
+    "clearSearch": "Tühjenda",
+    "destination": "Sihtkoht:",
+    "corridor": "Koridor:",
+    "fuel": "Kütus:",
+    "locating": "Otsin sinu asukohta...",
+    "computing": "Arvutan marsruuti...",
+    "retry": "Proovi uuesti",
+    "error": {
+      "notFound": "Marsruuti ei leitud. Proovi teist sihtkohta või kontrolli internetiühendust.",
+      "computeFailed": "Marsruudi arvutamine ebaõnnestus. Proovi uuesti.",
+      "locationMissing": "Asukohta ei leitud. Marsruudi planeerimiseks on vaja lähtekohta.",
+      "noStations": "Marsruudi lähedusest ei leitud tanklaid selle kütusetüübiga. Proovi laiemat koridori."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}}m teest",
+      "fromRouteKm": "{{km}}km teest",
+      "fromOriginKm": "{{km}}km lähtest"
+    }
+  },
+  "leaderboard": {
+    "title": "Edetabel",
+    "period": {
+      "week": "Nädal",
+      "month": "Kuu",
+      "all": "Kõik"
+    },
+    "dimension": {
+      "activity": "Aktiivsemad",
+      "discovery": "Avastajad"
+    },
+    "discoveryHint": "Järjestatud maakondade, siis valdade, siis jaamade järgi — kõik aeg.",
+    "youLabel": "Sina:",
+    "anonymous": "Anonüümne",
+    "youSuffix": "(sina)",
+    "loading": "Laadin...",
+    "empty": {
+      "discovery": "Keegi pole veel midagi avastanud. Ole esimene!",
+      "activity": "Selle perioodi kohta pole veel andmeid."
+    },
+    "stats": {
+      "prices": "{{count}} hinda",
+      "maakonnad": "{{done}}/{{total}} maakonda",
+      "parishes": "{{count}} valda",
+      "stations": "{{count}} jaama"
+    },
+    "viewFootprint": {
+      "title": "Vaata selle kasutaja avastuskaarti",
+      "label": "Vaata"
+    }
+  },
+  "stats": {
+    "title": "Statistika ({{days}} päeva)",
+    "fuelLabel": "Kütus:",
+    "trends": {
+      "heading": "Hinnatrendid",
+      "notEnoughData": "pole piisavalt andmeid"
+    },
+    "cheapestNow": {
+      "heading": "Odavaim hetkel",
+      "noFresh": "Pole värsket hinda viimase {{hours}} tunni jooksul."
+    },
+    "brandMedians": {
+      "heading": "Soodsaim bränd ({{fuel}}, mediaan)",
+      "empty": "Pole piisavalt hindu."
+    },
+    "drops": {
+      "heading": "Suurimad hinnalangused (7 päeva)",
+      "empty": "Hinnalangusi ei tuvastatud."
+    },
+    "contribution": {
+      "heading": "Minu panus",
+      "body": "Oled raporteerinud <strong>{{count}}</strong> hinda viimase {{days}} päeva jooksul.",
+      "signIn": "Logi sisse, et näha oma panust."
+    }
+  },
+  "celebration": {
+    "newStation": "Uus jaam avastatud!",
+    "stationProgress": "{{done}} / {{total}} jaama kogutud",
+    "parishCovered": "{{name}} kaetud!",
+    "maakondDiscovered": "{{name}} avastatud!",
+    "allStationsCovered": "Kõik jaamad kaetud"
+  },
+  "discoveryGrid": {
+    "loading": "Regioone pole veel laetud…",
+    "tile": {
+      "stations": "{{done}}/{{total}} jaama",
+      "parishes": "{{done}}/{{total}} valda",
+      "noStations": "pole jaamu"
+    }
+  },
+  "profile": {
+    "header": {
+      "title": "Sinu profiil",
+      "logout": "Logi välja",
+      "logoutConfirm": "Kas oled kindel, et soovid välja logida?"
+    },
+    "untilNextTier": "Veel {{count}} kuni {{emoji}} {{label}}",
+    "tabs": {
+      "profile": "Profiil",
+      "settings": "Seaded"
+    },
+    "tiers": {
+      "turist": "Turist",
+      "uustulnuk": "Uustulnuk",
+      "pumbapiiluja": "Pumbapiiluja",
+      "hinnakirjutaja": "Hinnakirjutaja",
+      "kutusenuuskur": "Kütusenuuskur",
+      "tanklaspioon": "Tanklaspioon",
+      "bensiinikoer": "Bensiinikoer",
+      "hinnajalitaja": "Hinnajälitaja",
+      "hinnatabaja": "Hinnatabaja",
+      "diiselidentist": "Diiselidentist",
+      "pumbaprofessor": "Pumbaprofessor",
+      "diiselidiplomaat": "Diiselidiplomaat",
+      "pumbapoeet": "Pumbapoeet",
+      "tanklaskaut": "Tanklaskaut",
+      "kutusekaardistaja": "Kütusekaardistaja",
+      "kutuseryuutel": "Kütuserüütel",
+      "hinnavoitja": "Hinnavõitja",
+      "pumbakuningas": "Pumbakuningas",
+      "pumbanoid": "Pumbanõid",
+      "oktaanioraakel": "Oktaanioraakel",
+      "hinnaprohvet": "Hinnaprohvet",
+      "bensiinibaron": "Bensiinibaron",
+      "tanklataht": "Tanklatäht",
+      "kuttesultan": "Küttesultan",
+      "hinnarakett": "Hinnarakett",
+      "liiterlord": "Liiterlord",
+      "kutuselegend": "Kütuselegend",
+      "diiselpaavst": "Diiselpaavst",
+      "kytsJumal": "Kyts Jumal",
+      "kytsKoiksus": "Kyts Kõiksus"
+    },
+    "favorites": {
+      "title": "Lemmikjaamad",
+      "stationCount": "{{count}} jaama",
+      "empty": "Pole veel lemmikjaamu. Vajuta jaamadel südant, et lisada.",
+      "navigate": "Navigeeri",
+      "sort": {
+        "nameAsc": "Nimi A→Z",
+        "nameDesc": "Nimi Z→A",
+        "priceAsc": "Hind ↑",
+        "priceDesc": "Hind ↓",
+        "fresh": "Värsked"
+      },
+      "time": {
+        "expired": "Aegunud",
+        "justNow": "Just praegu",
+        "today": "Täna {{time}}",
+        "yesterday": "Eile {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Edetabel"
+    },
+    "discovery": {
+      "title": "Avastuskaart",
+      "description": "Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.",
+      "stats": {
+        "stations": "{{done}}/{{total}} jaama",
+        "parishes": "{{done}}/{{total}} valda",
+        "maakonnad": "{{done}}/{{total}} maakonda"
+      },
+      "shareLabel": "Jaga avalikult",
+      "shareDesc": "Teised näevad su nimel klõpsates, millised jaamad oled avastanud."
+    },
+    "activity": {
+      "title": "Viimased tegevused"
+    },
+    "settings": {
+      "title": "Seaded",
+      "theme": {
+        "title": "Kaardi teema",
+        "dark": "Tume",
+        "light": "Hele"
+      },
+      "fuel": {
+        "title": "Sinu auto kütus",
+        "removeTooltip": "Klõpsa uuesti eemaldamiseks"
+      },
+      "brands": {
+        "title": "Eelistatud tanklad",
+        "selectedCount": "({{count}} valitud)",
+        "help": "Vali ketid, mida \"Odavaim lähedal\" eelistab. Tühi = kõik."
+      },
+      "loyalty": {
+        "title": "Kliendikaardid",
+        "activeCount": "({{count}} aktiivset)",
+        "help": "Sisesta soodustus sentides liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja \"Odavaim lähedal\" kasutab sooduskaardi hinda järjestamiseks."
+      },
+      "dots": {
+        "title": "Kaardi punktid",
+        "info": {
+          "label": "Info",
+          "desc": "Hallid = andmed puudu"
+        },
+        "brand": {
+          "label": "Bränd",
+          "desc": "Kõik brändi värvis"
+        }
+      },
+      "cluster": {
+        "label": "Grupeeri lähedased jaamad"
+      },
+      "hideEmpty": {
+        "label": "Peida jaamad ilma hindadeta",
+        "desc": "Kiirem pan/zoom, vähem segadust"
+      },
+      "latvian": {
+        "label": "Näita Läti jaamu",
+        "desc": "Piiriäärsed jaamad Lätis"
+      },
+      "staleDemo": {
+        "label": "Näita aegunud hindu (demo)",
+        "desc": "Kuvab ka >24h vanu hindu"
+      },
+      "openTutorial": "Ava tutvustus",
+      "feedback": "Saada tagasisidet",
+      "legal": {
+        "terms": "Kasutustingimused",
+        "privacy": "Privaatsuspoliitika"
+      }
+    }
+  },
+  "legal": {
+    "notice": {
+      "englishOnly": "See dokument on saadaval ainult eesti ja inglise keeles."
+    },
+    "effectiveDate": "Kehtib alates: 15.04.2026"
+  },
+  "privacy": {
+    "title": "Privaatsuspoliitika",
+    "s1": "<strong>1. Vastutav töötleja</strong><br/>Kyts on kogukonnaprojekt, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@kyts.ee</a>. Koduleht: www.kyts.ee.",
+    "s2": {
+      "title": "2. Milliseid andmeid me kogume",
+      "item1": "<strong>Konto andmed:</strong> e-posti aadress ja Supabase poolt genereeritud kasutaja ID (kui logid sisse Google OAuth'iga või e-postiga).",
+      "item2": "<strong>Kasutajanimi:</strong> valikuline avalik kuvanimi, mille sa ise määrad.",
+      "item3": "<strong>Panused:</strong> sinu esitatud kütusehinnad ja hääletused (avalikud, seotud sinu kasutaja ID-ga).",
+      "item4": "<strong>Eelistused:</strong> lemmikjaamad, eelistatud kütusetüüp, lemmikbrändid, boonuskaardi soodustused — salvestatud sinu kontole.",
+      "item5": "<strong>Tehnilised logid:</strong> IP-aadress (ajutiselt, rate limit'i jaoks), vea-stack'id (Sentry), aggregeeritud sündmused (PostHog)."
+    },
+    "s3": {
+      "title": "3. Milleks me andmeid kasutame",
+      "item1": "Teenuse toimimiseks (autentimine, sinu eelistuste meelespidamine).",
+      "item2": "Kuritarvituste tõrjeks (hinnaskännide rate limit per-IP).",
+      "item3": "Vigade tuvastamiseks (Sentry — automaatselt kogutud stack trace'id).",
+      "item4": "Kasutuse mõõtmiseks (PostHog — anonüümsed agregaadid, ei salvesta brauserisse midagi)."
+    },
+    "s4": {
+      "title": "4. Õiguslikud alused (GDPR art 6)",
+      "item1": "<strong>Leping (art 6(1)(b)):</strong> konto haldamine ja teenuse pakkumine.",
+      "item2": "<strong>Õigustatud huvi (art 6(1)(f)):</strong> turvalisus, pettuse tõrje, teenuse parendamine anonüümse statistika kaudu."
+    },
+    "s5": {
+      "intro": "<strong>5. Alltöötlejad (sub-processors)</strong><br/>Andmete töötlemisel kasutame järgmisi teenuseid:",
+      "item1": "<strong>Supabase</strong> (EL) — andmebaas ja autentimine.",
+      "item2": "<strong>Vercel</strong> (EL edge) — veebimajutus ja API funktsioonid.",
+      "item3": "<strong>Google</strong> — OAuth autentimine ning Gemini AI (kütusetotemi pildituvastus).",
+      "item4": "<strong>Upstash Redis</strong> (EL) — rate limit counter'id.",
+      "item5": "<strong>Sentry</strong> — vigade agregaator.",
+      "item6": "<strong>PostHog</strong> (EU Cloud) — anonüümne produktianalüütika."
+    },
+    "s6": "<strong>6. Pilditöötlus (AI)</strong><br/>Kaamera-skaneerimisel saadetakse pilt turvaliselt Google Gemini AI-le hinnatuvastuseks. Pilti <strong>ei salvestata</strong> meie serverites ega andmebaasis — see töödeldakse koheselt ja kustutatakse pärast JSON-vastuse tagastamist.",
+    "s7": "<strong>7. Asukohaandmed</strong><br/>Kaardi \"Asukoha\" ja \"Odavaim lähedal\" funktsioonid kasutavad brauseri GPS-i ainult sinu seadmes. Sinu koordinaate <strong>ei saadeta</strong> meie serveritesse.",
+    "s8": "<strong>8. Küpsised ja kohalik salvestus</strong><br/>Kasutame ainult <em>hädavajalikke</em> küpsiseid: Supabase Auth sessioonitokenid (hoiab sind sisselogituna) ning localStorage kirjed sinu eelistuste salvestamiseks (nt boonuskaardid, kaardi stiil). Analüütikaks <strong>küpsiseid ei salvestata</strong> — PostHog töötab mälu-režiimis. Seetõttu ei nõua me nõusolekubanner'it.",
+    "s9": {
+      "title": "9. Säilitusajad",
+      "item1": "Konto + eelistused: kuni kustutad konto.",
+      "item2": "Hinnapostitused: avalik ajalugu säilib, et võrdlused töötaksid.",
+      "item3": "Vealogid (Sentry): 30 päeva.",
+      "item4": "Analüütika (PostHog): 1 aasta, agregeeritud.",
+      "item5": "Rate limit counter'id (Upstash): 1 päev."
+    },
+    "s10": "<strong>10. Sinu õigused (GDPR)</strong><br/>Sul on õigus: oma andmeid vaadata, parandada, kustutada ning eksportida. Samuti esitada vastuväide töötlemisele ja kaebus Andmekaitse Inspektsioonile (aki.ee). Taotluse jaoks kirjuta: <a>info@kyts.ee</a>. Vastame 30 päeva jooksul.",
+    "s11": "<strong>11. Muudatused</strong><br/>Olulistest muudatustest teavitame rakenduses. Kehtiv versioon on alati käesolev dokument.",
+    "seeAlsoTerms": "Vaata ka: <termsBtn>Kasutustingimused</termsBtn>."
+  },
+  "terms": {
+    "title": "Kasutustingimused",
+    "s1": "<strong>1. Teenuse osutaja</strong><br/>Kyts on kogukonnapõhine kütusehindade kaart, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@kyts.ee</a>.",
+    "s2": "<strong>2. Teenuse kirjeldus</strong><br/>Kyts võimaldab kasutajatel jagada ja vaadata Eesti tanklate kütusehindu. Hinnad on kasutajate esitatud ja seetõttu võivad olla aegunud, ebatäpsed või valed. Teenus pakutakse põhimõttel \"<em>nagu on</em>\" (as-is), ilma igasuguste garantiideta täpsuse, kättesaadavuse ega sobivuse kohta.",
+    "s3": "<strong>3. Konto ja kasutamine</strong><br/>Konto loomine (Google OAuth või e-post) on vabatahtlik, kuid vajalik hindade esitamiseks ja hääletamiseks. Ühel inimesel peab olema ainult üks konto. Vastutad oma konto turvalisuse eest.",
+    "s4": {
+      "title": "4. Keelatud tegevused",
+      "item1": "Teadlikult valede hindade esitamine või manipuleerimine.",
+      "item2": "Teiste kasutajate ahistamine, solvamine või spämm.",
+      "item3": "Rakenduse automaatne skraapimine, reverse engineering või rünnakud (sh DDoS, SQL-injection, API kuritarvitamine).",
+      "item4": "Rakenduse kasutamine ärilistel eesmärkidel ilma meie kirjaliku loata (nt andmete edasimüük, konkurentteenuse ehitamine meie andmete baasilt).",
+      "item5": "Teiste isikuandmete kogumine rakenduse kaudu."
+    },
+    "s5": "<strong>5. Sisu moderatsioon</strong><br/>Jätame endale õiguse <em>ilma etteteatamiseta</em> kustutada kahtlasi hindu, kustutada kontosid ning blokeerida IP-aadresse, kui rikutakse käesolevaid tingimusi või seadust.",
+    "s6": "<strong>6. Kasutaja vastutus</strong><br/>Kasutaja vastutab ise oma panustatud sisu õigsuse eest. Esitades hinna kinnitad, et see vastab tegelikkusele sel hetkel. Kasutaja, kes teadlikult esitab valesid andmeid, võib kanda õiguslikku vastutust teiste kasutajate eksitamise eest.",
+    "s7": "<strong>7. Vastutuse piirang</strong><br/>Kyts ega selle haldaja <strong>ei vastuta</strong> kahjude eest, mis tulenevad: (a) ebatäpsetest hindadest, (b) teenuse katkestustest, (c) kolmandate osapoolte teenuste (Supabase, Vercel, Google Gemini jt) tõrgetest, (d) kasutaja enda seadme tehnilistest probleemidest. Maksimaalne vastutus on piiratud nulliga, kuna teenus on kasutajatele tasuta.",
+    "s8": "<strong>8. Intellektuaalomand</strong><br/>Rakenduse kood, disain ja brand \"Kyts\" kuuluvad haldajale. Kasutajate esitatud hinnad on avalikud faktid ja neid ei käsitleta autoriõiguse objektina. Kaardiandmed kuuluvad OpenStreetMap'ile vastava litsentsi alusel.",
+    "s9": "<strong>9. Annetused</strong><br/>Vabatahtlikud annetused (nt Buy Me a Coffee kaudu) toetavad teenuse ülalpidamist ja arendamist. Annetused <strong>ei anna</strong> eriõigusi ega lisaetegevusi rakenduses ning ei ole tagasimakstavad.",
+    "s10": {
+      "withLink": "<strong>10. Isikuandmed</strong><br/>Isikuandmete töötlemist kirjeldab <strong>Privaatsuspoliitika</strong> (<privacyBtn>ava</privacyBtn>), mis on käesolevate tingimuste lahutamatu osa.",
+      "plain": "<strong>10. Isikuandmed</strong><br/>Isikuandmete töötlemist kirjeldab <strong>Privaatsuspoliitika</strong>, mis on käesolevate tingimuste lahutamatu osa."
+    },
+    "s11": "<strong>11. Muudatused tingimustes</strong><br/>Võime neid tingimusi uuendada. Olulistest muudatustest teavitame rakenduses. Teenuse edasine kasutamine pärast muudatusi tähendab uute tingimustega nõustumist.",
+    "s12": "<strong>12. Teenuse lõpetamine</strong><br/>Võime teenuse igal ajal peatada või lõpetada. Kui lõpetame teenuse, anname võimalusel ette teada vähemalt 30 päeva.",
+    "s13": "<strong>13. Kohaldatav õigus</strong><br/>Käesolevatele tingimustele kohaldatakse Eesti Vabariigi õigust. Vaidlused lahendatakse Harju Maakohtus, kui seadus ei näe ette teisiti."
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Jäta vahele",
+      "close": "Sulge tutvustus",
+      "back": "Tagasi",
+      "next": "Järgmine",
+      "done": "Valmis"
+    },
+    "aria": {
+      "steps": "Tutvustuse sammud",
+      "stepN": "Samm {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "Tutvustuse leiad hiljem Seaded → Tutvustus."
+    },
+    "step1": {
+      "title": "Tere tulemast Kytsi!",
+      "body": "Kogukonna-põhine kaart, kus näed Eesti tanklate hindu reaalajas. Leia soodsaim, panusta ise."
+    },
+    "step2": {
+      "title": "Nupud paremal",
+      "color": {
+        "blue": "Sinine",
+        "orange": "Oranž",
+        "yellow": "Kollane",
+        "green": "Roheline",
+        "purple": "Lilla"
+      },
+      "desc": {
+        "blue": "pildista totemit, AI loeb hinnad.",
+        "orange": "sisesta hinnad käsitsi.",
+        "yellow": "odavaimad jaamad lähedal.",
+        "green": "odavaim kütus marsruudil.",
+        "purple": "statistika ja trendid."
+      }
+    },
+    "step3": {
+      "title": "1 km reegel",
+      "body": "Hindu saad sisestada ainult siis, kui oled jaamast kuni 1 km kaugusel. See väldib võltspanuseid üle riigi ja hoiab andmed usaldusväärsed."
+    },
+    "step4": {
+      "title": "Panusta, teeni märgid",
+      "body": "Su hinnapanused teenivad tiitleid (🌱 Turist → ♾️ Kyts Kõiksus) ja tõstavad sind edetabelis. Lülita Seaded-menüüst sisse Avastuskaart ja kogu kõik 15 Eesti maakonna märgid."
+    },
+    "step5": {
+      "title": "Loo konto",
+      "body": "Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja seadmetevahelise sünkroonimise. Profiili ikoon on üleval paremal."
+    }
+  }
+}

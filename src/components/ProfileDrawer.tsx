@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh } from '../utils';
@@ -8,38 +10,39 @@ import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
-// early levels feel attainable and the late ones feel earned.
-const CONTRIBUTOR_TIERS: Array<{ min: number; label: string; emoji: string; color: string }> = [
-  { min: 0,    label: 'Turist',             emoji: '🌱', color: 'var(--color-text-muted)' },
-  { min: 1,    label: 'Uustulnuk',          emoji: '🐣', color: 'var(--color-text-muted)' },
-  { min: 3,    label: 'Pumbapiiluja',       emoji: '🔍', color: '#94a3b8' },
-  { min: 5,    label: 'Hinnakirjutaja',     emoji: '📝', color: '#3b82f6' },
-  { min: 8,    label: 'Kütusenuuskur',      emoji: '👃', color: '#3b82f6' },
-  { min: 12,   label: 'Tanklaspioon',       emoji: '🕵️', color: '#3b82f6' },
-  { min: 17,   label: 'Bensiinikoer',       emoji: '🐕', color: '#3b82f6' },
-  { min: 23,   label: 'Hinnajälitaja',      emoji: '🏃', color: '#8b5cf6' },
-  { min: 30,   label: 'Hinnatabaja',        emoji: '🎯', color: '#8b5cf6' },
-  { min: 40,   label: 'Diiselidentist',     emoji: '🦷', color: '#8b5cf6' },
-  { min: 55,   label: 'Pumbaprofessor',     emoji: '⛽', color: '#8b5cf6' },
-  { min: 72,   label: 'Diiselidiplomaat',   emoji: '💧', color: '#ec4899' },
-  { min: 95,   label: 'Pumbapoeet',         emoji: '🎭', color: '#ec4899' },
-  { min: 120,  label: 'Tanklaskaut',        emoji: '🧭', color: '#ec4899' },
-  { min: 155,  label: 'Kütusekaardistaja',  emoji: '🗺️', color: '#ec4899' },
-  { min: 195,  label: 'Kütuserüütel',       emoji: '⚔️', color: '#f59e0b' },
-  { min: 240,  label: 'Hinnavõitja',        emoji: '🏆', color: '#f59e0b' },
-  { min: 295,  label: 'Pumbakuningas',      emoji: '👑', color: '#f59e0b' },
-  { min: 360,  label: 'Pumbanõid',          emoji: '🧙', color: '#f59e0b' },
-  { min: 440,  label: 'Oktaanioraakel',     emoji: '💎', color: '#f59e0b' },
-  { min: 540,  label: 'Hinnaprohvet',       emoji: '🔮', color: '#ef4444' },
-  { min: 660,  label: 'Bensiinibaron',      emoji: '🔥', color: '#ef4444' },
-  { min: 810,  label: 'Tanklatäht',         emoji: '⭐', color: '#ef4444' },
-  { min: 990,  label: 'Küttesultan',        emoji: '🕌', color: '#ef4444' },
-  { min: 1200, label: 'Hinnarakett',        emoji: '🚀', color: '#ef4444' },
-  { min: 1450, label: 'Liiter-Lord',        emoji: '🎩', color: '#f59e0b' },
-  { min: 1750, label: 'Kütuselegend',       emoji: '🌌', color: '#ef4444' },
-  { min: 2100, label: 'Diiselpaavst',       emoji: '⛪', color: '#f59e0b' },
-  { min: 2500, label: 'Kyts Jumal',         emoji: '😇', color: '#f59e0b' },
-  { min: 3000, label: 'Kyts Kõiksus',       emoji: '♾️', color: '#ec4899' },
+// early levels feel attainable and the late ones feel earned. The `slug`
+// is the i18n key suffix — labels live in profile.tiers.<slug>.
+const CONTRIBUTOR_TIERS: Array<{ min: number; slug: string; emoji: string; color: string }> = [
+  { min: 0,    slug: 'turist',            emoji: '🌱', color: 'var(--color-text-muted)' },
+  { min: 1,    slug: 'uustulnuk',         emoji: '🐣', color: 'var(--color-text-muted)' },
+  { min: 3,    slug: 'pumbapiiluja',      emoji: '🔍', color: '#94a3b8' },
+  { min: 5,    slug: 'hinnakirjutaja',    emoji: '📝', color: '#3b82f6' },
+  { min: 8,    slug: 'kutusenuuskur',     emoji: '👃', color: '#3b82f6' },
+  { min: 12,   slug: 'tanklaspioon',      emoji: '🕵️', color: '#3b82f6' },
+  { min: 17,   slug: 'bensiinikoer',      emoji: '🐕', color: '#3b82f6' },
+  { min: 23,   slug: 'hinnajalitaja',     emoji: '🏃', color: '#8b5cf6' },
+  { min: 30,   slug: 'hinnatabaja',       emoji: '🎯', color: '#8b5cf6' },
+  { min: 40,   slug: 'diiselidentist',    emoji: '🦷', color: '#8b5cf6' },
+  { min: 55,   slug: 'pumbaprofessor',    emoji: '⛽', color: '#8b5cf6' },
+  { min: 72,   slug: 'diiselidiplomaat',  emoji: '💧', color: '#ec4899' },
+  { min: 95,   slug: 'pumbapoeet',        emoji: '🎭', color: '#ec4899' },
+  { min: 120,  slug: 'tanklaskaut',       emoji: '🧭', color: '#ec4899' },
+  { min: 155,  slug: 'kutusekaardistaja', emoji: '🗺️', color: '#ec4899' },
+  { min: 195,  slug: 'kutuseryuutel',     emoji: '⚔️', color: '#f59e0b' },
+  { min: 240,  slug: 'hinnavoitja',       emoji: '🏆', color: '#f59e0b' },
+  { min: 295,  slug: 'pumbakuningas',     emoji: '👑', color: '#f59e0b' },
+  { min: 360,  slug: 'pumbanoid',         emoji: '🧙', color: '#f59e0b' },
+  { min: 440,  slug: 'oktaanioraakel',    emoji: '💎', color: '#f59e0b' },
+  { min: 540,  slug: 'hinnaprohvet',      emoji: '🔮', color: '#ef4444' },
+  { min: 660,  slug: 'bensiinibaron',     emoji: '🔥', color: '#ef4444' },
+  { min: 810,  slug: 'tanklataht',        emoji: '⭐', color: '#ef4444' },
+  { min: 990,  slug: 'kuttesultan',       emoji: '🕌', color: '#ef4444' },
+  { min: 1200, slug: 'hinnarakett',       emoji: '🚀', color: '#ef4444' },
+  { min: 1450, slug: 'liiterlord',        emoji: '🎩', color: '#f59e0b' },
+  { min: 1750, slug: 'kutuselegend',      emoji: '🌌', color: '#ef4444' },
+  { min: 2100, slug: 'diiselpaavst',      emoji: '⛪', color: '#f59e0b' },
+  { min: 2500, slug: 'kytsJumal',         emoji: '😇', color: '#f59e0b' },
+  { min: 3000, slug: 'kytsKoiksus',       emoji: '♾️', color: '#ec4899' },
 ];
 
 function getContributorBadge(priceCount: number, voteCount: number) {
@@ -186,6 +189,7 @@ export function ProfileDrawer({
   // in one tap instead of drawer→tab→scroll→expand.
   pendingAvastuskaartFocus?: number;
 }) {
+  const { t, i18n } = useTranslation();
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>('profile');
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
@@ -256,6 +260,14 @@ export function ProfileDrawer({
     }
   };
 
+  const handleLanguageChange = async (lang: SupportedLanguage) => {
+    if (i18n.language === lang) return;
+    await i18n.changeLanguage(lang);
+    if (session?.user?.id) {
+      await supabase.from('user_profiles').upsert({ id: session.user.id, language: lang });
+    }
+  };
+
   const handleToggleBrand = async (brand: string) => {
     const updated = preferredBrands.includes(brand)
       ? preferredBrands.filter(b => b !== brand)
@@ -293,7 +305,7 @@ export function ProfileDrawer({
     .slice(0, 8)
     .map(p => {
       const station = stations.find(s => s.id === p.station_id);
-      const ago = getTimeAgo(p.reported_at);
+      const ago = getTimeAgo(p.reported_at, t);
       return {
         id: p.id,
         text: `${station ? getStationDisplayName(station) : '?'} — ${p.fuel_type} €${p.price.toFixed(3)}`,
@@ -325,10 +337,10 @@ export function ProfileDrawer({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserCircle size={28} color="var(--color-primary)" />
             <div>
-              <h2 className="heading-1" style={{ marginBottom: '2px' }}>Sinu profiil</h2>
+              <h2 className="heading-1" style={{ marginBottom: '2px' }}>{t('profile.header.title')}</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.8rem' }}>{badge.emoji}</span>
-                <span style={{ fontSize: '0.8rem', color: badge.color, fontWeight: '600' }}>{badge.label}</span>
+                <span style={{ fontSize: '0.8rem', color: badge.color, fontWeight: '600' }}>{t(`profile.tiers.${badge.slug}`)}</span>
               </div>
               {(() => {
                 const total = userPricesCount + userVotesCount;
@@ -345,7 +357,7 @@ export function ProfileDrawer({
                       }} />
                     </div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', marginTop: '3px' }}>
-                      {getNextBadgeTarget(total)} kuni {next.emoji} {next.label}
+                      {t('profile.untilNextTier', { count: getNextBadgeTarget(total), emoji: next.emoji, label: t(`profile.tiers.${next.slug}`) })}
                     </div>
                   </div>
                 );
@@ -356,12 +368,12 @@ export function ProfileDrawer({
             {session && (
               <button
                 onClick={async () => {
-                  if (!window.confirm('Kas oled kindel, et soovid välja logida?')) return;
+                  if (!window.confirm(t('profile.header.logoutConfirm'))) return;
                   await supabase.auth.signOut();
                   onClose();
                 }}
-                title="Logi välja"
-                aria-label="Logi välja"
+                title={t('profile.header.logout')}
+                aria-label={t('profile.header.logout')}
                 style={{
                   background: 'none', border: 'none',
                   color: 'var(--color-stale)',
@@ -374,7 +386,7 @@ export function ProfileDrawer({
                 <LogOut size={20} />
               </button>
             )}
-            <button onClick={onClose} aria-label="Sulge" style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={onClose} aria-label={t('common.close')} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <X size={24} />
             </button>
           </div>
@@ -383,14 +395,14 @@ export function ProfileDrawer({
         {/* Profiil / Seaded tab bar */}
         <div style={{ display: 'flex', gap: '6px', marginTop: '16px', marginBottom: '12px' }}>
           {([
-            { key: 'profile', label: 'Profiil' },
-            { key: 'settings', label: 'Seaded' },
-          ] as const).map(t => {
-            const isActive = activeTab === t.key;
+            { key: 'profile', label: t('profile.tabs.profile') },
+            { key: 'settings', label: t('profile.tabs.settings') },
+          ] as const).map(tab => {
+            const isActive = activeTab === tab.key;
             return (
               <button
-                key={t.key}
-                onClick={() => setActiveTab(t.key)}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
                 style={{
                   flex: 1, padding: '10px', cursor: 'pointer',
                   borderRadius: 'var(--radius-md)',
@@ -400,7 +412,7 @@ export function ProfileDrawer({
                   fontSize: '0.9rem', fontWeight: isActive ? 600 : 400,
                 }}
               >
-                {t.label}
+                {tab.label}
               </button>
             );
           })}
@@ -413,10 +425,10 @@ export function ProfileDrawer({
           <div className="glass-panel" style={{ padding: '16px' }}>
             <div className="flex-between" style={{ marginBottom: '12px' }}>
               <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                <Star fill="var(--color-warning)" color="var(--color-warning)" size={18} /> Lemmikjaamad
+                <Star fill="var(--color-warning)" color="var(--color-warning)" size={18} /> {t('profile.favorites.title')}
               </h3>
               {favoriteStations.length > 0 && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{favoriteStations.length} jaama</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('profile.favorites.stationCount', { count: favoriteStations.length })}</span>
               )}
             </div>
 
@@ -426,11 +438,11 @@ export function ProfileDrawer({
                 display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap'
               }}>
                 {[
-                  { key: 'name-asc', label: 'Nimi A-Z' },
-                  { key: 'name-desc', label: 'Nimi Z-A' },
-                  { key: 'price-asc', label: 'Odavaim' },
-                  { key: 'price-desc', label: 'Kalleim' },
-                  { key: 'fresh', label: 'Uusim' },
+                  { key: 'name-asc', label: t('profile.favorites.sort.nameAsc') },
+                  { key: 'name-desc', label: t('profile.favorites.sort.nameDesc') },
+                  { key: 'price-asc', label: t('profile.favorites.sort.priceAsc') },
+                  { key: 'price-desc', label: t('profile.favorites.sort.priceDesc') },
+                  { key: 'fresh', label: t('profile.favorites.sort.fresh') },
                 ].map(opt => {
                   const isActive = favSort === opt.key;
                   return (
@@ -458,7 +470,7 @@ export function ProfileDrawer({
             
             {favoriteStations.length === 0 ? (
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px 0' }}>
-                Sul pole veel ühtegi lemmikjaama lisatud. Lisa neid kaardilt!
+                {t('profile.favorites.empty')}
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -476,14 +488,14 @@ export function ProfileDrawer({
                   // Format timestamp
                   let timeLabel = '';
                   if (expired) {
-                    timeLabel = 'Aegunud';
+                    timeLabel = t('profile.favorites.time.expired');
                   } else if (latestPrice) {
                     const ageH = (Date.now() - new Date(latestPrice.reported_at).getTime()) / 3600000;
                     const d = new Date(latestPrice.reported_at);
-                    const t = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
-                    if (ageH < 1) timeLabel = 'Just praegu';
-                    else if (ageH < 24 && new Date().getDate() === d.getDate()) timeLabel = `Täna ${t}`;
-                    else if (ageH < 48) timeLabel = `Eile ${t}`;
+                    const hhmm = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
+                    if (ageH < 1) timeLabel = t('profile.favorites.time.justNow');
+                    else if (ageH < 24 && new Date().getDate() === d.getDate()) timeLabel = t('profile.favorites.time.today', { time: hhmm });
+                    else if (ageH < 48) timeLabel = t('profile.favorites.time.yesterday', { time: hhmm });
                     else timeLabel = `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
                   }
 
@@ -534,7 +546,7 @@ export function ProfileDrawer({
                             color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0,
                           }}
-                          title="Navigeeri"
+                          title={t('profile.favorites.navigate')}
                         >
                           <Navigation size={16} />
                         </button>
@@ -553,7 +565,7 @@ export function ProfileDrawer({
               color: 'var(--color-text)', width: '100%', textAlign: 'left', fontSize: '1rem',
             }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Trophy size={18} color="var(--color-warning)" /> Edetabel
+                <Trophy size={18} color="var(--color-warning)" /> {t('profile.leaderboard.button')}
               </span>
               <ChevronDown size={16} style={{ transform: 'rotate(-90deg)', color: 'var(--color-text-muted)' }} />
             </button>
@@ -562,7 +574,7 @@ export function ProfileDrawer({
           <div ref={avastuskaartRef} className="glass-panel" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1rem', color: 'var(--color-text)' }}>
-                <Compass size={18} color="var(--color-primary)" /> Avastuskaart
+                <Compass size={18} color="var(--color-primary)" /> {t('profile.discovery.title')}
               </span>
               <div
                 onClick={handleDiscoveryMapToggle}
@@ -580,7 +592,7 @@ export function ProfileDrawer({
               </div>
             </label>
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-              Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.
+              {t('profile.discovery.description')}
             </p>
 
             <button
@@ -594,11 +606,11 @@ export function ProfileDrawer({
               aria-expanded={statsExpanded}
             >
               <span>
-                {regionProgress.stations.done}/{regionProgress.stations.total} jaama
+                {t('profile.discovery.stats.stations', { done: regionProgress.stations.done, total: regionProgress.stations.total })}
                 {' · '}
-                {regionProgress.parishes.done}/{regionProgress.parishes.total} valda
+                {t('profile.discovery.stats.parishes', { done: regionProgress.parishes.done, total: regionProgress.parishes.total })}
                 {' · '}
-                {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
+                {t('profile.discovery.stats.maakonnad', { done: regionProgress.maakonnad.done, total: regionProgress.maakonnad.total })}
               </span>
               <ChevronDown
                 size={16}
@@ -619,9 +631,9 @@ export function ProfileDrawer({
                   cursor: 'pointer', paddingTop: 12, borderTop: '1px solid var(--color-surface-border)', marginTop: 4,
                 }}>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '0.88rem', color: 'var(--color-text)' }}>Jaga avalikult</span>
+                    <span style={{ fontSize: '0.88rem', color: 'var(--color-text)' }}>{t('profile.discovery.shareLabel')}</span>
                     <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', lineHeight: 1.35 }}>
-                      Teised näevad su nimel klõpsates, millised jaamad oled avastanud.
+                      {t('profile.discovery.shareDesc')}
                     </span>
                   </span>
                   <div
@@ -648,14 +660,46 @@ export function ProfileDrawer({
           {activeTab === 'settings' && (<>
           <div className="glass-panel" style={{ padding: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '1rem', marginBottom: '16px' }}>
-              <Settings size={18} /> Seaded
+              <Settings size={18} /> {t('profile.settings.title')}
             </div>
             {true && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Language */}
+                <div>
+                  <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                    <Languages size={16} /> {t('seaded.language.label')}
+                  </h4>
+                  <select
+                    value={i18n.resolvedLanguage}
+                    onChange={e => handleLanguageChange(e.target.value as SupportedLanguage)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid var(--color-surface-border)',
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                      backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      paddingRight: '36px',
+                    }}
+                  >
+                    {LANGUAGES.map(({ code, nativeName, flag }) => (
+                      <option key={code} value={code}>
+                        {flag} {nativeName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Theme toggle */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', color: 'var(--color-text-muted)' }}>
-                    Kaardi teema
+                    {t('profile.settings.theme.title')}
                   </h4>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {(['dark', 'light'] as const).map(s => (
@@ -671,7 +715,7 @@ export function ProfileDrawer({
                           cursor: 'pointer', fontSize: '0.9rem',
                         }}
                       >
-                        {s === 'dark' ? 'Tume' : 'Hele'}
+                        {s === 'dark' ? t('profile.settings.theme.dark') : t('profile.settings.theme.light')}
                       </button>
                     ))}
                   </div>
@@ -680,14 +724,14 @@ export function ProfileDrawer({
                 {/* Fuel type preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <Fuel size={16} /> Sinu auto kütus
+                    <Fuel size={16} /> {t('profile.settings.fuel.title')}
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {["Bensiin 95", "Bensiin 98", "Diisel", "LPG"].map(type => (
                       <button
                         key={type}
                         onClick={() => handleUpdateFuelPref(type)}
-                        title={defaultFuelType === type ? 'Klõpsa uuesti eemaldamiseks' : undefined}
+                        title={defaultFuelType === type ? t('profile.settings.fuel.removeTooltip') : undefined}
                         style={{
                           flex: '1 1 40%',
                           padding: '10px 0',
@@ -717,10 +761,10 @@ export function ProfileDrawer({
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <Building2 size={16} /> Eelistatud tanklad
+                      <Building2 size={16} /> {t('profile.settings.brands.title')}
                       {preferredBrands.length > 0 && (
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
-                          ({preferredBrands.length} valitud)
+                          {t('profile.settings.brands.selectedCount', { count: preferredBrands.length })}
                         </span>
                       )}
                     </span>
@@ -731,7 +775,7 @@ export function ProfileDrawer({
                   </button>
                   {brandsOpen && (<>
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '10px 0' }}>
-                    Vali ketid, mida "Odavaim lähedal" eelistab. Tühi = kõik.
+                    {t('profile.settings.brands.help')}
                   </p>
                   <div style={{
                     display: 'grid',
@@ -777,10 +821,10 @@ export function ProfileDrawer({
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <CreditCard size={16} /> Kliendikaardid
+                      <CreditCard size={16} /> {t('profile.settings.loyalty.title')}
                       {Object.values(loyaltyDiscounts).filter(v => v > 0).length > 0 && (
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
-                          ({Object.values(loyaltyDiscounts).filter(v => v > 0).length} aktiivset)
+                          {t('profile.settings.loyalty.activeCount', { count: Object.values(loyaltyDiscounts).filter(v => v > 0).length })}
                         </span>
                       )}
                     </span>
@@ -792,7 +836,7 @@ export function ProfileDrawer({
                   {loyaltyOpen && (
                   <>
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '10px 0' }}>
-                    Sisesta soodustus sentides liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja "Odavaim lähedal" kasutab sooduskaardi hinda järjestamiseks.
+                    {t('profile.settings.loyalty.help')}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {allBrandsForLoyalty.map(brand => {
@@ -837,12 +881,12 @@ export function ProfileDrawer({
                 {/* Dot style preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <MapPin size={16} /> Kaardi punktid
+                    <MapPin size={16} /> {t('profile.settings.dots.title')}
                   </h4>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {([
-                      { key: 'info', label: 'Info', desc: 'Hallid = andmed puudu' },
-                      { key: 'brand', label: 'Bränd', desc: 'Kõik brändi värvis' },
+                      { key: 'info', label: t('profile.settings.dots.info.label'), desc: t('profile.settings.dots.info.desc') },
+                      { key: 'brand', label: t('profile.settings.dots.brand.label'), desc: t('profile.settings.dots.brand.desc') },
                     ] as const).map(opt => {
                       const isActive = dotStyle === opt.key;
                       return (
@@ -877,7 +921,7 @@ export function ProfileDrawer({
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      <Layers size={16} /> Grupeeri lähedased jaamad
+                      <Layers size={16} /> {t('profile.settings.cluster.label')}
                     </span>
                     <div
                       onClick={handleClusterToggle}
@@ -900,10 +944,10 @@ export function ProfileDrawer({
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <EyeOff size={16} /> Peida jaamad ilma hindadeta
+                        <EyeOff size={16} /> {t('profile.settings.hideEmpty.label')}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
-                        Kiirem pan/zoom, vähem segadust
+                        {t('profile.settings.hideEmpty.desc')}
                       </span>
                     </div>
                     <div
@@ -927,10 +971,10 @@ export function ProfileDrawer({
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <MapPin size={16} /> Näita Läti jaamu
+                        <MapPin size={16} /> {t('profile.settings.latvian.label')}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
-                        Piiriäärsed jaamad Lätis
+                        {t('profile.settings.latvian.desc')}
                       </span>
                     </div>
                     <div
@@ -954,10 +998,10 @@ export function ProfileDrawer({
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <Eye size={16} /> Näita aegunud hindu (demo)
+                        <Eye size={16} /> {t('profile.settings.staleDemo.label')}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
-                        Kuvab ka &gt;24h vanu hindu
+                        {t('profile.settings.staleDemo.desc')}
                       </span>
                     </div>
                     <div
@@ -983,7 +1027,7 @@ export function ProfileDrawer({
           {activeTab === 'profile' && userPriceEntries.length > 0 && (
             <div className="glass-panel" style={{ padding: '16px' }}>
               <h3 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                <Clock size={18} /> Viimased tegevused
+                <Clock size={18} /> {t('profile.activity.title')}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {userPriceEntries.map(entry => (
@@ -1020,7 +1064,7 @@ export function ProfileDrawer({
               fontSize: '0.95rem', fontWeight: '500', cursor: 'pointer',
             }}
           >
-            <HelpCircle size={18} /> Ava tutvustus
+            <HelpCircle size={18} /> {t('profile.settings.openTutorial')}
           </button>
         )}
 
@@ -1040,7 +1084,7 @@ export function ProfileDrawer({
               fontSize: '0.95rem', fontWeight: '500', cursor: 'pointer',
             }}
           >
-            <MessageSquare size={18} /> Saada tagasisidet
+            <MessageSquare size={18} /> {t('profile.settings.feedback')}
           </button>
         )}
 
@@ -1052,13 +1096,13 @@ export function ProfileDrawer({
           }}>
             {onOpenTerms && (
               <button onClick={() => { onOpenTerms(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>
-                Kasutustingimused
+                {t('profile.settings.legal.terms')}
               </button>
             )}
             {onOpenPrivacy && onOpenTerms && <span>·</span>}
             {onOpenPrivacy && (
               <button onClick={() => { onOpenPrivacy(); onClose(); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline' }}>
-                Privaatsuspoliitika
+                {t('profile.settings.legal.privacy')}
               </button>
             )}
           </div>
@@ -1070,11 +1114,11 @@ export function ProfileDrawer({
 }
 
 // --- Helper functions ---
-function getTimeAgo(dateStr: string): string {
+function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const h = (Date.now() - new Date(dateStr).getTime()) / 3600000;
-  if (h < 1) return 'Just praegu';
-  if (h < 24) return `${Math.floor(h)}h tagasi`;
-  return `${Math.floor(h / 24)}p tagasi`;
+  if (h < 1) return t('time.justNow');
+  if (h < 24) return t('time.hoursAgo', { count: Math.floor(h) });
+  return t('time.daysAgo', { count: Math.floor(h / 24) });
 }
 
 function getNextBadgeTarget(total: number): number {

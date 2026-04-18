@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Trophy, Star, Compass, Map as MapIcon, UserCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -31,10 +32,10 @@ const VIEW_BY_PERIOD: Record<Period, string> = {
   'all': 'v_leaderboard_all',
 };
 
-const PERIOD_LABELS: Record<Period, string> = {
-  '7d': 'Nädal',
-  '30d': 'Kuu',
-  'all': 'Kõik',
+const PERIOD_KEYS: Record<Period, string> = {
+  '7d': 'leaderboard.period.week',
+  '30d': 'leaderboard.period.month',
+  'all': 'leaderboard.period.all',
 };
 
 function activityScore(r: ActivityRow): number {
@@ -56,6 +57,7 @@ export function LeaderboardDrawer({
   displayName?: string;
   onDisplayNameChange?: (name: string) => void;
 }) {
+  const { t } = useTranslation();
   const [dimension, setDimension] = useState<Dimension>('activity');
   const [period, setPeriod] = useState<Period>('30d');
   const [rows, setRows] = useState<Row[]>([]);
@@ -123,7 +125,7 @@ export function LeaderboardDrawer({
         <div className="flex-between" style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Trophy size={24} color="var(--color-warning)" />
-            <h2 className="heading-1">Edetabel</h2>
+            <h2 className="heading-1">{t('leaderboard.title')}</h2>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -133,8 +135,8 @@ export function LeaderboardDrawer({
         {/* Dimension pills */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
           {([
-            { k: 'activity' as const,  label: 'Aktiivsemad', icon: <Trophy size={14} /> },
-            { k: 'discovery' as const, label: 'Avastajad',   icon: <Compass size={14} /> },
+            { k: 'activity' as const,  label: t('leaderboard.dimension.activity'),  icon: <Trophy size={14} /> },
+            { k: 'discovery' as const, label: t('leaderboard.dimension.discovery'), icon: <Compass size={14} /> },
           ]).map(d => {
             const active = dimension === d.k;
             return (
@@ -155,20 +157,20 @@ export function LeaderboardDrawer({
         {/* Period tabs (hidden on discovery — all-time only) */}
         {dimension === 'activity' && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-            {(Object.keys(PERIOD_LABELS) as Period[]).map(p => (
+            {(Object.keys(PERIOD_KEYS) as Period[]).map(p => (
               <button key={p} onClick={() => setPeriod(p)} style={{
                 flex: 1, padding: '8px 12px', borderRadius: 10,
                 border: period === p ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
                 background: period === p ? 'rgba(59,130,246,0.2)' : 'var(--color-surface)',
                 color: period === p ? 'var(--color-primary)' : 'var(--color-text-muted)',
                 fontSize: '0.88rem', fontWeight: period === p ? 600 : 400, cursor: 'pointer',
-              }}>{PERIOD_LABELS[p]}</button>
+              }}>{t(PERIOD_KEYS[p])}</button>
             ))}
           </div>
         )}
         {dimension === 'discovery' && (
           <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>
-            Järjestatud maakondade, siis valdade, siis jaamade järgi — kõik aeg.
+            {t('leaderboard.discoveryHint')}
           </div>
         )}
 
@@ -184,13 +186,13 @@ export function LeaderboardDrawer({
           }}>
             <UserCircle size={16} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
             <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-              Sina:
+              {t('leaderboard.youLabel')}
             </span>
             <input
               type="text"
               value={nameDraft}
               maxLength={32}
-              placeholder="Anonüümne"
+              placeholder={t('leaderboard.anonymous')}
               onChange={e => setNameDraft(e.target.value)}
               onBlur={() => {
                 const trimmed = nameDraft.trim();
@@ -208,13 +210,13 @@ export function LeaderboardDrawer({
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {loading && (
-            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: 12 }}>Laadin...</div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: 12 }}>{t('leaderboard.loading')}</div>
           )}
           {!loading && rows.length === 0 && (
             <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', padding: 12 }}>
               {dimension === 'discovery'
-                ? 'Keegi pole veel midagi avastanud. Ole esimene!'
-                : 'Selle perioodi kohta pole veel andmeid.'}
+                ? t('leaderboard.empty.discovery')
+                : t('leaderboard.empty.activity')}
             </div>
           )}
           {!loading && rows.map((r, i) => {
@@ -235,20 +237,20 @@ export function LeaderboardDrawer({
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.92rem', fontWeight: isMe ? 700 : 500, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {r.display_name || 'Anonüümne'}{isMe && ' (sina)'}
+                    {r.display_name || t('leaderboard.anonymous')}{isMe && ' ' + t('leaderboard.youSuffix')}
                   </div>
                   {r.kind === 'activity' ? (
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: 10, marginTop: 2 }}>
-                      <span>{r.prices_count} hinda</span>
+                      <span>{t('leaderboard.stats.prices', { count: r.prices_count })}</span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                         <Star size={11} /> {r.upvotes_received}
                       </span>
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: 10, marginTop: 2 }}>
-                      <span>{r.maakonnad_completed}/15 maakonda</span>
-                      <span>{r.parishes_completed} valda</span>
-                      <span>{r.stations_contributed} jaama</span>
+                      <span>{t('leaderboard.stats.maakonnad', { done: r.maakonnad_completed, total: 15 })}</span>
+                      <span>{t('leaderboard.stats.parishes', { count: r.parishes_completed })}</span>
+                      <span>{t('leaderboard.stats.stations', { count: r.stations_contributed })}</span>
                     </div>
                   )}
                 </div>
@@ -257,8 +259,8 @@ export function LeaderboardDrawer({
                 </div>
                 {r.kind === 'discovery' && r.share_discovery_publicly && !isMe && onViewFootprint && (
                   <button
-                    onClick={() => onViewFootprint(r.user_id, r.display_name || 'Anonüümne')}
-                    title="Vaata selle kasutaja avastuskaarti"
+                    onClick={() => onViewFootprint(r.user_id, r.display_name || t('leaderboard.anonymous'))}
+                    title={t('leaderboard.viewFootprint.title')}
                     style={{
                       background: 'var(--color-surface)',
                       border: '1px solid var(--color-surface-border)',
@@ -272,7 +274,7 @@ export function LeaderboardDrawer({
                       fontSize: '0.72rem',
                     }}
                   >
-                    <MapIcon size={13} /> Vaata
+                    <MapIcon size={13} /> {t('leaderboard.viewFootprint.label')}
                   </button>
                 )}
               </div>

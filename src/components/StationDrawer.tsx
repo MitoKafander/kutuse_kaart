@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
+import i18n from '../i18n';
 import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS } from '../utils';
 
 export function StationDrawer({ 
@@ -27,6 +29,7 @@ export function StationDrawer({
   isFavorite: boolean,
   onToggleFavorite: () => void
 }) {
+  const { t } = useTranslation();
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
   const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
@@ -62,16 +65,16 @@ export function StationDrawer({
     const effectiveDate = getEffectiveTimestamp(price, allVotes);
     const ageInHours = (Date.now() - effectiveDate.getTime()) / (1000 * 60 * 60);
 
-    if (ageInHours > 24) return 'Aegunud';
-    if (ageInHours < 1) return 'Just praegu';
+    if (ageInHours > 24) return t('time.expired');
+    if (ageInHours < 1) return t('time.justNow');
 
     const d = effectiveDate;
-    const timeStr = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = d.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
 
     if (ageInHours < 24 && new Date().getDate() === d.getDate()) {
-       return `Täna ${timeStr}`;
+       return t('time.today', { time: timeStr });
     } else if (ageInHours < 48) {
-       return `Eile ${timeStr}`;
+       return t('time.yesterday', { time: timeStr });
     }
 
     return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
@@ -90,7 +93,7 @@ export function StationDrawer({
         { price_id: priceId, user_id: null, vote_type: voteType }
       );
       if (error) {
-        alert("Hääletamine ebaõnnestus. " + error.message);
+        alert(t('stationDrawer.voteFailed') + ' ' + error.message);
       } else {
         localStorage.setItem(votedKey, voteType);
         onVoteSubmitted();
@@ -119,8 +122,8 @@ export function StationDrawer({
     }
     
     if (error) {
-      console.error("Viga hääletamisel", error);
-      alert("Hääletamine ebaõnnestus. " + error.message);
+      console.error("Vote failed", error);
+      alert(t('stationDrawer.voteFailed') + ' ' + error.message);
     } else {
       onVoteSubmitted();
       if (voteType === 'up') setVoteConfirm(priceId);
@@ -198,7 +201,7 @@ export function StationDrawer({
               {/* Disputed label */}
               {recentPrice && isDisputed && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-stale)', marginTop: '8px' }}>
-                  <span>⚠ Vaidlustatud</span>
+                  <span>⚠ {t('stationDrawer.disputed')}</span>
                 </div>
               )}
 
@@ -206,7 +209,7 @@ export function StationDrawer({
               {recentPrice && !isDisputed && isExpired && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
                   <Clock size={12} />
-                  <span>Aegunud</span>
+                  <span>{t('time.expired')}</span>
                 </div>
               )}
 
@@ -226,7 +229,7 @@ export function StationDrawer({
                   borderRadius: '8px', fontSize: '0.8rem', fontWeight: '600', whiteSpace: 'nowrap',
                   zIndex: 10, pointerEvents: 'none'
                 }}>
-                  Hind kinnitatud ✓
+                  {t('stationDrawer.priceConfirmed')}
                 </div>
               )}
 
@@ -235,7 +238,7 @@ export function StationDrawer({
                 <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                   <button
                     onClick={() => handleVote(recentPrice.id, 'up')}
-                    aria-label="Kinnita hind"
+                    aria-label={t('stationDrawer.aria.confirm')}
                     aria-pressed={userVote === 'up'}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'up' ? 'var(--color-fresh)' : 'var(--color-text-muted)' }}
                   ><ThumbsUp size={16} /></button>
@@ -246,7 +249,7 @@ export function StationDrawer({
 
                   <button
                     onClick={() => handleVote(recentPrice.id, 'down')}
-                    aria-label="Vaidlusta hind"
+                    aria-label={t('stationDrawer.aria.dispute')}
                     aria-pressed={userVote === 'down'}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: userVote === 'down' ? 'var(--color-stale)' : 'var(--color-text-muted)' }}
                   ><ThumbsDown size={16} /></button>
@@ -286,7 +289,7 @@ export function StationDrawer({
               if (historyData.length < 2) {
                 return (
                   <div className="flex-center" style={{ height: '100%', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                    Selle kütuse kohta pole piisavalt ajalugu.
+                    {t('stationDrawer.notEnoughHistory')}
                   </div>
                 );
               }
@@ -317,8 +320,8 @@ export function StationDrawer({
                     <Tooltip 
                       contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--color-surface-border)', borderRadius: '8px' }}
                       itemStyle={{ color: 'var(--color-primary)', fontWeight: 'bold' }}
-                      formatter={(value: any) => [`€${Number(value).toFixed(3)}`, 'Hind']}
-                      labelFormatter={(label) => new Date(label).toLocaleString('et-EE', { dateStyle: 'medium', timeStyle: 'short' })}
+                      formatter={(value: any) => [`€${Number(value).toFixed(3)}`, t('stationDrawer.priceLabel')]}
+                      labelFormatter={(label) => new Date(label).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
                     />
                     <Line 
                       type="monotone" 
@@ -349,7 +352,7 @@ export function StationDrawer({
             width: '48px'
           }}
           onClick={() => setShowHistory(!showHistory)}
-          title="Näita hinnaajalugu"
+          title={t('stationDrawer.titles.history')}
         >
           <TrendingUp size={20} />
         </button>
@@ -368,7 +371,7 @@ export function StationDrawer({
             `https://www.google.com/maps/dir/?api=1&destination=${station.latitude},${station.longitude}`,
             '_blank'
           )}
-          title="Navigeeri"
+          title={t('stationDrawer.titles.navigate')}
         >
           <Navigation size={20} />
         </button>
@@ -382,7 +385,7 @@ export function StationDrawer({
           onClick={onOpenPriceForm}
         >
           <Edit3 size={20} />
-          Uuenda Hinnad
+          {t('stationDrawer.updatePrices')}
         </button>
       </div>
     </div>

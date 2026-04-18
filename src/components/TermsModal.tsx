@@ -1,7 +1,20 @@
+import { Trans, useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
 export function TermsModal({ isOpen, onClose, onOpenPrivacy }: { isOpen: boolean, onClose: () => void, onOpenPrivacy?: () => void }) {
+  const { t, i18n } = useTranslation();
   if (!isOpen) return null;
+
+  const legalLng = i18n.language === 'et' || i18n.language === 'en' ? i18n.language : 'en';
+  const tl = (key: string) => t(key, { lng: legalLng });
+  const showLangNotice = legalLng !== i18n.language;
+
+  const paragraphComponents = {
+    strong: <strong />,
+    em: <em />,
+    br: <br />,
+    a: <a href="mailto:info@kyts.ee" style={{ color: 'var(--color-primary)' }} />,
+  };
 
   return (
     <div onClick={onClose} style={{
@@ -25,86 +38,87 @@ export function TermsModal({ isOpen, onClose, onOpenPrivacy }: { isOpen: boolean
         overflowY: 'auto'
       }}>
         <div className="flex-between" style={{ marginBottom: '16px' }}>
-          <h2 className="heading-1">Kasutustingimused</h2>
+          <h2 className="heading-1">{tl('terms.title')}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
           </button>
         </div>
 
         <div style={{ color: 'var(--color-text-muted)', lineHeight: '1.6', fontSize: '0.92rem' }}>
+          {showLangNotice && (
+            <p style={{ marginBottom: '10px', padding: '8px 10px', background: 'var(--color-surface)', borderRadius: 8, fontSize: '0.82rem', color: 'var(--color-text)' }}>
+              {t('legal.notice.englishOnly')}
+            </p>
+          )}
+
           <p style={{ marginBottom: '10px', fontSize: '0.8rem' }}>
-            Kehtib alates: 15.04.2026
+            {tl('legal.effectiveDate')}
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>1. Teenuse osutaja</strong><br/>
-            Kyts on kogukonnapõhine kütusehindade kaart, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a href="mailto:info@kyts.ee" style={{ color: 'var(--color-primary)' }}>info@kyts.ee</a>.
+            <Trans i18nKey="terms.s1" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>2. Teenuse kirjeldus</strong><br/>
-            Kyts võimaldab kasutajatel jagada ja vaadata Eesti tanklate kütusehindu. Hinnad on kasutajate esitatud ja seetõttu võivad olla aegunud, ebatäpsed või valed. Teenus pakutakse põhimõttel "<em>nagu on</em>" (as-is), ilma igasuguste garantiideta täpsuse, kättesaadavuse ega sobivuse kohta.
+            <Trans i18nKey="terms.s2" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>3. Konto ja kasutamine</strong><br/>
-            Konto loomine (Google OAuth või e-post) on vabatahtlik, kuid vajalik hindade esitamiseks ja hääletamiseks. Ühel inimesel peab olema ainult üks konto. Vastutad oma konto turvalisuse eest.
+            <Trans i18nKey="terms.s3" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>4. Keelatud tegevused</strong>
+            <strong>{tl('terms.s4.title')}</strong>
           </p>
           <ul style={{ paddingLeft: '20px', marginBottom: '12px' }}>
-            <li>Teadlikult valede hindade esitamine või manipuleerimine.</li>
-            <li>Teiste kasutajate ahistamine, solvamine või spämm.</li>
-            <li>Rakenduse automaatne skraapimine, reverse engineering või rünnakud (sh DDoS, SQL-injection, API kuritarvitamine).</li>
-            <li>Rakenduse kasutamine ärilistel eesmärkidel ilma meie kirjaliku loata (nt andmete edasimüük, konkurentteenuse ehitamine meie andmete baasilt).</li>
-            <li>Teiste isikuandmete kogumine rakenduse kaudu.</li>
+            <li>{tl('terms.s4.item1')}</li>
+            <li>{tl('terms.s4.item2')}</li>
+            <li>{tl('terms.s4.item3')}</li>
+            <li>{tl('terms.s4.item4')}</li>
+            <li>{tl('terms.s4.item5')}</li>
           </ul>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>5. Sisu moderatsioon</strong><br/>
-            Jätame endale õiguse <em>ilma etteteatamiseta</em> kustutada kahtlasi hindu, kustutada kontosid ning blokeerida IP-aadresse, kui rikutakse käesolevaid tingimusi või seadust.
+            <Trans i18nKey="terms.s5" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>6. Kasutaja vastutus</strong><br/>
-            Kasutaja vastutab ise oma panustatud sisu õigsuse eest. Esitades hinna kinnitad, et see vastab tegelikkusele sel hetkel. Kasutaja, kes teadlikult esitab valesid andmeid, võib kanda õiguslikku vastutust teiste kasutajate eksitamise eest.
+            <Trans i18nKey="terms.s6" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>7. Vastutuse piirang</strong><br/>
-            Kyts ega selle haldaja <strong>ei vastuta</strong> kahjude eest, mis tulenevad: (a) ebatäpsetest hindadest, (b) teenuse katkestustest, (c) kolmandate osapoolte teenuste (Supabase, Vercel, Google Gemini jt) tõrgetest, (d) kasutaja enda seadme tehnilistest probleemidest. Maksimaalne vastutus on piiratud nulliga, kuna teenus on kasutajatele tasuta.
+            <Trans i18nKey="terms.s7" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>8. Intellektuaalomand</strong><br/>
-            Rakenduse kood, disain ja brand "Kyts" kuuluvad haldajale. Kasutajate esitatud hinnad on avalikud faktid ja neid ei käsitleta autoriõiguse objektina. Kaardiandmed kuuluvad OpenStreetMap'ile vastava litsentsi alusel.
+            <Trans i18nKey="terms.s8" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>9. Annetused</strong><br/>
-            Vabatahtlikud annetused (nt Buy Me a Coffee kaudu) toetavad teenuse ülalpidamist ja arendamist. Annetused <strong>ei anna</strong> eriõigusi ega lisaetegevusi rakenduses ning ei ole tagasimakstavad.
+            <Trans i18nKey="terms.s9" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>10. Isikuandmed</strong><br/>
-            Isikuandmete töötlemist kirjeldab <strong>Privaatsuspoliitika</strong>{onOpenPrivacy ? <> (<button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }}>ava</button>)</> : null}, mis on käesolevate tingimuste lahutamatu osa.
+            <Trans
+              i18nKey={onOpenPrivacy ? 'terms.s10.withLink' : 'terms.s10.plain'}
+              lng={legalLng}
+              components={{
+                ...paragraphComponents,
+                privacyBtn: <button onClick={onOpenPrivacy} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: 0, fontSize: 'inherit', textDecoration: 'underline' }} />,
+              }}
+            />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>11. Muudatused tingimustes</strong><br/>
-            Võime neid tingimusi uuendada. Olulistest muudatustest teavitame rakenduses. Teenuse edasine kasutamine pärast muudatusi tähendab uute tingimustega nõustumist.
+            <Trans i18nKey="terms.s11" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '12px' }}>
-            <strong>12. Teenuse lõpetamine</strong><br/>
-            Võime teenuse igal ajal peatada või lõpetada. Kui lõpetame teenuse, anname võimalusel ette teada vähemalt 30 päeva.
+            <Trans i18nKey="terms.s12" lng={legalLng} components={paragraphComponents} />
           </p>
 
           <p style={{ marginBottom: '0' }}>
-            <strong>13. Kohaldatav õigus</strong><br/>
-            Käesolevatele tingimustele kohaldatakse Eesti Vabariigi õigust. Vaidlused lahendatakse Harju Maakohtus, kui seadus ei näe ette teisiti.
+            <Trans i18nKey="terms.s13" lng={legalLng} components={paragraphComponents} />
           </p>
         </div>
 
@@ -112,7 +126,7 @@ export function TermsModal({ isOpen, onClose, onOpenPrivacy }: { isOpen: boolean
           background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
           padding: '14px', fontSize: '1rem', fontWeight: 'bold', width: '100%', marginTop: '20px', cursor: 'pointer'
         }}>
-          Sulge
+          {tl('common.close')}
         </button>
       </div>
     </div>

@@ -39,11 +39,11 @@ export function getCurrentPositionAsync(options: PositionOptions = {}): Promise<
   });
 }
 
-export function geolocationErrorMessage(kind: GeolocationErrorKind): string {
-  if (kind === 'permission') return 'Asukoht pole saadaval. Luba rakendusele asukoha kasutamine ja proovi uuesti.';
-  if (kind === 'timeout') return 'Asukoha leidmine võtab oodatust kauem. Proovi uuesti.';
-  if (kind === 'unsupported') return 'Sinu brauser ei toeta asukoha määramist.';
-  return 'Asukohta ei õnnestunud leida. Proovi uuesti.';
+export function geolocationErrorMessageKey(kind: GeolocationErrorKind): string {
+  if (kind === 'permission') return 'geo.error.permission';
+  if (kind === 'timeout') return 'geo.error.timeout';
+  if (kind === 'unsupported') return 'geo.error.unsupported';
+  return 'geo.error.unavailable';
 }
 
 export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -171,16 +171,19 @@ export function getBrand(name: string | null | undefined): string {
   return name;
 }
 
-export const getStationDisplayName = (station: any) => {
+// `unknownLabel` lets callers pass a translated "Unknown" fallback. Defaults to
+// the Estonian sentinel `Tundmatu` because `getBrand` also returns that string
+// as an internal key used by filters and loyalty lookups — keep the default in
+// sync with that key so data-layer callers (non-UI) don't accidentally localise.
+export const getStationDisplayName = (station: any, unknownLabel: string = 'Tundmatu') => {
   const rawBrand = station.name;
   const city = station.amenities?.['addr:city'];
   const street = station.amenities?.['addr:street'];
   const nodeName = station.amenities?.name;
   const operator = station.amenities?.operator;
 
-  // If brand is the "Tundmatu" placeholder, prefer the OSM name/operator as the primary label.
   const isUnknownBrand = !rawBrand || rawBrand === 'Tundmatu';
-  const brand = isUnknownBrand ? (nodeName || operator || 'Tundmatu') : rawBrand;
+  const brand = isUnknownBrand ? (nodeName || operator || unknownLabel) : rawBrand;
 
   if (city && street) return `${brand} (${city}, ${street})`;
   if (city) return `${brand} (${city})`;

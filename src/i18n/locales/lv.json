@@ -1,0 +1,528 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Valoda"
+    }
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Pierakstīties",
+      "signUp": "Izveidot kontu"
+    },
+    "aria": {
+      "close": "Aizvērt"
+    },
+    "continueWithGoogle": "Turpināt ar Google",
+    "divider": {
+      "or": "vai"
+    },
+    "email": {
+      "placeholder": "E-pasts"
+    },
+    "password": {
+      "placeholder": "Parole"
+    },
+    "button": {
+      "loading": "Ielādē...",
+      "signIn": "Pierakstīties",
+      "signUp": "Izveidot kontu"
+    },
+    "toggle": {
+      "noAccount": "Nav konta?",
+      "haveAccount": "Jau esi lietotājs?",
+      "toSignUp": "Reģistrējies šeit",
+      "toSignIn": "Pierakstīties"
+    },
+    "signupSuccess": "Konts izveidots! Pārbaudi savu e-pastu."
+  },
+  "gdpr": {
+    "body": "Kyts izmanto tikai nepieciešamās sīkdatnes (pierakstīšanās, iestatījumi). To lietojot, tu piekrīti <terms>lietošanas noteikumiem</terms> un <privacy>privātuma politikai</privacy>.",
+    "accept": "Piekrītu"
+  },
+  "update": {
+    "title": "Pieejama jauna versija",
+    "body": "Atjaunini, lai izmantotu jaunāko Kyts.",
+    "button": {
+      "reload": "Atjaunināt",
+      "reloading": "Atjaunina..."
+    }
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Izlaist",
+      "close": "Aizvērt apmācību",
+      "back": "Atpakaļ",
+      "next": "Tālāk",
+      "done": "Gatavs"
+    },
+    "aria": {
+      "steps": "Apmācības soļi",
+      "stepN": "Solis {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "Apmācību vēlāk atradīsi sadaļā Iestatījumi → Apmācība."
+    },
+    "step1": {
+      "title": "Laipni lūdzam Kyts!",
+      "body": "Kopienas virzīta karte, kurā reāllaikā redzamas degvielas cenas Igaunijā. Atrodi lētāko, piedalies arī pats."
+    },
+    "step2": {
+      "title": "Pogas pa labi",
+      "color": {
+        "blue": "Zila",
+        "orange": "Oranža",
+        "yellow": "Dzeltena",
+        "green": "Zaļa",
+        "purple": "Violeta"
+      },
+      "desc": {
+        "blue": "nofotografē stendu, AI nolasa cenas.",
+        "orange": "ievadi cenas manuāli.",
+        "yellow": "lētākās stacijas tuvumā.",
+        "green": "lētākā degviela maršrutā.",
+        "purple": "statistika un tendences."
+      }
+    },
+    "step3": {
+      "title": "1 km noteikums",
+      "body": "Cenas vari ievadīt tikai tad, ja atrodies līdz 1 km attālumā no stacijas. Tas novērš viltus datus visā valstī un palīdz saglabāt informācijas uzticamību."
+    },
+    "step4": {
+      "title": "Piedalies, pelni nozīmītes",
+      "body": "Tavi cenu ziņojumi pelna titulus (🌱 Tūrists → ♾️ Kyts Visums) un ceļ tevi līderu sarakstā. Iestatījumos ieslēdz Atklājumu karti (Discovery map) un savāc visas 15 Igaunijas apriņķu nozīmītes."
+    },
+    "step5": {
+      "title": "Izveidot kontu",
+      "body": "Cenas vari ziņot un par tām balsot arī bez konta. Pierakstīšanās atbloķē iecienītākās stacijas, vietu līderu sarakstā, klientu karšu atlaides un starpierīču sinhronizāciju. Profila ikona atrodas augšējā labajā stūrī."
+    }
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Profils",
+      "settings": "Iestatījumi"
+    },
+    "settings": {
+      "title": "Iestatījumi",
+      "theme": {
+        "title": "Kartes tēma",
+        "dark": "Tumša",
+        "light": "Gaiša"
+      },
+      "fuel": {
+        "title": "Tavas automašīnas degviela",
+        "removeTooltip": "Noklikšķini vēlreiz, lai noņemtu"
+      },
+      "brands": {
+        "title": "Vēlamās stacijas",
+        "selectedCount": "({{count}} izvēlētas)",
+        "help": "Izvēlies tīklus, ko dod priekšroku \"Lētākā tuvumā\". Tukšs = visi."
+      },
+      "loyalty": {
+        "title": "Klientu kartes",
+        "activeCount": "({{count}} aktīvas)",
+        "help": "Ievadi atlaidi centos par litru (piemēram, Alexela klienta karte -4). Tā tiks parādīta kartē, un \"Lētākā tuvumā\" izmantos atlaides cenu ranžēšanai."
+      },
+      "dots": {
+        "title": "Kartes punkti",
+        "info": {
+          "label": "Info",
+          "desc": "Pelēki = trūkst datu"
+        },
+        "brand": {
+          "label": "Zīmols",
+          "desc": "Visi zīmola krāsā"
+        }
+      },
+      "cluster": {
+        "label": "Grupēt tuvos stacijas"
+      },
+      "hideEmpty": {
+        "label": "Slēpt stacijas bez cenām",
+        "desc": "Ātrāka pārvietošana/tālummaiņa, mazāk haosa"
+      },
+      "latvian": {
+        "label": "Rādīt Latvijas stacijas",
+        "desc": "Robežas stacijas Latvijā"
+      },
+      "staleDemo": {
+        "label": "Rādīt novecojušas cenas (demo)",
+        "desc": "Parāda arī >24h vecas cenas"
+      },
+      "openTutorial": "Atvērt apmācību",
+      "feedback": "Sūtīt atsauksmi",
+      "legal": {
+        "terms": "Lietošanas noteikumi",
+        "privacy": "Privātuma politika"
+      }
+    },
+    "header": {
+      "title": "Tavs profils",
+      "logout": "Izrakstīties",
+      "logoutConfirm": "Vai tiešām vēlies izrakstīties?"
+    },
+    "untilNextTier": "Vēl {{count}} līdz {{emoji}} {{label}}",
+    "tiers": {
+      "turist": "Tūrists",
+      "uustulnuk": "Jauniņais",
+      "pumbapiiluja": "Sūkņa Ieskatītājs",
+      "hinnakirjutaja": "Cenu Rakstītājs",
+      "kutusenuuskur": "Degvielas Ošņātājs",
+      "tanklaspioon": "Stacijas Spiegs",
+      "bensiinikoer": "Benzīna Suns",
+      "hinnajalitaja": "Cenu Izsekotājs",
+      "hinnatabaja": "Cenu Ķērājs",
+      "diiselidentist": "Dīzeļa Zobārsts",
+      "pumbaprofessor": "Sūkņa Profesors",
+      "diiselidiplomaat": "Dīzeļa Diplomāts",
+      "pumbapoeet": "Sūkņa Dzejnieks",
+      "tanklaskaut": "Stacijas Skauts",
+      "kutusekaardistaja": "Degvielas Kartogrāfs",
+      "kutuseryuutel": "Degvielas Bruņinieks",
+      "hinnavoitja": "Cenu Uzvarētājs",
+      "pumbakuningas": "Sūkņa Karalis",
+      "pumbanoid": "Sūkņa Ragana",
+      "oktaanioraakel": "Oktāna Orakuls",
+      "hinnaprohvet": "Cenu Pravietis",
+      "bensiinibaron": "Benzīna Barons",
+      "tanklataht": "Stacijas Zvaigzne",
+      "kuttesultan": "Degvielas Sultāns",
+      "hinnarakett": "Cenu Raķete",
+      "liiterlord": "Litru Lords",
+      "kutuselegend": "Degvielas Leģenda",
+      "diiselpaavst": "Dīzeļa Pāvests",
+      "kytsJumal": "Kyts Dievs",
+      "kytsKoiksus": "Kyts Visums"
+    },
+    "favorites": {
+      "title": "Iecienītās stacijas",
+      "stationCount": "{{count}} stacijas",
+      "empty": "Pagaidām nav iecienīto staciju. Pieskaries sirsniņai uz stacijām, lai pievienotu.",
+      "navigate": "Navigēt",
+      "sort": {
+        "nameAsc": "Nosaukums A→Z",
+        "nameDesc": "Nosaukums Z→A",
+        "priceAsc": "Cena ↑",
+        "priceDesc": "Cena ↓",
+        "fresh": "Svaigas"
+      },
+      "time": {
+        "expired": "Novecojušas",
+        "justNow": "Tikko",
+        "today": "Šodien {{time}}",
+        "yesterday": "Vakar {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Līderu saraksts"
+    },
+    "discovery": {
+      "title": "Atklājumu karte",
+      "description": "Apskati, kādas stacijas esi atklājis. Aizpildi pagastus un apriņķus, lai paceltos atklājēju līderu sarakstā.",
+      "stats": {
+        "stations": "{{done}}/{{total}} stacijas",
+        "parishes": "{{done}}/{{total}} pagasti",
+        "maakonnad": "{{done}}/{{total}} apriņķi"
+      },
+      "shareLabel": "Dalīties atklāti",
+      "shareDesc": "Citi redzēs atklātās stacijas, noklikšķinot uz tava vārda."
+    },
+    "activity": {
+      "title": "Pēdējās aktivitātes"
+    }
+  },
+  "common": {
+    "close": "Aizvērt",
+    "unknownBrand": "Nezināms"
+  },
+  "time": {
+    "expired": "Novecojušas",
+    "justNow": "Tikko",
+    "today": "Šodien {{time}}",
+    "yesterday": "Vakar {{time}}",
+    "hoursAgo": "Pirms {{count}}h",
+    "daysAgo": "Pirms {{count}}d"
+  },
+  "discoveryGrid": {
+    "loading": "Reģioni vēl nav ielādēti…",
+    "tile": {
+      "noStations": "nav staciju",
+      "stations": "{{done}}/{{total}} stacijas",
+      "parishes": "{{done}}/{{total}} pagasti"
+    }
+  },
+  "app": {
+    "search": {
+      "placeholder": "Meklēt stacijas, pilsētu...",
+      "fallbackCountry": "Igaunija"
+    },
+    "fab": {
+      "camera": "Nofotografē cenas",
+      "manual": "Ievadi cenas manuāli",
+      "cheapestNearby": "Lētākā degviela tuvumā",
+      "routeFind": "Lētākā degviela maršrutā",
+      "routeResults": "Parādīt maršruta rezultātus",
+      "cancelRoute": "Atcelt maršrutu",
+      "stats": "Statistika"
+    },
+    "errorBoundary": "Kaut kas nogāja greizi. Lūdzu, atsvaidzini lapu."
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS bloķēts — nospied vēlreiz, lai atbrīvotu",
+      "tapToLock": "Nospied vēlreiz, lai bloķētu GPS",
+      "findLocation": "Atrast manu atrašanās vietu"
+    },
+    "zoom": {
+      "in": "Pietuvināt",
+      "out": "Attālināt"
+    }
+  },
+  "brandPicker": {
+    "label": "Tīkls",
+    "labelWithCount": "Tīkls · {{count}}",
+    "clear": "Notīrīt izvēli"
+  },
+  "discoveryBanner": {
+    "openTitle": "Atvērt atklājumu karti",
+    "viewing": "Skatās: {{name}}",
+    "modeLabel": "Atklājumu režīms",
+    "viewingHelp": "Cita lietotāja atklājumu karte",
+    "tapToChange": "Pieskaries, lai mainītu apriņķi",
+    "tapToOpen": "Pieskaries, lai atvērtu atklājumu karti",
+    "tapXForAll": "Pieskaries X, lai redzētu visus apriņķus",
+    "pricesHidden": "Cenas ir paslēptas",
+    "removeFocus": "Noņemt apriņķa fokusu",
+    "turnOff": "Izslēgt"
+  },
+  "manualPrice": {
+    "title": {
+      "update": "Jaunās cenas: {{station}}",
+      "manual": "Ievadi cenas",
+      "scan": "Skenē cenas"
+    },
+    "gps": {
+      "tooFar": "Tu atrodies {{distance}} km attālumā no stacijas. Cenas var ievadīt tikai pie stacijas (līdz {{max}} km).",
+      "refresh": "Atjaunināt",
+      "retry": "Mēģināt vēlreiz",
+      "checking": "Pārbauda atrašanās vietu...",
+      "detecting": "Nosaka atrašanās vietu..."
+    },
+    "manual": {
+      "noStations": "500 m rādiusā stacijas nav atrastas.",
+      "changeStation": "Mainīt staciju",
+      "savedConfirm": "Cenas saglabātas",
+      "refreshLocation": "Atjaunināt atrašanās vietu"
+    },
+    "picker": {
+      "aiDetected": "AI atklāja cenas:",
+      "promptManual": "Izvēlies staciju, kurai pievieno cenas:",
+      "promptUpdate": "Izvēlies staciju, kurai atjaunini cenas:",
+      "refreshTitle": "Atjaunināt atrašanās vietu",
+      "autoSelected": "Izvēlēts: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Augšupielādēt foto",
+      "aiReading": "AI lasa...",
+      "retake": "Vēlreiz",
+      "scanPrices": "Ar kameru",
+      "scanPricesLong": "Skenēt cenas ar kameru",
+      "retryStatus": "Mēģina vēlreiz... ({{attempt}}/{{max}})",
+      "scannedAlt": "Skenēts foto"
+    },
+    "brandMismatch": {
+      "message": "Šķiet, ka fotoattēlā ir <strong>{{detected}}</strong> stacija, bet tu atjaunini <strong>{{station}}</strong> cenas. Pārbaudi, vai cenas ir pareizas.",
+      "fallback": "cits tīkls"
+    },
+    "scanError": {
+      "quotaExceeded": "AI pakalpojuma limits ir pilns. Mēģini vēlāk vai ievadi cenas manuāli.",
+      "aiUpstreamBusy": "AI pakalpojums šobrīd ir pārslogots. Mēģini pēc pāris minūtēm vai ievadi cenas manuāli.",
+      "noNearbyStation": "Tuvumā nav atrastas stacijas ({{max}}km rādiusā). Pārbaudi GPS atļaujas vai izvēlies staciju manuāli.",
+      "noGps": "GPS signāls netika saņemts. Pārbaudi atrašanās vietas atļaujas un mēģini vēlreiz.",
+      "noPricesRead": "AI nevarēja nolasīt cenas no fotoattēla. Mēģini tieši pie stenda, izvairies no atspulgiem, vai ievadi cenas manuāli.",
+      "timeout": "AI prasīja pārāk daudz laika. Mēģini vēlreiz vai ievadi cenas manuāli.",
+      "network": "Tīkla kļūda. Pārbaudi interneta savienojumu un mēģini vēlreiz.",
+      "generic": "AI lasīšana neizdevās. Ievadi cenas manuāli vai mēģini vēlreiz."
+    },
+    "submit": {
+      "saving": "Saglabā...",
+      "save": "Saglabāt",
+      "confirm": "Apstiprināt",
+      "locationNeeded": "Nepieciešama atrašanās vieta",
+      "waitingGps": "Gaida GPS signālu...",
+      "noStations": "Stacijas nav atrastas",
+      "choosePrompt": "Izvēlies staciju no saraksta",
+      "tooFar": "Tu esi pārāk tālu",
+      "aiReading": "AI skenē foto...",
+      "takePhoto": "Nofotografē cenu stendu",
+      "firstChoose": "Vispirms izvēlies staciju"
+    },
+    "alert": {
+      "priceRange": "Cenai jābūt no 0 līdz 10 € ({{type}}: {{value}}).",
+      "gpsRequired": "GPS atrašanās vieta ir nepieciešama cenas ievadīšanai. Atļauj atrašanās vietu un mēģini vēlreiz.",
+      "tooFar": "Tu atrodies {{distance}} km attālumā no stacijas. Cenas var ievadīt tikai tad, kad esi pie stacijas (līdz {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "Tu esi pārāk tālu no stacijas. Pārvietojies tuvāk stacijai un mēģini vēlreiz.",
+      "rls": "Ievade neizturēja pārbaudi. Pārbaudi cenas un mēģini vēlreiz.",
+      "notFound": "Stacija netika atrasta. Izvēlies staciju vēlreiz un mēģini vēlreiz.",
+      "generic": "Saglabāšana neizdevās. Mēģini vēlreiz — ja tas atkārtojas, pārbaudi tīkla savienojumu."
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Atrašanās vieta nav pieejama. Atļauj lietotnei izmantot atrašanās vietu un mēģini vēlreiz.",
+      "timeout": "Atrašanās vietas atrašana aizņem vairāk laika nekā gaidīts. Mēģini vēlreiz.",
+      "unsupported": "Tavs pārlūks neatbalsta atrašanās vietas noteikšanu.",
+      "unavailable": "Neizdevās atrast atrašanās vietu. Mēģini vēlreiz."
+    }
+  },
+  "stationDrawer": {
+    "disputed": "Apstrīdēts",
+    "priceConfirmed": "Cena apstiprināta ✓",
+    "notEnoughHistory": "Nav pietiekamas vēstures par šo degvielu.",
+    "priceLabel": "Cena",
+    "voteFailed": "Balsošana neizdevās.",
+    "updatePrices": "Atjaunināt cenas",
+    "aria": {
+      "confirm": "Apstiprināt cenu",
+      "dispute": "Apstrīdēt cenu"
+    },
+    "titles": {
+      "history": "Parādīt cenu vēsturi",
+      "navigate": "Navigēt"
+    }
+  },
+  "cheapest": {
+    "title": "Lētākā degviela tavā tuvumā",
+    "fallbackLocation": "Tiek izmantota kartes atrašanās vieta — jauns GPS vēl nav iegūts.",
+    "radius": "Rādiuss:",
+    "filtered": "Filtrēts:",
+    "locating": "Meklē tavu atrašanās vietu...",
+    "empty": "Šajā rādiusā cenas nav atrastas. Izmēģiniet lielāku rādiusu.",
+    "loyaltyTag": "klienta karte",
+    "fresh": "svaiga",
+    "stale": "veca",
+    "outsideRadius": "ārpus rādiusa",
+    "go": "Doties",
+    "retry": "Mēģināt vēlreiz"
+  },
+  "route": {
+    "title": "Kurp brauc?",
+    "searchPlaceholder": "Galamērķis (piemēram, Tallina, Tartu)",
+    "clearSearch": "Notīrīt",
+    "destination": "Galamērķis:",
+    "corridor": "Koridors:",
+    "fuel": "Degviela:",
+    "locating": "Meklē tavu atrašanās vietu...",
+    "computing": "Aprēķina maršrutu...",
+    "retry": "Mēģināt vēlreiz",
+    "error": {
+      "notFound": "Maršruts nav atrasts. Izmēģini citu galamērķi vai pārbaudi interneta savienojumu.",
+      "computeFailed": "Maršruta aprēķināšana neizdevās. Mēģināt vēlreiz.",
+      "locationMissing": "Atrašanās vieta netika atrasta. Sākumpunkts ir nepieciešams maršruta plānošanai.",
+      "noStations": "Maršruta tuvumā nav atrastas stacijas ar šādu degvielas veidu. Izmēģini platāku koridoru."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}} m no maršruta",
+      "fromRouteKm": "{{km}} km no maršruta",
+      "fromOriginKm": "{{km}} km no sākumpunkta"
+    }
+  },
+  "leaderboard": {
+    "title": "Līderu saraksts",
+    "period": {
+      "week": "Nedēļa",
+      "month": "Mēnesis",
+      "all": "Viss kalpošanas laiks"
+    },
+    "dimension": {
+      "activity": "Aktīvākie",
+      "discovery": "Atklājēji"
+    },
+    "discoveryHint": "Sarindoti pēc apriņķiem, tad pagastiem, tad stacijām — viss laiks.",
+    "youLabel": "Tu:",
+    "anonymous": "Anonīms",
+    "loading": "Ielādē...",
+    "empty": {
+      "discovery": "Neviens vēl neko nav atklājis. Esi pirmais!",
+      "activity": "Šim periodam vēl nav datu."
+    },
+    "youSuffix": "(tu)",
+    "stats": {
+      "prices": "{{count}} cenas",
+      "maakonnad": "{{done}}/{{total}} apriņķi",
+      "parishes": "{{count}} pagasti",
+      "stations": "{{count}} stacijas"
+    },
+    "viewFootprint": {
+      "title": "Apskatīt šī lietotāja atklājumu karti",
+      "label": "Apskatīt"
+    }
+  },
+  "stats": {
+    "title": "Statistika ({{days}} dienas)",
+    "trends": {
+      "heading": "Cenu tendences",
+      "notEnoughData": "nav pietiekami daudz datu"
+    },
+    "fuelLabel": "Degviela:",
+    "cheapestNow": {
+      "heading": "Lētākais šobrīd",
+      "noFresh": "Pēdējo {{hours}} stundu laikā nav jaunu cenu."
+    },
+    "brandMedians": {
+      "heading": "Lētākais zīmols ({{fuel}}, mediāna)",
+      "empty": "Nav pietiekami daudz cenu."
+    },
+    "drops": {
+      "heading": "Lielākie cenu kritumi (7 dienas)",
+      "empty": "Cenu kritumi nav atklāti."
+    },
+    "contribution": {
+      "heading": "Mans ieguldījums",
+      "body": "Tu esi paziņojis <strong>{{count}}</strong> cenas pēdējo {{days}} dienu laikā.",
+      "signIn": "Pieraksties, lai redzētu savu ieguldījumu."
+    }
+  },
+  "celebration": {
+    "newStation": "Atklāta jauna stacija!",
+    "stationProgress": "Savāktas {{done}} / {{total}} stacijas",
+    "parishCovered": "{{name}} pabeigts!",
+    "maakondDiscovered": "{{name}} atklāts!",
+    "allStationsCovered": "Visas stacijas pabeigtas"
+  },
+  "feedback": {
+    "title": "Atsauksmes",
+    "intro": "Uzslavas, kritika, kļūdu ziņojumi vai idejas — viss ir gaidīts.",
+    "introSignedIn": "Tavs lietotāja ID ir pievienots ziņai, lai nepieciešamības gadījumā varētu atbildēt.",
+    "introSignedOut": "Ja gaidi atbildi, vispirms pieraksties vai pievieno e-pastu ziņai.",
+    "placeholder": "Kas ir prātā?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Pārāk garš: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Sūtīt",
+      "sending": "Sūta..."
+    },
+    "sent": {
+      "thanks": "Paldies!",
+      "body": "Tavas atsauksmes mūs ir sasniegušas. Atbildēsim, ja vajadzēs."
+    },
+    "error": {
+      "submit": "Sūtīšana neizdevās. Mēģini vēlreiz nedaudz vēlāk."
+    }
+  },
+  "filter": {
+    "title": "Ko tu meklē?",
+    "resetAll": "Atiestatīt visu",
+    "fuelType": "Degvielas Veids",
+    "advanced": "Papildu Filtri",
+    "hideStale": "Slēpt novecojušas cenas (>24h)",
+    "loyaltyPrices": "Rādīt cenas ar klienta karti",
+    "findCheapest": "Atrast lētāko degvielu",
+    "brand": "Tīkls",
+    "clearCount": "Notīrīt ({{count}})",
+    "findCheapestHint": "*Vispirms izvēlies degvielas veidu"
+  }
+}

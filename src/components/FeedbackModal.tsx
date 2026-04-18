@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, MessageSquare, Check } from 'lucide-react';
 import { supabase } from '../supabase';
 import { capture } from '../utils/analytics';
@@ -15,6 +16,7 @@ export function FeedbackModal({
   onClose: () => void;
   session: any;
 }) {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function FeedbackModal({
     });
     setLoading(false);
     if (err) {
-      setError('Saatmine ebaõnnestus. Proovi veidi hiljem uuesti.');
+      setError(t('feedback.error.submit'));
       capture('feedback_submit_failed', { code: err.code });
       return;
     }
@@ -67,7 +69,7 @@ export function FeedbackModal({
       }}>
         <div className="flex-between" style={{ marginBottom: '12px' }}>
           <h2 className="heading-1" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <MessageSquare size={22} /> Tagasiside
+            <MessageSquare size={22} /> {t('feedback.title')}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -77,31 +79,31 @@ export function FeedbackModal({
         {sent ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '20px 0' }}>
             <div style={{ color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Check size={22} /> <strong>Aitäh!</strong>
+              <Check size={22} /> <strong>{t('feedback.sent.thanks')}</strong>
             </div>
             <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', fontSize: '0.92rem', margin: 0 }}>
-              Sinu tagasiside on meieni jõudnud. Vastame, kui vaja.
+              {t('feedback.sent.body')}
             </p>
             <button onClick={onClose} style={{
               marginTop: '8px', padding: '10px 20px',
               background: 'var(--color-primary)', color: '#000', border: 'none',
               borderRadius: 'var(--radius-md)', fontWeight: '600', cursor: 'pointer'
             }}>
-              Sulge
+              {t('common.close')}
             </button>
           </div>
         ) : (
           <>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.88rem', marginBottom: '12px' }}>
-              Kiitus, kriitika, vigade teated või ideed — kõik tulevad kasuks. {session?.user
-                ? 'Sinu kasutaja ID on sõnumi külge lisatud, et saaksime vajadusel vastata.'
-                : 'Kui ootad vastust, logi enne sisse või lisa sõnumisse oma e-post.'}
+              {t('feedback.intro')} {session?.user
+                ? t('feedback.introSignedIn')
+                : t('feedback.introSignedOut')}
             </p>
             <textarea
               autoFocus
               value={message}
               onChange={e => setMessage(e.target.value)}
-              placeholder="Mis on meeles?"
+              placeholder={t('feedback.placeholder')}
               rows={6}
               maxLength={MAX_LEN + 50}
               style={{
@@ -113,7 +115,9 @@ export function FeedbackModal({
               }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-              <span>{tooLong ? `Liiga pikk: ${trimmed.length}/${MAX_LEN}` : `${trimmed.length}/${MAX_LEN}`}</span>
+              <span>{tooLong
+                ? t('feedback.counter.tooLong', { count: trimmed.length, max: MAX_LEN })
+                : t('feedback.counter.normal', { count: trimmed.length, max: MAX_LEN })}</span>
             </div>
 
             {error && (
@@ -134,7 +138,7 @@ export function FeedbackModal({
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? 'Saadan...' : 'Saada'}
+              {loading ? t('feedback.button.sending') : t('feedback.button.send')}
             </button>
           </>
         )}

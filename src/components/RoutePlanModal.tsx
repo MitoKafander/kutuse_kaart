@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
@@ -73,6 +74,7 @@ export function RoutePlanModal({
   onRouteChange: (route: [number, number][] | null) => void;
   onStationSelect?: (station: any) => void;
 }) {
+  const { t } = useTranslation();
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [originError, setOriginError] = useState(false);
   const [locatingOrigin, setLocatingOrigin] = useState(false);
@@ -136,11 +138,11 @@ export function RoutePlanModal({
       .then(r => {
         if (ctrl.signal.aborted) return;
         setRoute(r);
-        if (!r) setRouteError('Marsruuti ei leitud. Proovi teist sihtkohta või kontrolli internetiühendust.');
+        if (!r) setRouteError(t('route.error.notFound'));
       })
       .catch(() => {
         if (ctrl.signal.aborted) return;
-        setRouteError('Marsruudi arvutamine ebaõnnestus. Proovi uuesti.');
+        setRouteError(t('route.error.computeFailed'));
       })
       .finally(() => {
         if (ctrl.signal.aborted) return;
@@ -203,7 +205,7 @@ export function RoutePlanModal({
         <div className="flex-between">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Navigation size={20} style={{ color: 'var(--color-primary)' }} />
-            <h2 className="heading-1">Kuhu sõidad?</h2>
+            <h2 className="heading-1">{t('route.title')}</h2>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -216,7 +218,7 @@ export function RoutePlanModal({
             <input
               type="text"
               value={query}
-              placeholder="Sihtkoht (nt Tartu, Pärnu)"
+              placeholder={t('route.searchPlaceholder')}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
               style={{
@@ -228,7 +230,7 @@ export function RoutePlanModal({
             {query && (
               <button
                 onClick={() => { setQuery(''); setHits([]); setDestination(null); setRoute(null); }}
-                aria-label="Tühjenda"
+                aria-label={t('route.clearSearch')}
                 style={{
                   position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', color: 'var(--color-text-muted)',
@@ -265,14 +267,14 @@ export function RoutePlanModal({
 
         {destination && (
           <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-            <strong style={{ color: 'var(--color-text)' }}>Sihtkoht:</strong> {destination.displayName}
+            <strong style={{ color: 'var(--color-text)' }}>{t('route.destination')}</strong> {destination.displayName}
           </div>
         )}
 
         {/* Corridor + fuel controls */}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Koridor:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{t('route.corridor')}</span>
             {CORRIDOR_OPTIONS.map(r => (
               <button key={r} onClick={() => setCorridorKm(r)} style={{
                 padding: '4px 10px', borderRadius: '14px',
@@ -284,7 +286,7 @@ export function RoutePlanModal({
             ))}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Kütus:</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{t('route.fuel')}</span>
             {FUEL_TYPES.map(f => (
               <button key={f} onClick={() => setFuel(f)} style={{
                 padding: '4px 10px', borderRadius: '14px',
@@ -299,7 +301,7 @@ export function RoutePlanModal({
 
         {(locatingOrigin || (!origin && !originError)) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-muted)' }}>
-            <Loader2 size={18} className="spin" /> Otsin sinu asukohta...
+            <Loader2 size={18} className="spin" /> {t('route.locating')}
           </div>
         )}
 
@@ -310,18 +312,18 @@ export function RoutePlanModal({
             fontSize: '0.88rem', color: 'var(--color-text)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>
-            <span>Asukohta ei leitud. Marsruudi planeerimiseks on vaja lähtekohta.</span>
+            <span>{t('route.error.locationMissing')}</span>
             <button onClick={requestOrigin} style={{
               background: 'var(--color-primary)', color: 'white', border: 'none',
               borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
               fontSize: '0.82rem', fontWeight: 600, flexShrink: 0,
-            }}>Proovi uuesti</button>
+            }}>{t('route.retry')}</button>
           </div>
         )}
 
         {routing && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-muted)' }}>
-            <Loader2 size={18} className="spin" /> Arvutan marsruuti...
+            <Loader2 size={18} className="spin" /> {t('route.computing')}
           </div>
         )}
 
@@ -337,7 +339,7 @@ export function RoutePlanModal({
 
         {!routing && destination && route && results.length === 0 && (
           <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            Marsruudi lähedusest ei leitud tanklaid selle kütusetüübiga. Proovi laiemat koridori.
+            {t('route.error.noStations')}
           </div>
         )}
 
@@ -356,12 +358,16 @@ export function RoutePlanModal({
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>€{r.grossPrice.toFixed(3)}</span>
                 )}
                 <span style={{ fontSize: '0.7rem', color: r.isFresh ? 'var(--color-fresh)' : 'var(--color-warning)' }}>
-                  {r.isFresh ? '● värske' : '● vana'}
+                  {r.isFresh ? `● ${t('cheapest.fresh')}` : `● ${t('cheapest.stale')}`}
                 </span>
               </div>
               <div style={{ fontSize: '0.85rem', marginTop: 2 }}>{getStationDisplayName(r.station)}</div>
               <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
-                {r.corridorKm < 1 ? `${Math.round(r.corridorKm * 1000)}m teest` : `${r.corridorKm.toFixed(1)}km teest`} · {r.progressKm.toFixed(0)}km lähtest
+                {r.corridorKm < 1
+                  ? t('route.distance.fromRouteMeters', { meters: Math.round(r.corridorKm * 1000) })
+                  : t('route.distance.fromRouteKm', { km: r.corridorKm.toFixed(1) })}
+                {' · '}
+                {t('route.distance.fromOriginKm', { km: r.progressKm.toFixed(0) })}
               </div>
             </div>
             <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${r.station.latitude},${r.station.longitude}`, '_blank'); }}
@@ -370,7 +376,7 @@ export function RoutePlanModal({
                 borderRadius: 10, padding: '8px 12px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 600
               }}>
-              <Navigation size={14} /> Mine
+              <Navigation size={14} /> {t('cheapest.go')}
             </button>
           </div>
         ))}

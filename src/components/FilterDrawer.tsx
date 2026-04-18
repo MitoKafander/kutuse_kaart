@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { X, Check, CreditCard } from 'lucide-react';
 
-export function FilterDrawer({ 
+export function FilterDrawer({
   isOpen, 
   onClose,
   brands,
@@ -33,6 +34,7 @@ export function FilterDrawer({
   onApplyLoyaltyChange: (v: boolean) => void,
   hasAnyDiscount: boolean,
 }) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const toggleBrand = (brand: string) => {
@@ -66,7 +68,7 @@ export function FilterDrawer({
       }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-primary)' }}>Mida otsid?</h2>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--color-primary)' }}>{t('filter.title')}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {(selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) && (
               <button
@@ -82,7 +84,7 @@ export function FilterDrawer({
                   fontSize: '0.78rem', cursor: 'pointer',
                 }}
               >
-                Lähtesta kõik
+                {t('filter.resetAll')}
               </button>
             )}
             <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
@@ -95,7 +97,7 @@ export function FilterDrawer({
           
           {/* Fuel Types (First) */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>Kütuse Tüüp</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>{t('filter.fuelType')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '8px' }}>
               {fuelTypes.map(type => (
                 <button
@@ -124,11 +126,11 @@ export function FilterDrawer({
 
           {/* Advanced Filters (Second) */}
           <div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>Täpsemad Filtrid</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '12px', color: 'var(--color-text-muted)' }}>{t('filter.advanced')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <span>Peida aegunud hinnad (&gt;24h)</span>
+                <span>{t('filter.hideStale')}</span>
                 <div 
                   onClick={() => setShowOnlyFresh(!showOnlyFresh)}
                   style={{
@@ -147,7 +149,7 @@ export function FilterDrawer({
               {hasAnyDiscount && (
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CreditCard size={16} /> Näita hindu sooduskaardiga
+                    <CreditCard size={16} /> {t('filter.loyaltyPrices')}
                   </span>
                   <div
                     onClick={() => onApplyLoyaltyChange(!applyLoyalty)}
@@ -167,8 +169,8 @@ export function FilterDrawer({
 
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span>Leia odavaim kütus</span>
-                  {!selectedFuelType && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>*Vali esmalt kütuse tüüp</span>}
+                  <span>{t('filter.findCheapest')}</span>
+                  {!selectedFuelType && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{t('filter.findCheapestHint')}</span>}
                 </div>
                 <div 
                   onClick={() => {
@@ -192,7 +194,7 @@ export function FilterDrawer({
           {/* Brand Filters (Last) */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', margin: 0 }}>Kett</h3>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', margin: 0 }}>{t('filter.brand')}</h3>
               {selectedBrands.length > 0 && (
                 <button
                   onClick={() => setSelectedBrands([])}
@@ -202,7 +204,7 @@ export function FilterDrawer({
                     fontSize: '0.78rem', cursor: 'pointer',
                   }}
                 >
-                  Tühjenda ({selectedBrands.length})
+                  {t('filter.clearCount', { count: selectedBrands.length })}
                 </button>
               )}
             </div>

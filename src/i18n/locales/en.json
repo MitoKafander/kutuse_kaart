@@ -1,0 +1,607 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Language"
+    }
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Log in",
+      "signUp": "Create account"
+    },
+    "aria": {
+      "close": "Close"
+    },
+    "continueWithGoogle": "Continue with Google",
+    "divider": {
+      "or": "or"
+    },
+    "email": {
+      "placeholder": "Email"
+    },
+    "password": {
+      "placeholder": "Password"
+    },
+    "button": {
+      "loading": "Loading...",
+      "signIn": "Log in",
+      "signUp": "Create account"
+    },
+    "toggle": {
+      "noAccount": "No account?",
+      "haveAccount": "Already a user?",
+      "toSignUp": "Sign up here",
+      "toSignIn": "Log in"
+    },
+    "signupSuccess": "Account created! Check your email."
+  },
+  "gdpr": {
+    "body": "Kyts uses only essential cookies (login, preferences). By using it you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.",
+    "accept": "Accept"
+  },
+  "update": {
+    "title": "New version available",
+    "body": "Refresh to use the newest Kyts.",
+    "button": {
+      "reload": "Refresh",
+      "reloading": "Refreshing..."
+    }
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Skip",
+      "close": "Close tutorial",
+      "back": "Back",
+      "next": "Next",
+      "done": "Done"
+    },
+    "aria": {
+      "steps": "Tutorial steps",
+      "stepN": "Step {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "You can find the tutorial later in Settings → Tutorial."
+    },
+    "step1": {
+      "title": "Welcome to Kyts!",
+      "body": "A community-driven map where you can see Estonian fuel prices in real-time. Find the cheapest, contribute yourself."
+    },
+    "step2": {
+      "title": "Buttons on the right",
+      "color": {
+        "blue": "Blue",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "green": "Green",
+        "purple": "Purple"
+      },
+      "desc": {
+        "blue": "take a photo of the price totem, AI reads the prices.",
+        "orange": "enter prices manually.",
+        "yellow": "cheapest stations nearby.",
+        "green": "cheapest fuel on route.",
+        "purple": "statistics and trends."
+      }
+    },
+    "step3": {
+      "title": "1 km rule",
+      "body": "You can only enter prices when you are less than 1 km from the station. This prevents fake contributions across the country and keeps the data reliable."
+    },
+    "step4": {
+      "title": "Contribute, earn badges",
+      "body": "Your price contributions earn titles (🌱 Tourist → ♾️ Kyts Universe) and raise you on the leaderboard. Turn on Discovery map in Settings and collect all 15 Estonian county badges."
+    },
+    "step5": {
+      "title": "Create an account",
+      "body": "You can report and upvote prices without an account. Logging in unlocks favorite stations, leaderboard position, loyalty card discounts, and cross-device sync. The profile icon is on the top right."
+    }
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Profile",
+      "settings": "Settings"
+    },
+    "settings": {
+      "title": "Settings",
+      "theme": {
+        "title": "Map theme",
+        "dark": "Dark",
+        "light": "Light"
+      },
+      "fuel": {
+        "title": "Your car's fuel",
+        "removeTooltip": "Click again to remove"
+      },
+      "brands": {
+        "title": "Preferred stations",
+        "selectedCount": "({{count}} selected)",
+        "help": "Select chains that \"Cheapest nearby\" prefers. Empty = all."
+      },
+      "loyalty": {
+        "title": "Loyalty cards",
+        "activeCount": "({{count}} active)",
+        "help": "Enter the discount in cents per liter (e.g. Alexela loyalty card -4). It is displayed on the map and \"Cheapest nearby\" uses the discounted price for ranking."
+      },
+      "dots": {
+        "title": "Map dots",
+        "info": {
+          "label": "Info",
+          "desc": "Grey = missing data"
+        },
+        "brand": {
+          "label": "Brand",
+          "desc": "All in brand color"
+        }
+      },
+      "cluster": {
+        "label": "Group nearby stations"
+      },
+      "hideEmpty": {
+        "label": "Hide stations without prices",
+        "desc": "Faster pan/zoom, less clutter"
+      },
+      "latvian": {
+        "label": "Show Latvian stations",
+        "desc": "Border stations in Latvia"
+      },
+      "staleDemo": {
+        "label": "Show stale prices (demo)",
+        "desc": "Also shows prices >24h old"
+      },
+      "openTutorial": "Open tutorial",
+      "feedback": "Send feedback",
+      "legal": {
+        "terms": "Terms of use",
+        "privacy": "Privacy policy"
+      }
+    },
+    "header": {
+      "title": "Your profile",
+      "logout": "Log out",
+      "logoutConfirm": "Are you sure you want to log out?"
+    },
+    "untilNextTier": "{{count}} more until {{emoji}} {{label}}",
+    "tiers": {
+      "turist": "Tourist",
+      "uustulnuk": "Newcomer",
+      "pumbapiiluja": "Pump Peeker",
+      "hinnakirjutaja": "Price Writer",
+      "kutusenuuskur": "Fuel Sniffer",
+      "tanklaspioon": "Station Spy",
+      "bensiinikoer": "Gasoline Dog",
+      "hinnajalitaja": "Price Tracker",
+      "hinnatabaja": "Price Catcher",
+      "diiselidentist": "Diesel Dentist",
+      "pumbaprofessor": "Pump Professor",
+      "diiselidiplomaat": "Diesel Diplomat",
+      "pumbapoeet": "Pump Poet",
+      "tanklaskaut": "Station Scout",
+      "kutusekaardistaja": "Fuel Mapper",
+      "kutuseryuutel": "Fuel Knight",
+      "hinnavoitja": "Price Winner",
+      "pumbakuningas": "Pump King",
+      "pumbanoid": "Pump Witch",
+      "oktaanioraakel": "Octane Oracle",
+      "hinnaprohvet": "Price Prophet",
+      "bensiinibaron": "Gasoline Baron",
+      "tanklataht": "Station Star",
+      "kuttesultan": "Fuel Sultan",
+      "hinnarakett": "Price Rocket",
+      "liiterlord": "Liter Lord",
+      "kutuselegend": "Fuel Legend",
+      "diiselpaavst": "Diesel Pope",
+      "kytsJumal": "Kyts God",
+      "kytsKoiksus": "Kyts Universe"
+    },
+    "favorites": {
+      "title": "Favorite stations",
+      "stationCount": "{{count}} stations",
+      "empty": "No favorite stations yet. Tap the heart on stations to add them.",
+      "navigate": "Navigate",
+      "sort": {
+        "nameAsc": "Name A→Z",
+        "nameDesc": "Name Z→A",
+        "priceAsc": "Price ↑",
+        "priceDesc": "Price ↓",
+        "fresh": "Fresh"
+      },
+      "time": {
+        "expired": "Expired",
+        "justNow": "Just now",
+        "today": "Today {{time}}",
+        "yesterday": "Yesterday {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Leaderboard"
+    },
+    "discovery": {
+      "title": "Discovery map",
+      "description": "See which stations you've discovered. Complete parishes and counties to rise in the Discoverers' leaderboard.",
+      "stats": {
+        "stations": "{{done}}/{{total}} stations",
+        "parishes": "{{done}}/{{total}} parishes",
+        "maakonnad": "{{done}}/{{total}} counties"
+      },
+      "shareLabel": "Share publicly",
+      "shareDesc": "Others will see which stations you've discovered when they click your name."
+    },
+    "activity": {
+      "title": "Recent activity"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "unknownBrand": "Unknown"
+  },
+  "time": {
+    "expired": "Expired",
+    "justNow": "Just now",
+    "today": "Today {{time}}",
+    "yesterday": "Yesterday {{time}}",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  },
+  "discoveryGrid": {
+    "loading": "Regions not loaded yet…",
+    "tile": {
+      "noStations": "no stations",
+      "stations": "{{done}}/{{total}} stations",
+      "parishes": "{{done}}/{{total}} parishes"
+    }
+  },
+  "app": {
+    "search": {
+      "placeholder": "Search stations, city...",
+      "fallbackCountry": "Estonia"
+    },
+    "fab": {
+      "camera": "Take a photo of prices",
+      "manual": "Enter prices manually",
+      "cheapestNearby": "Cheapest fuel nearby",
+      "routeFind": "Cheapest fuel on route",
+      "routeResults": "Show route results",
+      "cancelRoute": "Cancel route",
+      "stats": "Statistics"
+    },
+    "errorBoundary": "Something went wrong. Please refresh the page."
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS locked — press again to release",
+      "tapToLock": "Press again to lock GPS",
+      "findLocation": "Find my location"
+    },
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out"
+    }
+  },
+  "brandPicker": {
+    "label": "Chain",
+    "labelWithCount": "Chain · {{count}}",
+    "clear": "Clear selection"
+  },
+  "discoveryBanner": {
+    "openTitle": "Open discovery map",
+    "viewing": "Viewing: {{name}}",
+    "modeLabel": "Discovery mode",
+    "viewingHelp": "Another user's discovery map",
+    "tapToChange": "Tap to change county",
+    "tapToOpen": "Tap to open discovery map",
+    "tapXForAll": "Tap X to see all counties",
+    "pricesHidden": "Prices are hidden",
+    "removeFocus": "Remove county focus",
+    "turnOff": "Turn off"
+  },
+  "manualPrice": {
+    "title": {
+      "update": "New prices: {{station}}",
+      "manual": "Enter prices",
+      "scan": "Scan prices"
+    },
+    "gps": {
+      "tooFar": "You are {{distance}} km from the station. Prices can only be entered at the station (up to {{max}} km).",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "checking": "Checking location...",
+      "detecting": "Detecting location..."
+    },
+    "manual": {
+      "noStations": "No stations found within 500 m.",
+      "changeStation": "Change station",
+      "savedConfirm": "Prices saved",
+      "refreshLocation": "Refresh location"
+    },
+    "picker": {
+      "aiDetected": "AI detected prices:",
+      "promptManual": "Select the station you're adding prices to:",
+      "promptUpdate": "Select the station you're updating prices for:",
+      "refreshTitle": "Refresh location",
+      "autoSelected": "Selected: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Upload photo",
+      "aiReading": "AI reads...",
+      "retake": "Retake",
+      "scanPrices": "With camera",
+      "scanPricesLong": "Scan prices with camera",
+      "retryStatus": "Retrying... ({{attempt}}/{{max}})",
+      "scannedAlt": "Scanned photo"
+    },
+    "brandMismatch": {
+      "message": "The photo seems to show a <strong>{{detected}}</strong> station, but you are updating prices for <strong>{{station}}</strong>. Check if the prices are correct.",
+      "fallback": "different chain"
+    },
+    "scanError": {
+      "quotaExceeded": "AI service limit reached. Try again later or enter prices manually.",
+      "aiUpstreamBusy": "AI service is currently overloaded. Try again in a few minutes or enter prices manually.",
+      "noNearbyStation": "No fuel station found nearby (within {{max}}km radius). Check GPS permissions or manually select a station.",
+      "noGps": "No GPS signal received. Check location permissions and try again.",
+      "noPricesRead": "AI could not read prices from the photo. Try directly in front of the totem, avoid reflections, or enter prices manually.",
+      "timeout": "AI took too long. Try again or enter prices manually.",
+      "network": "Network error. Check your internet connection and try again.",
+      "generic": "AI reading failed. Enter prices manually or try again."
+    },
+    "submit": {
+      "saving": "Saving...",
+      "save": "Save",
+      "confirm": "Confirm",
+      "locationNeeded": "Location required",
+      "waitingGps": "Waiting for GPS signal...",
+      "noStations": "No stations found",
+      "choosePrompt": "Select a station from the list",
+      "tooFar": "You are too far",
+      "aiReading": "AI scans photo...",
+      "takePhoto": "Take a photo of the price totem",
+      "firstChoose": "Pick a station first"
+    },
+    "alert": {
+      "priceRange": "The price must be between 0–10 € ({{type}}: {{value}}).",
+      "gpsRequired": "GPS location is required to enter a price. Allow location and try again.",
+      "tooFar": "You are {{distance}} km from the station. Prices can only be entered when you are at the station (up to {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "You are too far from the station. Move closer to the station and try again.",
+      "rls": "Input failed validation. Check the prices and try again.",
+      "notFound": "Station not found. Select the station again and try again.",
+      "generic": "Saving failed. Try once more — if it repeats, check your network connection."
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Location unavailable. Allow the app to use location and try again.",
+      "timeout": "Finding your location takes longer than expected. Try again.",
+      "unsupported": "Your browser does not support geolocation.",
+      "unavailable": "Location could not be found. Try again."
+    }
+  },
+  "stationDrawer": {
+    "disputed": "Disputed",
+    "priceConfirmed": "Price confirmed ✓",
+    "notEnoughHistory": "Not enough history for this fuel.",
+    "priceLabel": "Price",
+    "voteFailed": "Voting failed.",
+    "updatePrices": "Update Prices",
+    "aria": {
+      "confirm": "Confirm price",
+      "dispute": "Dispute price"
+    },
+    "titles": {
+      "history": "Show price history",
+      "navigate": "Navigate"
+    }
+  },
+  "cheapest": {
+    "title": "Cheapest fuel near you",
+    "fallbackLocation": "Using map location — fresh GPS hasn't arrived yet.",
+    "radius": "Radius:",
+    "filtered": "Filtered:",
+    "locating": "Finding your location...",
+    "empty": "No prices found in this radius. Try a larger radius.",
+    "loyaltyTag": "loyalty card",
+    "fresh": "fresh",
+    "stale": "stale",
+    "outsideRadius": "outside radius",
+    "go": "Go",
+    "retry": "Try again"
+  },
+  "route": {
+    "title": "Where are you driving?",
+    "searchPlaceholder": "Destination (e.g. Tallinn, Tartu)",
+    "clearSearch": "Clear",
+    "destination": "Destination:",
+    "corridor": "Corridor:",
+    "fuel": "Fuel:",
+    "locating": "Finding your location...",
+    "computing": "Calculating route...",
+    "retry": "Try again",
+    "error": {
+      "notFound": "Route not found. Try a different destination or check your internet connection.",
+      "computeFailed": "Route calculation failed. Try again.",
+      "locationMissing": "Location not found. Origin is required to plan a route.",
+      "noStations": "No stations with this fuel type found near the route. Try a wider corridor."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}} m from route",
+      "fromRouteKm": "{{km}} km from route",
+      "fromOriginKm": "{{km}} km from origin"
+    }
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "period": {
+      "week": "Week",
+      "month": "Month",
+      "all": "All"
+    },
+    "dimension": {
+      "activity": "Most active",
+      "discovery": "Discoverers"
+    },
+    "discoveryHint": "Ranked by counties, then parishes, then stations — all time.",
+    "youLabel": "You:",
+    "anonymous": "Anonymous",
+    "loading": "Loading...",
+    "empty": {
+      "discovery": "Nobody has discovered anything yet. Be the first!",
+      "activity": "No data for this period yet."
+    },
+    "youSuffix": "(you)",
+    "stats": {
+      "prices": "{{count}} prices",
+      "maakonnad": "{{done}}/{{total}} counties",
+      "parishes": "{{count}} parishes",
+      "stations": "{{count}} stations"
+    },
+    "viewFootprint": {
+      "title": "View this user's discovery map",
+      "label": "View"
+    }
+  },
+  "stats": {
+    "title": "Statistics ({{days}} days)",
+    "trends": {
+      "heading": "Price trends",
+      "notEnoughData": "not enough data"
+    },
+    "fuelLabel": "Fuel:",
+    "cheapestNow": {
+      "heading": "Cheapest right now",
+      "noFresh": "No fresh price in the last {{hours}} hours."
+    },
+    "brandMedians": {
+      "heading": "Cheapest brand ({{fuel}}, median)",
+      "empty": "Not enough prices."
+    },
+    "drops": {
+      "heading": "Biggest price drops (7 days)",
+      "empty": "No price drops detected."
+    },
+    "contribution": {
+      "heading": "My contribution",
+      "body": "You've reported <strong>{{count}}</strong> prices in the last {{days}} days.",
+      "signIn": "Sign in to see your contribution."
+    }
+  },
+  "celebration": {
+    "newStation": "New station discovered!",
+    "stationProgress": "{{done}} / {{total}} stations collected",
+    "parishCovered": "{{name}} covered!",
+    "maakondDiscovered": "{{name}} discovered!",
+    "allStationsCovered": "All stations covered"
+  },
+  "feedback": {
+    "title": "Feedback",
+    "intro": "Praise, criticism, bug reports, or ideas — all welcome.",
+    "introSignedIn": "Your user ID is attached to the message so we can reply if needed.",
+    "introSignedOut": "If you expect a reply, sign in first or add your e-mail to the message.",
+    "placeholder": "What's on your mind?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Too long: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Send",
+      "sending": "Sending..."
+    },
+    "sent": {
+      "thanks": "Thanks!",
+      "body": "Your feedback has reached us. We'll reply if needed."
+    },
+    "error": {
+      "submit": "Sending failed. Please try again shortly."
+    }
+  },
+  "filter": {
+    "title": "What are you looking for?",
+    "resetAll": "Reset all",
+    "fuelType": "Fuel Type",
+    "advanced": "Advanced Filters",
+    "hideStale": "Hide stale prices (>24h)",
+    "loyaltyPrices": "Show prices with loyalty card",
+    "findCheapest": "Find cheapest fuel",
+    "brand": "Brand",
+    "clearCount": "Clear ({{count}})",
+    "findCheapestHint": "*Pick a fuel type first"
+  },
+  "legal": {
+    "notice": {
+      "englishOnly": "This document is available in Estonian and English only."
+    },
+    "effectiveDate": "Effective from: 15 April 2026"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "s1": "<strong>1. Data controller</strong><br/>Kyts is a community project managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@kyts.ee</a>. Website: www.kyts.ee.",
+    "s2": {
+      "title": "2. What data we collect",
+      "item1": "<strong>Account data:</strong> email address and a Supabase-generated user ID (if you sign in with Google OAuth or email).",
+      "item2": "<strong>Username:</strong> an optional public display name set by you.",
+      "item3": "<strong>Contributions:</strong> fuel prices and votes submitted by you (public, linked to your user ID).",
+      "item4": "<strong>Preferences:</strong> favorite stations, preferred fuel type, favorite brands, loyalty card discounts — saved to your account.",
+      "item5": "<strong>Technical logs:</strong> IP address (temporarily, for rate limiting), error stacks (Sentry), aggregated events (PostHog)."
+    },
+    "s3": {
+      "title": "3. What we use the data for",
+      "item1": "To operate the service (authentication, remembering your preferences).",
+      "item2": "To prevent abuse (per-IP rate limiting for price scans).",
+      "item3": "To detect bugs (Sentry — automatically collected stack traces).",
+      "item4": "To measure usage (PostHog — anonymous aggregates, saves nothing to the browser)."
+    },
+    "s4": {
+      "title": "4. Legal bases (GDPR art 6)",
+      "item1": "<strong>Contract (art 6(1)(b)):</strong> account management and service provision.",
+      "item2": "<strong>Legitimate interest (art 6(1)(f)):</strong> security, fraud prevention, service improvement via anonymous statistics."
+    },
+    "s5": {
+      "intro": "<strong>5. Sub-processors</strong><br/>We use the following services for data processing:",
+      "item1": "<strong>Supabase</strong> (EU) — database and authentication.",
+      "item2": "<strong>Vercel</strong> (EU edge) — hosting and API functions.",
+      "item3": "<strong>Google</strong> — OAuth authentication and Gemini AI (fuel totem image recognition).",
+      "item4": "<strong>Upstash Redis</strong> (EU) — rate limit counters.",
+      "item5": "<strong>Sentry</strong> — error aggregator.",
+      "item6": "<strong>PostHog</strong> (EU Cloud) — anonymous product analytics."
+    },
+    "s6": "<strong>6. Image processing (AI)</strong><br/>When using camera scanning, the image is securely sent to Google Gemini AI for price detection. The image is <strong>not saved</strong> on our servers or in the database — it is processed immediately and deleted after the JSON response is returned.",
+    "s7": "<strong>7. Location data</strong><br/>The map's \"Location\" and \"Cheapest nearby\" features use the browser's GPS only on your device. Your coordinates are <strong>not sent</strong> to our servers.",
+    "s8": "<strong>8. Cookies and local storage</strong><br/>We only use <em>essential</em> cookies: Supabase Auth session tokens (keeps you signed in) and localStorage entries for saving your preferences (e.g. loyalty cards, map style). <strong>No cookies are saved</strong> for analytics — PostHog operates in memory mode. Therefore, we do not require a consent banner.",
+    "s9": {
+      "title": "9. Retention periods",
+      "item1": "Account + preferences: until you delete your account.",
+      "item2": "Price posts: public history is retained so comparisons work.",
+      "item3": "Error logs (Sentry): 30 days.",
+      "item4": "Analytics (PostHog): 1 year, aggregated.",
+      "item5": "Rate limit counters (Upstash): 1 day."
+    },
+    "s10": "<strong>10. Your rights (GDPR)</strong><br/>You have the right to: access, correct, delete, and export your data. You may also object to processing and file a complaint with the Estonian Data Protection Inspectorate (aki.ee). For requests, write to: <a>info@kyts.ee</a>. We respond within 30 days.",
+    "s11": "<strong>11. Changes</strong><br/>We will notify you of major changes within the app. The valid version is always this document.",
+    "seeAlsoTerms": "See also: <termsBtn>Terms of Service</termsBtn>."
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "s1": "<strong>1. Service provider</strong><br/>Kyts is a community-based fuel price map managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@kyts.ee</a>.",
+    "s2": "<strong>2. Description of service</strong><br/>Kyts allows users to share and view fuel prices of Estonian stations. Prices are submitted by users and therefore may be outdated, inaccurate, or wrong. The service is provided \"<em>as-is</em>\", without any warranties regarding accuracy, availability, or suitability.",
+    "s3": "<strong>3. Account and usage</strong><br/>Creating an account (Google OAuth or email) is optional, but required for submitting prices and voting. One person must only have one account. You are responsible for your account's security.",
+    "s4": {
+      "title": "4. Prohibited conduct",
+      "item1": "Intentionally submitting false prices or manipulation.",
+      "item2": "Harassing other users, insulting, or spam.",
+      "item3": "Automated scraping of the app, reverse engineering or attacks (incl. DDoS, SQL-injection, API abuse).",
+      "item4": "Using the app for commercial purposes without our written permission (e.g. reselling data, building a competing service based on our data).",
+      "item5": "Collecting others' personal data via the app."
+    },
+    "s5": "<strong>5. Content moderation</strong><br/>We reserve the right <em>without prior notice</em> to delete suspicious prices, delete accounts, and block IP addresses if these terms or the law are violated.",
+    "s6": "<strong>6. User responsibility</strong><br/>The user is responsible for the correctness of their contributed content. By submitting a price, you confirm it corresponds to reality at that moment. A user who intentionally submits false data may bear legal responsibility for misleading other users.",
+    "s7": "<strong>7. Limitation of liability</strong><br/>Kyts or its operator are <strong>not liable</strong> for damages resulting from: (a) inaccurate prices, (b) service interruptions, (c) failures of third-party services (Supabase, Vercel, Google Gemini, etc.), (d) technical issues of the user's own device. Maximum liability is limited to zero, as the service is free for users.",
+    "s8": "<strong>8. Intellectual property</strong><br/>The app's code, design, and the brand \"Kyts\" belong to the operator. Prices submitted by users are public facts and are not treated as objects of copyright. Map data belongs to OpenStreetMap under the respective license.",
+    "s9": "<strong>9. Donations</strong><br/>Voluntary donations (e.g. via Buy Me a Coffee) support the maintenance and development of the service. Donations <strong>do not grant</strong> special rights or extra features in the app and are non-refundable.",
+    "s10": {
+      "withLink": "<strong>10. Personal data</strong><br/>The processing of personal data is described in the <strong>Privacy Policy</strong> (<privacyBtn>open</privacyBtn>), which is an integral part of these terms.",
+      "plain": "<strong>10. Personal data</strong><br/>The processing of personal data is described in the <strong>Privacy Policy</strong>, which is an integral part of these terms."
+    },
+    "s11": "<strong>11. Changes to terms</strong><br/>We may update these terms. We will notify you of major changes within the app. Continued use of the service after changes constitutes acceptance of the new terms.",
+    "s12": "<strong>12. Termination of service</strong><br/>We can suspend or terminate the service at any time. If we terminate the service, we will provide at least 30 days' notice, if possible.",
+    "s13": "<strong>13. Governing law</strong><br/>The law of the Republic of Estonia applies to these terms. Disputes shall be resolved in the Harju County Court, unless the law provides otherwise."
+  }
+}

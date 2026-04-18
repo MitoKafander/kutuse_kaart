@@ -17,6 +17,9 @@ dist-ssr
 # Personal notes
 Notes/
 
+# i18n translation working files (markdown chunks for Google Translate round-trip)
+translations/
+
 # Local brand source assets (exported into public/ as PWA icons)
 Images/
 

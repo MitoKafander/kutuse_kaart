@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessage } from '../utils';
+import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey } from '../utils';
 import { capture } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
@@ -35,6 +36,7 @@ export function ManualPriceModal({
   // Derive mode when not passed: back-compat with the two original call sites
   // (pre-selected station vs camera FAB). Manual mode is only entered via the
   // explicit prop from the new "Sisesta hinnad käsitsi" FAB.
+  const { t } = useTranslation();
   const effectiveMode: 'station' | 'camera' | 'manual' =
     mode ?? (station ? 'station' : 'camera');
   const isManualMode = effectiveMode === 'manual';
@@ -107,7 +109,7 @@ export function ManualPriceModal({
   const callGemini = async (base64: string, stationName: string): Promise<any> => {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
-        setRetryStatus(`Uuesti proovimas... (${attempt}/${MAX_RETRIES})`);
+        setRetryStatus(t('manualPrice.camera.retryStatus', { attempt, max: MAX_RETRIES }));
         await new Promise(r => setTimeout(r, 2000));
       }
 
@@ -217,7 +219,7 @@ export function ManualPriceModal({
     // confirms — GPS was already unreliable once, don't compound.
     if (tight.length > 0 && candidates.length === 1) {
       setResolvedStation(candidates[0]);
-      setAutoSelectMsg(`Valitud: ${getStationDisplayName(candidates[0])}`);
+      setAutoSelectMsg(t('manualPrice.picker.autoSelected', { name: getStationDisplayName(candidates[0]) }));
       setTimeout(() => setAutoSelectMsg(null), 4000);
     } else {
       setStationCandidates(candidates.slice(0, 10));
@@ -259,7 +261,7 @@ export function ManualPriceModal({
             extra: { code: e?.code, message: e?.message },
           });
         }
-        setManualGpsError(geolocationErrorMessage(kind));
+        setManualGpsError(t(geolocationErrorMessageKey(kind)));
       });
   };
 
@@ -279,7 +281,7 @@ export function ManualPriceModal({
             extra: { code: e?.code, message: e?.message },
           });
         }
-        setManualGpsError(geolocationErrorMessage(kind));
+        setManualGpsError(t(geolocationErrorMessageKey(kind)));
       });
   };
 
@@ -319,7 +321,7 @@ export function ManualPriceModal({
         }
       } else if (station && parsedJson.isBrandMatch === false) {
         // Pre-selected station mode only — warn if AI sees a different brand
-        setBrandMismatch({ detected: parsedJson.detectedBrand || 'teine kett' });
+        setBrandMismatch({ detected: parsedJson.detectedBrand || t('manualPrice.brandMismatch.fallback') });
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
@@ -436,16 +438,10 @@ export function ManualPriceModal({
   const friendlyPriceSubmitError = (err: any): string => {
     const code: string = err?.code || '';
     const msg: string = err?.message || '';
-    if (msg.includes('km from station')) {
-      return 'Oled tanklast liiga kaugel. Liigu tankla juurde ja proovi uuesti.';
-    }
-    if (code === '42501') {
-      return 'Sisestus ei läbinud kontrolli. Kontrolli hindu ja proovi uuesti.';
-    }
-    if (msg.includes('station') && msg.includes('not found')) {
-      return 'Tanklat ei leitud. Vali uuesti tankla ja proovi uuesti.';
-    }
-    return 'Salvestamine ebaõnnestus. Proovi veel kord — kui see kordub, kontrolli võrguühendust.';
+    if (msg.includes('km from station')) return t('manualPrice.submitError.tooFar');
+    if (code === '42501') return t('manualPrice.submitError.rls');
+    if (msg.includes('station') && msg.includes('not found')) return t('manualPrice.submitError.notFound');
+    return t('manualPrice.submitError.generic');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -467,7 +463,7 @@ export function ManualPriceModal({
 
     const invalid = parsed.find(p => !Number.isFinite(p.value) || p.value <= 0 || p.value >= 10);
     if (invalid) {
-      alert(`Hind peab olema vahemikus 0–10 € (${invalid.type}: ${invalid.value}).`);
+      alert(t('manualPrice.alert.priceRange', { type: invalid.type, value: invalid.value }));
       setLoading(false);
       return;
     }
@@ -477,7 +473,7 @@ export function ManualPriceModal({
     // of the country. The server trigger re-checks the same invariant so
     // direct-API writes can't bypass it.
     if (!capturedPosition) {
-      alert('GPS-asukoht on vajalik hinna sisestamiseks. Luba asukoht ja proovi uuesti.');
+      alert(t('manualPrice.alert.gpsRequired'));
       setLoading(false);
       return;
     }
@@ -487,7 +483,7 @@ export function ManualPriceModal({
     );
     if (submitDist > MAX_SUBMIT_KM) {
       const distStr = submitDist < 10 ? submitDist.toFixed(1) : Math.round(submitDist).toString();
-      alert(`Oled tanklast ${distStr} km kaugusel. Hindu saab sisestada vaid siis, kui oled tankla juures (kuni ${MAX_SUBMIT_KM} km).`);
+      alert(t('manualPrice.alert.tooFar', { distance: distStr, max: MAX_SUBMIT_KM }));
       capture('price_submit_blocked_distance', { distance_km: +submitDist.toFixed(2) });
       setLoading(false);
       return;
@@ -563,25 +559,25 @@ export function ManualPriceModal({
   // Submit-button label: reflects what the app is actually waiting on,
   // instead of blaming the user with "Vali esmalt tankla" in every state.
   const getSubmitLabel = () => {
-    if (loading) return 'Salvestan...';
+    if (loading) return t('manualPrice.submit.saving');
     if (isManualMode) {
-      if (activeStation) return 'Salvesta';
-      if (manualGpsError) return 'Asukoht vajalik';
-      if (!capturedPosition) return 'Ootan GPS-signaali...';
-      if (stationCandidates && stationCandidates.length === 0) return 'Jaamu ei leitud';
-      return 'Vali tankla loendist';
+      if (activeStation) return t('manualPrice.submit.save');
+      if (manualGpsError) return t('manualPrice.submit.locationNeeded');
+      if (!capturedPosition) return t('manualPrice.submit.waitingGps');
+      if (stationCandidates && stationCandidates.length === 0) return t('manualPrice.submit.noStations');
+      return t('manualPrice.submit.choosePrompt');
     }
     if (activeStation) {
-      if (isStationMode && manualGpsError) return 'Asukoht vajalik';
-      if (isStationMode && !capturedPosition) return 'Ootan GPS-signaali...';
-      if (isStationMode && tooFar) return 'Oled liiga kaugel';
-      return pricesFromAi ? 'Kinnita' : 'Salvesta';
+      if (isStationMode && manualGpsError) return t('manualPrice.submit.locationNeeded');
+      if (isStationMode && !capturedPosition) return t('manualPrice.submit.waitingGps');
+      if (isStationMode && tooFar) return t('manualPrice.submit.tooFar');
+      return pricesFromAi ? t('manualPrice.submit.confirm') : t('manualPrice.submit.save');
     }
-    if (isAnalyzing) return 'AI loeb pilti...';
-    if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return 'Ootan GPS-signaali...';
-    if (stationCandidates && stationCandidates.length > 0) return 'Vali tankla loendist';
-    if (isFabMode && !capturedBase64) return 'Pildista hinnaposti';
-    return 'Vali esmalt tankla';
+    if (isAnalyzing) return t('manualPrice.submit.aiReading');
+    if (isFabMode && capturedBase64 && !capturedPosition && !scanError) return t('manualPrice.submit.waitingGps');
+    if (stationCandidates && stationCandidates.length > 0) return t('manualPrice.submit.choosePrompt');
+    if (isFabMode && !capturedBase64) return t('manualPrice.submit.takePhoto');
+    return t('manualPrice.submit.firstChoose');
   };
 
   return (
@@ -608,10 +604,10 @@ export function ManualPriceModal({
         <div className="flex-between" style={{ marginBottom: '24px' }}>
           <h2 className="heading-1">
             {activeStation
-              ? `Uued hinnad: ${getStationDisplayName(activeStation)}`
+              ? t('manualPrice.title.update', { station: getStationDisplayName(activeStation) })
               : isManualMode
-                ? 'Sisesta hinnad'
-                : 'Skaneeri Hinnad'}
+                ? t('manualPrice.title.manual')
+                : t('manualPrice.title.scan')}
           </h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -638,7 +634,7 @@ export function ManualPriceModal({
               }}
             >
               <RefreshCw size={14} />
-              Proovi uuesti
+              {t('manualPrice.gps.retry')}
             </button>
           </div>
         )}
@@ -651,7 +647,7 @@ export function ManualPriceModal({
             padding: '12px 4px', marginBottom: '8px'
           }}>
             <Loader2 size={16} className="spin" />
-            Kontrollin asukohta...
+            {t('manualPrice.gps.checking')}
           </div>
         )}
 
@@ -664,7 +660,10 @@ export function ManualPriceModal({
           }}>
             <MapPin size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-              Oled tanklast {submitDistanceKm < 10 ? submitDistanceKm.toFixed(1) : Math.round(submitDistanceKm)} km kaugusel. Hindu saab sisestada vaid tankla juures (kuni {MAX_SUBMIT_KM} km).
+              {t('manualPrice.gps.tooFar', {
+                distance: submitDistanceKm < 10 ? submitDistanceKm.toFixed(1) : Math.round(submitDistanceKm),
+                max: MAX_SUBMIT_KM,
+              })}
             </span>
             <button
               type="button"
@@ -677,7 +676,7 @@ export function ManualPriceModal({
               }}
             >
               <RefreshCw size={14} />
-              Värskenda
+              {t('manualPrice.gps.refresh')}
             </button>
           </div>
         )}
@@ -690,7 +689,7 @@ export function ManualPriceModal({
             display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem', color: 'var(--color-text)'
           }}>
             <Check size={18} style={{ color: '#22c55e', flexShrink: 0 }} />
-            Hinnad salvestatud
+            {t('manualPrice.manual.savedConfirm')}
           </div>
         )}
 
@@ -714,7 +713,7 @@ export function ManualPriceModal({
               }}
             >
               <RefreshCw size={14} />
-              Proovi uuesti
+              {t('manualPrice.gps.retry')}
             </button>
           </div>
         )}
@@ -727,7 +726,7 @@ export function ManualPriceModal({
             padding: '12px 4px', marginBottom: '8px'
           }}>
             <Loader2 size={16} className="spin" />
-            Asukohta tuvastatakse...
+            {t('manualPrice.gps.detecting')}
           </div>
         )}
 
@@ -741,7 +740,7 @@ export function ManualPriceModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <MapPin size={18} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
               <span style={{ fontSize: '0.95rem', color: 'var(--color-text)' }}>
-                500 m raadiuses ei leitud ühtegi jaama.
+                {t('manualPrice.manual.noStations')}
               </span>
             </div>
             <button
@@ -755,7 +754,7 @@ export function ManualPriceModal({
               }}
             >
               <RefreshCw size={14} />
-              Värskenda asukohta
+              {t('manualPrice.manual.refreshLocation')}
             </button>
           </div>
         )}
@@ -780,7 +779,7 @@ export function ManualPriceModal({
             }}
           >
             <ArrowLeft size={14} />
-            Muuda jaama
+            {t('manualPrice.manual.changeStation')}
           </button>
         )}
 
@@ -806,24 +805,24 @@ export function ManualPriceModal({
                 fontSize: '0.85rem', color: 'var(--color-text)',
                 display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center'
               }}>
-                <span style={{ fontWeight: 600, color: '#22c55e' }}>AI tuvastas hinnad:</span>
-                {FUEL_TYPES.filter(t => prices[t]).map(t => (
-                  <span key={t} style={{ display: 'inline-flex', gap: '4px' }}>
-                    <span style={{ color: 'var(--color-text-muted)' }}>{t === 'Bensiin 95' ? '95' : t === 'Bensiin 98' ? '98' : t === 'Diisel' ? 'D' : t}</span>
-                    <span style={{ fontWeight: 600 }}>€{prices[t]}</span>
+                <span style={{ fontWeight: 600, color: '#22c55e' }}>{t('manualPrice.picker.aiDetected')}</span>
+                {FUEL_TYPES.filter(ft => prices[ft]).map(ft => (
+                  <span key={ft} style={{ display: 'inline-flex', gap: '4px' }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>{ft === 'Bensiin 95' ? '95' : ft === 'Bensiin 98' ? '98' : ft === 'Diisel' ? 'D' : ft}</span>
+                    <span style={{ fontWeight: 600 }}>€{prices[ft]}</span>
                   </span>
                 ))}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                {isManualMode ? 'Vali tankla, millele hindu lisad:' : 'Vali tankla, mille hindu uuendad:'}
+                {isManualMode ? t('manualPrice.picker.promptManual') : t('manualPrice.picker.promptUpdate')}
               </p>
               {isManualMode && (
                 <button
                   type="button"
                   onClick={() => { capture('manual_location_refreshed'); captureLocationForManual(); }}
-                  title="Värskenda asukohta"
+                  title={t('manualPrice.picker.refreshTitle')}
                   style={{
                     background: 'transparent', border: '1px solid var(--color-surface-border)',
                     color: 'var(--color-text-muted)', borderRadius: '8px',
@@ -833,7 +832,7 @@ export function ManualPriceModal({
                   }}
                 >
                   <RefreshCw size={12} />
-                  Värskenda
+                  {t('manualPrice.gps.refresh')}
                 </button>
               )}
             </div>
@@ -887,7 +886,7 @@ export function ManualPriceModal({
           >
             <img
               src={capturedPreviewUrl}
-              alt="Skaneeritud pilt"
+              alt={t('manualPrice.camera.scannedAlt')}
               style={{
                 maxWidth: '100%', maxHeight: '100%', objectFit: 'contain',
                 borderRadius: 'var(--radius-md)'
@@ -902,7 +901,7 @@ export function ManualPriceModal({
           {capturedPreviewUrl && (
             <img
               src={capturedPreviewUrl}
-              alt="Skaneeritud pilt"
+              alt={t('manualPrice.camera.scannedAlt')}
               onClick={() => onPhotoExpandedChange(true)}
               style={{
                 width: '80px', height: '80px', objectFit: 'cover',
@@ -928,7 +927,7 @@ export function ManualPriceModal({
               }}
             >
               <Upload size={20} />
-              Laadi pilt
+              {t('manualPrice.camera.uploadFromGallery')}
             </button>
           )}
           <button
@@ -943,7 +942,11 @@ export function ManualPriceModal({
             }}
           >
             {isAnalyzing ? <Loader2 size={20} className="spin" /> : <Camera size={20} />}
-            {retryStatus || (isAnalyzing ? 'AI loeb...' : capturedPreviewUrl ? 'Uuesti' : station ? 'Kaameraga' : 'Skaneeri hinnad kaameraga')}
+            {retryStatus || (isAnalyzing
+              ? t('manualPrice.camera.aiReading')
+              : capturedPreviewUrl
+                ? t('manualPrice.camera.retake')
+                : station ? t('manualPrice.camera.scanPrices') : t('manualPrice.camera.scanPricesLong'))}
           </button>
         </div>
         )}
@@ -977,7 +980,11 @@ export function ManualPriceModal({
           }}>
             <AlertTriangle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-              Pildil tundub olevat <strong>{brandMismatch.detected}</strong> tankla, aga uuendad <strong>{activeStation?.name}</strong> hindu. Kontrolli, kas hinnad on õiged.
+              <Trans
+                i18nKey="manualPrice.brandMismatch.message"
+                values={{ detected: brandMismatch.detected, station: activeStation?.name }}
+                components={{ strong: <strong /> }}
+              />
             </span>
             <button onClick={() => setBrandMismatch(null)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0 }}>
               <X size={16} />
@@ -995,20 +1002,20 @@ export function ManualPriceModal({
             <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
               {scanError === 'QUOTA_EXCEEDED'
-                ? 'AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.'
+                ? t('manualPrice.scanError.quotaExceeded')
                 : scanError === 'AI_UPSTREAM_BUSY'
-                ? 'AI teenus on hetkel ülekoormatud. Proovi paari minuti pärast uuesti või sisesta hinnad käsitsi.'
+                ? t('manualPrice.scanError.aiUpstreamBusy')
                 : scanError === 'NO_NEARBY_STATION'
-                ? `Läheduses (${MAX_SUBMIT_KM}km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.`
+                ? t('manualPrice.scanError.noNearbyStation', { max: MAX_SUBMIT_KM })
                 : scanError === 'NO_GPS'
-                ? 'GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.'
+                ? t('manualPrice.scanError.noGps')
                 : scanError === 'NO_PRICES_READ'
-                ? 'AI ei suutnud hindu pildilt lugeda. Proovi otse totemi ette, väldi peegeldusi, või sisesta hinnad käsitsi.'
+                ? t('manualPrice.scanError.noPricesRead')
                 : scanError === 'TIMEOUT'
-                ? 'AI võttis liiga kaua aega. Proovi uuesti või sisesta hinnad käsitsi.'
+                ? t('manualPrice.scanError.timeout')
                 : scanError === 'NETWORK'
-                ? 'Võrguviga. Kontrolli internetiühendust ja proovi uuesti.'
-                : 'AI lugemine ebaõnnestus. Sisesta hinnad käsitsi või proovi uuesti.'}
+                ? t('manualPrice.scanError.network')
+                : t('manualPrice.scanError.generic')}
             </span>
             <button
               onClick={handleManualRetry}
@@ -1021,7 +1028,7 @@ export function ManualPriceModal({
               }}
             >
               <RefreshCw size={14} />
-              Proovi uuesti
+              {t('manualPrice.gps.retry')}
             </button>
           </div>
         )}

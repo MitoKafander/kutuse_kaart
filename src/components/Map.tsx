@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Polyline } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
@@ -1413,13 +1414,14 @@ function RecenterButton({
   setFollowMode: (m: 'off' | 'located' | 'locked') => void;
 }) {
   const map = useMap();
+  const { t } = useTranslation();
   const color = followMode === 'locked' ? '#22c55e'
     : followMode === 'located' ? 'var(--color-primary)'
     : 'var(--color-text-muted)';
   return (
     <button
       className="glass-fab flex-center"
-      title={followMode === 'locked' ? 'GPS lukus — vajuta uuesti vabastamiseks' : followMode === 'located' ? 'Vajuta uuesti GPS lukustamiseks' : 'Leia minu asukoht'}
+      title={followMode === 'locked' ? t('map.gps.lockedTip') : followMode === 'located' ? t('map.gps.tapToLock') : t('map.gps.findLocation')}
       style={{
         position: 'absolute',
         bottom: 'calc(30px + env(safe-area-inset-bottom))',
@@ -1474,6 +1476,7 @@ function RecenterButton({
 // awkward (one hand, gloves, phone mounted on a dashboard).
 function ZoomControls() {
   const map = useMap();
+  const { t } = useTranslation();
   const baseStyle = {
     position: 'absolute' as const,
     left: '20px',
@@ -1489,7 +1492,7 @@ function ZoomControls() {
     <>
       <button
         className="flex-center"
-        title="Suumi sisse"
+        title={t('map.zoom.in')}
         onClick={(e) => { e.stopPropagation(); map.zoomIn(); }}
         style={{ ...baseStyle, bottom: 'calc(140px + env(safe-area-inset-bottom))' }}
       >
@@ -1497,7 +1500,7 @@ function ZoomControls() {
       </button>
       <button
         className="flex-center"
-        title="Suumi välja"
+        title={t('map.zoom.out')}
         onClick={(e) => { e.stopPropagation(); map.zoomOut(); }}
         style={{ ...baseStyle, bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
       >

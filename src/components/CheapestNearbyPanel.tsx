@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessage, getBrand } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand } from '../utils';
 import type { LoyaltyDiscounts, GeolocationErrorKind } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -18,11 +19,11 @@ interface NearbyResult {
   reportedAt: string;
 }
 
-function getTimeAgo(dateStr: string): string {
+function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const h = (Date.now() - new Date(dateStr).getTime()) / 3600000;
-  if (h < 1) return 'just nüüd';
-  if (h < 24) return `${Math.floor(h)}h tagasi`;
-  return `${Math.floor(h / 24)}p tagasi`;
+  if (h < 1) return t('time.justNow');
+  if (h < 24) return t('time.hoursAgo', { count: Math.floor(h) });
+  return t('time.daysAgo', { count: Math.floor(h / 24) });
 }
 
 function findCheapestNearby(
@@ -112,6 +113,7 @@ export function CheapestNearbyPanel({
   onStationSelect?: (station: any) => void;
   fallbackLocation?: { lat: number; lon: number } | null;
 }) {
+  const { t } = useTranslation();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationErrorKind, setLocationErrorKind] = useState<GeolocationErrorKind | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -189,7 +191,7 @@ export function CheapestNearbyPanel({
         <div className="flex-between">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <MapPin size={20} style={{ color: 'var(--color-primary)' }} />
-            <h2 className="heading-1">Odavaim kütus sinu lähedal</h2>
+            <h2 className="heading-1">{t('cheapest.title')}</h2>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -202,13 +204,13 @@ export function CheapestNearbyPanel({
             display: 'flex', alignItems: 'center', gap: '6px',
           }}>
             <MapPin size={12} />
-            <span>Kasutan kaardi asukohta — värske GPS pole veel saabunud.</span>
+            <span>{t('cheapest.fallbackLocation')}</span>
           </div>
         )}
 
         {/* Radius selector */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginRight: '4px' }}>Raadius:</span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginRight: '4px' }}>{t('cheapest.radius')}</span>
           {RADIUS_OPTIONS.map(r => (
             <button
               key={r}
@@ -232,7 +234,7 @@ export function CheapestNearbyPanel({
         {/* Preferred brands indicator */}
         {preferredBrands.length > 0 && (
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>Filtreeritud:</span>
+            <span>{t('cheapest.filtered')}</span>
             <span style={{ color: 'var(--color-primary)', fontWeight: '500' }}>{preferredBrands.join(', ')}</span>
           </div>
         )}
@@ -241,7 +243,7 @@ export function CheapestNearbyPanel({
         {isLocating && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-text-muted)', padding: '16px 0' }}>
             <Loader2 size={20} className="spin" />
-            <span>Otsib sinu asukohta...</span>
+            <span>{t('cheapest.locating')}</span>
           </div>
         )}
 
@@ -252,12 +254,12 @@ export function CheapestNearbyPanel({
             fontSize: '0.9rem', color: 'var(--color-text)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>
-            <span>{geolocationErrorMessage(locationErrorKind)}</span>
+            <span>{t(geolocationErrorMessageKey(locationErrorKind))}</span>
             <button onClick={requestLocation} style={{
               background: 'var(--color-primary)', color: 'white', border: 'none',
               borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
               fontSize: '0.82rem', fontWeight: 600, flexShrink: 0,
-            }}>Proovi uuesti</button>
+            }}>{t('cheapest.retry')}</button>
           </div>
         )}
 
@@ -267,7 +269,7 @@ export function CheapestNearbyPanel({
             borderRadius: 'var(--radius-md)', padding: '14px 16px',
             fontSize: '0.9rem', color: 'var(--color-text-muted)', textAlign: 'center'
           }}>
-            Selles raadiuses hindu ei leitud. Proovi suuremat raadiust.
+            {t('cheapest.empty')}
           </div>
         )}
 
@@ -310,13 +312,13 @@ export function CheapestNearbyPanel({
                   </span>
                 )}
                 {result.discounted && (
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f59e0b' }}>★ sooduskaart</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f59e0b' }}>★ {t('cheapest.loyaltyTag')}</span>
                 )}
                 <span style={{
                   fontSize: '0.75rem', fontWeight: '600',
                   color: result.isFresh ? 'var(--color-fresh)' : 'var(--color-warning)',
                 }}>
-                  {result.isFresh ? '● värske' : '● vana'}
+                  {result.isFresh ? `● ${t('cheapest.fresh')}` : `● ${t('cheapest.stale')}`}
                 </span>
               </div>
               <div style={{ fontSize: '0.88rem', color: 'var(--color-text)', fontWeight: '500', marginTop: '2px' }}>
@@ -326,9 +328,9 @@ export function CheapestNearbyPanel({
                 <span>{result.distanceKm < 1
                   ? `${Math.round(result.distanceKm * 1000)} m`
                   : `${result.distanceKm.toFixed(1)} km`}</span>
-                <span style={{ color: 'var(--color-text-muted)' }}>• {getTimeAgo(result.reportedAt)}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>• {getTimeAgo(result.reportedAt, t)}</span>
                 {result.outsideRadius && (
-                  <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>• väljaspool raadiust</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>• {t('cheapest.outsideRadius')}</span>
                 )}
               </div>
             </div>
@@ -350,7 +352,7 @@ export function CheapestNearbyPanel({
               }}
             >
               <Navigation size={16} />
-              Mine
+              {t('cheapest.go')}
             </button>
           </div>
         ))}
