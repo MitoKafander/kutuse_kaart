@@ -17,7 +17,7 @@ export function PrivacyModal({ isOpen, onClose, onOpenTerms }: { isOpen: boolean
     strong: <strong />,
     em: <em />,
     br: <br />,
-    a: <a href="mailto:info@kyts.ee" style={{ color: 'var(--color-primary)' }} />,
+    a: <a href="mailto:info@mikkrosin.ee" style={{ color: 'var(--color-primary)' }} />,
   };
 
   return (

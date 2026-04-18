@@ -546,7 +546,7 @@
   },
   "privacy": {
     "title": "Privacy Policy",
-    "s1": "<strong>1. Data controller</strong><br/>Kyts is a community project managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@kyts.ee</a>. Website: www.kyts.ee.",
+    "s1": "<strong>1. Data controller</strong><br/>Kyts is a community project managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@mikkrosin.ee</a>. Website: www.kyts.ee.",
     "s2": {
       "title": "2. What data we collect",
       "item1": "<strong>Account data:</strong> email address and a Supabase-generated user ID (if you sign in with Google OAuth or email).",
@@ -587,13 +587,13 @@
       "item4": "Analytics (PostHog): 1 year, aggregated.",
       "item5": "Rate limit counters (Upstash): 1 day."
     },
-    "s10": "<strong>10. Your rights (GDPR)</strong><br/>You have the right to: access, correct, delete, and export your data. You may also object to processing and file a complaint with the Estonian Data Protection Inspectorate (aki.ee). For requests, write to: <a>info@kyts.ee</a>. We respond within 30 days.",
+    "s10": "<strong>10. Your rights (GDPR)</strong><br/>You have the right to: access, correct, delete, and export your data. You may also object to processing and file a complaint with the Estonian Data Protection Inspectorate (aki.ee). For requests, write to: <a>info@mikkrosin.ee</a>. We respond within 30 days.",
     "s11": "<strong>11. Changes</strong><br/>We will notify you of major changes within the app. The valid version is always this document.",
     "seeAlsoTerms": "See also: <termsBtn>Terms of Service</termsBtn>."
   },
   "terms": {
     "title": "Terms of Service",
-    "s1": "<strong>1. Service provider</strong><br/>Kyts is a community-based fuel price map managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@kyts.ee</a>.",
+    "s1": "<strong>1. Service provider</strong><br/>Kyts is a community-based fuel price map managed by Mikk Rosin (Estonia) as a private individual. Contact: <a>info@mikkrosin.ee</a>.",
     "s2": "<strong>2. Description of service</strong><br/>Kyts allows users to share and view fuel prices of Estonian stations. Prices are submitted by users and therefore may be outdated, inaccurate, or wrong. The service is provided \"<em>as-is</em>\", without any warranties regarding accuracy, availability, or suitability.",
     "s3": "<strong>3. Account and usage</strong><br/>Creating an account (Google OAuth or email) is optional, but required for submitting prices and voting. One person must only have one account. You are responsible for your account's security.",
     "s4": {

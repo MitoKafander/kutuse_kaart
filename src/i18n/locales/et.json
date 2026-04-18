@@ -497,7 +497,7 @@
   },
   "privacy": {
     "title": "Privaatsuspoliitika",
-    "s1": "<strong>1. Vastutav töötleja</strong><br/>Kyts on kogukonnaprojekt, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@kyts.ee</a>. Koduleht: www.kyts.ee.",
+    "s1": "<strong>1. Vastutav töötleja</strong><br/>Kyts on kogukonnaprojekt, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@mikkrosin.ee</a>. Koduleht: www.kyts.ee.",
     "s2": {
       "title": "2. Milliseid andmeid me kogume",
       "item1": "<strong>Konto andmed:</strong> e-posti aadress ja Supabase poolt genereeritud kasutaja ID (kui logid sisse Google OAuth'iga või e-postiga).",
@@ -538,13 +538,13 @@
       "item4": "Analüütika (PostHog): 1 aasta, agregeeritud.",
       "item5": "Rate limit counter'id (Upstash): 1 päev."
     },
-    "s10": "<strong>10. Sinu õigused (GDPR)</strong><br/>Sul on õigus: oma andmeid vaadata, parandada, kustutada ning eksportida. Samuti esitada vastuväide töötlemisele ja kaebus Andmekaitse Inspektsioonile (aki.ee). Taotluse jaoks kirjuta: <a>info@kyts.ee</a>. Vastame 30 päeva jooksul.",
+    "s10": "<strong>10. Sinu õigused (GDPR)</strong><br/>Sul on õigus: oma andmeid vaadata, parandada, kustutada ning eksportida. Samuti esitada vastuväide töötlemisele ja kaebus Andmekaitse Inspektsioonile (aki.ee). Taotluse jaoks kirjuta: <a>info@mikkrosin.ee</a>. Vastame 30 päeva jooksul.",
     "s11": "<strong>11. Muudatused</strong><br/>Olulistest muudatustest teavitame rakenduses. Kehtiv versioon on alati käesolev dokument.",
     "seeAlsoTerms": "Vaata ka: <termsBtn>Kasutustingimused</termsBtn>."
   },
   "terms": {
     "title": "Kasutustingimused",
-    "s1": "<strong>1. Teenuse osutaja</strong><br/>Kyts on kogukonnapõhine kütusehindade kaart, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@kyts.ee</a>.",
+    "s1": "<strong>1. Teenuse osutaja</strong><br/>Kyts on kogukonnapõhine kütusehindade kaart, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>info@mikkrosin.ee</a>.",
     "s2": "<strong>2. Teenuse kirjeldus</strong><br/>Kyts võimaldab kasutajatel jagada ja vaadata Eesti tanklate kütusehindu. Hinnad on kasutajate esitatud ja seetõttu võivad olla aegunud, ebatäpsed või valed. Teenus pakutakse põhimõttel \"<em>nagu on</em>\" (as-is), ilma igasuguste garantiideta täpsuse, kättesaadavuse ega sobivuse kohta.",
     "s3": "<strong>3. Konto ja kasutamine</strong><br/>Konto loomine (Google OAuth või e-post) on vabatahtlik, kuid vajalik hindade esitamiseks ja hääletamiseks. Ühel inimesel peab olema ainult üks konto. Vastutad oma konto turvalisuse eest.",
     "s4": {
