@@ -6,19 +6,30 @@ import type { CelebrationEvent } from '../hooks/useRegionProgress';
 // once). Pure CSS animations — the keyframes live in src/index.css.
 
 export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEvent[]; onDrain: () => void }) {
+  const [stationQueue, setStationQueue] = useState<CelebrationEvent[]>([]);
   const [toastQueue, setToastQueue] = useState<CelebrationEvent[]>([]);
   const [maakondQueue, setMaakondQueue] = useState<CelebrationEvent[]>([]);
   const drainedRef = useRef(false);
 
   useEffect(() => {
     if (!events.length) return;
+    const stations = events.filter(e => e.kind === 'station');
     const toasts = events.filter(e => e.kind === 'parish');
     const maakonnad = events.filter(e => e.kind === 'maakond');
+    if (stations.length)  setStationQueue(q => [...q, ...stations]);
     if (toasts.length)    setToastQueue(q => [...q, ...toasts]);
     if (maakonnad.length) setMaakondQueue(q => [...q, ...maakonnad]);
     // Drain parent queue so we don't process the same events twice.
     if (!drainedRef.current) { drainedRef.current = true; onDrain(); drainedRef.current = false; }
   }, [events, onDrain]);
+
+  const activeStation = stationQueue[0];
+  useEffect(() => {
+    if (!activeStation) return;
+    // Matches the `slideInFade` keyframe duration on `.discovery-toast`.
+    const t = setTimeout(() => setStationQueue(q => q.slice(1)), 2000);
+    return () => clearTimeout(t);
+  }, [activeStation]);
 
   const activeToast = toastQueue[0];
   useEffect(() => {
@@ -36,6 +47,72 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 
   return (
     <>
+      {activeStation && activeStation.kind === 'station' && (
+        <div
+          className="discovery-toast"
+          style={{
+            position: 'fixed',
+            left: '20px',
+            // Sits above the parish toast slot so they can coexist if a
+            // single submission triggers both (new station + completed vald).
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 160px)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            borderRadius: 12,
+            padding: '10px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+            border: '1px solid var(--color-primary)',
+            backdropFilter: 'blur(12px)',
+            zIndex: 4000,
+            minWidth: 220,
+            maxWidth: 'calc(100vw - 40px)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>🎉</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+                Uus jaam avastatud!
+              </span>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  color: 'var(--color-text-muted)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {activeStation.stationName}
+              </span>
+            </div>
+          </div>
+          {activeStation.total > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <div style={{
+                width: '100%', height: 4, borderRadius: 2,
+                background: 'var(--color-surface-border)', overflow: 'hidden',
+              }}>
+                <div
+                  className="discovery-progress-fill"
+                  style={{
+                    width: `${Math.min(100, (activeStation.done / activeStation.total) * 100)}%`,
+                    height: '100%',
+                    background: 'var(--color-primary)',
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                {activeStation.done} / {activeStation.total} jaama kogutud
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeToast && activeToast.kind === 'parish' && (
         <div
           className="discovery-toast"

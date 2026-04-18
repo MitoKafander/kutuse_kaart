@@ -481,11 +481,22 @@ function App() {
     return set;
   }, [prices, session?.user?.id]);
 
+  // Station id -> display name, used by useRegionProgress to label the
+  // new-station discovery toast. Rebuilt only when the station list changes.
+  const stationNamesMap = useMemo(() => {
+    const m = new globalThis.Map<string, string>();
+    for (const s of stations) {
+      m.set(String(s.id), getStationDisplayName(s));
+    }
+    return m;
+  }, [stations]);
+
   const { progress: regionProgress, events: celebrationEvents, consumeEvents } = useRegionProgress({
     contributedStationIds: userContributedStationIds,
     maakonnad,
     parishes,
     stationParishMap,
+    stationNamesMap,
     emitCelebrations: showDiscoveryMap,
   });
 

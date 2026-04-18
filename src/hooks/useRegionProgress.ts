@@ -22,23 +22,25 @@ export type RegionProgress = {
 
 export type CelebrationEvent =
   | { kind: 'parish';   id: number; name: string; maakondName: string; emoji: string }
-  | { kind: 'maakond';  id: number; name: string; emoji: string };
+  | { kind: 'maakond';  id: number; name: string; emoji: string }
+  | { kind: 'station';  stationId: string; stationName: string; done: number; total: number };
 
 const CELEBRATED_KEY = 'kyts-celebrated-regions';
 
-type CelebratedStore = { parishes: number[]; maakonnad: number[] };
+type CelebratedStore = { parishes: number[]; maakonnad: number[]; stations: string[] };
 
 function readCelebrated(): CelebratedStore {
   try {
     const raw = localStorage.getItem(CELEBRATED_KEY);
-    if (!raw) return { parishes: [], maakonnad: [] };
+    if (!raw) return { parishes: [], maakonnad: [], stations: [] };
     const parsed = JSON.parse(raw);
     return {
       parishes: Array.isArray(parsed?.parishes) ? parsed.parishes : [],
       maakonnad: Array.isArray(parsed?.maakonnad) ? parsed.maakonnad : [],
+      stations: Array.isArray(parsed?.stations) ? parsed.stations : [],
     };
   } catch {
-    return { parishes: [], maakonnad: [] };
+    return { parishes: [], maakonnad: [], stations: [] };
   }
 }
 
@@ -59,11 +61,16 @@ export function useRegionProgress(opts: {
   parishes: Parish[];
   // station -> parish mapping (only EE stations with parish_id)
   stationParishMap: Map<string, number>;
-  // Gate celebration emission on the toggle being live; no toasts fire when
-  // the user has not opened Avastuskaart yet.
+  // station -> display name, used for station-discovery toast copy. Only EE
+  // stations need to be covered — LV border stations don't have parish_id so
+  // they won't fire discovery events anyway.
+  stationNamesMap: Map<string, string>;
+  // Gate parish/maakond celebrations on the Avastuskaart toggle being live.
+  // Station-discovery toasts fire independently — they're tied to the act of
+  // submitting a price, not to the map-view mode.
   emitCelebrations: boolean;
 }): { progress: RegionProgress; events: CelebrationEvent[]; consumeEvents: () => void } {
-  const { contributedStationIds, maakonnad, parishes, stationParishMap, emitCelebrations } = opts;
+  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations } = opts;
 
   const progress = useMemo<RegionProgress>(() => {
     // Sort maakonnad Estonian-alpha for consistent grid order.
@@ -147,20 +154,28 @@ export function useRegionProgress(opts: {
   const seededRef = useRef(false);
   const lastParishesRef = useRef<Set<number>>(new Set());
   const lastMaakonnadRef = useRef<Set<number>>(new Set());
+  const lastStationsRef = useRef<Set<string>>(new Set());
   const [events, setEvents] = useState<CelebrationEvent[]>([]);
 
   useEffect(() => {
     // First run after we have real data: seed the "already celebrated" store
-    // with whatever is currently complete, so toggle-ON for an existing
-    // contributor is silent. Do nothing if regions haven't loaded yet.
+    // with whatever is currently complete/contributed, so toggle-ON (for
+    // regions) or first launch (for stations) is silent for existing
+    // contributors. Do nothing if regions haven't loaded yet.
     if (!seededRef.current) {
       if (progress.maakonnad.total === 0) return; // wait for region catalog
       const store = readCelebrated();
       const seedParishes = new Set([...store.parishes, ...progress.completedParishIds]);
       const seedMaakonnad = new Set([...store.maakonnad, ...progress.completedMaakondIds]);
-      writeCelebrated({ parishes: Array.from(seedParishes), maakonnad: Array.from(seedMaakonnad) });
+      const seedStations = new Set([...store.stations, ...contributedStationIds]);
+      writeCelebrated({
+        parishes: Array.from(seedParishes),
+        maakonnad: Array.from(seedMaakonnad),
+        stations: Array.from(seedStations),
+      });
       lastParishesRef.current = new Set(progress.completedParishIds);
       lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
+      lastStationsRef.current = new Set(contributedStationIds);
       seededRef.current = true;
       return;
     }
@@ -168,9 +183,26 @@ export function useRegionProgress(opts: {
     const store = readCelebrated();
     const celebratedParishes = new Set(store.parishes);
     const celebratedMaakonnad = new Set(store.maakonnad);
+    const celebratedStations = new Set(store.stations);
 
     const newEvents: CelebrationEvent[] = [];
     const maakondById = new Map(maakonnad.map(m => [m.id, m]));
+
+    // Station discoveries fire first so their toast queues ahead of any
+    // region-completion toast triggered by the same submission.
+    for (const sid of contributedStationIds) {
+      if (lastStationsRef.current.has(sid)) continue;
+      if (celebratedStations.has(sid)) continue;
+      celebratedStations.add(sid);
+      const name = stationNamesMap.get(sid) || 'Uus jaam';
+      newEvents.push({
+        kind: 'station',
+        stationId: sid,
+        stationName: name,
+        done: contributedStationIds.size,
+        total: progress.stations.total,
+      });
+    }
 
     for (const pid of progress.completedParishIds) {
       if (lastParishesRef.current.has(pid)) continue;
@@ -197,13 +229,23 @@ export function useRegionProgress(opts: {
       });
     }
 
-    if (newEvents.length || celebratedParishes.size !== store.parishes.length || celebratedMaakonnad.size !== store.maakonnad.length) {
-      writeCelebrated({ parishes: Array.from(celebratedParishes), maakonnad: Array.from(celebratedMaakonnad) });
+    const storeDirty =
+      newEvents.length ||
+      celebratedParishes.size !== store.parishes.length ||
+      celebratedMaakonnad.size !== store.maakonnad.length ||
+      celebratedStations.size !== store.stations.length;
+    if (storeDirty) {
+      writeCelebrated({
+        parishes: Array.from(celebratedParishes),
+        maakonnad: Array.from(celebratedMaakonnad),
+        stations: Array.from(celebratedStations),
+      });
     }
     lastParishesRef.current = new Set(progress.completedParishIds);
     lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
+    lastStationsRef.current = new Set(contributedStationIds);
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
-  }, [progress, maakonnad, emitCelebrations]);
+  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations]);
 
   const consumeEvents = () => setEvents([]);
   return { progress, events, consumeEvents };

@@ -155,6 +155,15 @@ body {
   animation: slideInFade 2s ease-out forwards;
 }
 
+@keyframes discoveryProgressGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.discovery-progress-fill {
+  transform-origin: left;
+  animation: discoveryProgressGrow 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
 @keyframes particleBurst {
   0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
   15%  { opacity: 1; }

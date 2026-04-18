@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Station-discovery celebration - 2026-04-18
+
+### Added ✨
+- 🟡 **New-station discovery now fires a celebration toast with progress bar** (`src/hooks/useRegionProgress.ts`, `src/components/CelebrationOverlay.tsx`, `src/components/Map.tsx` → `App.tsx` via `stationNamesMap`, `src/index.css`): when a user reports a price for a station they've never contributed to before, a glass-style toast slides in above the parish-completion slot with "🎉 Uus jaam avastatud!", the station name, and a thin animated progress bar showing `X / Y jaama kogutud`. Feature request from a friend: *"Uut jaama esmakordselt avastades (hindu raporteerides) näidata animatsiooni ja progressi"*. `CelebrationEvent` union extended with a `station` kind (stationId, stationName, done, total); `CelebratedStore` in localStorage now persists a `stations: string[]` array alongside parishes/maakonnad so returning contributors don't get 50 retroactive toasts on first mount (seed absorbs current `contributedStationIds`). Station events fire FIRST in the diff loop so if a single submission triggers both a new-station + a vald-completion, the station toast queues ahead of the parish toast. Critically, station events are NOT gated on the Avastuskaart toggle — they're tied to the act of *submitting a price*, not to the map-view mode (so a user who never discovers Avastuskaart still gets rewarded for reporting). Overlay adds a `stationQueue` state + `activeStation` with 2000 ms auto-dismiss matching the `slideInFade` 2 s keyframe; toast sits at `bottom: calc(env(safe-area-inset-bottom, 0px) + 160px)` — 70 px above the parish slot so they can coexist on the same submission. Progress bar uses a new `@keyframes discoveryProgressGrow` (`scaleX 0→1` with `transform-origin: left`, 0.8 s cubic-bezier, 0.2 s delay) so the fill visibly "grows in" rather than flashing. `stationNamesMap` is a new `useMemo` over the full stations catalog in `App.tsx`, passed into `useRegionProgress` purely for toast copy.
+
+---
+
 ## [Unreleased] - Zoom +/− buttons on the map - 2026-04-18
 
 ### Added ✨
