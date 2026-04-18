@@ -15,6 +15,14 @@ interface NearbyResult {
   isFresh: boolean;
   outsideRadius: boolean;
   discounted: boolean;
+  reportedAt: string;
+}
+
+function getTimeAgo(dateStr: string): string {
+  const h = (Date.now() - new Date(dateStr).getTime()) / 3600000;
+  if (h < 1) return 'just nüüd';
+  if (h < 24) return `${Math.floor(h)}h tagasi`;
+  return `${Math.floor(h / 24)}p tagasi`;
 }
 
 function findCheapestNearby(
@@ -56,6 +64,7 @@ function findCheapestNearby(
         isFresh: isPriceFresh(recentPrice, allVotes),
         outsideRadius: dist > radiusKm,
         discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
+        reportedAt: recentPrice.reported_at,
       };
 
       if (dist <= radiusKm) {
@@ -313,10 +322,11 @@ export function CheapestNearbyPanel({
               <div style={{ fontSize: '0.88rem', color: 'var(--color-text)', fontWeight: '500', marginTop: '2px' }}>
                 {getStationDisplayName(result.station)}
               </div>
-              <div style={{ fontSize: '0.78rem', color: result.outsideRadius ? 'var(--color-warning)' : 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontSize: '0.78rem', color: result.outsideRadius ? 'var(--color-warning)' : 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                 <span>{result.distanceKm < 1
                   ? `${Math.round(result.distanceKm * 1000)} m`
                   : `${result.distanceKm.toFixed(1)} km`}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>• {getTimeAgo(result.reportedAt)}</span>
                 {result.outsideRadius && (
                   <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>• väljaspool raadiust</span>
                 )}

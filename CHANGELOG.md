@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Cheapest-nearby price age - 2026-04-18
+
+### Added ✨
+- 🟢 **Cheapest-nearby rows now show price age** (`src/components/CheapestNearbyPanel.tsx`): each fuel row's metadata line (distance, "väljaspool raadiust") gains a compact "Xh tagasi" / "Xp tagasi" / "just nüüd" timestamp threaded from `prices.reported_at`. The fresh/vana pill already communicates the <24h threshold — this adds the exact recency so users can tell apart "2h old" from "22h old" at a glance when choosing between similarly-priced stations. Local `getTimeAgo` helper mirrors the format already used in ProfileDrawer — not lifted to `utils.ts` yet (one more caller before it's worth the move).
+
+---
+
 ## [Unreleased] - Tutorial onboarding - 2026-04-17
 
 ### Added ✨
