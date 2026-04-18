@@ -325,11 +325,13 @@ function DiscoveryParishLayer({
   focusedMaakondId,
   zoom,
   isLight,
+  completedParishIds,
 }: {
   geo: any | null;
   focusedMaakondId: number | null;
   zoom: number;
   isLight: boolean;
+  completedParishIds?: Set<number> | null;
 }) {
   const map = useMap();
   const layerRef = useRef<any>(null);
@@ -348,6 +350,16 @@ function DiscoveryParishLayer({
     opacity: 0.95,
     fillOpacity: 0,
     dashArray: '3,3',
+  }), [isLight]);
+  // Completed valds get a soft green wash — visible enough to feel like a
+  // reward, subtle enough not to drown out the dot layer on top. Stroke and
+  // fill intensities shift with the basemap so both themes read as "collected".
+  const completedStyle = useMemo(() => ({
+    color: isLight ? '#15803d' : '#4ade80',
+    weight: 1.6,
+    opacity: 0.95,
+    fillColor: isLight ? '#22c55e' : '#4ade80',
+    fillOpacity: isLight ? 0.18 : 0.22,
   }), [isLight]);
 
   useEffect(() => {
@@ -371,15 +383,21 @@ function DiscoveryParishLayer({
     layer.eachLayer((sublayer: any) => {
       const props = sublayer.feature?.properties;
       const inFocused = focusedMaakondId != null && props?.maakond_id === focusedMaakondId;
-      if (inFocused) {
-        sublayer.setStyle(focusedParishStyle);
-      } else if (showAtZoom) {
-        sublayer.setStyle(dimStyle);
-      } else {
+      const isCompleted = props?.id != null && completedParishIds?.has(props.id);
+      // Completed trumps focused trumps dim. Still gated by showAtZoom /
+      // focused-maakond visibility — a country-scale wash of green specks
+      // would be noise, not reward.
+      if (!showAtZoom && !inFocused) {
         sublayer.setStyle(hiddenStyle);
+      } else if (isCompleted) {
+        sublayer.setStyle(completedStyle);
+      } else if (inFocused) {
+        sublayer.setStyle(focusedParishStyle);
+      } else {
+        sublayer.setStyle(dimStyle);
       }
     });
-  }, [zoom, focusedMaakondId, dimStyle, focusedParishStyle, hiddenStyle]);
+  }, [zoom, focusedMaakondId, completedParishIds, dimStyle, focusedParishStyle, completedStyle, hiddenStyle]);
 
   return null;
 }
@@ -735,6 +753,7 @@ export function Map({
   focusedMaakondStationIds = null,
   maakondGeo = null,
   parishGeo = null,
+  completedParishIds = null,
 }: {
   stations: any[],
   prices: any[],
@@ -759,6 +778,7 @@ export function Map({
   focusedMaakondStationIds?: Set<string> | null,
   maakondGeo?: any | null,
   parishGeo?: any | null,
+  completedParishIds?: Set<number> | null,
 }) {
   // In discovery mode the "cheapest highlight" would collapse the map to a
   // single dot, which breaks the whole footprint view. Force it off here
@@ -1213,6 +1233,7 @@ export function Map({
               focusedMaakondId={focusedMaakondId}
               zoom={zoomLevel}
               isLight={isLight}
+              completedParishIds={completedParishIds}
             />
             <DiscoveryRegionsLayer
               geo={maakondGeo}

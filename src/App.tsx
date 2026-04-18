@@ -489,6 +489,25 @@ function App() {
     emitCelebrations: showDiscoveryMap,
   });
 
+  // Parish ids where every station has been contributed by whichever user's
+  // footprint is currently on screen (mine when self-viewing, viewedUser
+  // otherwise). Used to paint a subtle completion highlight on the map.
+  // Kept separate from useRegionProgress because that hook fires celebration
+  // toasts off self-progress only.
+  const displayCompletedParishIds = useMemo(() => {
+    const source = viewedUser ? viewedUser.stationIds : userContributedStationIds;
+    const perParish = new globalThis.Map<number, number>();
+    for (const sid of source) {
+      const pid = stationParishMap.get(sid);
+      if (pid != null) perParish.set(pid, (perParish.get(pid) || 0) + 1);
+    }
+    const done = new Set<number>();
+    for (const p of parishes) {
+      if (p.station_count > 0 && (perParish.get(p.id) || 0) >= p.station_count) done.add(p.id);
+    }
+    return done;
+  }, [viewedUser, userContributedStationIds, parishes, stationParishMap]);
+
   // Station ids that belong to the focused maakond. Null when no focus set
   // (Map.tsx treats null as "no filter").
   const focusedMaakondStationIds = useMemo(() => {
@@ -608,6 +627,7 @@ function App() {
         focusedMaakondStationIds={focusedMaakondStationIds}
         maakondGeo={maakondGeo}
         parishGeo={parishGeo}
+        completedParishIds={displayCompletedParishIds}
       />
 
       {(showDiscoveryMap || viewedUser) && (

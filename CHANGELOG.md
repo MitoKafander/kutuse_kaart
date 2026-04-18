@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Avastuskaart completed-vald highlight - 2026-04-18
+
+### Added ✨
+- 🟢 **Completed valds (parishes) get a soft green wash on the Avastuskaart** (`src/components/Map.tsx`, `src/App.tsx`): when every station inside a vald has a contribution from the currently-displayed user's footprint, the vald polygon fills with a subtle green tint and gets a brighter stroke — a visual reward-indicator to complement the existing 🌱→♾️ title tiers. Style shifts with basemap: `#22c55e` fill @ 18% opacity / `#15803d` stroke on light, `#4ade80` fill @ 22% / `#4ade80` stroke on dark. The highlight respects the existing zoom/focus visibility gate (zoom ≥ 9 or inside a focused maakond) — a country-scale wash of green specks would be noise, not reward. `completedParishIds` is computed inline in `App.tsx` from whichever station-set is on screen (mine when self-viewing, `viewedUser.stationIds` when inspecting someone else's footprint), deliberately separate from `useRegionProgress`'s self-only `completedParishIds` which gates celebration toasts.
+
+---
+
 ## [Unreleased] - Hepa Kehtna dedupe - 2026-04-18
 
 ### Fixed 🐛
