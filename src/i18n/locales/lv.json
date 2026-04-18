@@ -17,6 +17,10 @@
       "linn": "pilsēta"
     }
   },
+  "price": {
+    "reportedBy": "Ziņoja: {{name}}",
+    "anonymous": "Anonīms"
+  },
   "auth": {
     "heading": {
       "signIn": "Pierakstīties",

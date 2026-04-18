@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
-import type { LoyaltyDiscounts } from '../utils';
+import type { LoyaltyDiscounts, ReporterMap } from '../utils';
 import { supabase } from '../supabase';
-import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter } from '../utils';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 
@@ -106,6 +106,7 @@ export function ProfileDrawer({
   stations,
   prices,
   allVotes,
+  reporterMap,
   userVotesCount,
   userPricesCount,
   defaultFuelType,
@@ -149,6 +150,7 @@ export function ProfileDrawer({
   stations: any[];
   prices: any[];
   allVotes: any[];
+  reporterMap?: ReporterMap;
   userVotesCount: number;
   userPricesCount: number;
   defaultFuelType: string | null;
@@ -529,6 +531,11 @@ export function ProfileDrawer({
                           {timeLabel && (
                             <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px' }}>
                               <Clock size={10} /> {timeLabel}
+                            </div>
+                          )}
+                          {latestPrice && !expired && (
+                            <div style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '2px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t('price.reportedBy', { name: getReporter(latestPrice.user_id, reporterMap, t) })}
                             </div>
                           )}
                         </div>

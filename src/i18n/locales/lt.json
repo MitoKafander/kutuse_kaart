@@ -17,6 +17,10 @@
       "linn": "miestas"
     }
   },
+  "price": {
+    "reportedBy": "Pranešė: {{name}}",
+    "anonymous": "Anonimas"
+  },
   "auth": {
     "heading": {
       "signIn": "Prisijungti",

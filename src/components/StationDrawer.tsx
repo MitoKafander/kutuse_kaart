@@ -4,25 +4,27 @@ import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } f
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
-import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel } from '../utils';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, type ReporterMap } from '../utils';
 
-export function StationDrawer({ 
-  station, 
+export function StationDrawer({
+  station,
   prices,
   allVotes,
+  reporterMap,
   session,
-  isOpen, 
-  onClose, 
+  isOpen,
+  onClose,
   onOpenPriceForm,
   onVoteSubmitted,
   isFavorite,
   onToggleFavorite
-}: { 
-  station: any, 
+}: {
+  station: any,
   prices: any[],
   allVotes: any[],
+  reporterMap?: ReporterMap,
   session: any,
-  isOpen: boolean, 
+  isOpen: boolean,
   onClose: () => void,
   onOpenPriceForm: () => void,
   onVoteSubmitted: () => void,
@@ -218,6 +220,13 @@ export function StationDrawer({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: getAgeColor(recentPrice), marginTop: '8px' }}>
                   <Clock size={12} />
                   <span>{getAgeText(recentPrice)}</span>
+                </div>
+              )}
+
+              {/* Reporter credit — attribution for who submitted this price. */}
+              {recentPrice && !isDisputed && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t('price.reportedBy', { name: getReporter(recentPrice.user_id, reporterMap, t) })}
                 </div>
               )}
 

@@ -18,8 +18,9 @@ Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced app
 7. **Reputation & Voting**: Users must securely log in to submit a price or vote (Thumbs Up / Thumbs Down) on existing data. A strict one-vote-per-user database constraint ensures community integrity.
 8. **Geolocation**: One-tap locator passively traces your device's GPS hardware for instant 0-second re-centering.
 9. **First-run Tutorial**: A 5-card deck (welcome → cheapest → report → leaderboard → Avastuskaart) auto-opens after GDPR consent for new users, persisted via localStorage, and revisitable anytime via Profile → Seaded → Ava tutvustus.
-10. **GDPR Compliance**: Estonian-language Terms of Service + Privacy Policy, cookieless analytics (no consent banner required for tracking), and a first-visit acknowledgement for the essential auth cookies.
-11. **Ops Hardening**: Per-IP + global rate limits on the AI endpoint (Upstash Redis), error monitoring (Sentry), and anonymous product analytics (PostHog EU Cloud, memory persistence — no cookies).
+10. **Multi-language UI**: Full react-i18next support for Estonian, English, Russian, Finnish, Latvian, and Lithuanian. Auto-detects browser language on first visit, persists choice to `user_profiles.language`, and revisitable via Profile → Seaded → Keel or the first-run tutorial card. Legal modals (Privacy / Terms) are ET + EN only — other locales fall back to EN with a notice.
+11. **GDPR Compliance**: Estonian + English Terms of Service + Privacy Policy, cookieless analytics (no consent banner required for tracking), and a first-visit acknowledgement for the essential auth cookies.
+12. **Ops Hardening**: Per-IP + global rate limits on the AI endpoint (Upstash Redis), error monitoring (Sentry), and anonymous product analytics (PostHog EU Cloud, memory persistence — no cookies).
 
 ## Tech Stack
 *   **Frontend**: React + TypeScript + Vite
@@ -45,12 +46,13 @@ If you wish to spin up a local instance of the application:
 3. Run `npm install` then `npm run dev`.
 
 ### Database Schema
-The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase32_mustakivi_alexela.sql`).
+The project schema relies on five tables governed by Row Level Security (RLS). Migrations live in `migrations/` and are applied manually in the Supabase SQL editor (`schema.sql` through `schema_phase35_language_pref.sql`).
 *   `stations` (Base OpenStreetMap derived locations + `country` column for EE/LV segmentation)
 *   `prices` (Tied to user_id for submission tracking; carries `submitted_lat`/`submitted_lon` + a `BEFORE INSERT` trigger enforcing 1 km submitter proximity)
 *   `votes` (Unique constraint across user_id + price_id)
-*   `user_profiles` (Default fuel type, preferred brands, auto-open toggle per user)
+*   `user_profiles` (Default fuel type, preferred brands, auto-open toggle, `language` preference per user)
 *   `user_favorites` (Bookmarked stations per user)
+*   `feedback` (Insert-only user-feedback channel; triage via Supabase SQL editor)
 
 ---
 *Built via an autonomous pairing session for advanced web application architecture.*

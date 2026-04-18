@@ -17,6 +17,10 @@
       "linn": "linn"
     }
   },
+  "price": {
+    "reportedBy": "Teatas: {{name}}",
+    "anonymous": "Anonüümne"
+  },
   "auth": {
     "heading": {
       "signIn": "Logi sisse",

@@ -17,6 +17,10 @@
       "linn": "город"
     }
   },
+  "price": {
+    "reportedBy": "Сообщил: {{name}}",
+    "anonymous": "Аноним"
+  },
   "auth": {
     "heading": {
       "signIn": "Войти",

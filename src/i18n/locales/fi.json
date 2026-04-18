@@ -17,6 +17,10 @@
       "linn": "kaupunki"
     }
   },
+  "price": {
+    "reportedBy": "Ilmoittanut: {{name}}",
+    "anonymous": "Anonyymi"
+  },
   "auth": {
     "heading": {
       "signIn": "Kirjaudu sisään",

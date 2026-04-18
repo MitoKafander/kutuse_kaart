@@ -4,9 +4,9 @@ import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
-  getCurrentPositionAsync, getBrand,
+  getCurrentPositionAsync, getBrand, getReporter,
 } from '../utils';
-import type { LoyaltyDiscounts } from '../utils';
+import type { LoyaltyDiscounts, ReporterMap } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const CORRIDOR_OPTIONS = [1, 2, 5];
@@ -20,6 +20,7 @@ interface RouteResult {
   isFresh: boolean;
   corridorKm: number;
   progressKm: number; // distance from origin along straight-line
+  reporterId: string | null;
 }
 
 type SearchHit = { displayName: string; lat: number; lon: number };
@@ -57,6 +58,7 @@ export function RoutePlanModal({
   stations,
   prices,
   allVotes,
+  reporterMap,
   loyaltyDiscounts = {},
   applyLoyalty = false,
   selectedFuelType,
@@ -68,6 +70,7 @@ export function RoutePlanModal({
   stations: any[];
   prices: any[];
   allVotes: any[];
+  reporterMap?: ReporterMap;
   loyaltyDiscounts?: LoyaltyDiscounts;
   applyLoyalty?: boolean;
   selectedFuelType: string | null;
@@ -183,6 +186,7 @@ export function RoutePlanModal({
         isFresh: isPriceFresh(recent, allVotes),
         corridorKm: corridor,
         progressKm: haversineKm(origin.lat, origin.lon, station.latitude, station.longitude),
+        reporterId: recent.user_id ?? null,
       });
     }
     out.sort((a, b) => a.price - b.price);
@@ -368,6 +372,9 @@ export function RoutePlanModal({
                   : t('route.distance.fromRouteKm', { km: r.corridorKm.toFixed(1) })}
                 {' · '}
                 {t('route.distance.fromOriginKm', { km: r.progressKm.toFixed(0) })}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {t('price.reportedBy', { name: getReporter(r.reporterId, reporterMap, t) })}
               </div>
             </div>
             <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${r.station.latitude},${r.station.longitude}`, '_blank'); }}

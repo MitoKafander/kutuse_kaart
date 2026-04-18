@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, Filter, LogIn, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
+import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { StationDrawer } from './components/StationDrawer';
 import { ManualPriceModal } from './components/ManualPriceModal';
@@ -86,6 +86,7 @@ function App() {
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
   const [votes, setVotes] = useState<any[]>([]);
+  const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
   
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -286,6 +287,14 @@ function App() {
 
     const { data: vt } = await supabase.from('votes').select('*').limit(10000);
     if (vt) setVotes(vt);
+
+    // Reporter display-name map for price attribution (phase 36 view).
+    const { data: reps } = await supabase.from('v_reporters').select('user_id, display_name');
+    if (reps) {
+      const map: Record<string, string> = {};
+      reps.forEach((r: any) => { if (r.user_id && r.display_name) map[r.user_id] = r.display_name; });
+      setReporterMap(map);
+    }
 
     const currentUser = activeSession || session;
     if (currentUser?.user) {
@@ -697,18 +706,37 @@ function App() {
           </div>
           
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px', alignItems: 'center' }}>
             <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
               <Filter size={20} />
             </button>
             
             {session ? (
-              <button onClick={() => setIsProfileOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-                <UserCircle size={20} />
+              <button onClick={() => setIsProfileOpen(true)} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: session.user?.user_metadata?.avatar_url ? 'transparent' : 'var(--color-primary)',
+                color: '#fff', border: 'none', cursor: 'pointer', padding: 0,
+                margin: '-8px -10px -8px 0', overflow: 'hidden', flexShrink: 0,
+                boxShadow: session.user?.user_metadata?.avatar_url ? 'none' : '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                {session.user?.user_metadata?.avatar_url ? (
+                  <img src={session.user.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                ) : (
+                  <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>
+                    {displayName ? displayName.charAt(0).toUpperCase() : (session.user.email ? session.user.email.charAt(0).toUpperCase() : '?')}
+                  </span>
+                )}
               </button>
             ) : (
-              <button onClick={() => setIsAuthOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-                <LogIn size={20} />
+              <button onClick={() => setIsAuthOpen(true)} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'var(--color-surface-alpha-12)',
+                color: 'var(--color-text)', border: 'none', cursor: 'pointer', padding: 0,
+                margin: '-8px -10px -8px 0', flexShrink: 0
+              }}>
+                <UserCircle size={20} />
               </button>
             )}
           </div>
@@ -958,12 +986,13 @@ function App() {
         hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
       />
       
-      <StationDrawer 
-        station={selectedStation} 
-        prices={prices.filter(p => p.station_id === selectedStation?.id)} 
+      <StationDrawer
+        station={selectedStation}
+        prices={prices.filter(p => p.station_id === selectedStation?.id)}
         allVotes={votes}
+        reporterMap={reporterMap}
         session={session}
-        isOpen={!!selectedStation && !isPriceModalOpen} 
+        isOpen={!!selectedStation && !isPriceModalOpen}
         onClose={() => setSelectedStation(null)}
         onOpenPriceForm={handleOpenPriceForm}
         onVoteSubmitted={() => loadData()}
@@ -1025,6 +1054,7 @@ function App() {
         stations={stations}
         prices={prices}
         allVotes={votes}
+        reporterMap={reporterMap}
         userVotesCount={votes.filter(v => v.user_id === session?.user?.id).length}
         userPricesCount={prices.filter(p => p.user_id === session?.user?.id).length}
         defaultFuelType={defaultFuelType}
@@ -1107,6 +1137,7 @@ function App() {
         stations={stations}
         prices={prices}
         allVotes={votes}
+        reporterMap={reporterMap}
         radius={nearbyRadius}
         onRadiusChange={setNearbyRadius}
         preferredBrands={preferredBrands}
@@ -1123,6 +1154,7 @@ function App() {
           stations={stations}
           prices={prices}
           allVotes={votes}
+          reporterMap={reporterMap}
           loyaltyDiscounts={loyaltyDiscounts}
           applyLoyalty={applyLoyalty}
           selectedFuelType={selectedFuelType}

@@ -17,6 +17,10 @@
       "linn": "City"
     }
   },
+  "price": {
+    "reportedBy": "Reported by: {{name}}",
+    "anonymous": "Anonymous"
+  },
   "auth": {
     "heading": {
       "signIn": "Log in",

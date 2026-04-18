@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand } from '../utils';
-import type { LoyaltyDiscounts, GeolocationErrorKind } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand, getReporter } from '../utils';
+import type { LoyaltyDiscounts, GeolocationErrorKind, ReporterMap } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
@@ -17,6 +17,7 @@ interface NearbyResult {
   outsideRadius: boolean;
   discounted: boolean;
   reportedAt: string;
+  reporterId: string | null;
 }
 
 function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
@@ -66,6 +67,7 @@ function findCheapestNearby(
         outsideRadius: dist > radiusKm,
         discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
         reportedAt: recentPrice.reported_at,
+        reporterId: recentPrice.user_id ?? null,
       };
 
       if (dist <= radiusKm) {
@@ -92,6 +94,7 @@ export function CheapestNearbyPanel({
   stations,
   prices,
   allVotes,
+  reporterMap,
   radius,
   onRadiusChange,
   preferredBrands = [],
@@ -105,6 +108,7 @@ export function CheapestNearbyPanel({
   stations: any[];
   prices: any[];
   allVotes: any[];
+  reporterMap?: ReporterMap;
   radius: number;
   onRadiusChange: (r: number) => void;
   preferredBrands?: string[];
@@ -332,6 +336,9 @@ export function CheapestNearbyPanel({
                 {result.outsideRadius && (
                   <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>• {t('cheapest.outsideRadius')}</span>
                 )}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {t('price.reportedBy', { name: getReporter(result.reporterId, reporterMap, t) })}
               </div>
             </div>
 

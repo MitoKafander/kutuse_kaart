@@ -46,6 +46,23 @@ export function stripRegionSuffix(name: string): string {
   return name.slice(0, lastSpace);
 }
 
+export type ReporterMap = Record<string, string>;
+
+// Reporter name for a price. userId may be null on legacy pre-auth rows;
+// returns the locale's price.anonymous string in that case. The `reporterMap`
+// is populated from the v_reporters view (phase 36) once on load — absent
+// entries fall back to the same anonymous label, so the UI stays readable
+// even if the view race-loses to the prices fetch.
+export function getReporter(
+  userId: string | null | undefined,
+  reporterMap: ReporterMap | null | undefined,
+  t: (key: string) => string
+): string {
+  if (!userId) return t('price.anonymous');
+  const name = reporterMap?.[userId];
+  return name && name.trim() ? name : t('price.anonymous');
+}
+
 export function priceUnit(_type: string): string {
   return '€/L';
 }
