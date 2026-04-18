@@ -6,7 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
-import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand } from '../utils';
+import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -497,6 +497,7 @@ function RegionLabelsLayer({
   heightRatio: number;
 }) {
   const map = useMap();
+  const { t, i18n } = useTranslation();
   const layerRef = useRef<L.LayerGroup | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -533,9 +534,11 @@ function RegionLabelsLayer({
 
     for (const f of geo.features || []) {
       const bb = f.properties?.bbox;
-      const name: string | undefined = f.properties?.name;
-      if (!bb || !name) continue;
+      const rawName: string | undefined = f.properties?.name;
+      if (!bb || !rawName) continue;
       if (featureVisible && !featureVisible(f, zoom)) continue;
+
+      const name = localizeRegionName(rawName, t);
 
       const [minLng, minLat, maxLng, maxLat] = bb;
       const featBounds = L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
@@ -561,7 +564,7 @@ function RegionLabelsLayer({
       });
       L.marker(center, { icon, interactive: false, keyboard: false }).addTo(group);
     }
-  }, [geo, tick, isLight, map, featureVisible, fontSize, fontWeight, widthRatio, heightRatio]);
+  }, [geo, tick, isLight, map, featureVisible, fontSize, fontWeight, widthRatio, heightRatio, i18n.language, t]);
 
   return null;
 }
