@@ -16,6 +16,7 @@ import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
+import { UpdateBanner } from './components/UpdateBanner';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 
 // Lazy-load panels that aren't on the critical first-paint path to keep the
@@ -629,6 +630,8 @@ function App() {
       )}
 
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
+
+      <UpdateBanner />
 
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000 }}>

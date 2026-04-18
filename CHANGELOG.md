@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Update banner for stale PWA users - 2026-04-18
+
+### Added ✨
+- 🟡 **"Uus versioon saadaval" banner with a Värskenda button** (`src/components/UpdateBanner.tsx`, `src/utils/swUpdate.ts`, `src/main.tsx`, `src/App.tsx`, `vite.config.ts`, `tsconfig.app.json`): switched `VitePWA` from `registerType: 'autoUpdate'` to `'prompt'` and wired a user-facing banner to the Workbox `onNeedRefresh` callback. When a new service worker finishes installing, the banner slides up at the bottom (z 2500, below modals) and a tap reloads the page via Workbox's `updateSW(true)`. `onRegisteredSW` adds a `visibilitychange` listener that force-calls `registration.update()` whenever the tab regains focus — catches the "PWA parked in the background for days" case where the default 24h SW update cycle won't have fired. A tiny module-scoped pub-sub (`swUpdate.ts`) bridges the boot-time registration in `main.tsx` to the component in the App tree. `skipWaiting` + `clientsClaim` stay — the new SW still activates fast in the background, the banner is just the visible nudge to reload for the fresh JS bundle. `vite-plugin-pwa/client` added to `tsconfig.app.json` types for the `virtual:pwa-register` module.
+
+### Key Decisions
+- **Prompt mode over autoUpdate**: autoUpdate's silent-reload-on-activate is great when it works but opaque when it doesn't — users had no feedback loop when they were still seeing old UI. A visible banner makes the "new version available" state explicit and lets the user reload on their own terms.
+- **Non-dismissible banner (for now)**: a dismiss "X" would defeat the entire premise (users sitting on stale bundles). If it proves annoying, add a dismiss that re-shows on the next session — not across reloads.
+- **z-index 2500 (above map, below modals at 3000)**: mid-submit flows shouldn't be interrupted, but the banner still needs to be visible enough to get tapped. Modals naturally break on close; banner is there when the user is back at the map shell.
+- **Service-worker events over polling a version endpoint**: polling would burn requests forever; the SW lifecycle already knows when an update is available. The `visibilitychange` hook plugs the only gap (idle tabs).
+- **Kept `skipWaiting: true`**: in prompt mode the common pattern is `skipWaiting: false` so the SW waits for user action, but a user dismissing the banner shouldn't strand them on the old version indefinitely. With skipWaiting the new SW serves fresh assets in the background; the banner is a "reload now for the fresh JS bundle" UX nudge, not a guardrail.
+
+---
+
 ## [Unreleased] - Avastuskaart stats + banner shortcut - 2026-04-18
 
 ### Changed 🔧

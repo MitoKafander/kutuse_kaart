@@ -7,7 +7,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' mode lets us show a user-facing "new version" banner via
+      // the registerSW onNeedRefresh callback in main.tsx, instead of the
+      // silent auto-reload of 'autoUpdate'. skipWaiting + clientsClaim stay
+      // so the new SW still activates fast in the background — the banner
+      // is just the UX nudge for users who keep a tab open for days.
+      registerType: 'prompt',
       includeAssets: ['logo.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon.svg'],
       // skipWaiting + clientsClaim: when a new SW is downloaded, activate it
       // immediately and take over any open tabs instead of waiting for every
