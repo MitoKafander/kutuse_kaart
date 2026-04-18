@@ -85,6 +85,7 @@ function App() {
   // Data state
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
+  const [pricesLoaded, setPricesLoaded] = useState(false);
   const [votes, setVotes] = useState<any[]>([]);
   const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
   
@@ -284,6 +285,7 @@ function App() {
     
     const { data: pr } = await supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000);
     if (pr) setPrices(pr);
+    setPricesLoaded(true);
 
     const { data: vt } = await supabase.from('votes').select('*').limit(10000);
     if (vt) setVotes(vt);
@@ -392,6 +394,7 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      setPricesLoaded(false);
       loadData(session); // Reload state if user logs in/out
       // Mobile post-OAuth viewport fix: when Google redirects back to the app
       // on Android Chrome, the visible viewport height and `100dvh` briefly
@@ -515,6 +518,8 @@ function App() {
     stationParishMap,
     stationNamesMap,
     emitCelebrations: showDiscoveryMap,
+    contributionsReady: !session || pricesLoaded,
+    userId: session?.user?.id ?? null,
   });
 
   // Parish ids where every station has been contributed by whichever user's

@@ -69,8 +69,19 @@ export function useRegionProgress(opts: {
   // Station-discovery toasts fire independently — they're tied to the act of
   // submitting a price, not to the map-view mode.
   emitCelebrations: boolean;
+  // True once `contributedStationIds` reflects the actual current-user
+  // contributions. For anonymous users this is always true (empty set is
+  // the truth); for signed-in users the parent flips it to true only after
+  // the initial prices fetch completes — otherwise we'd seed with an empty
+  // set and then fire a "new station discovered" toast for every station
+  // the user had already contributed once prices arrive.
+  contributionsReady: boolean;
+  // Current session user id (or null if anonymous). When it changes we
+  // re-seed so a fresh sign-in / sign-out doesn't mis-diff against the
+  // previous session's snapshot.
+  userId: string | null;
 }): { progress: RegionProgress; events: CelebrationEvent[]; consumeEvents: () => void } {
-  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations } = opts;
+  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId } = opts;
 
   const progress = useMemo<RegionProgress>(() => {
     // Sort maakonnad Estonian-alpha for consistent grid order.
@@ -152,18 +163,30 @@ export function useRegionProgress(opts: {
   }, [contributedStationIds, maakonnad, parishes, stationParishMap]);
 
   const seededRef = useRef(false);
+  const seededForUserRef = useRef<string | null | undefined>(undefined);
   const lastParishesRef = useRef<Set<number>>(new Set());
   const lastMaakonnadRef = useRef<Set<number>>(new Set());
   const lastStationsRef = useRef<Set<string>>(new Set());
   const [events, setEvents] = useState<CelebrationEvent[]>([]);
 
   useEffect(() => {
+    // Identity change (sign-in, sign-out, account switch) invalidates the
+    // previous snapshot — reset so the next effect run re-seeds against
+    // the new user's contributions.
+    if (seededForUserRef.current !== userId) {
+      seededRef.current = false;
+      lastParishesRef.current = new Set();
+      lastMaakonnadRef.current = new Set();
+      lastStationsRef.current = new Set();
+    }
+
     // First run after we have real data: seed the "already celebrated" store
     // with whatever is currently complete/contributed, so toggle-ON (for
     // regions) or first launch (for stations) is silent for existing
     // contributors. Do nothing if regions haven't loaded yet.
     if (!seededRef.current) {
       if (progress.maakonnad.total === 0) return; // wait for region catalog
+      if (!contributionsReady) return; // wait for prices fetch to complete
       const store = readCelebrated();
       const seedParishes = new Set([...store.parishes, ...progress.completedParishIds]);
       const seedMaakonnad = new Set([...store.maakonnad, ...progress.completedMaakondIds]);
@@ -177,6 +200,7 @@ export function useRegionProgress(opts: {
       lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
       lastStationsRef.current = new Set(contributedStationIds);
       seededRef.current = true;
+      seededForUserRef.current = userId;
       return;
     }
 
@@ -245,7 +269,7 @@ export function useRegionProgress(opts: {
     lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
     lastStationsRef.current = new Set(contributedStationIds);
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
-  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations]);
+  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId]);
 
   const consumeEvents = () => setEvents([]);
   return { progress, events, consumeEvents };
