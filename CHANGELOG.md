@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Zoom +/− buttons on the map - 2026-04-18
+
+### Added ✨
+- 🟡 **Zoom `+` / `−` buttons on the bottom-left of the map** (`src/components/Map.tsx`): pinch-to-zoom works on mobile but Leaflet has no one-finger zoom-out gesture, so users had to reach with two fingers to zoom out — awkward one-handed or with a phone on a dashboard mount. New `ZoomControls` component renders two 50 px glass-style buttons (`Plus` / `Minus` from lucide-react) mirroring the GPS locator on the right: `+` at `bottom: 140 px`, `−` at `bottom: 80 px`, both at `left: 20 px` with safe-area inset. Bottom position leaves ~40 px clear above the "Kyts" watermark so the two don't collide visually. Uses `useMap()` → `map.zoomIn() / map.zoomOut()` for the actual zoom. The stock Leaflet zoom control is still disabled (`zoomControl={false}`) — this keeps the glass-panel aesthetic and matches the FAB styling 1:1.
+
+---
+
 ## [Unreleased] - Vald hover + tap-hold highlight on Avastuskaart - 2026-04-18
 
 ### Added ✨

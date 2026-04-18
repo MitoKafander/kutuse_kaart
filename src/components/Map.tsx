@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
-import { LocateFixed, Lock } from 'lucide-react';
+import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
 import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
@@ -1366,6 +1366,7 @@ export function Map({
 
         <LocationFollower userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
         <RecenterButton userLocation={userLocation} followMode={followMode} setFollowMode={setFollowMode} />
+        <ZoomControls />
       </MapContainer>
     </div>
   );
@@ -1464,5 +1465,44 @@ function RecenterButton({
         </span>
       )}
     </button>
+  );
+}
+
+// Zoom +/− buttons on the bottom-left, mirroring the GPS locator on the
+// right. Pinch-to-zoom works on mobile but there's no one-finger zoom-out
+// gesture in Leaflet — these give users a button path when pinch is
+// awkward (one hand, gloves, phone mounted on a dashboard).
+function ZoomControls() {
+  const map = useMap();
+  const baseStyle = {
+    position: 'absolute' as const,
+    left: '20px',
+    width: '50px', height: '50px', borderRadius: '25px',
+    zIndex: 1000, cursor: 'pointer',
+    color: 'var(--color-text)',
+    background: 'var(--color-surface-alpha-06)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid var(--color-surface-alpha-12)',
+  };
+  return (
+    <>
+      <button
+        className="flex-center"
+        title="Suumi sisse"
+        onClick={(e) => { e.stopPropagation(); map.zoomIn(); }}
+        style={{ ...baseStyle, bottom: 'calc(140px + env(safe-area-inset-bottom))' }}
+      >
+        <Plus size={22} />
+      </button>
+      <button
+        className="flex-center"
+        title="Suumi välja"
+        onClick={(e) => { e.stopPropagation(); map.zoomOut(); }}
+        style={{ ...baseStyle, bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
+      >
+        <Minus size={22} />
+      </button>
+    </>
   );
 }
