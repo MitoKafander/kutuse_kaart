@@ -535,7 +535,7 @@ export function ProfileDrawer({
           {/* Gamification / Contribution Score + Badge */}
           <div className="glass-panel" style={{ padding: '16px' }}>
             <h3 style={{ fontSize: '1rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-              <Award size={18} /> Sinu Panus
+              <Award size={18} /> Sinu panus
             </h3>
             <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
               <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface)', padding: '12px', borderRadius: '8px' }}>
