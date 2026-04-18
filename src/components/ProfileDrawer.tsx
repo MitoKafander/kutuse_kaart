@@ -331,7 +331,7 @@ export function ProfileDrawer({
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserCircle size={28} color="var(--color-primary)" />
             <div>
-              <h2 className="heading-1" style={{ marginBottom: '2px' }}>Sinu Profiil</h2>
+              <h2 className="heading-1" style={{ marginBottom: '2px' }}>Sinu profiil</h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '0.8rem' }}>{badge.emoji}</span>
                 <span style={{ fontSize: '0.8rem', color: badge.color, fontWeight: '600' }}>{badge.label}</span>
@@ -633,7 +633,7 @@ export function ProfileDrawer({
               </div>
             </label>
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
-              Vaata, millised jaamad oled avastanud. Täida valdu ja maakondi, et tõusta Avastajate edetabelis.
+              Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.
             </p>
 
             <button
@@ -649,7 +649,7 @@ export function ProfileDrawer({
               <span>
                 {regionProgress.stations.done}/{regionProgress.stations.total} jaama
                 {' · '}
-                {regionProgress.parishes.done}/{regionProgress.parishes.total} valdu
+                {regionProgress.parishes.done}/{regionProgress.parishes.total} valda
                 {' · '}
                 {regionProgress.maakonnad.done}/{regionProgress.maakonnad.total} maakonda
               </span>
@@ -733,7 +733,7 @@ export function ProfileDrawer({
                 {/* Fuel type preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <Fuel size={16} /> Sinu Auto Kütus
+                    <Fuel size={16} /> Sinu auto kütus
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {["Bensiin 95", "Bensiin 98", "Diisel", "LPG"].map(type => (
@@ -770,7 +770,7 @@ export function ProfileDrawer({
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <Building2 size={16} /> Eelistatud Tanklad
+                      <Building2 size={16} /> Eelistatud tanklad
                       {preferredBrands.length > 0 && (
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
                           ({preferredBrands.length} valitud)
@@ -890,7 +890,7 @@ export function ProfileDrawer({
                 {/* Dot style preference */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                    <MapPin size={16} /> Kaardi Punktid
+                    <MapPin size={16} /> Kaardi punktid
                   </h4>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     {([
@@ -1036,7 +1036,7 @@ export function ProfileDrawer({
           {activeTab === 'profile' && userPriceEntries.length > 0 && (
             <div className="glass-panel" style={{ padding: '16px' }}>
               <h3 style={{ fontSize: '1rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                <Clock size={18} /> Viimased Tegevused
+                <Clock size={18} /> Viimased tegevused
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {userPriceEntries.map(entry => (
