@@ -24,12 +24,11 @@ export function subscribeToUpdate(cb: (v: boolean) => void): () => void {
 }
 
 export async function applyUpdate() {
-  // Workbox's updateSW(true) messages SKIP_WAITING to the new SW and reloads
-  // the page once it takes control. Fall back to a plain reload if the SW
-  // registration failed (e.g. private-mode Samsung Internet) so the user
-  // still gets the fresh HTML from the server.
-  if (applyFn) {
-    try { await applyFn(true); return; } catch { /* fall through */ }
-  }
+  // With skipWaiting: true in the Workbox config, the new SW activates
+  // immediately on install and fires controllerchange before the user
+  // taps the banner — so Workbox's updateSW(true) finds no waiting SW,
+  // no-ops, and the button hangs forever. Since the new SW is already
+  // the controller by the time we get here, a plain page reload is
+  // enough to pick up the fresh JS/HTML bundle it's now serving.
   window.location.reload();
 }

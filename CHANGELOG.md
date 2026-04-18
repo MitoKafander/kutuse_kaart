@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Update banner "Värskendan…" hang fix - 2026-04-18
+
+### Fixed 🐛
+- 🔴 **Update banner now actually reloads** (`src/utils/swUpdate.ts`): user reported tapping "Värskenda" just left the button stuck on "Värskendan…" forever. Root cause: `vite.config.ts` has `skipWaiting: true` in the Workbox config, which makes the new service worker activate immediately on install and fire `controllerchange` before the user can tap the banner. By the time `applyUpdate` runs, there's no "waiting" SW left for Workbox's `updateSW(true)` helper to message, so it silently no-ops — no reload, no error, just a hang. Fix: `applyUpdate` now unconditionally calls `window.location.reload()`. The new SW is already the controller by the time the banner shows, so a plain reload picks up the fresh JS/HTML bundle it's already serving. The `registerApply`/`applyFn` plumbing is kept in place but now unused — harmless and preserves call-sites if we ever switch back to `skipWaiting: false`.
+
+---
+
 ## [Unreleased] - iOS notch safe-area fix for top search bar - 2026-04-18
 
 ### Fixed 🐛
