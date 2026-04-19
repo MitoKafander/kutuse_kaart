@@ -175,7 +175,7 @@ export function StatisticsDrawer({
     }}>
       <div onClick={e => e.stopPropagation()} className="glass-panel animate-slide-up" style={{
         width: '100%', background: 'var(--color-bg)',
-        padding: '24px 20px calc(24px + env(safe-area-inset-bottom)) 20px',
+        padding: 'calc(24px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom)) 20px',
         display: 'flex', flexDirection: 'column', gap: 20,
         maxHeight: '92vh', overflowY: 'auto',
       }}>

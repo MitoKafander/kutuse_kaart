@@ -6,6 +6,7 @@ import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
+import { PointsToast, type PointsEvent } from './components/PointsToast';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
 import { type MarketInsight } from './components/MarketInsightDrawer';
@@ -95,6 +96,7 @@ function App() {
   const [votes, setVotes] = useState<any[]>([]);
   const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
   const [activeInsight, setActiveInsight] = useState<MarketInsight | null>(null);
+  const [pointsEvents, setPointsEvents] = useState<PointsEvent[]>([]);
   
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -284,6 +286,13 @@ function App() {
   useEffect(() => {
     if (!selectedFuelType) setHighlightCheapest(false);
   }, [selectedFuelType]);
+
+  const handlePricesSubmitted = (pointsEarned?: number) => {
+    loadData();
+    if (pointsEarned && pointsEarned > 0) {
+      setPointsEvents(q => [...q, { id: Date.now() + Math.random(), amount: pointsEarned }]);
+    }
+  };
 
   // Load Base Data & User Data
   const loadData = async (activeSession?: any) => {
@@ -706,7 +715,7 @@ function App() {
   }, [stations, searchQuery]);
 
   return (
-    <main style={{ position: 'relative', width: '100vw', height: 'var(--app-height, 100dvh)', overflow: 'hidden' }}>
+    <main style={{ position: 'relative', width: '100vw', height: 'calc(var(--app-height, 100dvh) + env(safe-area-inset-bottom))', overflow: 'hidden' }}>
       <Map
         stations={filteredStations}
         prices={prices}
@@ -754,6 +763,8 @@ function App() {
       )}
 
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
+
+      <PointsToast events={pointsEvents} onDrain={() => setPointsEvents([])} />
 
       <UpdateBanner />
 
@@ -1124,7 +1135,7 @@ function App() {
             station={selectedStation}
             isOpen={isPriceModalOpen}
             onClose={() => setIsPriceModalOpen(false)}
-            onPricesSubmitted={() => loadData()}
+            onPricesSubmitted={handlePricesSubmitted}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
           />
@@ -1136,7 +1147,7 @@ function App() {
             station={null}
             isOpen={isCameraOpen}
             onClose={() => setIsCameraOpen(false)}
-            onPricesSubmitted={() => loadData()}
+            onPricesSubmitted={handlePricesSubmitted}
             allStations={stations}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
@@ -1150,7 +1161,7 @@ function App() {
             station={null}
             isOpen={isManualOpen}
             onClose={() => setIsManualOpen(false)}
-            onPricesSubmitted={() => loadData()}
+            onPricesSubmitted={handlePricesSubmitted}
             allStations={stations}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}

@@ -191,6 +191,18 @@ body {
   animation: celebrationHeadline 2.8s ease-out forwards;
 }
 
+@keyframes pointsToastPop {
+  0%   { transform: translateY(8px) scale(0.6); opacity: 0; }
+  18%  { transform: translateY(-4px) scale(1.25); opacity: 1; }
+  35%  { transform: translateY(0) scale(1); opacity: 1; }
+  75%  { transform: translateY(-12px) scale(1); opacity: 1; }
+  100% { transform: translateY(-28px) scale(0.95); opacity: 0; }
+}
+
+.points-toast {
+  animation: pointsToastPop 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
 /* Map Overrides */
 .leaflet-container {
   font-family: var(--font-family) !important;
@@ -200,6 +212,15 @@ body {
 .leaflet-control-zoom {
   border: none !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+/* Map container is intentionally extended past the visible viewport bottom
+   by env(safe-area-inset-bottom) so the iOS PWA home-indicator strip shows
+   the map (not a white body-bg gap). Push leaflet's own bottom controls —
+   notably the OSM attribution — back up above the home indicator so they
+   stay readable instead of getting clipped by the indicator. */
+.leaflet-bottom {
+  bottom: env(safe-area-inset-bottom) !important;
 }
 
 .leaflet-control-zoom a {
