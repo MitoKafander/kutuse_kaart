@@ -67,8 +67,8 @@ function SignalChip({ fuel, signal }: { fuel: string; signal: Signal }) {
   const labelKey = `marketInsight.signal.${signal}`;
   const defaults: Record<Signal, string> = {
     buy_now: 'OSTA NÜÜD',
-    hold:    'OODA',
-    wait:    'OODA 3-5 PÄEVA',
+    hold:    'OOTA',
+    wait:    'OOTA 3-5 PÄEVA',
     neutral: 'RAHULIK',
   };
   return (
