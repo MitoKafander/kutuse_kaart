@@ -93,22 +93,54 @@ const LOCATION_DOT_ICON = L.divIcon({
   iconAnchor: [9, 9],
 });
 
-function LocationTracker({ position, setPosition }: { position: [number, number] | null, setPosition: (pos: [number, number]) => void }) {
+function LocationTracker({ followMode, position, setPosition }: { followMode: string; position: [number, number] | null; setPosition: (pos: [number, number]) => void }) {
   const map = useMap();
 
   useEffect(() => {
+    let watchActive = false;
+    const startLocating = () => {
+      if (watchActive) return;
+      watchActive = true;
+      map.locate({ watch: true, enableHighAccuracy: true });
+    };
+
+    const stopLocating = () => {
+      if (!watchActive) return;
+      watchActive = false;
+      map.stopLocate();
+    };
+
     const onLocationFound = (e: any) => {
       setPosition([e.latlng.lat, e.latlng.lng]);
     };
 
     map.on("locationfound", onLocationFound);
-    map.locate({ watch: true, enableHighAccuracy: true });
+
+    let permissionResult: any = null;
+
+    if (followMode !== 'off') {
+      startLocating();
+    } else if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(result => {
+          permissionResult = result;
+          if (result.state === 'granted') startLocating();
+          result.onchange = () => {
+             if (result.state === 'granted') startLocating();
+             else stopLocating();
+          };
+        })
+        .catch(() => {
+          // Ignore Safari unsupported error
+        });
+    }
 
     return () => {
       map.off("locationfound", onLocationFound);
-      map.stopLocate();
+      stopLocating();
+      if (permissionResult) permissionResult.onchange = null;
     };
-  }, [map, setPosition]);
+  }, [map, setPosition, followMode]);
 
   return position === null ? null : (
     <Marker position={position} icon={LOCATION_DOT_ICON} interactive={false} keyboard={false} />
@@ -1252,7 +1284,7 @@ export function Map({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url={tileUrl}
         />
-        <LocationTracker position={userLocation} setPosition={setUserLocation} />
+        <LocationTracker followMode={followMode} position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
         <ViewportBoundsTracker onChange={(b, z, m) => { setViewportBounds(b); setZoomLevel(z); setMapInstance(m); }} />
 
