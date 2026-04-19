@@ -647,7 +647,7 @@
     },
     "signal": {
       "buy_now": "BUY NOW",
-      "hold": "HOLD",
+      "hold": "OK TO BUY",
       "wait": "WAIT 3-5 DAYS",
       "neutral": "CALM"
     },

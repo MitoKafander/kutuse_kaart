@@ -647,7 +647,7 @@
     },
     "signal": {
       "buy_now": "OSTA NÜÜD",
-      "hold": "OOTA",
+      "hold": "VÕID OSTA",
       "wait": "OOTA 3-5 PÄEVA",
       "neutral": "RAHULIK"
     },
