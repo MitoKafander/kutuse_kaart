@@ -107,7 +107,10 @@ export async function translateWithGemini(
       // The @google/generative-ai v0.24.1 types may not include it, so we
       // pass it as any-cast below.
       temperature: 0.2,
-      maxOutputTokens: 800,
+      // 2 paragraphs × 2 languages + 2 headlines in Estonian (verbose
+      // language, ~1.6× English tokens). 800 was cutting mid-sentence and
+      // producing unparseable JSON — 2000 leaves comfortable headroom.
+      maxOutputTokens: 2000,
     } as any,
   });
 
