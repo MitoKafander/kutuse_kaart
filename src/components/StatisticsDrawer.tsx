@@ -283,6 +283,7 @@ export function StatisticsDrawer({
         </div>
 
         <div className="stats-grid">
+          <div className="stats-col">
         {insight && (
           <div>
             <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
@@ -343,47 +344,6 @@ export function StatisticsDrawer({
             </div>
           </div>
         )}
-
-        <div>
-          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.trends.heading')}</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {FUEL_TYPES.map(f => {
-              const pts = trendsByFuel[f];
-              if (!pts || pts.length < 2) {
-                return (
-                  <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
-                    <div style={{ fontSize: '0.85rem' }}>{fuelLabel(f, t)}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('stats.trends.notEnoughData')}</div>
-                  </div>
-                );
-              }
-              const min = Math.min(...pts.map(p => p.avg));
-              const max = Math.max(...pts.map(p => p.avg));
-              const w = 140, h = 40;
-              const first = pts[0].day, last = pts[pts.length - 1].day;
-              const xs = (d: number) => last === first ? w : ((d - first) / (last - first)) * w;
-              const ys = (v: number) => max === min ? h / 2 : h - ((v - min) / (max - min)) * h;
-              const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xs(p.day).toFixed(1)} ${ys(p.avg).toFixed(1)}`).join(' ');
-              const latest = pts[pts.length - 1].avg;
-              const earliest = pts[0].avg;
-              const delta = latest - earliest;
-              return (
-                <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{fuelLabel(f, t)}</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{latest.toFixed(3)}</span>
-                    <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>
-                      {delta >= 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(1)}¢
-                    </span>
-                  </div>
-                  <svg width={w} height={h} style={{ marginTop: 4 }}>
-                    <path d={path} fill="none" stroke="var(--color-primary)" strokeWidth={1.5} />
-                  </svg>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
         <div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
@@ -469,6 +429,49 @@ export function StatisticsDrawer({
             )}
           </div>
         </div>
+          </div>
+
+          <div className="stats-col">
+        <div>
+          <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.trends.heading')}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {FUEL_TYPES.map(f => {
+              const pts = trendsByFuel[f];
+              if (!pts || pts.length < 2) {
+                return (
+                  <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ fontSize: '0.85rem' }}>{fuelLabel(f, t)}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('stats.trends.notEnoughData')}</div>
+                  </div>
+                );
+              }
+              const min = Math.min(...pts.map(p => p.avg));
+              const max = Math.max(...pts.map(p => p.avg));
+              const w = 140, h = 40;
+              const first = pts[0].day, last = pts[pts.length - 1].day;
+              const xs = (d: number) => last === first ? w : ((d - first) / (last - first)) * w;
+              const ys = (v: number) => max === min ? h / 2 : h - ((v - min) / (max - min)) * h;
+              const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xs(p.day).toFixed(1)} ${ys(p.avg).toFixed(1)}`).join(' ');
+              const latest = pts[pts.length - 1].avg;
+              const earliest = pts[0].avg;
+              const delta = latest - earliest;
+              return (
+                <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{fuelLabel(f, t)}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{latest.toFixed(3)}</span>
+                    <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>
+                      {delta >= 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(1)}¢
+                    </span>
+                  </div>
+                  <svg width={w} height={h} style={{ marginTop: 4 }}>
+                    <path d={path} fill="none" stroke="var(--color-primary)" strokeWidth={1.5} />
+                  </svg>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <div>
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.drops.heading')}</h3>
@@ -497,8 +500,10 @@ export function StatisticsDrawer({
             )}
           </div>
         </div>
+          </div>
+        </div>
 
-        <div className="stats-grid-full">
+        <div>
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.contribution.heading')}</h3>
           <div className="glass-panel" style={{ padding: 12, borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
             {session ? (
@@ -511,7 +516,6 @@ export function StatisticsDrawer({
               <span style={{ color: 'var(--color-text-muted)' }}>{t('stats.contribution.signIn')}</span>
             )}
           </div>
-        </div>
         </div>
       </div>
     </div>

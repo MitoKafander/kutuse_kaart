@@ -181,7 +181,7 @@ export function NumbersBlock({ data }: { data: InsightData }) {
       <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 8, fontWeight: 600, letterSpacing: 0.3 }}>
         {t('marketInsight.numbers', 'NUMBRID')}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 420 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: 'var(--color-text)' }}>
             <span style={{ color: 'var(--color-text-muted)' }}>{r.label}</span>

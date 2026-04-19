@@ -130,22 +130,31 @@ body {
   justify-content: space-between;
 }
 
-/* Two-up card layout for the Statistika drawer on wide viewports. Single
-   column under 900 px so phones and iPad portrait keep the current stack;
-   paired columns above so desktop doesn't waste horizontal space. */
+/* Two-up card layout for the Statistika drawer on wide viewports. On
+   mobile the whole thing collapses into one column via the outer flex;
+   at ≥900 px the two .stats-col wrappers sit side-by-side and each
+   stacks its own children independently, so a tall card on one side
+   doesn't force a gap on the other. */
 .stats-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
-  align-items: start;
+}
+
+.stats-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 @media (min-width: 900px) {
   .stats-grid {
-    grid-template-columns: 1fr 1fr;
+    flex-direction: row;
+    align-items: flex-start;
   }
-  .stats-grid-full {
-    grid-column: 1 / -1;
+  .stats-col {
+    flex: 1;
   }
 }
 
