@@ -34,9 +34,11 @@
     <!-- No crossorigin: Leaflet fetches tiles as plain <img>, not CORS-attributed
          <img crossorigin>. PSI flags crossorigin preconnects as "unused" if the
          actual requests don't match, so we deliberately omit it here. -->
+    <!-- Only a+b preconnected: Leaflet rotates across a/b/c subdomains, but the
+         initial viewport typically pulls from just two. PSI flagged the c.
+         hint as unused + over the 4-hint budget; dropping it frees headroom. -->
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 

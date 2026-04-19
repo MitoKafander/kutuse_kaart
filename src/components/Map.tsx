@@ -40,6 +40,16 @@ function toRgba(color: string, alpha: number): string {
 // Create a tappable dot with a transparent hit area larger than the visible dot.
 // This makes dots much easier to tap on phones without making them visually bigger.
 const DOT_HIT_SIZE = 36;
+// Invisible text supplied inside every custom-dot so Leaflet's outer
+// .leaflet-marker-icon (role="button", tabindex=0) computes an accessible
+// name from its descendants. Without this, axe/PSI flag the dots as
+// "button without accessible name". Prefer the station's own name; fall
+// back to the generic "Tankla" when a caller doesn't thread one through.
+const SR_ONLY_STYLE = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function createDotIcon({
   fillColor,
   fillOpacity,
@@ -47,6 +57,7 @@ function createDotIcon({
   strokeColor,
   strokeWidth = 0,
   stationId,
+  ariaLabel = 'Tankla',
 }: {
   fillColor: string;
   fillOpacity: number;
@@ -54,18 +65,20 @@ function createDotIcon({
   strokeColor?: string;
   strokeWidth?: number;
   stationId?: string | number;
+  ariaLabel?: string;
 }): L.DivIcon {
   const bg = toRgba(fillColor, fillOpacity);
   const border = strokeWidth > 0 && strokeColor
     ? `border: ${strokeWidth}px solid ${strokeColor};`
     : '';
   const sid = stationId != null ? ` data-sid="${String(stationId).replace(/"/g, '')}"` : '';
+  const label = escapeHtml(ariaLabel);
   return L.divIcon({
     className: 'custom-dot',
     html: `<div${sid} style="
       width: ${DOT_HIT_SIZE}px; height: ${DOT_HIT_SIZE}px;
       display: flex; align-items: center; justify-content: center;
-    "><div style="
+    "><span style="${SR_ONLY_STYLE}">${label}</span><div style="
       width: ${visibleDiameter}px; height: ${visibleDiameter}px;
       border-radius: 50%;
       background: ${bg};
@@ -950,9 +963,14 @@ export function Map({
   const [zoomLevel, setZoomLevel] = useState<number>(7);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
+  // Drop the {r} retina suffix so we always fetch @1x (256×256) PNG tiles
+  // instead of @2x (512×512). CartoCDN doesn't serve WebP, so @2x was
+  // costing ~350 KiB per viewport on LCP-critical paths (PSI called out
+  // 348 KiB savings). Basemap detail is sparse — label sharpness comes
+  // from the marker overlays, not the raster.
   const tileUrl = mapStyle === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
 
   // Per-fuel most-recent valid price per station (applies freshness + vote filters).
   // isFresh is carried for pill styling. null if no showable price for that fuel.
@@ -1126,6 +1144,7 @@ export function Map({
         strokeColor: ringColor,
         strokeWidth: isSelected ? 2 : 1.5,
         stationId: station.id,
+        ariaLabel: station.name,
       });
       fadedIconCache.set(key, icon);
     }
@@ -1169,7 +1188,7 @@ export function Map({
         strokeWidth = 3;
       }
 
-      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth, stationId: station.id });
+      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth, stationId: station.id, ariaLabel: station.name });
       freshIconCache.set(key, icon);
     }
     return icon;
@@ -1215,6 +1234,7 @@ export function Map({
           strokeColor,
           strokeWidth: isSelected ? 3 : 0,
           stationId: station.id,
+          ariaLabel: station.name,
         });
         discoveryFreshCache.set(key, icon);
       }
@@ -1235,6 +1255,7 @@ export function Map({
         strokeColor: ringColor,
         strokeWidth: isSelected ? 2 : 1.5,
         stationId: station.id,
+        ariaLabel: station.name,
       });
       discoveryFadedCache.set(key, icon);
     }
