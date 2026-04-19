@@ -635,5 +635,29 @@
       "filter": "Open filters",
       "profile": "Open profile"
     }
+  },
+  "marketInsight": {
+    "title": "Market Overview",
+    "confidence": "Confidence",
+    "numbers": "NUMBERS",
+    "disclaimer": "Indicative — not investment advice",
+    "fuel": {
+      "diesel": "Diesel",
+      "gasoline95": "Petrol 95"
+    },
+    "signal": {
+      "buy_now": "BUY NOW",
+      "hold": "HOLD",
+      "wait": "WAIT 3-5 DAYS",
+      "neutral": "CALM"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D avg",
+      "kyts95": "Kyts 95 avg",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7d",
+      "rbob": "NYMEX RBOB 7d"
+    }
   }
 }

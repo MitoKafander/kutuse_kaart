@@ -556,5 +556,29 @@
       "filter": "Atvērt filtrus",
       "profile": "Atvērt profilu"
     }
+  },
+  "marketInsight": {
+    "title": "Tirgus pārskats",
+    "confidence": "Pārliecība",
+    "numbers": "SKAITĻI",
+    "disclaimer": "Indikatīvs — nav ieguldījumu padoms",
+    "fuel": {
+      "diesel": "Dīzelis",
+      "gasoline95": "Benzīns 95"
+    },
+    "signal": {
+      "buy_now": "UZPILDI TAGAD",
+      "hold": "GAIDI",
+      "wait": "GAIDI 3-5 DIENAS",
+      "neutral": "MIERĪGI"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D vid.",
+      "kyts95": "Kyts 95 vid.",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7d",
+      "rbob": "NYMEX RBOB 7d"
+    }
   }
 }

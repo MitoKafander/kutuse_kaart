@@ -556,5 +556,29 @@
       "filter": "Atidaryti filtrus",
       "profile": "Atidaryti profilį"
     }
+  },
+  "marketInsight": {
+    "title": "Rinkos apžvalga",
+    "confidence": "Tikrumas",
+    "numbers": "SKAIČIAI",
+    "disclaimer": "Orientacinis — ne investavimo patarimas",
+    "fuel": {
+      "diesel": "Dyzelinas",
+      "gasoline95": "Benzinas 95"
+    },
+    "signal": {
+      "buy_now": "PILK DABAR",
+      "hold": "LAUK",
+      "wait": "LAUK 3-5 DIENAS",
+      "neutral": "RAMU"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D vid.",
+      "kyts95": "Kyts 95 vid.",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7d",
+      "rbob": "NYMEX RBOB 7d"
+    }
   }
 }

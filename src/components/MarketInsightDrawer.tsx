@@ -191,9 +191,13 @@ export function MarketInsightDrawer({
   const { t, i18n } = useTranslation();
   if (!isOpen || !insight) return null;
 
-  const isEn = i18n.language === 'en';
-  const content  = (isEn && insight.content_en)  ? insight.content_en  : insight.content_et;
-  const headline = (isEn && insight.headline_en) ? insight.headline_en : insight.headline_et;
+  // Gemini only writes Estonian + English for now. For non-Estonian users
+  // (RU/FI/LV/LT) English is a better default than showing Estonian prose in
+  // an otherwise localized UI — most Baltic users read English comfortably.
+  // A v2 would extend the translator to generate all six locales.
+  const preferEn = i18n.language !== 'et';
+  const content  = (preferEn && insight.content_en)  ? insight.content_en  : insight.content_et;
+  const headline = (preferEn && insight.headline_en) ? insight.headline_en : insight.headline_et;
 
   // Legacy rows have no signal_* fields; fall back to the original layout.
   const hasSignals = !!(insight.signal_diesel || insight.signal_gasoline);
@@ -209,10 +213,10 @@ export function MarketInsightDrawer({
 
   const getRelativeTime = (dateStr: string) => {
     const diffHours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-    if (diffHours < 1) return t('common.justNow', 'just nüüd');
-    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours, defaultValue: `${diffHours}h tagasi` });
+    if (diffHours < 1) return t('time.justNow', 'just nüüd');
+    if (diffHours < 24) return t('time.hoursAgo', { count: diffHours, defaultValue: `${diffHours}h tagasi` });
     const days = Math.floor(diffHours / 24);
-    return t('common.daysAgo', { count: days, defaultValue: `${days}p tagasi` });
+    return t('time.daysAgo', { count: days, defaultValue: `${days}p tagasi` });
   };
 
   return (

@@ -556,5 +556,29 @@
       "filter": "Открыть фильтры",
       "profile": "Открыть профиль"
     }
+  },
+  "marketInsight": {
+    "title": "Обзор рынка",
+    "confidence": "Уверенность",
+    "numbers": "ЦИФРЫ",
+    "disclaimer": "Ориентировочно — не инвестиционная рекомендация",
+    "fuel": {
+      "diesel": "Дизель",
+      "gasoline95": "Бензин 95"
+    },
+    "signal": {
+      "buy_now": "ЗАПРАВЛЯЙСЯ",
+      "hold": "ЖДИ",
+      "wait": "ЖДИ 3-5 ДНЕЙ",
+      "neutral": "СПОКОЙНО"
+    },
+    "row": {
+      "kytsDiesel": "Kyts Д среднее",
+      "kyts95": "Kyts 95 среднее",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7д",
+      "rbob": "NYMEX RBOB 7д"
+    }
   }
 }

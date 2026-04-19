@@ -556,5 +556,29 @@
       "filter": "Avaa suodattimet",
       "profile": "Avaa profiili"
     }
+  },
+  "marketInsight": {
+    "title": "Markkinakatsaus",
+    "confidence": "Varmuus",
+    "numbers": "LUVUT",
+    "disclaimer": "Viitteellinen — ei sijoitusneuvo",
+    "fuel": {
+      "diesel": "Diesel",
+      "gasoline95": "Bensa 95"
+    },
+    "signal": {
+      "buy_now": "TANKKAA NYT",
+      "hold": "ODOTA",
+      "wait": "ODOTA 3-5 PV",
+      "neutral": "RAUHALLINEN"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D ka",
+      "kyts95": "Kyts 95 ka",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7pv",
+      "rbob": "NYMEX RBOB 7pv"
+    }
   }
 }

@@ -635,5 +635,29 @@
       "filter": "Ava filtrid",
       "profile": "Ava profiil"
     }
+  },
+  "marketInsight": {
+    "title": "Turu Ülevaade",
+    "confidence": "Kindel",
+    "numbers": "NUMBRID",
+    "disclaimer": "Indikatiivne — mitte investeerimisnõuanne",
+    "fuel": {
+      "diesel": "Diisel",
+      "gasoline95": "Bensiin 95"
+    },
+    "signal": {
+      "buy_now": "OSTA NÜÜD",
+      "hold": "OODA",
+      "wait": "OODA 3-5 PÄEVA",
+      "neutral": "RAHULIK"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D keskmine",
+      "kyts95": "Kyts 95 keskmine",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7p",
+      "rbob": "NYMEX RBOB 7p"
+    }
   }
 }
