@@ -9,8 +9,8 @@
 //       · PET.RBRTE.D              — Europe Brent Spot, USD/bbl, daily
 //       · PET.EER_EPD2F_PF4_Y35NY_DPG.D — NY Harbor ULSD No 2 Spot, USD/gal,
 //                                        daily — diesel wholesale proxy
-//       · PET.EER_EPMRR_PF4_RGC_DPG.D  — LA CARBOB Regular Gasoline Spot,
-//                                        USD/gal, daily — gasoline proxy
+//       · PET.EER_EPMRU_PF4_Y35NY_DPG.D — NY Harbor RBOB Regular Gasoline
+//                                        Spot, USD/gal, daily — gasoline proxy
 //   · Frankfurter (api.frankfurter.dev) — ECB reference rates as JSON,
 //     keyless, cloud-friendly. Range endpoint returns 7+30d history in one
 //     call.
@@ -167,7 +167,7 @@ async function fetchEcbEurUsd(): Promise<number | null> {
 export type MarketData = {
   brent: Series | null;       // USD/barrel (EIA PET.RBRTE.D)
   gasoil: Series | null;      // USD/gallon NY Harbor ULSD (EIA PET.EER_EPD2F_PF4_Y35NY_DPG.D, diesel proxy)
-  rbob: Series | null;        // USD/gallon LA CARBOB gasoline spot (EIA PET.EER_EPMRR_PF4_RGC_DPG.D)
+  rbob: Series | null;        // USD/gallon NY Harbor RBOB gasoline spot (EIA PET.EER_EPMRU_PF4_Y35NY_DPG.D)
   eurUsd: Series | null;      // EUR→USD (Frankfurter; ECB "today-only" fallback)
 };
 
@@ -179,7 +179,7 @@ export async function fetchMarketData(): Promise<MarketData> {
     ? Promise.all([
         fetchEia('PET.RBRTE.D', eiaKey),
         fetchEia('PET.EER_EPD2F_PF4_Y35NY_DPG.D', eiaKey),
-        fetchEia('PET.EER_EPMRR_PF4_RGC_DPG.D', eiaKey),
+        fetchEia('PET.EER_EPMRU_PF4_Y35NY_DPG.D', eiaKey),
       ])
     : Promise.resolve<[null, null, null]>([null, null, null]);
 
