@@ -1,16 +1,28 @@
 // Market-data fetchers for the daily Kyts insight cron.
 //
 // All sources are free and keyless:
-//   · Stooq serves daily-close CSV for futures + FX. Format:
-//       Date,Open,High,Low,Close,Volume
-//       2026-04-18,82.10,82.45,81.80,82.12,...
+//   · Yahoo Finance v8 chart API serves daily closes for futures + FX as JSON.
+//     We were originally on Stooq, but Stooq started responding with an empty
+//     body + `Content-disposition: attachment;filename=error.txt` to every
+//     request (regardless of UA), so it's effectively broken for us.
 //   · ECB publishes the daily EUR/USD reference rate as a tiny XML feed
-//     (used only as a fallback when Stooq is flaky).
+//     (used only as a fallback when Yahoo FX is flaky).
 //
 // Each fetch is wrapped in a 5 s AbortController timeout so a single slow
 // source can't starve the 60 s Serverless budget. On any failure we return
 // null — the signal algorithm gracefully degrades to `neutral` when a
 // benchmark is missing, rather than crashing the whole run.
+//
+// Symbol choices:
+//   · BZ=F  — ICE Brent Crude (USD/bbl), headline oil price
+//   · HO=F  — NY Harbor ULSD / Heating Oil futures (USD/gal). This is the
+//             diesel-wholesale proxy. The ideal benchmark is ICE Low-Sulphur
+//             Gasoil (LGO) which is what Rotterdam traders actually watch,
+//             but Yahoo doesn't carry LGO. HO=F tracks LGO with ~0.95
+//             correlation on daily moves, so directionally it's fine for a
+//             buy-now/wait signal.
+//   · RB=F  — NYMEX RBOB gasoline (USD/gal), direct wholesale proxy
+//   · EURUSD=X — EUR→USD spot for converting USD wholesale into EUR terms
 
 export type Series = {
   /** Close price on the most recent session we have. */
@@ -29,7 +41,13 @@ async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> 
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'kyts-market-insight/1.0 (+https://kyts.ee)' },
+      headers: {
+        // Yahoo's v8 chart endpoint blocks requests with no UA or an obviously
+        // bot-ish UA. A generic browser UA goes through.
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
+        'Accept': 'application/json,text/xml,*/*',
+      },
     });
     if (!res.ok) return null;
     return await res.text();
@@ -40,23 +58,25 @@ async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> 
   }
 }
 
-// Parse Stooq CSV, return last N closes as [date, close] tuples (newest first).
-function parseStooqCsv(csv: string): Array<[string, number]> | null {
-  const lines = csv.trim().split(/\r?\n/);
-  if (lines.length < 3) return null;
-  const header = lines[0].toLowerCase();
-  if (!header.includes('date') || !header.includes('close')) return null;
-
-  const dateIdx = header.split(',').indexOf('date');
-  const closeIdx = header.split(',').indexOf('close');
-  if (dateIdx < 0 || closeIdx < 0) return null;
+// Parse Yahoo v8 chart JSON into [date, close] tuples (newest first). Yahoo
+// occasionally returns null slots inside `close` for holidays/bad days — we
+// drop those.
+function parseYahooChart(body: string): Array<[string, number]> | null {
+  let j: any;
+  try { j = JSON.parse(body); } catch { return null; }
+  const result = j?.chart?.result?.[0];
+  if (!result) return null;
+  const ts: number[] = result.timestamp;
+  const closes: Array<number | null> = result?.indicators?.quote?.[0]?.close;
+  if (!Array.isArray(ts) || !Array.isArray(closes)) return null;
 
   const out: Array<[string, number]> = [];
-  for (let i = lines.length - 1; i >= 1 && out.length < 60; i--) {
-    const cols = lines[i].split(',');
-    const date = cols[dateIdx];
-    const close = parseFloat(cols[closeIdx]);
-    if (date && isFinite(close) && close > 0) out.push([date, close]);
+  for (let i = ts.length - 1; i >= 0 && out.length < 60; i--) {
+    const c = closes[i];
+    const t = ts[i];
+    if (typeof c !== 'number' || !isFinite(c) || c <= 0) continue;
+    const iso = new Date(t * 1000).toISOString().slice(0, 10);
+    out.push([iso, c]);
   }
   return out.length >= 2 ? out : null;
 }
@@ -75,13 +95,15 @@ function toSeries(rows: Array<[string, number]>): Series {
   };
 }
 
-async function fetchStooq(symbol: string): Promise<Series | null> {
-  // Stooq daily-close CSV. The `i=d` param means daily; default window is
-  // the full history but we only parse the tail.
-  const url = `https://stooq.com/q/d/l/?s=${encodeURIComponent(symbol)}&i=d`;
-  const csv = await fetchWithTimeout(url);
-  if (!csv) return null;
-  const rows = parseStooqCsv(csv);
+async function fetchYahoo(symbol: string): Promise<Series | null> {
+  // `range=2mo` gives us ~40 trading sessions — more than enough to pick a
+  // prev30 index. `interval=1d` is the daily close we actually want.
+  const url =
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
+    `?interval=1d&range=2mo`;
+  const body = await fetchWithTimeout(url);
+  if (!body) return null;
+  const rows = parseYahooChart(body);
   if (!rows) return null;
   return toSeries(rows);
 }
@@ -101,21 +123,21 @@ async function fetchEcbEurUsd(): Promise<number | null> {
 }
 
 export type MarketData = {
-  brent: Series | null;       // USD/barrel
-  gasoil: Series | null;      // USD/tonne (ICE Low-Sulphur Gasoil, proxy for Rotterdam diesel)
-  rbob: Series | null;        // USD/gallon (NYMEX RBOB, proxy for Rotterdam gasoline)
-  eurUsd: Series | null;      // EUR→USD (from Stooq; ECB fallback writes a flat "today" only)
+  brent: Series | null;       // USD/barrel (Yahoo BZ=F)
+  gasoil: Series | null;      // USD/gallon heating oil (Yahoo HO=F, diesel proxy)
+  rbob: Series | null;        // USD/gallon NYMEX RBOB (Yahoo RB=F, gasoline proxy)
+  eurUsd: Series | null;      // EUR→USD (Yahoo EURUSD=X; ECB fallback writes a flat "today" only)
 };
 
 export async function fetchMarketData(): Promise<MarketData> {
   const [brent, gasoil, rbob, eurUsd] = await Promise.all([
-    fetchStooq('cb.f'),
-    fetchStooq('lgo.f'),
-    fetchStooq('rb.f'),
-    fetchStooq('eurusd'),
+    fetchYahoo('BZ=F'),
+    fetchYahoo('HO=F'),
+    fetchYahoo('RB=F'),
+    fetchYahoo('EURUSD=X'),
   ]);
 
-  // If Stooq EUR/USD failed, backfill "today" from ECB so at least today's
+  // If Yahoo EUR/USD failed, backfill "today" from ECB so at least today's
   // currency conversion doesn't blow up. prev7/prev30 stay equal to today,
   // which means divergence contribution from FX is zero — acceptable.
   let fxSeries = eurUsd;
