@@ -37,8 +37,9 @@ export function MarketInsightDrawer({
   const getRelativeTime = (dateStr: string) => {
     const diffHours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
     if (diffHours < 1) return t('common.justNow', 'just nüüd');
-    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours }, `${diffHours}h tagasi`);
-    return t('common.daysAgo', { count: Math.floor(diffHours/24) }, `${Math.floor(diffHours/24)}p tagasi`);
+    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours, defaultValue: `${diffHours}h tagasi` });
+    const days = Math.floor(diffHours / 24);
+    return t('common.daysAgo', { count: days, defaultValue: `${days}p tagasi` });
   };
 
   return (
