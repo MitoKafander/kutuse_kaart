@@ -847,7 +847,7 @@ export function ProfileDrawer({
                     {(['dark', 'light'] as const).map(s => (
                       <button
                         key={s}
-                        onClick={() => { onMapStyleChange(s); localStorage.setItem('kyts-map-style', s); }}
+                        onClick={() => onMapStyleChange(s)}
                         style={{
                           flex: 1, padding: '8px',
                           borderRadius: '8px',

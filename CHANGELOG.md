@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Cross-device theme sync - 2026-04-19
+
+### Added ✨
+- 🟡 **Theme preference now syncs to `user_profiles.theme`** (`migrations/schema_phase38_theme_sync.sql`, `src/App.tsx`, `src/components/ProfileDrawer.tsx`): signed-in users get their chosen dark/light theme back on any device / any browser / after localStorage loss. Motivated by a real user report — a friend's iOS home-screen PWA kept reverting to system dark between launches, strongly suspected to be scope-escape from a www-era install (PWA manifest scope = `www.kyts.ee`, every launch redirects to apex, theme writes land on one origin and reads come from the other). This column alone doesn't fully fix *that* case (if scope escape also kills the Supabase session, there's nothing to read from — that friend still needs to delete + re-add the home screen icon from `https://kyts.ee`) but it closes every adjacent leak for signed-in users: Safari ITP 7-day first-party localStorage eviction, "clear cookies on close" privacy settings, and plain device-switch. Migration adds a nullable `theme varchar(5)` column with a `CHECK (theme IS NULL OR theme IN ('dark', 'light'))` constraint — null means "no server-side preference yet, respect localStorage / system", matching the pattern already used by `language` / `show_latvian_stations`. Client changes: (1) `loadData` signed-in branch fetches `theme` alongside other prefs and applies it to both state and localStorage when non-null; (2) new `handleMapStyleChange` handler in App.tsx centralizes theme writes — does `setMapStyle` + `localStorage.setItem` + `user_profiles.upsert({ theme })` when session exists, exactly mirroring `handleSharePubliclyChange`; (3) both previous callsites (AuthModal prop + ProfileDrawer prop) now point at this single handler instead of their ad-hoc inline writes, and `ProfileDrawer.tsx:850` drops its redundant inline `localStorage.setItem` since the parent now handles it. Signed-out reset branch is *intentionally unchanged* — theme is a device-level aesthetic preference more than an account-level one, and flipping themes on logout (as `hide_empty_dots` et al. do) would be surprising on a shared device. Rollback: `alter table user_profiles drop column theme;` is safe any time — clients fall back cleanly to localStorage + system preference.
+
+---
+
 ## [Unreleased] - Spam-resistant leaderboard points - 2026-04-19
 
 ### Changed 🔧

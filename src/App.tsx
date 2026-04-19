@@ -314,7 +314,7 @@ function App() {
       }
 
       // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language').eq('id', currentUser.user.id).single();
+      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language, theme').eq('id', currentUser.user.id).single();
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -354,6 +354,10 @@ function App() {
       if (prof?.language && (SUPPORTED_LANGUAGES as readonly string[]).includes(prof.language)) {
         if (i18n.language !== prof.language) i18n.changeLanguage(prof.language);
         localStorage.setItem('kyts-language', prof.language);
+      }
+      if (prof?.theme === 'dark' || prof?.theme === 'light') {
+        setMapStyle(prof.theme);
+        localStorage.setItem('kyts-map-style', prof.theme);
       }
     } else {
       // Signed-out state: every preference that's synced from user_profiles
@@ -580,6 +584,16 @@ function App() {
     if (session?.user?.id) {
       void supabase.from('user_profiles')
         .upsert({ id: session.user.id, share_discovery_publicly: v })
+        .then(() => {}, () => {});
+    }
+  };
+
+  const handleMapStyleChange = (s: 'dark' | 'light') => {
+    setMapStyle(s);
+    localStorage.setItem('kyts-map-style', s);
+    if (session?.user?.id) {
+      void supabase.from('user_profiles')
+        .upsert({ id: session.user.id, theme: s })
         .then(() => {}, () => {});
     }
   };
@@ -1025,7 +1039,7 @@ function App() {
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         mapStyle={mapStyle}
-        onMapStyleChange={(s) => { setMapStyle(s); localStorage.setItem('kyts-map-style', s); }}
+        onMapStyleChange={handleMapStyleChange}
       />
 
       <ManualPriceModal
@@ -1091,7 +1105,7 @@ function App() {
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}
-        onMapStyleChange={setMapStyle}
+        onMapStyleChange={handleMapStyleChange}
         onOpenLeaderboard={() => { setIsProfileOpen(false); setIsLeaderboardOpen(true); }}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
