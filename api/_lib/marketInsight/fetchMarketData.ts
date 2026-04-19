@@ -42,16 +42,22 @@ async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> 
     const res = await fetch(url, {
       signal: ctrl.signal,
       headers: {
-        // Yahoo's v8 chart endpoint blocks requests with no UA or an obviously
-        // bot-ish UA. A generic browser UA goes through.
         'User-Agent':
           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
         'Accept': 'application/json,text/xml,*/*',
       },
     });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
+    if (!res.ok) {
+      console.warn('[marketInsight] fetch non-ok', res.status, url.slice(0, 80));
+      return null;
+    }
+    const body = await res.text();
+    if (!body || body.length < 50) {
+      console.warn('[marketInsight] fetch empty/short', body.length, url.slice(0, 80));
+    }
+    return body;
+  } catch (err: any) {
+    console.warn('[marketInsight] fetch threw', err?.message || err, url.slice(0, 80));
     return null;
   } finally {
     clearTimeout(timer);
