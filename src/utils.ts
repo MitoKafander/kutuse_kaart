@@ -205,6 +205,16 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'premium 7',      canonical: 'Premium 7' },
   { match: 'hepa',           canonical: 'Hepa' },
   { match: 'thor',           canonical: 'Thor' }, // matches "Thor" and "Thori"
+  // Saare Kütus — Saaremaa chain. OSM tags some nodes with brand=Saare Kütus
+  // (caught by the first pattern) but others only carry their local station
+  // name, so we enumerate the five current stations explicitly. See
+  // saarekytus.ee for the authoritative list.
+  { match: 'saare kütus',     canonical: 'Saare Kütus' },
+  { match: 'roonimäe tankla', canonical: 'Saare Kütus' },
+  { match: 'aia tänava tankla', canonical: 'Saare Kütus' },
+  { match: 'pihtla tee tankla', canonical: 'Saare Kütus' },
+  { match: 'roomassaare tankla', canonical: 'Saare Kütus' },
+  { match: 'orissaare tankla', canonical: 'Saare Kütus' },
   // Latvian chains (border-strip + future Latvia region)
   { match: 'virsi',          canonical: 'Virši-A' }, // matches "Virši", "Virši-A", "Virsi"
   { match: 'viada',          canonical: 'Viada' },
