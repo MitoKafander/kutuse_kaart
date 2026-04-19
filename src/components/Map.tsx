@@ -928,6 +928,24 @@ export function Map({
     onUserLocationChange?.(userLocation ? { lat: userLocation[0], lon: userLocation[1] } : null);
   }, [userLocation, onUserLocationChange]);
 
+  // Defer adding the ~500 station markers until after the first paint so the
+  // LCP tile lands without competing for main-thread work. Leaflet inserts
+  // divIcons synchronously, which on a throttled mobile CPU stalls the paint
+  // queue for 300-600ms after tiles arrive (webpagetest: "LCP occurred 639ms
+  // after image request ended"). Double-rAF = "after the browser commits one
+  // frame"; on the second frame we flip markersReady so the marker layers
+  // mount and Leaflet builds their DOM in the next idle slice.
+  const [markersReady, setMarkersReady] = useState(false);
+  useEffect(() => {
+    let canceled = false;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!canceled) setMarkersReady(true);
+      });
+    });
+    return () => { canceled = true; cancelAnimationFrame(id); };
+  }, []);
+
   const stationsById = useMemo(() => {
     const m: NativeMap<string, any> = new NativeMap();
     for (const s of workingStations) m.set(String(s.id), s);
@@ -1315,8 +1333,10 @@ export function Map({
 
         {/* Discovery mode replaces Layers 1+2 with a single split:
             contributed dots (full brand color) + uncontributed dots (grey).
-            Pills (Layer 3) still render on top as usual. */}
-        {showDiscoveryMap ? (
+            Pills (Layer 3) still render on top as usual.
+            All marker layers gate on markersReady so the LCP tile paints
+            before Leaflet inserts several hundred divIcons. */}
+        {markersReady && (showDiscoveryMap ? (
           showClusters ? (
             <ClusterLayer
               markers={discoveryClusterMarkers}
@@ -1350,7 +1370,7 @@ export function Map({
               <>{freshDots.map(renderFreshDot)}</>
             )}
           </>
-        )}
+        ))}
 
         {/* Region outlines — drawn beneath markers via overlayPane */}
         {showDiscoveryMap && (
@@ -1389,8 +1409,9 @@ export function Map({
 
         {/* Layer 3: Price pills — always on top, never clustered.
             Hidden in discovery mode: the point of Avastuskaart is the
-            footprint, and price pills would drown out the dot split. */}
-        {!showDiscoveryMap && visiblePillStations.map(({ station, rows }) => {
+            footprint, and price pills would drown out the dot split.
+            Also gated on markersReady (see double-rAF comment above). */}
+        {markersReady && !showDiscoveryMap && visiblePillStations.map(({ station, rows }) => {
           const isSelected = selectedStation?.id === station.id;
           const showFuelLabel = !focusedFuelType;
           const rowsHash = rows.map(r => `${r.fuelType},${r.price},${r.grossPrice},${r.isFresh ? 1 : 0},${r.isCheapest ? 1 : 0},${r.discounted ? 1 : 0}`).join(';');
