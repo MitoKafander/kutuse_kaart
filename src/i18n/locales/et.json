@@ -179,6 +179,7 @@
     },
     "submitError": {
       "tooFar": "Oled tanklast liiga kaugel. Liigu tankla juurde ja proovi uuesti.",
+      "tooFast": "Liiga kiire! Sinu eelmine hinnaraport oli kaugel — fikseeritud asukohtade järgi pole võimalik selle ajaga kohale jõuda.",
       "rls": "Sisestus ei läbinud kontrolli. Kontrolli hindu ja proovi uuesti.",
       "notFound": "Tanklat ei leitud. Vali uuesti tankla ja proovi uuesti.",
       "generic": "Salvestamine ebaõnnestus. Proovi veel kord — kui see kordub, kontrolli võrguühendust."

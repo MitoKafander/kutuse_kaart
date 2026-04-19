@@ -439,6 +439,7 @@ export function ManualPriceModal({
     const code: string = err?.code || '';
     const msg: string = err?.message || '';
     if (msg.includes('km from station')) return t('manualPrice.submitError.tooFar');
+    if (msg.includes('velocity exceeded')) return t('manualPrice.submitError.tooFast');
     if (code === '42501') return t('manualPrice.submitError.rls');
     if (msg.includes('station') && msg.includes('not found')) return t('manualPrice.submitError.notFound');
     return t('manualPrice.submitError.generic');

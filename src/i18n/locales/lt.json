@@ -389,6 +389,7 @@
     },
     "submitError": {
       "tooFar": "Esate per toli nuo degalinės. Priartėkite prie degalinės ir bandykite dar kartą.",
+      "tooFast": "Per greitai! Jūsų ankstesnis kainos pranešimas buvo toli — fiziškai neįmanoma nuvažiuoti tokio atstumo per šį laiką.",
       "rls": "Įvestis nepraėjo patikrinimo. Patikrinkite kainas ir bandykite dar kartą.",
       "notFound": "Degalinė nerasta. Iš naujo pasirinkite degalinę ir bandykite dar kartą.",
       "generic": "Išsaugojimas nepavyko. Bandykite dar kartą — jei kartojasi, patikrinkite tinklo ryšį."
