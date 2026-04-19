@@ -26,7 +26,7 @@ export const config = {
   maxDuration: 60,
 };
 
-const GENERATION_VERSION = 'v1.0-2026-04-19';
+const GENERATION_VERSION = 'v1.1-2026-04-19';
 
 type NodeReq = {
   method?: string;
@@ -210,10 +210,12 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       : 'flat';
 
     const newRow = {
-      content_et: text.content_et,
-      content_en: text.content_en,
-      headline_et: text.headline_et,
-      headline_en: text.headline_en,
+      content_et: text.content_et, content_en: text.content_en,
+      content_ru: text.content_ru, content_fi: text.content_fi,
+      content_lv: text.content_lv, content_lt: text.content_lt,
+      headline_et: text.headline_et, headline_en: text.headline_en,
+      headline_ru: text.headline_ru, headline_fi: text.headline_fi,
+      headline_lv: text.headline_lv, headline_lt: text.headline_lt,
       signal_diesel: dieselSignal.signal,
       signal_gasoline: gasolineSignal.signal,
       confidence,

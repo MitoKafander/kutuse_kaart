@@ -28,8 +28,16 @@ export interface MarketInsight {
   created_at: string;
   content_et: string;
   content_en?: string | null;
+  content_ru?: string | null;
+  content_fi?: string | null;
+  content_lv?: string | null;
+  content_lt?: string | null;
   headline_et?: string | null;
   headline_en?: string | null;
+  headline_ru?: string | null;
+  headline_fi?: string | null;
+  headline_lv?: string | null;
+  headline_lt?: string | null;
   trend?: 'up' | 'down' | 'flat' | null;
   signal_diesel?: Signal | null;
   signal_gasoline?: Signal | null;
@@ -191,13 +199,20 @@ export function MarketInsightDrawer({
   const { t, i18n } = useTranslation();
   if (!isOpen || !insight) return null;
 
-  // Gemini only writes Estonian + English for now. For non-Estonian users
-  // (RU/FI/LV/LT) English is a better default than showing Estonian prose in
-  // an otherwise localized UI — most Baltic users read English comfortably.
-  // A v2 would extend the translator to generate all six locales.
-  const preferEn = i18n.language !== 'et';
-  const content  = (preferEn && insight.content_en)  ? insight.content_en  : insight.content_et;
-  const headline = (preferEn && insight.headline_en) ? insight.headline_en : insight.headline_et;
+  // Pick the current locale's content if Gemini produced it (v1.1+ writes
+  // all six). Fall back through EN → ET so legacy rows or partial responses
+  // never leave the drawer empty.
+  const lang = (i18n.language || 'en').slice(0, 2) as 'et' | 'en' | 'ru' | 'fi' | 'lv' | 'lt';
+  const pickText = (field: 'headline' | 'content'): string => {
+    const chain: Array<'et' | 'en' | 'ru' | 'fi' | 'lv' | 'lt'> = [lang, 'en', 'et'];
+    for (const l of chain) {
+      const v = (insight as any)[`${field}_${l}`];
+      if (typeof v === 'string' && v.trim().length > 0) return v;
+    }
+    return field === 'content' ? insight.content_et : '';
+  };
+  const content  = pickText('content');
+  const headline = pickText('headline');
 
   // Legacy rows have no signal_* fields; fall back to the original layout.
   const hasSignals = !!(insight.signal_diesel || insight.signal_gasoline);

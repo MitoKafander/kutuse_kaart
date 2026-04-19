@@ -1,7 +1,8 @@
 // Gemini = translator, not analyst. We hand it a pulse object of NUMBERS plus
-// the already-computed signals, and ask for a human-readable Estonian + English
-// rewrite. If the response trips our forbidden-phrase guard or doesn't parse,
-// the caller falls back to the deterministic template — the row still ships.
+// the already-computed signals, and ask for a human-readable rewrite in ALL
+// SIX app languages (ET/EN/RU/FI/LV/LT). If the response trips our
+// forbidden-phrase guard or doesn't parse, the caller falls back to the
+// deterministic template — the row still ships.
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { FuelSignal } from './computeSignal.js';
@@ -25,39 +26,41 @@ export type TranslatorInput = {
   };
 };
 
+export const LANGS = ['et', 'en', 'ru', 'fi', 'lv', 'lt'] as const;
+export type Lang = (typeof LANGS)[number];
+
 export type TranslatorOutput = {
-  headline_et: string;
-  headline_en: string;
-  content_et: string;
-  content_en: string;
+  headline_et: string; headline_en: string; headline_ru: string;
+  headline_fi: string; headline_lv: string; headline_lt: string;
+  content_et: string; content_en: string; content_ru: string;
+  content_fi: string; content_lv: string; content_lt: string;
 };
 
 // Phrases that imply causal/news claims we never gave the model. If any of
-// these appear in output AND aren't in input, we reject and fall back.
+// these appear in output AND aren't in input, we reject and fall back. We
+// keep this list to high-signal terms only — false positives here silently
+// revert the whole row to fallback text.
 const FORBIDDEN = [
   // Estonian
   'analüütik', 'eksperdid', 'uudiste', 'ennustavad', 'opec', 'sanktsioon',
   'konflikt', 'sõda', 'rünnak', 'tarneahel',
   // English
-  'analyst', 'expert', 'news report', 'sanction', 'conflict', 'war',
-  'attack', 'supply chain', 'opec',
+  'analyst', 'expert', 'news report', 'sanction', 'war',
+  'attack', 'supply chain',
+  // Russian
+  'аналитик', 'эксперт', 'новост', 'санкц', 'конфликт', 'война', 'опек',
+  // Finnish
+  'analyytik', 'asiantunt', 'sanktio', 'sota', 'hyökkäys',
+  // Latvian
+  'analītiķ', 'eksperti', 'sankcij', 'karš', 'uzbrukum',
+  // Lithuanian
+  'analitik', 'ekspert', 'sankcij', 'karas', 'puolim',
 ];
 
 function violatesGuard(text: string): boolean {
   const lower = text.toLowerCase();
   return FORBIDDEN.some(term => lower.includes(term));
 }
-
-const SCHEMA = {
-  type: 'object',
-  properties: {
-    headline_et: { type: 'string', maxLength: 80 },
-    headline_en: { type: 'string', maxLength: 80 },
-    content_et:  { type: 'string' },
-    content_en:  { type: 'string' },
-  },
-  required: ['headline_et', 'headline_en', 'content_et', 'content_en'],
-};
 
 function buildPrompt(input: TranslatorInput): string {
   // We hand Gemini only the numbers. No news, no web access, no prior text.
@@ -68,25 +71,32 @@ function buildPrompt(input: TranslatorInput): string {
     'You are a careful market-data translator for a fuel-price app in Estonia.',
     'You will receive a JSON object of computed numbers and per-fuel signals.',
     'Your ONLY job: rewrite those numbers as a short, plainspoken update in',
-    'Estonian and English. You are a NUMBERS narrator, not an analyst.',
+    'SIX languages: Estonian, English, Russian, Finnish, Latvian, Lithuanian.',
+    'You are a NUMBERS narrator, not an analyst.',
     '',
     'HARD RULES — violations will cause your output to be rejected:',
     '1. Never invent causes. Do not mention news, wars, OPEC, sanctions,',
     '   supply chains, analysts, or experts. If you do not know why a number',
-    '   moved, say "põhjus ebaselge" / "cause unclear".',
+    '   moved, just describe the move without a reason.',
     '2. Use only numbers from the input JSON. Do not quote figures not present.',
-    '3. Keep headlines under 70 characters.',
+    '3. Keep each headline under 70 characters.',
     '4. Content: 2 short paragraphs per language. First paragraph summarizes',
-    '   what is happening to diesel and 95. Second paragraph tells the driver',
-    '   what the signal means for their next fill-up — grounded in the numbers.',
-    '5. Do not claim certainty. Use hedged language ("tõenäoliselt", "likely").',
+    '   what is happening to diesel and petrol 95. Second paragraph tells the',
+    '   driver what the signal means for their next fill-up, grounded in the',
+    '   numbers.',
+    '5. Do not claim certainty. Use hedged language ("likely", "tõenäoliselt",',
+    '   "вероятно", "todennäköisesti", "iespējams", "tikėtina").',
     '6. Do not use emoji.',
-    '7. Estonian tone: friendly but neutral, like a weather forecaster.',
+    '7. Tone: friendly but neutral, like a weather forecaster.',
+    '8. All six languages must be faithful translations of the same meaning —',
+    '   do not add a detail in one language that is missing from the others.',
     '',
     'INPUT:',
     JSON.stringify(input, null, 2),
     '',
-    'Return JSON with keys: headline_et, headline_en, content_et, content_en.',
+    'Return a single JSON object with these 12 string keys:',
+    '  headline_et, headline_en, headline_ru, headline_fi, headline_lv, headline_lt,',
+    '  content_et,  content_en,  content_ru,  content_fi,  content_lv,  content_lt',
   ].join('\n');
 }
 
@@ -103,19 +113,15 @@ export async function translateWithGemini(
     model: 'gemini-2.5-flash',
     generationConfig: {
       responseMimeType: 'application/json',
-      // `responseSchema` is supported on Gemini 1.5+ and enforces the shape.
-      // The @google/generative-ai v0.24.1 types may not include it, so we
-      // pass it as any-cast below.
       temperature: 0.2,
-      // 2 paragraphs × 2 languages + 2 headlines in Estonian (verbose
-      // language, ~1.6× English tokens). 800 was cutting mid-sentence and
-      // producing unparseable JSON — 2000 leaves comfortable headroom.
-      maxOutputTokens: 2000,
-      // Gemini 2.5 Flash has "thinking" mode on by default; thinking tokens
-      // count against maxOutputTokens but aren't visible in the response,
-      // so the model was spending ~1800 on invisible reasoning and
-      // truncating the JSON output mid-sentence. We don't need reasoning
-      // for a translation task — the signal is already computed.
+      // 6 languages × (2 paragraphs + 1 headline). Estonian/Finnish/Latvian
+      // /Lithuanian are token-heavy vs English (~1.5-2× per word). Budget of
+      // 6000 leaves headroom so a single long paragraph doesn't clip the
+      // trailing languages.
+      maxOutputTokens: 6000,
+      // Disable Gemini 2.5 "thinking" — for a translation task, reasoning
+      // burns budget we need for output. See git history for the truncation
+      // incident that motivated this.
       thinkingConfig: { thinkingBudget: 0 },
     } as any,
   });
@@ -137,7 +143,6 @@ export async function translateWithGemini(
     return { ok: false, reason: 'empty_response' };
   }
 
-  // Gemini occasionally wraps JSON in ```json fences despite responseMimeType.
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -156,23 +161,25 @@ export async function translateWithGemini(
     return { ok: false, reason: 'not_an_object' };
   }
   const p = parsed as Record<string, unknown>;
+  const pick = (k: string) => String(p[k] ?? '').trim();
   const out: TranslatorOutput = {
-    headline_et: String(p.headline_et ?? '').trim(),
-    headline_en: String(p.headline_en ?? '').trim(),
-    content_et:  String(p.content_et  ?? '').trim(),
-    content_en:  String(p.content_en  ?? '').trim(),
+    headline_et: pick('headline_et'), headline_en: pick('headline_en'),
+    headline_ru: pick('headline_ru'), headline_fi: pick('headline_fi'),
+    headline_lv: pick('headline_lv'), headline_lt: pick('headline_lt'),
+    content_et: pick('content_et'), content_en: pick('content_en'),
+    content_ru: pick('content_ru'), content_fi: pick('content_fi'),
+    content_lv: pick('content_lv'), content_lt: pick('content_lt'),
   };
 
-  if (!out.headline_et || !out.headline_en || !out.content_et || !out.content_en) {
-    const missing = ['headline_et','headline_en','content_et','content_en']
-      .filter(k => !(out as any)[k]);
+  const missing = (Object.keys(out) as (keyof TranslatorOutput)[]).filter(k => !out[k]);
+  if (missing.length > 0) {
     return { ok: false, reason: `missing_fields: ${missing.join(',')}` };
   }
 
   // Guard: if output claims a cause (OPEC, sanctions, etc.) that was never in
   // the input prompt, reject. Only way those words get through is if Gemini
   // made them up — which is exactly what we're defending against.
-  const combined = `${out.headline_et}\n${out.headline_en}\n${out.content_et}\n${out.content_en}`;
+  const combined = Object.values(out).join('\n');
   if (violatesGuard(combined)) {
     const offending = FORBIDDEN.filter(t => combined.toLowerCase().includes(t));
     const spuriousClaims = offending.filter(t => !inputText.includes(t));
@@ -182,12 +189,12 @@ export async function translateWithGemini(
     }
   }
 
-  // Length sanity.
-  if (out.headline_et.length > 100 || out.headline_en.length > 100) {
-    return { ok: false, reason: `headline_too_long: et=${out.headline_et.length} en=${out.headline_en.length}` };
+  // Length sanity — if any headline runs way long, reject. Typically the
+  // model obeys the 70-char rule; 120 as a hard cap catches obvious runaways.
+  const tooLong = LANGS.filter(l => (out[`headline_${l}` as keyof TranslatorOutput] as string).length > 120);
+  if (tooLong.length > 0) {
+    return { ok: false, reason: `headline_too_long: ${tooLong.join(',')}` };
   }
 
   return { ok: true, out };
 }
-
-export { SCHEMA as GEMINI_SCHEMA };
