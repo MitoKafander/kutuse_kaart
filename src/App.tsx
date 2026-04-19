@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Newspaper } from 'lucide-react';
+import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
-import { MarketInsightDrawer, type MarketInsight } from './components/MarketInsightDrawer';
+import { type MarketInsight } from './components/MarketInsightDrawer';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 
@@ -84,7 +84,6 @@ function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [isMarketInsightOpen, setIsMarketInsightOpen] = useState(false);
   const [marketInsightSeenId, setMarketInsightSeenId] = useState<string | null>(
     () => localStorage.getItem('kyts:market-insight-seen')
   );
@@ -234,9 +233,8 @@ function App() {
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
-    if (isMarketInsightOpen) list.push({ id: 'marketInsight', close: () => setIsMarketInsightOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen, isMarketInsightOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -1008,7 +1006,13 @@ function App() {
 
       <button
         className="flex-center"
-        onClick={() => setIsStatsOpen(true)}
+        onClick={() => {
+          setIsStatsOpen(true);
+          if (activeInsight) {
+            localStorage.setItem('kyts:market-insight-seen', activeInsight.id);
+            setMarketInsightSeenId(activeInsight.id);
+          }
+        }}
         title={t('app.fab.stats')}
         style={{
           position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
@@ -1023,45 +1027,20 @@ function App() {
         }}
       >
         <TrendingUp size={22} />
+        {activeInsight && marketInsightSeenId !== activeInsight.id && (() => {
+          const urgent = activeInsight.signal_diesel === 'buy_now' || activeInsight.signal_gasoline === 'buy_now';
+          return (
+            <span style={{
+              position: 'absolute', top: 6, right: 6,
+              width: urgent ? 12 : 10, height: urgent ? 12 : 10, borderRadius: 6,
+              background: urgent ? '#22c55e' : '#ef4444',
+              border: '2px solid var(--color-bg)',
+              boxShadow: urgent ? '0 0 10px rgba(34,197,94,0.9)' : '0 0 6px rgba(239,68,68,0.6)',
+              pointerEvents: 'none',
+            }} />
+          );
+        })()}
       </button>
-
-      {activeInsight && (
-        <button
-          className="flex-center"
-          onClick={() => {
-            setIsMarketInsightOpen(true);
-            localStorage.setItem('kyts:market-insight-seen', activeInsight.id);
-            setMarketInsightSeenId(activeInsight.id);
-          }}
-          title={t('app.fab.marketInsight', 'Turu ülevaade')}
-          style={{
-            position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
-            width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
-            cursor: 'pointer',
-            color: '#0ea5e9',
-            background: 'var(--color-surface-alpha-06)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid var(--color-surface-alpha-12)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <Newspaper size={22} />
-          {marketInsightSeenId !== activeInsight.id && (() => {
-            const urgent = activeInsight.signal_diesel === 'buy_now' || activeInsight.signal_gasoline === 'buy_now';
-            return (
-              <span style={{
-                position: 'absolute', top: 6, right: 6,
-                width: urgent ? 12 : 10, height: urgent ? 12 : 10, borderRadius: 6,
-                background: urgent ? '#22c55e' : '#ef4444',
-                border: '2px solid var(--color-bg)',
-                boxShadow: urgent ? '0 0 10px rgba(34,197,94,0.9)' : '0 0 6px rgba(239,68,68,0.6)',
-                pointerEvents: 'none',
-              }} />
-            );
-          })()}
-        </button>
-      )}
 
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
       <div style={{ 
@@ -1308,6 +1287,7 @@ function App() {
             prices={prices}
             session={session}
             onStationSelect={setSelectedStation}
+            insight={activeInsight}
           />
         )}
 
@@ -1346,12 +1326,6 @@ function App() {
           />
         )}
       </Suspense>
-
-      <MarketInsightDrawer
-        isOpen={isMarketInsightOpen}
-        onClose={() => setIsMarketInsightOpen(false)}
-        insight={activeInsight}
-      />
 
       <GdprBanner
         onOpenPrivacy={() => setIsPrivacyOpen(true)}

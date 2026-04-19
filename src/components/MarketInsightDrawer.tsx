@@ -61,7 +61,7 @@ function SignalIcon({ signal, size = 18 }: { signal: Signal; size?: number }) {
   }
 }
 
-function SignalChip({ fuel, signal }: { fuel: string; signal: Signal }) {
+export function SignalChip({ fuel, signal }: { fuel: string; signal: Signal }) {
   const { t } = useTranslation();
   const c = SIGNAL_COLORS[signal];
   const labelKey = `marketInsight.signal.${signal}`;
@@ -89,7 +89,7 @@ function SignalChip({ fuel, signal }: { fuel: string; signal: Signal }) {
   );
 }
 
-function ConfidenceBar({ value }: { value: number }) {
+export function ConfidenceBar({ value }: { value: number }) {
   const { t } = useTranslation();
   const pct = Math.max(0, Math.min(100, value));
   return (
@@ -130,7 +130,7 @@ function DeltaArrow({ delta }: { delta: number | null | undefined }) {
     : <TrendingDown size={12} style={{ color: '#22c55e' }} />;
 }
 
-function NumbersBlock({ data }: { data: InsightData }) {
+export function NumbersBlock({ data }: { data: InsightData }) {
   const { t } = useTranslation();
   const rows: Array<{ label: string; value: string; delta?: number | null }> = [];
 

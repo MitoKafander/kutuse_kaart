@@ -2,6 +2,12 @@ import { useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { X, TrendingUp } from 'lucide-react';
 import { getStationDisplayName, getBrand, FRESH_HOURS, fuelLabel } from '../utils';
+import {
+  SignalChip,
+  ConfidenceBar,
+  NumbersBlock,
+  type MarketInsight,
+} from './MarketInsightDrawer';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
 const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
@@ -16,7 +22,7 @@ function median(xs: number[]): number {
 }
 
 export function StatisticsDrawer({
-  isOpen, onClose, stations, prices, session, onStationSelect,
+  isOpen, onClose, stations, prices, session, onStationSelect, insight,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -24,8 +30,9 @@ export function StatisticsDrawer({
   prices: any[];
   session: any;
   onStationSelect?: (station: any) => void;
+  insight?: MarketInsight | null;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
   const now = Date.now();
   const horizonMs = DAYS * DAY_MS;
@@ -136,6 +143,29 @@ export function StatisticsDrawer({
     [prices, session]
   );
 
+  // Current-locale pick for Gemini text. Falls through EN → ET so partial
+  // Gemini responses or legacy rows never leave the section empty.
+  const lang = (i18n.language || 'en').slice(0, 2) as 'et' | 'en' | 'ru' | 'fi' | 'lv' | 'lt';
+  const pickInsightText = (field: 'headline' | 'content'): string => {
+    if (!insight) return '';
+    const chain: Array<'et' | 'en' | 'ru' | 'fi' | 'lv' | 'lt'> = [lang, 'en', 'et'];
+    for (const l of chain) {
+      const v = (insight as any)[`${field}_${l}`];
+      if (typeof v === 'string' && v.trim().length > 0) return v;
+    }
+    return field === 'content' ? (insight.content_et || '') : '';
+  };
+  const insightContent = pickInsightText('content');
+  const insightHeadline = pickInsightText('headline');
+  const hasSignals = !!(insight && (insight.signal_diesel || insight.signal_gasoline));
+
+  const getInsightRelativeTime = (dateStr: string) => {
+    const diffHours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
+    if (diffHours < 1) return t('time.justNow');
+    if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
+    return t('time.daysAgo', { count: Math.floor(diffHours / 24) });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -158,6 +188,59 @@ export function StatisticsDrawer({
             <X size={24} />
           </button>
         </div>
+
+        {insight && (
+          <div>
+            <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+              {t('marketInsight.title', 'Turu Ülevaade')}
+            </h3>
+            {hasSignals && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {insight.signal_diesel && (
+                    <SignalChip
+                      fuel={t('marketInsight.fuel.diesel', 'Diisel')}
+                      signal={insight.signal_diesel}
+                    />
+                  )}
+                  {insight.signal_gasoline && (
+                    <SignalChip
+                      fuel={t('marketInsight.fuel.gasoline95', 'Bensiin 95')}
+                      signal={insight.signal_gasoline}
+                    />
+                  )}
+                </div>
+                {typeof insight.confidence === 'number' && <ConfidenceBar value={insight.confidence} />}
+              </>
+            )}
+            {insightHeadline && (
+              <h4 style={{ margin: '14px 0 8px 0', fontSize: '1.05rem', color: 'var(--color-text)', lineHeight: 1.35 }}>
+                {insightHeadline}
+              </h4>
+            )}
+            {insightContent && (
+              <div style={{ lineHeight: 1.6, fontSize: '0.95rem', color: 'var(--color-text)', whiteSpace: 'pre-wrap' }}>
+                {insightContent}
+              </div>
+            )}
+            {insight.data && <NumbersBlock data={insight.data} />}
+            <div style={{
+              marginTop: 12,
+              fontSize: '0.75rem',
+              color: 'var(--color-text-muted)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}>
+              <span>{getInsightRelativeTime(insight.created_at)}</span>
+              {hasSignals && (
+                <span style={{ fontStyle: 'italic' }}>
+                  {t('marketInsight.disclaimer', 'Indikatiivne — mitte investeerimisnõuanne')}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         <div>
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.trends.heading')}</h3>
