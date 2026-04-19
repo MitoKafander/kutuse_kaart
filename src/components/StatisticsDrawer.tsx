@@ -282,6 +282,7 @@ export function StatisticsDrawer({
           </button>
         </div>
 
+        <div className="stats-grid">
         {insight && (
           <div>
             <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
@@ -497,7 +498,7 @@ export function StatisticsDrawer({
           </div>
         </div>
 
-        <div>
+        <div className="stats-grid-full">
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.contribution.heading')}</h3>
           <div className="glass-panel" style={{ padding: 12, borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
             {session ? (
@@ -510,6 +511,7 @@ export function StatisticsDrawer({
               <span style={{ color: 'var(--color-text-muted)' }}>{t('stats.contribution.signIn')}</span>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>

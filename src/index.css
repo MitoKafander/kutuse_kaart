@@ -130,6 +130,25 @@ body {
   justify-content: space-between;
 }
 
+/* Two-up card layout for the Statistika drawer on wide viewports. Single
+   column under 900 px so phones and iPad portrait keep the current stack;
+   paired columns above so desktop doesn't waste horizontal space. */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stats-grid-full {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Animations */
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
