@@ -175,6 +175,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     // Step 4: Gemini translation (best-effort — fallback template on any failure).
     let text: ReturnType<typeof buildFallbackText>;
     let usedGemini = false;
+    let geminiReason: string = 'GEMINI_API_KEY unset';
     if (GEMINI_KEY) {
       const translatorInput: TranslatorInput = {
         diesel: dieselSignal,
@@ -190,8 +191,11 @@ export default async function handler(req: NodeReq, res: NodeRes) {
         },
       };
       const gemini = await translateWithGemini(GEMINI_KEY, translatorInput);
-      if (gemini) { text = gemini; usedGemini = true; }
-      else text = buildFallbackText(dieselSignal, gasolineSignal);
+      if (gemini) { text = gemini; usedGemini = true; geminiReason = 'ok'; }
+      else {
+        text = buildFallbackText(dieselSignal, gasolineSignal);
+        geminiReason = 'translateWithGemini returned null (see function logs)';
+      }
     } else {
       text = buildFallbackText(dieselSignal, gasolineSignal);
     }
@@ -220,7 +224,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     };
 
     if (dry) {
-      return res.status(200).json({ ok: true, dryRun: true, usedGemini, row: newRow, fetchLog });
+      return res.status(200).json({ ok: true, dryRun: true, usedGemini, geminiReason, row: newRow, fetchLog });
     }
 
     // Step 6: flip previous active rows off, then insert.
