@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Spam-resistant leaderboard points - 2026-04-19
+
+### Changed 🔧
+- 🟡 **Leaderboard now ignores spammy resubmissions when counting `prices_count`** (`migrations/schema_phase37_points_dedup.sql`): the `prices` table stays fully open — every insert still succeeds, users can keep correcting typos and updating prices freely with no cooldown or blocked submission UX. The anti-abuse rule lives inside the three `v_leaderboard_*` views only. A row now earns a point iff **both** (a) this exact `price` value has NOT been submitted by the same user for the same `(station_id, fuel_type)` in the last 1h (kills duplicate / alternating spam like 1.60 → 1.55 → 1.60 → …), AND (b) the user has submitted fewer than 2 distinct prices for that `(station, fuel)` in the last 1h (kills random-value spam like 1.60 → 1.55 → 1.50 → …). Cap of 2 deliberately preserves the honest case — 1 initial report + 1 legitimate correction or witnessed price change — since real fuel totems update a few times a day in Estonia, not twice an hour. Implementation: new composite index `prices_user_station_fuel_reported_idx` on `(user_id, station_id, fuel_type, reported_at)` so each subquery stays O(log N); new helper view `v_prices_earning` tags every row with `earns_point` so the rule lives in exactly one place; each leaderboard view swaps `count(distinct p.id)` for `count(*) filter (where p.earns_point)` and adds `HAVING prices_count > 0` so spam-only users drop out of the ranking entirely; `upvotes_received` stays untouched because it reflects community trust on a price, not contributor effort, and is already capped by the per-`(user, price)` UNIQUE on `votes`. Pre-deploy diagnostic against prod (new `scripts/diagnose_point_spam.js`) showed 2.2% of the last 30d's 592 submissions would not have earned under the new rule — concentrated in two accounts from the app's early testing phase, all from rule-(a) duplicate scans; rule-(b) never fired in real traffic. Rollback: re-apply `schema_phase16.sql`, fully reversible since every statement is `create or replace view` or `create index if not exists`. Caveat not addressed: multi-account (sybil) farming — separate fight, needs account-level trust (verified email/phone). Commit `52bca97`.
+
+### Added ✨
+- 🟢 **Read-only point-spam diagnostic** (`scripts/diagnose_point_spam.js`): node script that pulls the last 30d of price submissions via `SUPABASE_SERVICE_ROLE_KEY` and replays the phase 37 earning rule in JS, printing total vs. earning rows and top offenders grouped by rule-a (duplicate price) vs. rule-b (cap exceeded). Useful for periodic spot-checks on leaderboard health; run with `node scripts/diagnose_point_spam.js` from project root.
+
+---
+
 ## [Unreleased] - Contact email → `kyts@mikkrosin.ee` - 2026-04-19
 
 ### Changed 🔧
