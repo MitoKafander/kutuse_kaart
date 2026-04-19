@@ -62,7 +62,7 @@ export function FilterDrawer({
         backgroundColor: 'var(--color-bg)',
         borderTopLeftRadius: 0,
         borderBottomLeftRadius: 0,
-        padding: '24px 24px calc(24px + env(safe-area-inset-bottom)) 24px',
+        padding: 'calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)) 24px',
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto'
