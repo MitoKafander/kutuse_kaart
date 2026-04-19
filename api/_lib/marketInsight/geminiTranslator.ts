@@ -4,7 +4,7 @@
 // the caller falls back to the deterministic template — the row still ships.
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { FuelSignal } from './computeSignal';
+import type { FuelSignal } from './computeSignal.js';
 
 export type TranslatorInput = {
   diesel: FuelSignal;

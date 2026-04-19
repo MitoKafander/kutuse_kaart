@@ -13,10 +13,13 @@
 //     have inserted. Useful for local / preview testing.
 
 import { createClient } from '@supabase/supabase-js';
-import { fetchMarketData } from './_lib/marketInsight/fetchMarketData';
-import { computeFuelSignal, type KytsFuelStats } from './_lib/marketInsight/computeSignal';
-import { translateWithGemini, type TranslatorInput } from './_lib/marketInsight/geminiTranslator';
-import { buildFallbackText } from './_lib/marketInsight/fallbackTemplate';
+// NOTE: .js extensions are required because the repo's package.json has
+// "type": "module" — Node ESM resolves bare relative paths without filling
+// in the extension the way tsc -p does. Vercel's bundler respects this.
+import { fetchMarketData } from './_lib/marketInsight/fetchMarketData.js';
+import { computeFuelSignal, type KytsFuelStats } from './_lib/marketInsight/computeSignal.js';
+import { translateWithGemini, type TranslatorInput } from './_lib/marketInsight/geminiTranslator.js';
+import { buildFallbackText } from './_lib/marketInsight/fallbackTemplate.js';
 
 export const config = {
   runtime: 'nodejs',

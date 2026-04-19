@@ -2,7 +2,7 @@
 // invalid JSON, or trips the forbidden-phrase guard. We still ship a row so
 // the drawer never goes blank — but the text is 100% rule-based, no LLM.
 
-import type { FuelSignal } from './computeSignal';
+import type { FuelSignal } from './computeSignal.js';
 
 const PCT = (n: number) => {
   const abs = Math.abs(n) * 100;

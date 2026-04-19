@@ -9,7 +9,7 @@
 // the pipeline, the `signal_*` fields and the numbers in `data` are already
 // correct, and the drawer renders them regardless of the AI text.
 
-import type { Series } from './fetchMarketData';
+import type { Series } from './fetchMarketData.js';
 
 export type Signal = 'buy_now' | 'hold' | 'wait' | 'neutral';
 
