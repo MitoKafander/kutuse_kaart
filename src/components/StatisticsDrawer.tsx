@@ -81,7 +81,7 @@ function WhyBlock({
         }}
       >
         <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
-        {t('marketInsight.why.heading', 'MIKS SEE SIGNAAL?')}
+        {t('marketInsight.why.heading', 'MIKS SELLINE SIGNAAL?')}
       </button>
       {open && (
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -303,6 +303,14 @@ export function StatisticsDrawer({
                     />
                   )}
                 </div>
+                {insight.data?.signals && (
+                  <WhyBlock
+                    diesel={insight.data.signals.diesel}
+                    gasoline={insight.data.signals.gasoline}
+                    dieselSamples={insight.data.kyts?.diesel?.samples7d ?? 0}
+                    gasolineSamples={insight.data.kyts?.gasoline95?.samples7d ?? 0}
+                  />
+                )}
                 {typeof insight.confidence === 'number' && <ConfidenceBar value={insight.confidence} />}
               </>
             )}
@@ -317,14 +325,6 @@ export function StatisticsDrawer({
               </div>
             )}
             {insight.data && <NumbersBlock data={insight.data} />}
-            {insight.data?.signals && (
-              <WhyBlock
-                diesel={insight.data.signals.diesel}
-                gasoline={insight.data.signals.gasoline}
-                dieselSamples={insight.data.kyts?.diesel?.samples7d ?? 0}
-                gasolineSamples={insight.data.kyts?.gasoline95?.samples7d ?? 0}
-              />
-            )}
             <div style={{
               marginTop: 12,
               fontSize: '0.75rem',
