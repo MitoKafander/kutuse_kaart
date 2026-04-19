@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
+import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Newspaper } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
-import { MarketInsightBanner, type MarketInsight } from './components/MarketInsightBanner';
+import { MarketInsightDrawer, type MarketInsight } from './components/MarketInsightDrawer';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 
@@ -84,7 +84,11 @@ function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  
+  const [isMarketInsightOpen, setIsMarketInsightOpen] = useState(false);
+  const [marketInsightSeenId, setMarketInsightSeenId] = useState<string | null>(
+    () => localStorage.getItem('kyts:market-insight-seen')
+  );
+
   // Data state
   const [stations, setStations] = useState<any[]>([]);
   const [prices, setPrices] = useState<any[]>([]);
@@ -230,8 +234,9 @@ function App() {
     if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
+    if (isMarketInsightOpen) list.push({ id: 'marketInsight', close: () => setIsMarketInsightOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen, isMarketInsightOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -753,7 +758,6 @@ function App() {
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
 
       <UpdateBanner />
-      <MarketInsightBanner insight={activeInsight} isShiftedDown={showDiscoveryMap || !!viewedUser} />
 
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', right: '20px', zIndex: 1000 }}>
@@ -900,8 +904,8 @@ function App() {
         )}
       </div>
 
-      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats.
-          Bottom of stack stays at 140px so the Stats FAB keeps ~60px of clear
+      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats, Market Insight.
+          Bottom of stack stays at 140px so the bottom FAB keeps ~60px of clear
           space above the GPS locator button (which sits at bottom 30px in
           Map.tsx). New FABs extend upward instead of downward. */}
       <button
@@ -909,7 +913,7 @@ function App() {
         onClick={() => setIsCameraOpen(true)}
         title={t('app.fab.camera')}
         style={{
-          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-primary)',
@@ -928,7 +932,7 @@ function App() {
         onClick={() => setIsManualOpen(true)}
         title={t('app.fab.manual')}
         style={{
-          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#fb923c',
@@ -947,7 +951,7 @@ function App() {
         onClick={() => setIsCheapestNearbyOpen(true)}
         title={t('app.fab.cheapestNearby')}
         style={{
-          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#facc15',
@@ -966,7 +970,7 @@ function App() {
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? t('app.fab.routeResults') : t('app.fab.routeFind')}
         style={{
-          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
@@ -986,7 +990,7 @@ function App() {
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title={t('app.fab.cancelRoute')}
           style={{
-            position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))',
+            position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
@@ -1007,7 +1011,7 @@ function App() {
         onClick={() => setIsStatsOpen(true)}
         title={t('app.fab.stats')}
         style={{
-          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
@@ -1020,6 +1024,41 @@ function App() {
       >
         <TrendingUp size={22} />
       </button>
+
+      {activeInsight && (
+        <button
+          className="flex-center"
+          onClick={() => {
+            setIsMarketInsightOpen(true);
+            localStorage.setItem('kyts:market-insight-seen', activeInsight.id);
+            setMarketInsightSeenId(activeInsight.id);
+          }}
+          title={t('app.fab.marketInsight', 'Turu ülevaade')}
+          style={{
+            position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+            width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+            cursor: 'pointer',
+            color: '#0ea5e9',
+            background: 'var(--color-surface-alpha-06)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--color-surface-alpha-12)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <Newspaper size={22} />
+          {marketInsightSeenId !== activeInsight.id && (
+            <span style={{
+              position: 'absolute', top: 6, right: 6,
+              width: 10, height: 10, borderRadius: 5,
+              background: '#ef4444',
+              border: '2px solid var(--color-bg)',
+              boxShadow: '0 0 6px rgba(239,68,68,0.6)',
+              pointerEvents: 'none',
+            }} />
+          )}
+        </button>
+      )}
 
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}
       <div style={{ 
@@ -1304,6 +1343,12 @@ function App() {
           />
         )}
       </Suspense>
+
+      <MarketInsightDrawer
+        isOpen={isMarketInsightOpen}
+        onClose={() => setIsMarketInsightOpen(false)}
+        insight={activeInsight}
+      />
 
       <GdprBanner
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
