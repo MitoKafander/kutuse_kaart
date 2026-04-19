@@ -19,6 +19,10 @@
   --color-primary: #3b82f6; /* Blue */
   --color-primary-glow: rgba(59, 130, 246, 0.5);
 
+  /* "Cheapest" accent (Euro FAB + tutorial swatch). Bright yellow on dark
+     map tiles; darker amber in light mode where #facc15 washed out. */
+  --color-fab-cheapest: #facc15;
+
   /* Theme-aware alpha surfaces */
   --color-surface-alpha-06: rgba(255, 255, 255, 0.06);
   --color-surface-alpha-12: rgba(255, 255, 255, 0.12);
@@ -54,6 +58,7 @@
   --color-pill-selected-ring: rgba(0, 0, 0, 0.4);
   --color-dot-nodata: rgba(0, 0, 0, 0.25);
   --color-dot-nodata-selected: rgba(0, 0, 0, 0.7);
+  --color-fab-cheapest: #b45309;
 }
 
 * {

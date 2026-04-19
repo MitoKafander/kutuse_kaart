@@ -963,7 +963,7 @@ function App() {
           position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
-          color: '#facc15',
+          color: 'var(--color-fab-cheapest)',
           background: 'var(--color-surface-alpha-06)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',

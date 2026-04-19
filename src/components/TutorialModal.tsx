@@ -15,7 +15,7 @@ type Step = {
 
 const COLOR_BLUE = '#3b82f6';
 const COLOR_ORANGE = '#fb923c';
-const COLOR_YELLOW = '#facc15';
+const COLOR_YELLOW = 'var(--color-fab-cheapest)';
 const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
 
