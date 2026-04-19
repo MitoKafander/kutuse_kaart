@@ -90,10 +90,14 @@ function buildPrompt(input: TranslatorInput): string {
   ].join('\n');
 }
 
+export type TranslatorResult =
+  | { ok: true; out: TranslatorOutput }
+  | { ok: false; reason: string };
+
 export async function translateWithGemini(
   apiKey: string,
   input: TranslatorInput,
-): Promise<TranslatorOutput | null> {
+): Promise<TranslatorResult> {
   const client = new GoogleGenerativeAI(apiKey);
   const model = client.getGenerativeModel({
     model: 'gemini-2.5-flash',
@@ -114,9 +118,14 @@ export async function translateWithGemini(
   try {
     const result = await model.generateContent([prompt]);
     raw = result.response.text();
-  } catch (err) {
-    console.error('[marketInsight] Gemini call failed:', err);
-    return null;
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error('[marketInsight] Gemini call failed:', msg);
+    return { ok: false, reason: `api_call_failed: ${msg.slice(0, 200)}` };
+  }
+
+  if (!raw || raw.length === 0) {
+    return { ok: false, reason: 'empty_response' };
   }
 
   // Gemini occasionally wraps JSON in ```json fences despite responseMimeType.
@@ -130,11 +139,13 @@ export async function translateWithGemini(
       parsed = JSON.parse(slice);
     } catch {
       console.error('[marketInsight] Gemini JSON parse failed:', raw.slice(0, 300));
-      return null;
+      return { ok: false, reason: `parse_failed: ${raw.slice(0, 120)}` };
     }
   }
 
-  if (!parsed || typeof parsed !== 'object') return null;
+  if (!parsed || typeof parsed !== 'object') {
+    return { ok: false, reason: 'not_an_object' };
+  }
   const p = parsed as Record<string, unknown>;
   const out: TranslatorOutput = {
     headline_et: String(p.headline_et ?? '').trim(),
@@ -144,8 +155,9 @@ export async function translateWithGemini(
   };
 
   if (!out.headline_et || !out.headline_en || !out.content_et || !out.content_en) {
-    console.warn('[marketInsight] Gemini output missing required fields');
-    return null;
+    const missing = ['headline_et','headline_en','content_et','content_en']
+      .filter(k => !(out as any)[k]);
+    return { ok: false, reason: `missing_fields: ${missing.join(',')}` };
   }
 
   // Guard: if output claims a cause (OPEC, sanctions, etc.) that was never in
@@ -157,17 +169,16 @@ export async function translateWithGemini(
     const spuriousClaims = offending.filter(t => !inputText.includes(t));
     if (spuriousClaims.length > 0) {
       console.warn('[marketInsight] Rejected Gemini output for unsupported claim(s):', spuriousClaims);
-      return null;
+      return { ok: false, reason: `guardrail_rejected: ${spuriousClaims.join(',')}` };
     }
   }
 
   // Length sanity.
   if (out.headline_et.length > 100 || out.headline_en.length > 100) {
-    console.warn('[marketInsight] Headline too long, rejecting');
-    return null;
+    return { ok: false, reason: `headline_too_long: et=${out.headline_et.length} en=${out.headline_en.length}` };
   }
 
-  return out;
+  return { ok: true, out };
 }
 
 export { SCHEMA as GEMINI_SCHEMA };

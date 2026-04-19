@@ -191,10 +191,10 @@ export default async function handler(req: NodeReq, res: NodeRes) {
         },
       };
       const gemini = await translateWithGemini(GEMINI_KEY, translatorInput);
-      if (gemini) { text = gemini; usedGemini = true; geminiReason = 'ok'; }
+      if (gemini.ok) { text = gemini.out; usedGemini = true; geminiReason = 'ok'; }
       else {
         text = buildFallbackText(dieselSignal, gasolineSignal);
-        geminiReason = 'translateWithGemini returned null (see function logs)';
+        geminiReason = gemini.reason;
       }
     } else {
       text = buildFallbackText(dieselSignal, gasolineSignal);
