@@ -16,7 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 // NOTE: .js extensions are required because the repo's package.json has
 // "type": "module" — Node ESM resolves bare relative paths without filling
 // in the extension the way tsc -p does. Vercel's bundler respects this.
-import { fetchMarketData } from './_lib/marketInsight/fetchMarketData.js';
+import { fetchMarketData, fetchLog } from './_lib/marketInsight/fetchMarketData.js';
 import { computeFuelSignal, type KytsFuelStats } from './_lib/marketInsight/computeSignal.js';
 import { translateWithGemini, type TranslatorInput } from './_lib/marketInsight/geminiTranslator.js';
 import { buildFallbackText } from './_lib/marketInsight/fallbackTemplate.js';
@@ -220,7 +220,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     };
 
     if (dry) {
-      return res.status(200).json({ ok: true, dryRun: true, usedGemini, row: newRow });
+      return res.status(200).json({ ok: true, dryRun: true, usedGemini, row: newRow, fetchLog });
     }
 
     // Step 6: flip previous active rows off, then insert.

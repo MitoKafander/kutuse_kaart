@@ -35,9 +35,15 @@ export type Series = {
   asOf: string;
 };
 
+// Tracks per-URL outcomes so the cron handler can surface them in dry-run mode
+// without us having to tail Vercel logs. Cleared at the start of every
+// fetchMarketData() call.
+export const fetchLog: Array<{ url: string; status: number | string; bytes: number }> = [];
+
 async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
+  const short = url.slice(0, 90);
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
@@ -47,17 +53,20 @@ async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> 
         'Accept': 'application/json,text/xml,*/*',
       },
     });
+    const body = res.ok ? await res.text() : '';
+    fetchLog.push({ url: short, status: res.status, bytes: body.length });
     if (!res.ok) {
-      console.warn('[marketInsight] fetch non-ok', res.status, url.slice(0, 80));
+      console.warn('[marketInsight] fetch non-ok', res.status, short);
       return null;
     }
-    const body = await res.text();
-    if (!body || body.length < 50) {
-      console.warn('[marketInsight] fetch empty/short', body.length, url.slice(0, 80));
+    if (body.length < 50) {
+      console.warn('[marketInsight] fetch empty/short', body.length, short);
     }
     return body;
   } catch (err: any) {
-    console.warn('[marketInsight] fetch threw', err?.message || err, url.slice(0, 80));
+    const msg = err?.name === 'AbortError' ? 'timeout' : (err?.message || String(err));
+    fetchLog.push({ url: short, status: `err:${msg}`, bytes: 0 });
+    console.warn('[marketInsight] fetch threw', msg, short);
     return null;
   } finally {
     clearTimeout(timer);
@@ -136,6 +145,7 @@ export type MarketData = {
 };
 
 export async function fetchMarketData(): Promise<MarketData> {
+  fetchLog.length = 0;
   const [brent, gasoil, rbob, eurUsd] = await Promise.all([
     fetchYahoo('BZ=F'),
     fetchYahoo('HO=F'),
