@@ -1,4 +1,4 @@
--- Phase 39: Travel-time velocity check on price inserts. Closes the GPS
+-- Phase 43: Travel-time velocity check on price inserts. Closes the GPS
 -- spoofing vector left open by phase31 — an attacker who spoofs submitted_lat/
 -- submitted_lon to pass the 1 km proximity trigger can still jump between
 -- stations hundreds of km apart within minutes. This trigger rejects any
