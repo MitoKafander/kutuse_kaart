@@ -39,8 +39,23 @@
          hint as unused + over the 4-hint budget; dropping it frees headroom. -->
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- gstatic serves the actual woff2; googleapis only ships the tiny CSS
+         descriptor, which the preload below already warms. Keeping the
+         preconnect count at ≤4 to avoid PSI's "too many preconnect" warning. -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Preload the default-viewport LCP tile. Leaflet can't request tiles
+         until React mounts + the map initialises (~540ms on Slow 4G per
+         PSI's LCP breakdown). ESTONIA_CENTER [58.60, 25.01] @ zoom 7 maps
+         to tile x=72,y=37; Leaflet rotates across a/b/c via
+         (x+y) % 3 — 109 % 3 = 1, so it picks 'b.'. Preloading this one
+         tile lets the browser start fetching during HTML parse, saving
+         ~300-400ms off LCP for first-visit users. Returning users have
+         it in HTTP cache either way. Two variants by color-scheme —
+         only the matching one is actually fetched, and the React
+         theme-resolution logic in App.tsx uses the same heuristic. -->
+    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/dark_all/7/72/37.png" media="(prefers-color-scheme: dark)" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/rastertiles/voyager/7/72/37.png" media="(prefers-color-scheme: light)" fetchpriority="high" />
 
     <!-- Outfit font loaded here (not via @import in index.css) so the request
          starts in parallel with the CSS download instead of chaining behind it.

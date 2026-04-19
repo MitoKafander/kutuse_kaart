@@ -47,16 +47,26 @@ initAnalytics();
 // UpdateBanner component. onRegisteredSW adds a visibilitychange listener
 // so a background PWA tab re-checks for updates the moment the user
 // foregrounds it (default SW only updates on hard navigation + every 24h).
-registerSW({
-  onNeedRefresh() { notifyUpdateAvailable(); },
-  onRegisteredSW(_swUrl, registration) {
-    if (!registration) return;
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        registration.update().catch(() => { /* offline, ignore */ });
-      }
-    });
-  },
+//
+// Scheduled off the critical path: the virtual:pwa-register runtime ships
+// a workbox-window chunk that PSI previously saw on the LCP critical path
+// (~573ms download on Slow 4G). Since SW registration only matters for
+// repeat visits, there's no reason to run it before first paint.
+const scheduleIdle = typeof requestIdleCallback !== 'undefined'
+  ? (cb: () => void) => { requestIdleCallback(cb, { timeout: 3000 }); }
+  : (cb: () => void) => { setTimeout(cb, 0); };
+scheduleIdle(() => {
+  registerSW({
+    onNeedRefresh() { notifyUpdateAvailable(); },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          registration.update().catch(() => { /* offline, ignore */ });
+        }
+      });
+    },
+  });
 });
 
 createRoot(document.getElementById('root')!).render(
