@@ -1,28 +1,24 @@
 // Market-data fetchers for the daily Kyts insight cron.
 //
-// All sources are free and keyless:
-//   · Yahoo Finance v8 chart API serves daily closes for futures + FX as JSON.
-//     We were originally on Stooq, but Stooq started responding with an empty
-//     body + `Content-disposition: attachment;filename=error.txt` to every
-//     request (regardless of UA), so it's effectively broken for us.
-//   · ECB publishes the daily EUR/USD reference rate as a tiny XML feed
-//     (used only as a fallback when Yahoo FX is flaky).
+// Cloud-egress reality: Yahoo Finance returns 429 to Vercel's AWS IPs, and
+// Stooq responds with an empty `Content-disposition: attachment;filename=error.txt`
+// body regardless of UA. Both tested and confirmed from the production
+// function. So v1 uses:
 //
-// Each fetch is wrapped in a 5 s AbortController timeout so a single slow
-// source can't starve the 60 s Serverless budget. On any failure we return
-// null — the signal algorithm gracefully degrades to `neutral` when a
-// benchmark is missing, rather than crashing the whole run.
+//   · EIA API v2 (eia.gov) — free with an API key, reliable from cloud.
+//       · PET.RBRTE.D              — Europe Brent Spot, USD/bbl, daily
+//       · PET.EER_EPD2F_PF4_Y35NY_DPG.D — NY Harbor ULSD No 2 Spot, USD/gal,
+//                                        daily — diesel wholesale proxy
+//       · PET.EER_EPMRR_PF4_RGC_DPG.D  — LA CARBOB Regular Gasoline Spot,
+//                                        USD/gal, daily — gasoline proxy
+//   · Frankfurter (api.frankfurter.dev) — ECB reference rates as JSON,
+//     keyless, cloud-friendly. Range endpoint returns 7+30d history in one
+//     call.
+//   · ECB XML — final FX fallback if Frankfurter is down.
 //
-// Symbol choices:
-//   · BZ=F  — ICE Brent Crude (USD/bbl), headline oil price
-//   · HO=F  — NY Harbor ULSD / Heating Oil futures (USD/gal). This is the
-//             diesel-wholesale proxy. The ideal benchmark is ICE Low-Sulphur
-//             Gasoil (LGO) which is what Rotterdam traders actually watch,
-//             but Yahoo doesn't carry LGO. HO=F tracks LGO with ~0.95
-//             correlation on daily moves, so directionally it's fine for a
-//             buy-now/wait signal.
-//   · RB=F  — NYMEX RBOB gasoline (USD/gal), direct wholesale proxy
-//   · EURUSD=X — EUR→USD spot for converting USD wholesale into EUR terms
+// Each fetch is wrapped in a 6 s AbortController timeout. On any failure we
+// return null — the signal algorithm degrades to `neutral` for that fuel
+// rather than crashing the whole run.
 
 export type Series = {
   /** Close price on the most recent session we have. */
@@ -40,16 +36,16 @@ export type Series = {
 // fetchMarketData() call.
 export const fetchLog: Array<{ url: string; status: number | string; bytes: number }> = [];
 
-async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> {
+async function fetchWithTimeout(url: string, ms = 6000): Promise<string | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  const short = url.slice(0, 90);
+  // Strip the api_key query param before logging so we don't leak it.
+  const short = url.replace(/api_key=[^&]+/, 'api_key=***').slice(0, 110);
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36',
+        'User-Agent': 'kyts-market-insight/1.0 (+https://kyts.ee)',
         'Accept': 'application/json,text/xml,*/*',
       },
     });
@@ -73,27 +69,27 @@ async function fetchWithTimeout(url: string, ms = 5000): Promise<string | null> 
   }
 }
 
-// Parse Yahoo v8 chart JSON into [date, close] tuples (newest first). Yahoo
-// occasionally returns null slots inside `close` for holidays/bad days — we
-// drop those.
-function parseYahooChart(body: string): Array<[string, number]> | null {
+// --- EIA ------------------------------------------------------------------
+
+type EiaRow = { period: string; value: number | string | null };
+
+function parseEiaSeries(body: string): Array<[string, number]> | null {
   let j: any;
   try { j = JSON.parse(body); } catch { return null; }
-  const result = j?.chart?.result?.[0];
-  if (!result) return null;
-  const ts: number[] = result.timestamp;
-  const closes: Array<number | null> = result?.indicators?.quote?.[0]?.close;
-  if (!Array.isArray(ts) || !Array.isArray(closes)) return null;
+  const rows: EiaRow[] | undefined = j?.response?.data;
+  if (!Array.isArray(rows) || rows.length === 0) return null;
 
+  // Normalize to [iso_date, close] newest→oldest. Sort ourselves because the
+  // API's default ordering isn't guaranteed stable across endpoints.
   const out: Array<[string, number]> = [];
-  for (let i = ts.length - 1; i >= 0 && out.length < 60; i--) {
-    const c = closes[i];
-    const t = ts[i];
-    if (typeof c !== 'number' || !isFinite(c) || c <= 0) continue;
-    const iso = new Date(t * 1000).toISOString().slice(0, 10);
-    out.push([iso, c]);
+  for (const r of rows) {
+    const v = typeof r.value === 'string' ? parseFloat(r.value) : r.value;
+    if (typeof r.period !== 'string' || typeof v !== 'number' || !isFinite(v) || v <= 0) continue;
+    out.push([r.period, v]);
   }
-  return out.length >= 2 ? out : null;
+  if (out.length < 2) return null;
+  out.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
+  return out;
 }
 
 function toSeries(rows: Array<[string, number]>): Series {
@@ -110,22 +106,51 @@ function toSeries(rows: Array<[string, number]>): Series {
   };
 }
 
-async function fetchYahoo(symbol: string): Promise<Series | null> {
-  // `range=2mo` gives us ~40 trading sessions — more than enough to pick a
-  // prev30 index. `interval=1d` is the daily close we actually want.
+async function fetchEia(seriesId: string, apiKey: string): Promise<Series | null> {
+  // seriesid shortcut: the v2 API lets us address legacy series with a single
+  // path segment, which is way less noisy than building the facet query.
   const url =
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
-    `?interval=1d&range=2mo`;
+    `https://api.eia.gov/v2/seriesid/${encodeURIComponent(seriesId)}` +
+    `?api_key=${encodeURIComponent(apiKey)}&length=60`;
   const body = await fetchWithTimeout(url);
   if (!body) return null;
-  const rows = parseYahooChart(body);
+  const rows = parseEiaSeries(body);
+  if (!rows) return null;
+  return toSeries(rows);
+}
+
+// --- Frankfurter (FX) -----------------------------------------------------
+
+function parseFrankfurterRange(body: string): Array<[string, number]> | null {
+  let j: any;
+  try { j = JSON.parse(body); } catch { return null; }
+  const rates: Record<string, { USD?: number }> | undefined = j?.rates;
+  if (!rates) return null;
+  const out: Array<[string, number]> = [];
+  for (const [date, obj] of Object.entries(rates)) {
+    const v = obj?.USD;
+    if (typeof v === 'number' && isFinite(v) && v > 0) out.push([date, v]);
+  }
+  if (out.length < 2) return null;
+  out.sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
+  return out;
+}
+
+async function fetchFrankfurter(): Promise<Series | null> {
+  // Frankfurter's range syntax: `/v1/YYYY-MM-DD..YYYY-MM-DD`. 45-day window
+  // ensures we have >= 30 weekday observations.
+  const now = new Date();
+  const end = now.toISOString().slice(0, 10);
+  const start = new Date(now.getTime() - 45 * 86400_000).toISOString().slice(0, 10);
+  const url = `https://api.frankfurter.dev/v1/${start}..${end}?base=EUR&symbols=USD`;
+  const body = await fetchWithTimeout(url);
+  if (!body) return null;
+  const rows = parseFrankfurterRange(body);
   if (!rows) return null;
   return toSeries(rows);
 }
 
 async function fetchEcbEurUsd(): Promise<number | null> {
-  // ECB daily reference rate XML — the official EUR fx rate published ~16:00 CET.
-  // We only need today's number; history is 30 days in a separate feed we don't use.
   const xml = await fetchWithTimeout(
     'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
     4000,
@@ -137,25 +162,39 @@ async function fetchEcbEurUsd(): Promise<number | null> {
   return isFinite(rate) && rate > 0 ? rate : null;
 }
 
+// --- Public API -----------------------------------------------------------
+
 export type MarketData = {
-  brent: Series | null;       // USD/barrel (Yahoo BZ=F)
-  gasoil: Series | null;      // USD/gallon heating oil (Yahoo HO=F, diesel proxy)
-  rbob: Series | null;        // USD/gallon NYMEX RBOB (Yahoo RB=F, gasoline proxy)
-  eurUsd: Series | null;      // EUR→USD (Yahoo EURUSD=X; ECB fallback writes a flat "today" only)
+  brent: Series | null;       // USD/barrel (EIA PET.RBRTE.D)
+  gasoil: Series | null;      // USD/gallon NY Harbor ULSD (EIA PET.EER_EPD2F_PF4_Y35NY_DPG.D, diesel proxy)
+  rbob: Series | null;        // USD/gallon LA CARBOB gasoline spot (EIA PET.EER_EPMRR_PF4_RGC_DPG.D)
+  eurUsd: Series | null;      // EUR→USD (Frankfurter; ECB "today-only" fallback)
 };
 
 export async function fetchMarketData(): Promise<MarketData> {
   fetchLog.length = 0;
-  const [brent, gasoil, rbob, eurUsd] = await Promise.all([
-    fetchYahoo('BZ=F'),
-    fetchYahoo('HO=F'),
-    fetchYahoo('RB=F'),
-    fetchYahoo('EURUSD=X'),
+
+  const eiaKey = process.env.EIA_API_KEY;
+  const oilP = eiaKey
+    ? Promise.all([
+        fetchEia('PET.RBRTE.D', eiaKey),
+        fetchEia('PET.EER_EPD2F_PF4_Y35NY_DPG.D', eiaKey),
+        fetchEia('PET.EER_EPMRR_PF4_RGC_DPG.D', eiaKey),
+      ])
+    : Promise.resolve<[null, null, null]>([null, null, null]);
+
+  const [[brent, gasoil, rbob], eurUsd] = await Promise.all([
+    oilP,
+    fetchFrankfurter(),
   ]);
 
-  // If Yahoo EUR/USD failed, backfill "today" from ECB so at least today's
-  // currency conversion doesn't blow up. prev7/prev30 stay equal to today,
-  // which means divergence contribution from FX is zero — acceptable.
+  if (!eiaKey) {
+    fetchLog.push({ url: '(eia skipped)', status: 'no EIA_API_KEY env var', bytes: 0 });
+  }
+
+  // FX last-ditch fallback: if Frankfurter failed, pull today's rate from ECB
+  // XML. prev7/prev30 stay equal to today → divergence contribution from FX
+  // is zero — acceptable for a single day.
   let fxSeries = eurUsd;
   if (!fxSeries) {
     const spot = await fetchEcbEurUsd();
