@@ -550,5 +550,11 @@
     "brand": "Tīkls",
     "clearCount": "Notīrīt ({{count}})",
     "findCheapestHint": "*Vispirms izvēlies degvielas veidu"
+  },
+  "header": {
+    "aria": {
+      "filter": "Atvērt filtrus",
+      "profile": "Atvērt profilu"
+    }
   }
 }

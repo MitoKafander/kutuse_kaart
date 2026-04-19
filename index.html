@@ -24,6 +24,31 @@
     <meta name="twitter:title" content="Kyts — Eesti kütusehinnad" />
     <meta name="twitter:description" content="Eesti kütusehindade kogukonnakaart. Reaalajas hinnad 500+ tanklast." />
     <meta name="twitter:image" content="https://kyts.ee/logo.png" />
+
+    <!-- Preconnects: cut ~300-500ms off LCP on Slow 4G by warming up the DNS+TLS+TCP
+         handshake for origins the app hits within the first 100ms of boot.
+         Supabase hosts the four initial queries (stations/prices/votes/reporters),
+         CartoCDN serves the Leaflet basemap tiles (which is the LCP element),
+         and fonts.gstatic.com serves the Outfit woff2 that blocks first paint. -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
+    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin />
+    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Outfit font loaded here (not via @import in index.css) so the request
+         starts in parallel with the CSS download instead of chaining behind it.
+         PSI showed a 3-deep HTML→CSS→googleapis→gstatic chain worth ~1,450ms. -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+    />
   </head>
   <body>
     <script>

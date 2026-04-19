@@ -550,5 +550,11 @@
     "brand": "Tinklas",
     "clearCount": "Išvalyti ({{count}})",
     "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą"
+  },
+  "header": {
+    "aria": {
+      "filter": "Atidaryti filtrus",
+      "profile": "Atidaryti profilį"
+    }
   }
 }

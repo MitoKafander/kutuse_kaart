@@ -76,6 +76,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
+    sourcemap: true,
     chunkSizeWarningLimit: 1100,
+    // es2022 = native classes, top-level-await, Math.trunc — everything
+    // every browser that supports ES modules natively already has. Lets
+    // esbuild skip the legacy transforms PSI flagged as 8 KiB waste.
+    target: 'es2022',
   },
 });

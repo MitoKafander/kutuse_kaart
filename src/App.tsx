@@ -2,18 +2,8 @@ import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
 import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
-import { AuthModal } from './components/AuthModal';
-import { StationDrawer } from './components/StationDrawer';
-import { ManualPriceModal } from './components/ManualPriceModal';
-import { PrivacyModal } from './components/PrivacyModal';
-import { TermsModal } from './components/TermsModal';
-import { FeedbackModal } from './components/FeedbackModal';
-import { TutorialModal } from './components/TutorialModal';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
-import { FilterDrawer } from './components/FilterDrawer';
-import { ProfileDrawer } from './components/ProfileDrawer';
-import { CheapestNearbyPanel } from './components/CheapestNearbyPanel';
 import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
@@ -21,9 +11,11 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 
-// Lazy-load panels that aren't on the critical first-paint path to keep the
-// initial JS bundle under the 500 kB Vercel warning. These are only fetched
-// when the user opens them.
+// Lazy-load every panel, drawer, and modal that sits behind an open-flag.
+// The map is the LCP element and must stay eager; these are all hidden on
+// first paint, so deferring their JS shaves ~200+ kB off the initial bundle.
+// In particular, StationDrawer ships recharts (~60 kB gz) and ProfileDrawer
+// is 1,400+ lines on its own.
 //
 // lazyWithReload: after a fresh deploy, old tabs hold an index.js that
 // references chunk hashes (e.g. StatisticsDrawer-D9lfdbbC.js) no longer on
@@ -46,6 +38,16 @@ function lazyWithReload<T extends React.ComponentType<any>>(factory: () => Promi
   });
 }
 
+const AuthModal = lazyWithReload(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const StationDrawer = lazyWithReload(() => import('./components/StationDrawer').then(m => ({ default: m.StationDrawer })));
+const ManualPriceModal = lazyWithReload(() => import('./components/ManualPriceModal').then(m => ({ default: m.ManualPriceModal })));
+const FilterDrawer = lazyWithReload(() => import('./components/FilterDrawer').then(m => ({ default: m.FilterDrawer })));
+const ProfileDrawer = lazyWithReload(() => import('./components/ProfileDrawer').then(m => ({ default: m.ProfileDrawer })));
+const CheapestNearbyPanel = lazyWithReload(() => import('./components/CheapestNearbyPanel').then(m => ({ default: m.CheapestNearbyPanel })));
+const PrivacyModal = lazyWithReload(() => import('./components/PrivacyModal').then(m => ({ default: m.PrivacyModal })));
+const TermsModal = lazyWithReload(() => import('./components/TermsModal').then(m => ({ default: m.TermsModal })));
+const FeedbackModal = lazyWithReload(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+const TutorialModal = lazyWithReload(() => import('./components/TutorialModal').then(m => ({ default: m.TutorialModal })));
 const LeaderboardDrawer = lazyWithReload(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
 const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
@@ -280,41 +282,47 @@ function App() {
 
   // Load Base Data & User Data
   const loadData = async (activeSession?: any) => {
-    const { data: st } = await supabase.from('stations').select('*');
-    if (st) setStations(st);
-    
-    const { data: pr } = await supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000);
-    if (pr) setPrices(pr);
-    setPricesLoaded(true);
+    // Fan out the four public queries in parallel. They're independent, land on
+    // the same HTTP/2 connection, and previously ran serially — PSI showed the
+    // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
+    const [stRes, prRes, vtRes, repsRes] = await Promise.all([
+      supabase.from('stations').select('*'),
+      supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000),
+      supabase.from('votes').select('*').limit(10000),
+      supabase.from('v_reporters').select('user_id, display_name'),
+    ]);
 
-    const { data: vt } = await supabase.from('votes').select('*').limit(10000);
-    if (vt) setVotes(vt);
+    if (stRes.data) setStations(stRes.data);
+    if (prRes.data) setPrices(prRes.data);
+    setPricesLoaded(true);
+    if (vtRes.data) setVotes(vtRes.data);
 
     // Reporter display-name map for price attribution (phase 36 view).
-    const { data: reps } = await supabase.from('v_reporters').select('user_id, display_name');
-    if (reps) {
+    if (repsRes.data) {
       const map: Record<string, string> = {};
-      reps.forEach((r: any) => { if (r.user_id && r.display_name) map[r.user_id] = r.display_name; });
+      repsRes.data.forEach((r: any) => { if (r.user_id && r.display_name) map[r.user_id] = r.display_name; });
       setReporterMap(map);
     }
 
     const currentUser = activeSession || session;
     if (currentUser?.user) {
-      // Load favorites
-      const { data: favs } = await supabase.from('user_favorites').select('*');
-      if (favs) setFavorites(favs);
-      
-      // Load loyalty discounts
-      const { data: loyalty } = await supabase.from('user_loyalty_discounts').select('brand, discount_cents');
-      if (loyalty) {
+      // Same fan-out for the signed-in user's three preference tables.
+      const [favsRes, loyaltyRes, profRes] = await Promise.all([
+        supabase.from('user_favorites').select('*'),
+        supabase.from('user_loyalty_discounts').select('brand, discount_cents'),
+        supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language, theme').eq('id', currentUser.user.id).single(),
+      ]);
+
+      if (favsRes.data) setFavorites(favsRes.data);
+
+      if (loyaltyRes.data) {
         const map: LoyaltyDiscounts = {};
-        loyalty.forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
+        loyaltyRes.data.forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
         setLoyaltyDiscounts(map);
         localStorage.setItem('kyts-loyalty-discounts', JSON.stringify(map));
       }
 
-      // Load preferences
-      const { data: prof } = await supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language, theme').eq('id', currentUser.user.id).single();
+      const prof = profRes.data;
       if (prof?.display_name) setDisplayName(prof.display_name);
       if (prof?.default_fuel_type) {
         setDefaultFuelType(prof.default_fuel_type);
@@ -757,12 +765,12 @@ function App() {
           
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px', alignItems: 'center' }}>
-            <button onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
+            <button aria-label={t('header.aria.filter')} onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
               <Filter size={20} />
             </button>
             
             {session ? (
-              <button onClick={() => setIsProfileOpen(true)} style={{ 
+              <button aria-label={t('header.aria.profile')} onClick={() => setIsProfileOpen(true)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '36px', height: '36px', borderRadius: '50%',
                 background: session.user?.user_metadata?.avatar_url ? 'transparent' : 'var(--color-primary)',
@@ -779,7 +787,7 @@ function App() {
                 )}
               </button>
             ) : (
-              <button onClick={() => setIsProfileOpen(true)} style={{
+              <button aria-label={t('header.aria.profile')} onClick={() => setIsProfileOpen(true)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '36px', height: '36px', borderRadius: '50%',
                 background: 'var(--color-surface-alpha-12)',
@@ -1011,94 +1019,111 @@ function App() {
         <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-watermark)', letterSpacing: '0.5px' }}>Kyts</span>
       </div>
 
-      {/* Modals & Drawers */}
-      <FilterDrawer
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        brands={uniqueBrands}
-        selectedBrands={selectedBrands}
-        setSelectedBrands={setSelectedBrands}
-        fuelTypes={FUEL_TYPES}
-        selectedFuelType={selectedFuelType}
-        setSelectedFuelType={setSelectedFuelType}
-        showOnlyFresh={showOnlyFresh}
-        setShowOnlyFresh={setShowOnlyFresh}
-        highlightCheapest={highlightCheapest}
-        setHighlightCheapest={setHighlightCheapest}
-        applyLoyalty={applyLoyalty}
-        onApplyLoyaltyChange={async (v) => {
-          setApplyLoyalty(v);
-          localStorage.setItem('kyts-apply-loyalty', String(v));
-          if (session?.user?.id) {
-            await supabase.from('user_profiles').upsert({ id: session.user.id, apply_loyalty: v });
-          }
-        }}
-        hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
-      />
-      
-      <StationDrawer
-        station={selectedStation}
-        prices={prices.filter(p => p.station_id === selectedStation?.id)}
-        allVotes={votes}
-        reporterMap={reporterMap}
-        session={session}
-        isOpen={!!selectedStation && !isPriceModalOpen}
-        onClose={() => setSelectedStation(null)}
-        onOpenPriceForm={handleOpenPriceForm}
-        onVoteSubmitted={() => loadData()}
-        isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
-        onToggleFavorite={async () => {
-          if (!session) return setIsAuthOpen(true);
-          const isFav = favorites.some(f => f.station_id === selectedStation?.id);
-          if (isFav) {
-            await supabase.from('user_favorites').delete().eq('user_id', session.user.id).eq('station_id', selectedStation.id);
-          } else {
-            await supabase.from('user_favorites').insert({ user_id: session.user.id, station_id: selectedStation.id });
-          }
-          loadData();
-        }}
-      />
-      
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        mapStyle={mapStyle}
-        onMapStyleChange={handleMapStyleChange}
-      />
+      {/* Modals & Drawers — lazy-loaded, each gated by its open-flag so the
+          chunk only downloads when the user first triggers that panel. */}
+      <Suspense fallback={null}>
+        {isFilterOpen && (
+          <FilterDrawer
+            isOpen={isFilterOpen}
+            onClose={() => setIsFilterOpen(false)}
+            brands={uniqueBrands}
+            selectedBrands={selectedBrands}
+            setSelectedBrands={setSelectedBrands}
+            fuelTypes={FUEL_TYPES}
+            selectedFuelType={selectedFuelType}
+            setSelectedFuelType={setSelectedFuelType}
+            showOnlyFresh={showOnlyFresh}
+            setShowOnlyFresh={setShowOnlyFresh}
+            highlightCheapest={highlightCheapest}
+            setHighlightCheapest={setHighlightCheapest}
+            applyLoyalty={applyLoyalty}
+            onApplyLoyaltyChange={async (v) => {
+              setApplyLoyalty(v);
+              localStorage.setItem('kyts-apply-loyalty', String(v));
+              if (session?.user?.id) {
+                await supabase.from('user_profiles').upsert({ id: session.user.id, apply_loyalty: v });
+              }
+            }}
+            hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
+          />
+        )}
 
-      <ManualPriceModal
-        station={selectedStation}
-        isOpen={isPriceModalOpen}
-        onClose={() => setIsPriceModalOpen(false)}
-        onPricesSubmitted={() => loadData()}
-        photoExpanded={isPhotoExpanded}
-        onPhotoExpandedChange={setIsPhotoExpanded}
-      />
+        {!!selectedStation && !isPriceModalOpen && (
+          <StationDrawer
+            station={selectedStation}
+            prices={prices.filter(p => p.station_id === selectedStation?.id)}
+            allVotes={votes}
+            reporterMap={reporterMap}
+            session={session}
+            isOpen={!!selectedStation && !isPriceModalOpen}
+            onClose={() => setSelectedStation(null)}
+            onOpenPriceForm={handleOpenPriceForm}
+            onVoteSubmitted={() => loadData()}
+            isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
+            onToggleFavorite={async () => {
+              if (!session) return setIsAuthOpen(true);
+              const isFav = favorites.some(f => f.station_id === selectedStation?.id);
+              if (isFav) {
+                await supabase.from('user_favorites').delete().eq('user_id', session.user.id).eq('station_id', selectedStation.id);
+              } else {
+                await supabase.from('user_favorites').insert({ user_id: session.user.id, station_id: selectedStation.id });
+              }
+              loadData();
+            }}
+          />
+        )}
 
-      {/* Camera FAB mode: no pre-selected station, GPS auto-selects */}
-      <ManualPriceModal
-        station={null}
-        isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
-        onPricesSubmitted={() => loadData()}
-        allStations={stations}
-        photoExpanded={isPhotoExpanded}
-        onPhotoExpandedChange={setIsPhotoExpanded}
-      />
+        {isAuthOpen && (
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            mapStyle={mapStyle}
+            onMapStyleChange={handleMapStyleChange}
+          />
+        )}
 
-      {/* Manual FAB mode: GPS-first, 500 m strict nearby picker, no camera */}
-      <ManualPriceModal
-        mode="manual"
-        station={null}
-        isOpen={isManualOpen}
-        onClose={() => setIsManualOpen(false)}
-        onPricesSubmitted={() => loadData()}
-        allStations={stations}
-        photoExpanded={isPhotoExpanded}
-        onPhotoExpandedChange={setIsPhotoExpanded}
-      />
+        {isPriceModalOpen && (
+          <ManualPriceModal
+            station={selectedStation}
+            isOpen={isPriceModalOpen}
+            onClose={() => setIsPriceModalOpen(false)}
+            onPricesSubmitted={() => loadData()}
+            photoExpanded={isPhotoExpanded}
+            onPhotoExpandedChange={setIsPhotoExpanded}
+          />
+        )}
 
-      <ProfileDrawer
+        {/* Camera FAB mode: no pre-selected station, GPS auto-selects */}
+        {isCameraOpen && (
+          <ManualPriceModal
+            station={null}
+            isOpen={isCameraOpen}
+            onClose={() => setIsCameraOpen(false)}
+            onPricesSubmitted={() => loadData()}
+            allStations={stations}
+            photoExpanded={isPhotoExpanded}
+            onPhotoExpandedChange={setIsPhotoExpanded}
+          />
+        )}
+
+        {/* Manual FAB mode: GPS-first, 500 m strict nearby picker, no camera */}
+        {isManualOpen && (
+          <ManualPriceModal
+            mode="manual"
+            station={null}
+            isOpen={isManualOpen}
+            onClose={() => setIsManualOpen(false)}
+            onPricesSubmitted={() => loadData()}
+            allStations={stations}
+            photoExpanded={isPhotoExpanded}
+            onPhotoExpandedChange={setIsPhotoExpanded}
+          />
+        )}
+      </Suspense>
+
+      <Suspense fallback={null}>
+        {isProfileOpen && (
+        <ProfileDrawer
         session={session}
         displayName={displayName}
         onDisplayNameChange={handleDisplayNameChange}
@@ -1170,6 +1195,8 @@ function App() {
           }
         }}
       />
+        )}
+      </Suspense>
 
       <Suspense fallback={null}>
         {isLeaderboardOpen && (
@@ -1182,25 +1209,25 @@ function App() {
             onDisplayNameChange={handleDisplayNameChange}
           />
         )}
-      </Suspense>
 
-      <CheapestNearbyPanel
-        isOpen={isCheapestNearbyOpen}
-        onClose={() => setIsCheapestNearbyOpen(false)}
-        stations={stations}
-        prices={prices}
-        allVotes={votes}
-        reporterMap={reporterMap}
-        radius={nearbyRadius}
-        onRadiusChange={setNearbyRadius}
-        preferredBrands={preferredBrands}
-        loyaltyDiscounts={loyaltyDiscounts}
-        applyLoyalty={applyLoyalty}
-        onStationSelect={setSelectedStation}
-        fallbackLocation={liveUserLocation}
-      />
+        {isCheapestNearbyOpen && (
+          <CheapestNearbyPanel
+            isOpen={isCheapestNearbyOpen}
+            onClose={() => setIsCheapestNearbyOpen(false)}
+            stations={stations}
+            prices={prices}
+            allVotes={votes}
+            reporterMap={reporterMap}
+            radius={nearbyRadius}
+            onRadiusChange={setNearbyRadius}
+            preferredBrands={preferredBrands}
+            loyaltyDiscounts={loyaltyDiscounts}
+            applyLoyalty={applyLoyalty}
+            onStationSelect={setSelectedStation}
+            fallbackLocation={liveUserLocation}
+          />
+        )}
 
-      <Suspense fallback={null}>
         {routeMounted && <RoutePlanModal
           isOpen={isRouteOpen}
           onClose={() => setIsRouteOpen(false)}
@@ -1214,9 +1241,7 @@ function App() {
           onRouteChange={setRoutePolyline}
           onStationSelect={setSelectedStation}
         />}
-      </Suspense>
 
-      <Suspense fallback={null}>
         {isStatsOpen && (
           <StatisticsDrawer
             isOpen={isStatsOpen}
@@ -1227,34 +1252,42 @@ function App() {
             onStationSelect={setSelectedStation}
           />
         )}
+
+        {isPrivacyOpen && (
+          <PrivacyModal
+            isOpen={isPrivacyOpen}
+            onClose={() => setIsPrivacyOpen(false)}
+            onOpenTerms={() => { setIsPrivacyOpen(false); setIsTermsOpen(true); }}
+          />
+        )}
+
+        {isTermsOpen && (
+          <TermsModal
+            isOpen={isTermsOpen}
+            onClose={() => setIsTermsOpen(false)}
+            onOpenPrivacy={() => { setIsTermsOpen(false); setIsPrivacyOpen(true); }}
+          />
+        )}
+
+        {isFeedbackOpen && (
+          <FeedbackModal
+            isOpen={isFeedbackOpen}
+            onClose={() => setIsFeedbackOpen(false)}
+            session={session}
+          />
+        )}
+
+        {isTutorialOpen && (
+          <TutorialModal
+            isOpen={isTutorialOpen}
+            onComplete={(outcome, lastStep) => {
+              localStorage.setItem('kyts:tutorial-seen', '1');
+              capture('tutorial_' + outcome, { last_step: lastStep });
+              setIsTutorialOpen(false);
+            }}
+          />
+        )}
       </Suspense>
-
-      <PrivacyModal
-        isOpen={isPrivacyOpen}
-        onClose={() => setIsPrivacyOpen(false)}
-        onOpenTerms={() => { setIsPrivacyOpen(false); setIsTermsOpen(true); }}
-      />
-
-      <TermsModal
-        isOpen={isTermsOpen}
-        onClose={() => setIsTermsOpen(false)}
-        onOpenPrivacy={() => { setIsTermsOpen(false); setIsPrivacyOpen(true); }}
-      />
-
-      <FeedbackModal
-        isOpen={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-        session={session}
-      />
-
-      <TutorialModal
-        isOpen={isTutorialOpen}
-        onComplete={(outcome, lastStep) => {
-          localStorage.setItem('kyts:tutorial-seen', '1');
-          capture('tutorial_' + outcome, { last_step: lastStep });
-          setIsTutorialOpen(false);
-        }}
-      />
 
       <GdprBanner
         onOpenPrivacy={() => setIsPrivacyOpen(true)}

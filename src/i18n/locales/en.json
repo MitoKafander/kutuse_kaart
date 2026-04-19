@@ -629,5 +629,11 @@
     "s11": "<strong>11. Changes to terms</strong><br/>We may update these terms. We will notify you of major changes within the app. Continued use of the service after changes constitutes acceptance of the new terms.",
     "s12": "<strong>12. Termination of service</strong><br/>We can suspend or terminate the service at any time. If we terminate the service, we will provide at least 30 days' notice, if possible.",
     "s13": "<strong>13. Governing law</strong><br/>The law of the Republic of Estonia applies to these terms. Disputes shall be resolved in the Harju County Court, unless the law provides otherwise."
+  },
+  "header": {
+    "aria": {
+      "filter": "Open filters",
+      "profile": "Open profile"
+    }
   }
 }

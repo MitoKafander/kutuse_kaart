@@ -550,5 +550,11 @@
     "brand": "Ketju",
     "clearCount": "Tyhjennä ({{count}})",
     "findCheapestHint": "*Valitse ensin polttoainetyyppi"
+  },
+  "header": {
+    "aria": {
+      "filter": "Avaa suodattimet",
+      "profile": "Avaa profiili"
+    }
   }
 }

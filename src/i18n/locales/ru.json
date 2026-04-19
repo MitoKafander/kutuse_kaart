@@ -550,5 +550,11 @@
     "brand": "Сеть",
     "clearCount": "Очистить ({{count}})",
     "findCheapestHint": "*Сначала выберите тип топлива"
+  },
+  "header": {
+    "aria": {
+      "filter": "Открыть фильтры",
+      "profile": "Открыть профиль"
+    }
   }
 }

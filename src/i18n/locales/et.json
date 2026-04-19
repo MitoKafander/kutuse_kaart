@@ -629,5 +629,11 @@
       "title": "Loo konto",
       "body": "Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja seadmetevahelise sünkroonimise. Profiili ikoon on üleval paremal."
     }
+  },
+  "header": {
+    "aria": {
+      "filter": "Ava filtrid",
+      "profile": "Ava profiil"
+    }
   }
 }
