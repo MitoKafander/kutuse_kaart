@@ -111,6 +111,12 @@ export async function translateWithGemini(
       // language, ~1.6× English tokens). 800 was cutting mid-sentence and
       // producing unparseable JSON — 2000 leaves comfortable headroom.
       maxOutputTokens: 2000,
+      // Gemini 2.5 Flash has "thinking" mode on by default; thinking tokens
+      // count against maxOutputTokens but aren't visible in the response,
+      // so the model was spending ~1800 on invisible reasoning and
+      // truncating the JSON output mid-sentence. We don't need reasoning
+      // for a translation task — the signal is already computed.
+      thinkingConfig: { thinkingBudget: 0 },
     } as any,
   });
 
