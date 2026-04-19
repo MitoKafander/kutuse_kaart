@@ -9,6 +9,15 @@ type GlobalSeries = {
   asOf: string;
 } | null;
 
+export type SignalBreakdown = {
+  signal: Signal;
+  confidence: number;
+  pumpDelta7d: number;
+  wholesaleDelta7d: number;
+  divergence: number;
+  reasonCode: string;
+};
+
 export type InsightData = {
   kyts?: {
     diesel?: { today: number | null; prev7: number | null; samples7d: number };
@@ -20,7 +29,10 @@ export type InsightData = {
     gasoil?: GlobalSeries;
     rbob?: GlobalSeries;
   };
-  signals?: Record<string, unknown>;
+  signals?: {
+    diesel?: SignalBreakdown;
+    gasoline?: SignalBreakdown;
+  };
 };
 
 export interface MarketInsight {

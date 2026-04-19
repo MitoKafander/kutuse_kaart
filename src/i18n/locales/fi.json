@@ -579,6 +579,21 @@
       "eurUsd": "EUR/USD",
       "gasoil": "ICE Gasoil 7pv",
       "rbob": "NYMEX RBOB 7pv"
+    },
+    "why": {
+      "heading": "MIKSI TÄMÄ SIGNAALI?",
+      "wholesale": "Tukku 7pv",
+      "pump": "Pumppu 7pv",
+      "gap": "Ero",
+      "samples": "raporttia",
+      "reason": {
+        "pump_lagging_up": "Pumppu jää tukusta — nousu todennäköinen lähipäivinä.",
+        "pump_lagging_down": "Tukku laskee pumppua nopeammin — lasku todennäköinen.",
+        "flat_market": "Markkinat rauhalliset, ei merkittäviä liikkeitä.",
+        "aligned": "Pumppu ja tukku liikkuvat yhdessä — ei ajallista etua.",
+        "insufficient_data": "Ei tarpeeksi dataa signaalille.",
+        "low_sample_count": "Liian vähän Kyts-raportteja varmuudelle."
+      }
     }
   }
 }

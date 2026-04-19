@@ -7,6 +7,7 @@ import {
   ConfidenceBar,
   NumbersBlock,
   type MarketInsight,
+  type SignalBreakdown,
 } from './MarketInsightDrawer';
 
 const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
@@ -19,6 +20,98 @@ function median(xs: number[]): number {
   const s = [...xs].sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+function fmtPctSigned(n: number | null | undefined): string {
+  if (n == null || !isFinite(n)) return '—';
+  const abs = Math.abs(n) * 100;
+  const sign = n > 0 ? '+' : n < 0 ? '-' : '';
+  return `${sign}${abs.toFixed(1)}%`;
+}
+
+function fmtPpSigned(n: number | null | undefined): string {
+  if (n == null || !isFinite(n)) return '—';
+  const abs = Math.abs(n) * 100;
+  const sign = n > 0 ? '+' : n < 0 ? '-' : '';
+  return `${sign}${abs.toFixed(1)}pp`;
+}
+
+// Shows exactly which inputs drove each fuel's signal — the wholesale vs pump
+// 7-day deltas, the divergence between them, and the rule that matched. All
+// derived from the deterministic signal in `data.signals`; no LLM involved.
+function WhyBlock({
+  diesel, gasoline, dieselSamples, gasolineSamples,
+}: {
+  diesel?: SignalBreakdown;
+  gasoline?: SignalBreakdown;
+  dieselSamples: number;
+  gasolineSamples: number;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const rows: Array<{ fuelKey: 'diesel' | 'gasoline95'; s: SignalBreakdown; samples: number }> = [];
+  if (diesel) rows.push({ fuelKey: 'diesel', s: diesel, samples: dieselSamples });
+  if (gasoline) rows.push({ fuelKey: 'gasoline95', s: gasoline, samples: gasolineSamples });
+  if (rows.length === 0) return null;
+
+  return (
+    <div style={{
+      marginTop: 12,
+      padding: 12,
+      borderRadius: 10,
+      background: 'var(--color-surface-alpha-06)',
+      border: '1px solid var(--color-surface-border)',
+    }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          color: 'var(--color-text-muted)',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          letterSpacing: 0.3,
+          textAlign: 'left',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}>▶</span>
+        {t('marketInsight.why.heading', 'MIKS SEE SIGNAAL?')}
+      </button>
+      {open && (
+        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {rows.map(({ fuelKey, s, samples }) => (
+            <div key={fuelKey} style={{ fontSize: '0.85rem', color: 'var(--color-text)' }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                {t(`marketInsight.fuel.${fuelKey}`)} · {t(`marketInsight.signal.${s.signal}`)}
+              </div>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 12,
+                color: 'var(--color-text-muted)',
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: '0.8rem',
+              }}>
+                <span>{t('marketInsight.why.wholesale', 'Hulgi 7p')}: <strong style={{ color: 'var(--color-text)' }}>{fmtPctSigned(s.wholesaleDelta7d)}</strong></span>
+                <span>{t('marketInsight.why.pump', 'Pump 7p')}: <strong style={{ color: 'var(--color-text)' }}>{fmtPctSigned(s.pumpDelta7d)}</strong></span>
+                <span>{t('marketInsight.why.gap', 'Vahe')}: <strong style={{ color: 'var(--color-text)' }}>{fmtPpSigned(s.divergence)}</strong></span>
+                <span>{samples} {t('marketInsight.why.samples', 'raportit')}</span>
+              </div>
+              <div style={{ marginTop: 4, fontSize: '0.85rem', lineHeight: 1.4 }}>
+                {t(`marketInsight.why.reason.${s.reasonCode}`, s.reasonCode)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function StatisticsDrawer({
@@ -224,6 +317,14 @@ export function StatisticsDrawer({
               </div>
             )}
             {insight.data && <NumbersBlock data={insight.data} />}
+            {insight.data?.signals && (
+              <WhyBlock
+                diesel={insight.data.signals.diesel}
+                gasoline={insight.data.signals.gasoline}
+                dieselSamples={insight.data.kyts?.diesel?.samples7d ?? 0}
+                gasolineSamples={insight.data.kyts?.gasoline95?.samples7d ?? 0}
+              />
+            )}
             <div style={{
               marginTop: 12,
               fontSize: '0.75rem',

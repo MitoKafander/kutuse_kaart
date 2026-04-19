@@ -658,6 +658,21 @@
       "eurUsd": "EUR/USD",
       "gasoil": "ICE Gasoil 7d",
       "rbob": "NYMEX RBOB 7d"
+    },
+    "why": {
+      "heading": "WHY THIS SIGNAL?",
+      "wholesale": "Wholesale 7d",
+      "pump": "Pump 7d",
+      "gap": "Gap",
+      "samples": "reports",
+      "reason": {
+        "pump_lagging_up": "Pump lagging wholesale — hike likely in the coming days.",
+        "pump_lagging_down": "Wholesale falling faster than pump — cut likely.",
+        "flat_market": "Market is calm, no meaningful moves.",
+        "aligned": "Pump and wholesale moving together — no timing edge.",
+        "insufficient_data": "Not enough data to produce a signal.",
+        "low_sample_count": "Too few Kyts reports for confidence."
+      }
     }
   }
 }

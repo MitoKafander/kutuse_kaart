@@ -579,6 +579,21 @@
       "eurUsd": "EUR/USD",
       "gasoil": "ICE Gasoil 7d",
       "rbob": "NYMEX RBOB 7d"
+    },
+    "why": {
+      "heading": "KODĖL TOKS SIGNALAS?",
+      "wholesale": "Didmena 7d",
+      "pump": "Kolonėlė 7d",
+      "gap": "Skirtumas",
+      "samples": "ataskaitų",
+      "reason": {
+        "pump_lagging_up": "Kolonėlė atsilieka nuo didmenos — kilimas tikėtinas artimiausiomis dienomis.",
+        "pump_lagging_down": "Didmena krinta sparčiau nei kolonėlė — kritimas tikėtinas.",
+        "flat_market": "Rinka rami, reikšmingų judėjimų nėra.",
+        "aligned": "Kolonėlė ir didmena juda kartu — nėra laiko pranašumo.",
+        "insufficient_data": "Neužtenka duomenų signalui.",
+        "low_sample_count": "Per mažai Kyts ataskaitų tikrumui."
+      }
     }
   }
 }

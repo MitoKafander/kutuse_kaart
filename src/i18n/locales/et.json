@@ -658,6 +658,21 @@
       "eurUsd": "EUR/USD",
       "gasoil": "ICE Gasoil 7p",
       "rbob": "NYMEX RBOB 7p"
+    },
+    "why": {
+      "heading": "MIKS SEE SIGNAAL?",
+      "wholesale": "Hulgi 7p",
+      "pump": "Pump 7p",
+      "gap": "Vahe",
+      "samples": "raportit",
+      "reason": {
+        "pump_lagging_up": "Pump jääb hulgihinnast maha — tõus tõenäoline lähipäevil.",
+        "pump_lagging_down": "Hulgihind langeb kiiremini kui pump — langus tõenäoline.",
+        "flat_market": "Turg on rahulik, olulisi liikumisi pole.",
+        "aligned": "Pump ja hulgi liiguvad koos — ajaline edumaa puudub.",
+        "insufficient_data": "Andmeid pole piisavalt signaaliks.",
+        "low_sample_count": "Liiga vähe Kyts raporteid kindluseks."
+      }
     }
   }
 }

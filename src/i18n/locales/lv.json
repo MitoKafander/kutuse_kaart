@@ -579,6 +579,21 @@
       "eurUsd": "EUR/USD",
       "gasoil": "ICE Gasoil 7d",
       "rbob": "NYMEX RBOB 7d"
+    },
+    "why": {
+      "heading": "KĀPĒC ŠĀDS SIGNĀLS?",
+      "wholesale": "Vairumā 7d",
+      "pump": "Kolonna 7d",
+      "gap": "Atšķirība",
+      "samples": "atskaišu",
+      "reason": {
+        "pump_lagging_up": "Kolonna atpaliek no vairuma — pieaugums ticams tuvākajās dienās.",
+        "pump_lagging_down": "Vairums krīt ātrāk par kolonnu — samazinājums ticams.",
+        "flat_market": "Tirgus ir mierīgs, nozīmīgu kustību nav.",
+        "aligned": "Kolonna un vairums kustas kopā — nav laika priekšrocības.",
+        "insufficient_data": "Nepietiek datu signālam.",
+        "low_sample_count": "Pārāk maz Kyts atskaišu pārliecībai."
+      }
     }
   }
 }
