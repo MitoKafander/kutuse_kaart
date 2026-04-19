@@ -436,7 +436,13 @@
         "maakonnad": "{{done}}/{{total}} maakonda"
       },
       "shareLabel": "Jaga avalikult",
-      "shareDesc": "Teised näevad su nimel klõpsates, millised jaamad oled avastanud."
+      "shareDesc": "Teised näevad su nimel klõpsates, millised jaamad oled avastanud.",
+      "brands": {
+        "summary": "Margid: {{done}}/{{total}}",
+        "noBrands": "Marke pole veel saadaval.",
+        "emptyBrand": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaama.",
+        "remaining": "Avastada jääb veel {{count}} jaama."
+      }
     },
     "activity": {
       "title": "Viimased tegevused"

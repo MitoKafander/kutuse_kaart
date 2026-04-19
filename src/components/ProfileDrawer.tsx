@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
-import type { LoyaltyDiscounts, ReporterMap } from '../utils';
+import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter } from '../utils';
 import type { RegionProgress } from '../hooks/useRegionProgress';
@@ -138,6 +138,7 @@ export function ProfileDrawer({
   showDiscoveryMap,
   onShowDiscoveryMapChange,
   regionProgress,
+  brandProgress,
   onMaakondFocus,
   sharePublicly,
   onSharePubliclyChange,
@@ -188,6 +189,7 @@ export function ProfileDrawer({
   showDiscoveryMap: boolean;
   onShowDiscoveryMapChange: (show: boolean) => void;
   regionProgress: RegionProgress;
+  brandProgress: BrandProgress[];
   onMaakondFocus?: (maakondId: number) => void;
   sharePublicly: boolean;
   onSharePubliclyChange: (v: boolean) => void;
@@ -207,6 +209,8 @@ export function ProfileDrawer({
   // Stats grid is a standalone accordion, unlinked from the map-view toggle
   // so users can browse their progress without blanking out the map.
   const [statsExpanded, setStatsExpanded] = useState(false);
+  const [brandsExpanded, setBrandsExpanded] = useState(false);
+  const [expandedBrand, setExpandedBrand] = useState<string | null>(null);
   const avastuskaartRef = useRef<HTMLDivElement | null>(null);
 
   const [nameEditing, setNameEditing] = useState(false);
@@ -219,6 +223,15 @@ export function ProfileDrawer({
     }
     setNameEditing(false);
   };
+
+  // Fast id -> station lookup for the Margid collector — renders station
+  // names without re-scanning the full list per brand-row render.
+  const stationById = useMemo(() => {
+    const m = new globalThis.Map<string, any>();
+    for (const s of stations) m.set(String(s.id), s);
+    return m;
+  }, [stations]);
+  const collectedBrandCount = brandProgress.filter(b => b.done > 0).length;
 
   useEffect(() => {
     if (!pendingAvastuskaartFocus) return;
@@ -794,6 +807,129 @@ export function ProfileDrawer({
                   </div>
                 </label>
               </>
+            )}
+
+            <button
+              onClick={() => setBrandsExpanded(e => !e)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+                borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--color-text)',
+                fontSize: '0.8rem', width: '100%', textAlign: 'left',
+              }}
+              aria-expanded={brandsExpanded}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Building2 size={14} color="var(--color-text-muted)" />
+                {t('profile.discovery.brands.summary', { done: collectedBrandCount, total: brandProgress.length })}
+              </span>
+              <ChevronDown
+                size={16}
+                style={{
+                  color: 'var(--color-text-muted)',
+                  transform: brandsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </button>
+
+            {brandsExpanded && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {brandProgress.length === 0 && (
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', margin: 0, textAlign: 'center', padding: '8px' }}>
+                    {t('profile.discovery.brands.noBrands')}
+                  </p>
+                )}
+                {brandProgress.map(bp => {
+                  const isOpen = expandedBrand === bp.brand;
+                  const complete = bp.done >= bp.total && bp.total > 0;
+                  const pct = bp.total > 0 ? Math.round((bp.done / bp.total) * 100) : 0;
+                  return (
+                    <div key={bp.brand} style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-surface-border)',
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                    }}>
+                      <button
+                        onClick={() => setExpandedBrand(isOpen ? null : bp.brand)}
+                        aria-expanded={isOpen}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          width: '100%', padding: '8px 12px',
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          color: 'var(--color-text)', fontSize: '0.85rem', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {complete ? '🏆 ' : ''}{bp.brand}
+                        </span>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          color: complete ? 'var(--color-success)' : bp.done > 0 ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                          background: complete ? 'rgba(34,197,94,0.12)' : bp.done > 0 ? 'rgba(59,130,246,0.12)' : 'transparent',
+                          border: `1px solid ${complete ? 'rgba(34,197,94,0.35)' : bp.done > 0 ? 'rgba(59,130,246,0.3)' : 'var(--color-surface-border)'}`,
+                          borderRadius: 6, padding: '2px 8px', fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {bp.done}/{bp.total}{bp.total > 0 && ` · ${pct}%`}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          style={{
+                            color: 'var(--color-text-muted)',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s',
+                          }}
+                        />
+                      </button>
+
+                      {isOpen && (
+                        <div style={{
+                          padding: '8px 12px 10px',
+                          borderTop: '1px solid var(--color-surface-border)',
+                          display: 'flex', flexDirection: 'column', gap: 4,
+                        }}>
+                          {bp.done === 0 ? (
+                            <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                              {t('profile.discovery.brands.emptyBrand', { count: bp.total })}
+                            </p>
+                          ) : (
+                            <>
+                              {bp.collectedStationIds.map(sid => {
+                                const st = stationById.get(sid);
+                                if (!st) return null;
+                                return (
+                                  <button
+                                    key={sid}
+                                    onClick={() => { onStationSelect(st); onClose(); }}
+                                    style={{
+                                      display: 'flex', alignItems: 'center', gap: 6,
+                                      width: '100%', padding: '4px 6px',
+                                      background: 'transparent', border: 'none', cursor: 'pointer',
+                                      color: 'var(--color-text)', fontSize: '0.78rem', textAlign: 'left',
+                                      borderRadius: 4,
+                                    }}
+                                  >
+                                    <MapPin size={12} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
+                                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {getStationDisplayName(st)}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                              {!complete && (
+                                <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                                  {t('profile.discovery.brands.remaining', { count: bp.total - bp.done })}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 

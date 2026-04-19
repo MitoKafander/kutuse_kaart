@@ -244,7 +244,13 @@
         "maakonnad": "{{done}}/{{total}} apskritys"
       },
       "shareLabel": "Dalintis viešai",
-      "shareDesc": "Kiti matys jūsų atrastas degalines, paspaudę ant jūsų vardo."
+      "shareDesc": "Kiti matys jūsų atrastas degalines, paspaudę ant jūsų vardo.",
+      "brands": {
+        "summary": "Ženklai: {{done}}/{{total}}",
+        "noBrands": "Ženklų kol kas nėra.",
+        "emptyBrand": "Dar neatrasta nei viena degalinė. Liko atrasti {{count}}.",
+        "remaining": "Dar liko atrasti {{count}}."
+      }
     },
     "activity": {
       "title": "Paskutinė veikla"

@@ -51,7 +51,7 @@ const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal'
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 import { supabase } from './supabase';
 import { getStationDisplayName, getBrand } from './utils';
-import type { LoyaltyDiscounts } from './utils';
+import type { LoyaltyDiscounts, BrandProgress } from './utils';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -514,6 +514,30 @@ function App() {
     }
     return m;
   }, [stations]);
+
+  // Brand collector feeding the "Margid" accordion under Avastuskaart.
+  // Built off the full catalog (ignoring the `Tundmatu` sentinel) so totals
+  // stay stable regardless of the LV-stations view toggle. Sorted by
+  // done-desc then brand-alpha so the user's trophy row grows top-down.
+  const userBrandProgress = useMemo<BrandProgress[]>(() => {
+    const perBrand = new globalThis.Map<string, { total: number; done: number; collected: string[] }>();
+    for (const s of stations) {
+      const brand = getBrand(s.name);
+      if (brand === 'Tundmatu') continue;
+      const entry = perBrand.get(brand) || { total: 0, done: 0, collected: [] };
+      entry.total += 1;
+      if (userContributedStationIds.has(String(s.id))) {
+        entry.done += 1;
+        entry.collected.push(String(s.id));
+      }
+      perBrand.set(brand, entry);
+    }
+    const arr: BrandProgress[] = Array.from(perBrand.entries()).map(([brand, v]) => ({
+      brand, total: v.total, done: v.done, collectedStationIds: v.collected,
+    }));
+    arr.sort((a, b) => (b.done - a.done) || a.brand.localeCompare(b.brand, 'et'));
+    return arr;
+  }, [stations, userContributedStationIds]);
 
   const { progress: regionProgress, events: celebrationEvents, consumeEvents } = useRegionProgress({
     contributedStationIds: userContributedStationIds,
@@ -1114,6 +1138,7 @@ function App() {
         showDiscoveryMap={showDiscoveryMap}
         onShowDiscoveryMapChange={handleShowDiscoveryMapChange}
         regionProgress={regionProgress}
+        brandProgress={userBrandProgress}
         sharePublicly={sharePublicly}
         onSharePubliclyChange={handleSharePubliclyChange}
         onMaakondFocus={(id) => {

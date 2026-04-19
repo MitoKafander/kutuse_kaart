@@ -244,7 +244,13 @@
         "maakonnad": "{{done}}/{{total}} maakuntaa"
       },
       "shareLabel": "Jaa julkisesti",
-      "shareDesc": "Muut näkevät löytämäsi asemat napsauttamalla nimeäsi."
+      "shareDesc": "Muut näkevät löytämäsi asemat napsauttamalla nimeäsi.",
+      "brands": {
+        "summary": "Merkit: {{done}}/{{total}}",
+        "noBrands": "Merkkejä ei ole vielä saatavilla.",
+        "emptyBrand": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
+        "remaining": "Löydettävänä vielä {{count}} asemaa."
+      }
     },
     "activity": {
       "title": "Viimeisin toiminta"

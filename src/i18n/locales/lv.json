@@ -244,7 +244,13 @@
         "maakonnad": "{{done}}/{{total}} apriņķi"
       },
       "shareLabel": "Dalīties atklāti",
-      "shareDesc": "Citi redzēs atklātās stacijas, noklikšķinot uz tava vārda."
+      "shareDesc": "Citi redzēs atklātās stacijas, noklikšķinot uz tava vārda.",
+      "brands": {
+        "summary": "Zīmoli: {{done}}/{{total}}",
+        "noBrands": "Zīmolu pagaidām nav.",
+        "emptyBrand": "Vēl nav atklāta neviena stacija. Atklājamas {{count}} stacijas.",
+        "remaining": "Vēl atklājamas {{count}} stacijas."
+      }
     },
     "activity": {
       "title": "Pēdējās aktivitātes"

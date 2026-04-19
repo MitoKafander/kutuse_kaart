@@ -229,6 +229,18 @@ export function getBrand(name: string | null | undefined): string {
   return name;
 }
 
+// Per-brand collector progress for the Avastuskaart drawer. `done` is the
+// number of distinct stations of this brand the user has submitted a price
+// at; `total` is the catalog count (stable regardless of the LV-stations
+// view toggle). `collectedStationIds` is the subset of contributed station
+// ids — the drawer renders them into a tap-through list.
+export type BrandProgress = {
+  brand: string;
+  done: number;
+  total: number;
+  collectedStationIds: string[];
+};
+
 // `unknownLabel` lets callers pass a translated "Unknown" fallback. Defaults to
 // the Estonian sentinel `Tundmatu` because `getBrand` also returns that string
 // as an internal key used by filters and loyalty lookups — keep the default in

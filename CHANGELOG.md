@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Brand collector on the Avastuskaart - 2026-04-19
+
+### Added ✨
+- 🟡 **New "Margid" brand-collector accordion under Avastuskaart** (`src/utils.ts`, `src/App.tsx`, `src/components/ProfileDrawer.tsx`, `src/i18n/locales/*.json`): tracks how many distinct station brands a user has submitted a price at, so the discovery UX now has both a geographic axis (maakond/vald/jaam) and a commercial one (Circle K / Olerex / Neste / Alexela / …). Summary pill in the Avastuskaart panel shows `Margid: X/Y` where X = brands with ≥1 contribution and Y = total brands in the station catalog. Expanding it lists every brand as a row with a tabular-numerics `done/total · %` chip — green with a 🏆 when complete, blue when partial, grey when untouched. Each row is itself expandable into the list of stations the user has collected for that brand; each station is a tap target that opens the station panel (closes the drawer, same interaction as Favorites). Empty brands (0/N) show a muted "X left to discover" helper; partial brands append the same line under the collected-stations list so progress feels directional, not just cumulative. Data: new `BrandProgress` type in `utils.ts` carries `{ brand, done, total, collectedStationIds }`; `userBrandProgress` `useMemo` in `App.tsx` builds it by bucketing the full station catalog via `getBrand()`, skipping the `Tundmatu` sentinel so unbranded stations don't bloat the collector, and sorting by done-desc then brand-alpha so the user's trophy row grows top-down. Totals are computed off the full catalog deliberately — the LV-stations view toggle doesn't shrink denominators, so a user who toggles LV off still sees their Virši-A / Viada / KOOL / Astarte Nafta progress with stable ratios. i18n: added `profile.discovery.brands.{summary,noBrands,emptyBrand,remaining}` keys to all six locales (ET / EN / RU / FI / LV / LT).
+
+### Key Decisions
+- **Compact pill + nested accordion over full-width grid**: grid layout would duplicate the visual weight of the maakond badge grid right above and compete for attention; a collapsed pill that expands on demand keeps the default drawer height unchanged and lets power users drill in without crowding casual users.
+- **Brand taxonomy reuses `getBrand()` / `CHAIN_PATTERNS` — no hard-coded brand list**: new brands that appear in the station catalog (future LV expansion, a new chain showing up in OSM, renamed operators) auto-populate without a code change. `Tundmatu` is filtered out so the "unknown" bucket doesn't mascarade as a collectible brand.
+- **Catalog-wide totals regardless of LV toggle**: denominators tied to the view filter would flip mid-session and turn a 7/12 into a 7/8 after toggling LV off — feels like losing progress. Totals are a property of the catalog, the toggle just hides rendered markers.
+
+---
+
 ## [Unreleased] - Cross-device theme sync - 2026-04-19
 
 ### Added ✨

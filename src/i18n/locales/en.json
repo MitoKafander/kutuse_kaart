@@ -244,7 +244,13 @@
         "maakonnad": "{{done}}/{{total}} counties"
       },
       "shareLabel": "Share publicly",
-      "shareDesc": "Others will see which stations you've discovered when they click your name."
+      "shareDesc": "Others will see which stations you've discovered when they click your name.",
+      "brands": {
+        "summary": "Brands: {{done}}/{{total}}",
+        "noBrands": "No brands available yet.",
+        "emptyBrand": "No stations collected yet. {{count}} left to discover.",
+        "remaining": "{{count}} more to discover."
+      }
     },
     "activity": {
       "title": "Recent activity"
