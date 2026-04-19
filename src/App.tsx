@@ -8,6 +8,7 @@ import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
+import { MarketInsightBanner, type MarketInsight } from './components/MarketInsightBanner';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 
@@ -90,6 +91,7 @@ function App() {
   const [pricesLoaded, setPricesLoaded] = useState(false);
   const [votes, setVotes] = useState<any[]>([]);
   const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
+  const [activeInsight, setActiveInsight] = useState<MarketInsight | null>(null);
   
   // User specialized state (Phase 8)
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -282,20 +284,22 @@ function App() {
 
   // Load Base Data & User Data
   const loadData = async (activeSession?: any) => {
-    // Fan out the four public queries in parallel. They're independent, land on
+    // Fan out the public queries in parallel. They're independent, land on
     // the same HTTP/2 connection, and previously ran serially — PSI showed the
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
-    const [stRes, prRes, vtRes, repsRes] = await Promise.all([
+    const [stRes, prRes, vtRes, repsRes, insightRes] = await Promise.all([
       supabase.from('stations').select('*'),
       supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000),
       supabase.from('votes').select('*').limit(10000),
       supabase.from('v_reporters').select('user_id, display_name'),
+      supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
 
     if (stRes.data) setStations(stRes.data);
     if (prRes.data) setPrices(prRes.data);
     setPricesLoaded(true);
     if (vtRes.data) setVotes(vtRes.data);
+    if (insightRes?.data) setActiveInsight(insightRes.data);
 
     // Reporter display-name map for price attribution (phase 36 view).
     if (repsRes.data) {
@@ -749,6 +753,7 @@ function App() {
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
 
       <UpdateBanner />
+      <MarketInsightBanner insight={activeInsight} isShiftedDown={showDiscoveryMap || !!viewedUser} />
 
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', right: '20px', zIndex: 1000 }}>

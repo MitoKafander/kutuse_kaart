@@ -21,6 +21,7 @@ Kyts (formerly KütuseKaart / Fuel Map) is a community-driven, crowd-sourced app
 10. **Multi-language UI**: Full react-i18next support for Estonian, English, Russian, Finnish, Latvian, and Lithuanian. Auto-detects browser language on first visit, persists choice to `user_profiles.language`, and revisitable via Profile → Seaded → Keel or the first-run tutorial card. Legal modals (Privacy / Terms) are ET + EN only — other locales fall back to EN with a notice.
 11. **GDPR Compliance**: Estonian + English Terms of Service + Privacy Policy, cookieless analytics (no consent banner required for tracking), and a first-visit acknowledgement for the essential auth cookies.
 12. **Ops Hardening**: Per-IP + global rate limits on the AI endpoint (Upstash Redis), error monitoring (Sentry), and anonymous product analytics (PostHog EU Cloud, memory persistence — no cookies).
+13. **Market Insights**: A global news feed component that slides down over the map to explain macroeconomic factors driving fuel price shifts (e.g., Brent Crude trends). Supports both Estonian and English text based on user preference, with persistent dismissal settings.
 
 ## Tech Stack
 *   **Frontend**: React + TypeScript + Vite
@@ -53,6 +54,7 @@ The project schema relies on five tables governed by Row Level Security (RLS). M
 *   `user_profiles` (Default fuel type, preferred brands, auto-open toggle, `language` preference per user)
 *   `user_favorites` (Bookmarked stations per user)
 *   `feedback` (Insert-only user-feedback channel; triage via Supabase SQL editor)
+*   `market_insights` (Stores regional/global economic news alerts describing fuel trends)
 
 ---
 *Built via an autonomous pairing session for advanced web application architecture.*

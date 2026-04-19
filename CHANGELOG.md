@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Market Insights V1 MVP - 2026-04-19
+
+### Added ✨
+- 🟡 **Market Insights UI & Database Foundation** (`migrations/schema_phase39_market_insights.sql`, `src/components/MarketInsightBanner.tsx`, `src/App.tsx`): implemented a "Version 1" MVP feature answering *why* fuel prices are fluctuating (e.g., Brent Crude shifts). Stores manual insights in a new `market_insights` Supabase table featuring multi-language text columns (`content_et`, `content_en`), activity statusing, and an enum `trend` indicator (`up`, `down`, `flat`). The frontend automatically polls the latest active record on initial load and renders it as an amber-tinted glassmorphic banner beneath the main search control. Includes dynamic layout offsetting to respect filter pill positions and the *Avastuskaart* mode banner, resolving visual overlap automatically. Persistent dismissals natively track read insights via `localStorage['kyts-dismissed-insights']`.
+
+---
+
 ## [Unreleased] - Brand collector on the Avastuskaart - 2026-04-19
 
 ### Added ✨
