@@ -1047,16 +1047,19 @@ function App() {
           }}
         >
           <Newspaper size={22} />
-          {marketInsightSeenId !== activeInsight.id && (
-            <span style={{
-              position: 'absolute', top: 6, right: 6,
-              width: 10, height: 10, borderRadius: 5,
-              background: '#ef4444',
-              border: '2px solid var(--color-bg)',
-              boxShadow: '0 0 6px rgba(239,68,68,0.6)',
-              pointerEvents: 'none',
-            }} />
-          )}
+          {marketInsightSeenId !== activeInsight.id && (() => {
+            const urgent = activeInsight.signal_diesel === 'buy_now' || activeInsight.signal_gasoline === 'buy_now';
+            return (
+              <span style={{
+                position: 'absolute', top: 6, right: 6,
+                width: urgent ? 12 : 10, height: urgent ? 12 : 10, borderRadius: 6,
+                background: urgent ? '#22c55e' : '#ef4444',
+                border: '2px solid var(--color-bg)',
+                boxShadow: urgent ? '0 0 10px rgba(34,197,94,0.9)' : '0 0 6px rgba(239,68,68,0.6)',
+                pointerEvents: 'none',
+              }} />
+            );
+          })()}
         </button>
       )}
 

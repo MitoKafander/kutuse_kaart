@@ -4,5 +4,9 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "crons": [
+    { "path": "/api/generate-market-insight", "schedule": "0 6 * * *" },
+    { "path": "/api/generate-market-insight", "schedule": "0 15 * * *" }
   ]
 }
