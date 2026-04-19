@@ -399,15 +399,26 @@ function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      loadData(session);
-    });
-
+    // onAuthStateChange fires an INITIAL_SESSION event the moment we subscribe,
+    // delivering the current session (or null). Relying on that instead of a
+    // separate getSession() call halves boot work — previously both paths ran
+    // loadData() and PSI's network tree showed every query hitting Supabase
+    // twice (~100 kB of duplicate transfer on Slow 4G, seen 2026-04-19).
+    let bootLoaded = false;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setPricesLoaded(false);
-      loadData(session); // Reload state if user logs in/out
+      // De-dupe: INITIAL_SESSION arrives on subscribe and then again on nothing,
+      // plus a TOKEN_REFRESHED can fire on the same tab right after sign-in.
+      // We only want one public-data load per tab boot; auth mutations force a
+      // reload through their explicit handlers (onPricesSubmitted, toggleFav).
+      if (!bootLoaded) {
+        bootLoaded = true;
+        loadData(session);
+      } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        loadData(session);
+      }
+
       // Mobile post-OAuth viewport fix: when Google redirects back to the app
       // on Android Chrome, the visible viewport height and `100dvh` briefly
       // disagree, pushing absolutely-positioned FABs off-screen until the

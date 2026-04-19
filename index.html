@@ -31,9 +31,12 @@
          CartoCDN serves the Leaflet basemap tiles (which is the LCP element),
          and fonts.gstatic.com serves the Outfit woff2 that blocks first paint. -->
     <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
-    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
-    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin />
-    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin />
+    <!-- No crossorigin: Leaflet fetches tiles as plain <img>, not CORS-attributed
+         <img crossorigin>. PSI flags crossorigin preconnects as "unused" if the
+         actual requests don't match, so we deliberately omit it here. -->
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" />
+    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
