@@ -115,7 +115,6 @@ export function ProfileDrawer({
   preferredBrands,
   onPreferredBrandsChange,
   allBrands,
-  fuelTypes,
   selectedFuelType,
   setSelectedFuelType,
   selectedBrands,
@@ -178,7 +177,6 @@ export function ProfileDrawer({
   preferredBrands: string[];
   onPreferredBrandsChange: (brands: string[]) => void;
   allBrands: string[];
-  fuelTypes: string[];
   selectedFuelType: string | null;
   setSelectedFuelType: (type: string | null) => void;
   selectedBrands: string[];
@@ -230,7 +228,7 @@ export function ProfileDrawer({
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
   const [brandFilterOpen, setBrandFilterOpen] = useState(false);
-  const hasActiveFilters = selectedFuelType != null || showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
+  const hasActiveFilters = showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
   const toggleBrandFilter = (brand: string) => {
     if (selectedBrands.includes(brand)) {
       setSelectedBrands(selectedBrands.filter(b => b !== brand));
@@ -240,7 +238,6 @@ export function ProfileDrawer({
   };
   const resetFilters = () => {
     setSelectedBrands([]);
-    setSelectedFuelType(null);
     setShowOnlyFresh(false);
     setHighlightCheapest(false);
   };
@@ -290,9 +287,12 @@ export function ProfileDrawer({
   const handleUpdateFuelPref = async (fuel: string) => {
     const next = defaultFuelType === fuel ? null : fuel;
     onDefaultFuelTypeChange(next);
-    await supabase
-      .from('user_profiles')
-      .upsert({ id: session.user.id, default_fuel_type: next });
+    setSelectedFuelType(next);
+    if (session?.user?.id) {
+      await supabase
+        .from('user_profiles')
+        .upsert({ id: session.user.id, default_fuel_type: next });
+    }
   };
 
   const handleDotStyleChange = async (style: 'info' | 'brand') => {
@@ -995,56 +995,6 @@ export function ProfileDrawer({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Fuel type */}
-              <div>
-                <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
-                  <Fuel size={16} /> {t('filter.fuelType')}
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '8px' }}>
-                  {fuelTypes.map(type => (
-                    <button
-                      key={type}
-                      onClick={() => setSelectedFuelType(selectedFuelType === type ? null : type)}
-                      style={{
-                        padding: '8px',
-                        minWidth: 0,
-                        borderRadius: '8px',
-                        border: selectedFuelType === type ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
-                        background: selectedFuelType === type ? 'rgba(59, 130, 246, 0.15)' : 'var(--color-surface)',
-                        color: selectedFuelType === type ? 'var(--color-primary)' : 'var(--color-text)',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.2s',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        fontSize: '0.9rem',
-                      }}
-                    >
-                      {fuelLabel(type, t)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Hide stale */}
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                <span style={{ fontSize: '0.9rem' }}>{t('filter.hideStale')}</span>
-                <div
-                  onClick={() => setShowOnlyFresh(!showOnlyFresh)}
-                  style={{
-                    width: '44px', height: '24px', borderRadius: '12px',
-                    background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
-                    position: 'relative', transition: 'background 0.2s'
-                  }}
-                >
-                  <div style={{
-                    width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                    position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
-                  }}/>
-                </div>
-              </label>
-
               {/* Loyalty prices (only if user has at least one discount set) */}
               {hasAnyDiscount && (
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -1066,27 +1016,6 @@ export function ProfileDrawer({
                   </div>
                 </label>
               )}
-
-              {/* Find cheapest (needs a fuel type selected) */}
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.9rem' }}>{t('filter.findCheapest')}</span>
-                  {!selectedFuelType && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('filter.findCheapestHint')}</span>}
-                </div>
-                <div
-                  onClick={() => { if (selectedFuelType) setHighlightCheapest(!highlightCheapest); }}
-                  style={{
-                    width: '44px', height: '24px', borderRadius: '12px',
-                    background: highlightCheapest ? 'gold' : 'var(--color-surface)',
-                    position: 'relative', transition: 'background 0.2s'
-                  }}
-                >
-                  <div style={{
-                    width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                    position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
-                  }}/>
-                </div>
-              </label>
 
               {/* Brand filter (collapsible — "the huge list") */}
               <div>
@@ -1445,6 +1374,28 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
+                {/* Hide stale prices (>24h) */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                      <EyeOff size={16} /> {t('filter.hideStale')}
+                    </span>
+                    <div
+                      onClick={() => setShowOnlyFresh(!showOnlyFresh)}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
                 {/* Show Latvian border-strip stations on the map */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
@@ -1467,6 +1418,35 @@ export function ProfileDrawer({
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
                         position: 'absolute', top: '2px', left: showLatvianStations ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Find cheapest fuel (needs a fuel type selected) */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <TrendingDown size={16} /> {t('filter.findCheapest')}
+                      </span>
+                      {!selectedFuelType && (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                          {t('filter.findCheapestHint')}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      onClick={() => { if (selectedFuelType) setHighlightCheapest(!highlightCheapest); }}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: highlightCheapest ? 'gold' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>

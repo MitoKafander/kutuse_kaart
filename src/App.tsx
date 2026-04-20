@@ -111,7 +111,7 @@ function App() {
   const [showOnlyFresh, setShowOnlyFresh] = useState(false);
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const hasActiveFilters = selectedFuelType != null || showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
+  const hasActiveFilters = showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
 
   // Theme + display preferences
   const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
@@ -1182,7 +1182,6 @@ function App() {
         preferredBrands={preferredBrands}
         onPreferredBrandsChange={setPreferredBrands}
         allBrands={uniqueBrands}
-        fuelTypes={FUEL_TYPES}
         selectedFuelType={selectedFuelType}
         setSelectedFuelType={setSelectedFuelType}
         selectedBrands={selectedBrands}
