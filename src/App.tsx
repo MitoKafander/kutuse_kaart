@@ -216,6 +216,10 @@ function App() {
   // whenever the user's open order didn't match that priority.
   const overlayStackRef = useRef<Array<{ id: string; close: () => void; skipRewind?: boolean }>>([]);
   const suppressPopRef = useRef(0);
+  // Timestamp of the last successful loadData() call; used by the
+  // visibility-change refresher to decide whether the cached data is stale
+  // enough to warrant a refetch when the tab regains focus.
+  const lastLoadedAtRef = useRef(0);
 
   const openOverlays = useMemo(() => {
     const list: Array<{ id: string; close: () => void; skipRewind?: boolean }> = [];
@@ -313,6 +317,7 @@ function App() {
     setPricesLoaded(true);
     if (vtRes.data) setVotes(vtRes.data);
     if (insightRes?.data) setActiveInsight(insightRes.data);
+    lastLoadedAtRef.current = Date.now();
 
     // Reporter display-name map for price attribution (phase 36 view).
     if (repsRes.data) {
@@ -470,6 +475,20 @@ function App() {
       window.removeEventListener('pageshow', setAppHeight);
     };
   }, []);
+
+  // Refetch public data when the tab returns to the foreground after being
+  // stale for >5 min. Without this, a tab opened in the morning keeps
+  // yesterday's prices visible all day unless the user force-reloads.
+  useEffect(() => {
+    const STALE_MS = 5 * 60 * 1000;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastLoadedAtRef.current < STALE_MS) return;
+      loadData(session);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [session]);
 
   // Load region catalog (maakonnad + parishes) once; cache locally so Avastuskaart
   // can render instantly on toggle-ON. Background-refresh from Supabase to keep
