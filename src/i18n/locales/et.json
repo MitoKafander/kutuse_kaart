@@ -629,6 +629,33 @@
     "step5": {
       "title": "Loo konto",
       "body": "Hindu saad raporteerida ja hääletada ka ilma kontota. Sisselogimine avab lemmikjaamad, edetabeli-koha, kliendikaardi-soodustused ja seadmetevahelise sünkroonimise. Profiili ikoon on üleval paremal."
+    },
+    "step6": {
+      "title": "Lisa avaekraanile",
+      "body": "Lisa Kyts oma avaekraanile — avaneb ühe puudutusega täisekraanil nagu päris äpp, laadib kohe ja viimased hinnad näed ka ilma võrguta. Järgmises aknas näitame kuidas."
+    }
+  },
+  "install": {
+    "eyebrow": "Viimane asi",
+    "title": "Lisa Kyts avaekraanile",
+    "why": "Üks puudutus avab Kytsi täisekraanil nagu päris äpp. Ei mingit brauseririba, laadib kohe ja viimased hinnad on näha ka ilma võrguta.",
+    "dismiss": "Mitte praegu",
+    "aria": {
+      "close": "Sulge installiteade"
+    },
+    "ios": {
+      "step1": "Puuduta Safari all olevat Jaga-nuppu",
+      "step2": "Keri alla ja vali 'Lisa avaekraanile'",
+      "step3": "Kinnita puudutades 'Lisa' üleval paremal"
+    },
+    "android": {
+      "cta": "Paigalda",
+      "installing": "Paigaldab…",
+      "oneTap": "Üks puudutus ja Kyts on su telefonis päris äpina — ei mingit brauseririba.",
+      "fallback": {
+        "step1": "Ava brauseri menüü (⋮ üleval paremal)",
+        "step2": "Vali 'Installi rakendus' või 'Lisa avaekraanile'"
+      }
     }
   },
   "header": {

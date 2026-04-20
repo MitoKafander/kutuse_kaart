@@ -111,6 +111,33 @@
     "step5": {
       "title": "Izveidot kontu",
       "body": "Cenas vari ziņot un par tām balsot arī bez konta. Pierakstīšanās atbloķē iecienītākās stacijas, vietu līderu sarakstā, klientu karšu atlaides un starpierīču sinhronizāciju. Profila ikona atrodas augšējā labajā stūrī."
+    },
+    "step6": {
+      "title": "Pievienot sākuma ekrānam",
+      "body": "Pievieno Kyts sākuma ekrānam — atveras ar vienu pieskārienu pilnekrānā kā īsta lietotne, ielādējas uzreiz, un jaunākās cenas redzamas arī bezsaistē. Nākamajā solī parādīsim kā."
+    }
+  },
+  "install": {
+    "eyebrow": "Vēl viens",
+    "title": "Instalēt Kyts",
+    "why": "Viens pieskāriens atver Kyts pilnekrānā kā īstu lietotni. Bez pārlūka joslām, ielādējas uzreiz, un jaunākās cenas redzamas pat bezsaistē.",
+    "dismiss": "Ne tagad",
+    "aria": {
+      "close": "Aizvērt instalēšanas uzaicinājumu"
+    },
+    "ios": {
+      "step1": "Pieskaries Kopīgošanas pogai Safari apakšā",
+      "step2": "Ritini uz leju un izvēlies 'Pievienot sākuma ekrānam'",
+      "step3": "Pieskaries 'Pievienot' augšējā labajā stūrī"
+    },
+    "android": {
+      "cta": "Instalēt",
+      "installing": "Instalē…",
+      "oneTap": "Viens pieskāriens — un Kyts ir tavā tālrunī kā īsta lietotne, bez pārlūka joslām.",
+      "fallback": {
+        "step1": "Atver pārlūka izvēlni (⋮ augšā pa labi)",
+        "step2": "Izvēlies 'Instalēt lietotni' vai 'Pievienot sākuma ekrānam'"
+      }
     }
   },
   "profile": {

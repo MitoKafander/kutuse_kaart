@@ -50,12 +50,14 @@ const PrivacyModal = lazyWithReload(() => import('./components/PrivacyModal').th
 const TermsModal = lazyWithReload(() => import('./components/TermsModal').then(m => ({ default: m.TermsModal })));
 const FeedbackModal = lazyWithReload(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 const TutorialModal = lazyWithReload(() => import('./components/TutorialModal').then(m => ({ default: m.TutorialModal })));
+const InstallPromptModal = lazyWithReload(() => import('./components/InstallPromptModal').then(m => ({ default: m.InstallPromptModal })));
 const LeaderboardDrawer = lazyWithReload(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
 const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 import { supabase } from './supabase';
 import { getStationDisplayName, getBrand } from './utils';
 import type { LoyaltyDiscounts, BrandProgress } from './utils';
+import { shouldAutoShowInstallPrompt } from './utils/install';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -85,6 +87,7 @@ function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isInstallPromptOpen, setIsInstallPromptOpen] = useState(false);
   const [marketInsightSeenId, setMarketInsightSeenId] = useState<string | null>(
     () => localStorage.getItem('kyts:market-insight-seen')
   );
@@ -1333,7 +1336,19 @@ function App() {
               localStorage.setItem('kyts:tutorial-seen', '1');
               capture('tutorial_' + outcome, { last_step: lastStep });
               setIsTutorialOpen(false);
+              // Only chain the install prompt when the user actually walked
+              // through the tutorial. Skipping signals disinterest — don't
+              // pile a second modal onto someone already reaching for the X.
+              if (outcome === 'completed' && shouldAutoShowInstallPrompt()) {
+                setTimeout(() => setIsInstallPromptOpen(true), 250);
+              }
             }}
+          />
+        )}
+        {isInstallPromptOpen && (
+          <InstallPromptModal
+            isOpen={isInstallPromptOpen}
+            onClose={() => setIsInstallPromptOpen(false)}
           />
         )}
       </Suspense>

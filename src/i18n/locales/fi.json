@@ -111,6 +111,33 @@
     "step5": {
       "title": "Luo tili",
       "body": "Voit ilmoittaa ja äänestää hintoja myös ilman tiliä. Kirjautuminen avaa suosikkiasemat, paikan tulostaululla, kanta-asiakasalennukset ja synkronoinnin laitteiden välillä. Profiilikuvake on oikealla ylhäällä."
+    },
+    "step6": {
+      "title": "Lisää aloitusnäyttöön",
+      "body": "Kiinnitä Kyts aloitusnäytölle — avautuu yhdellä napautuksella kokoruudulla kuin oikea sovellus, latautuu heti ja viimeisimmät hinnat näkyvät myös ilman verkkoa. Näytämme seuraavassa vaiheessa miten."
+    }
+  },
+  "install": {
+    "eyebrow": "Vielä yksi asia",
+    "title": "Asenna Kyts",
+    "why": "Yksi napautus avaa Kytsin kokoruudulla kuin oikean sovelluksen. Ei selainpalkkeja, latautuu heti, ja viimeisimmät hinnat näkyvät ilman yhteyttäkin.",
+    "dismiss": "Ei nyt",
+    "aria": {
+      "close": "Sulje asennuskehote"
+    },
+    "ios": {
+      "step1": "Napauta Safarin alalaidassa olevaa Jaa-painiketta",
+      "step2": "Vieritä alas ja valitse 'Lisää Koti-valikkoon'",
+      "step3": "Napauta 'Lisää' oikeassa yläkulmassa"
+    },
+    "android": {
+      "cta": "Asenna",
+      "installing": "Asennetaan…",
+      "oneTap": "Yhdellä napautuksella Kyts on puhelimessasi oikeana sovelluksena — ei selainpalkkeja.",
+      "fallback": {
+        "step1": "Avaa selaimen valikko (⋮ ylhäällä oikealla)",
+        "step2": "Valitse 'Asenna sovellus' tai 'Lisää aloitusnäyttöön'"
+      }
     }
   },
   "profile": {

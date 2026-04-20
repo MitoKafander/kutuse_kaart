@@ -111,6 +111,33 @@
     "step5": {
       "title": "Sukurti paskyrą",
       "body": "Kainas pranešti ir už jas balsuoti galite ir be paskyros. Prisijungus atsiranda mėgstamiausios degalinės, vieta lyderių lentelėje, klientų kortelių nuolaidos ir sinchronizavimas tarp įrenginių. Profilio ikona yra viršuje dešinėje."
+    },
+    "step6": {
+      "title": "Pridėti į pradžios ekraną",
+      "body": "Pridėk Kyts į pradžios ekraną — atsidaro vienu palietimu per visą ekraną kaip tikra programėlė, įkeliama akimirksniu, o naujausios kainos matomos net neprisijungus. Kitame žingsnyje parodysime kaip."
+    }
+  },
+  "install": {
+    "eyebrow": "Dar vienas dalykas",
+    "title": "Įdiegti Kyts",
+    "why": "Vienas palietimas atveria Kyts per visą ekraną kaip tikrą programėlę. Be naršyklės juostų, įkeliama akimirksniu, naujausios kainos matomos net neprisijungus.",
+    "dismiss": "Ne dabar",
+    "aria": {
+      "close": "Uždaryti diegimo raginimą"
+    },
+    "ios": {
+      "step1": "Palieskite Bendrinimo mygtuką Safari apačioje",
+      "step2": "Slinkite žemyn ir pasirinkite 'Įtraukti į pradžios ekraną'",
+      "step3": "Palieskite 'Įtraukti' viršutiniame dešiniajame kampe"
+    },
+    "android": {
+      "cta": "Įdiegti",
+      "installing": "Diegiama…",
+      "oneTap": "Vienas palietimas — ir Kyts yra jūsų telefone kaip tikra programėlė, be naršyklės juostų.",
+      "fallback": {
+        "step1": "Atverkite naršyklės meniu (⋮ viršuje dešinėje)",
+        "step2": "Pasirinkite 'Įdiegti programėlę' arba 'Pridėti į pradžios ekraną'"
+      }
     }
   },
   "profile": {

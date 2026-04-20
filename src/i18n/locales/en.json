@@ -111,6 +111,33 @@
     "step5": {
       "title": "Create an account",
       "body": "You can report and upvote prices without an account. Logging in unlocks favorite stations, leaderboard position, loyalty card discounts, and cross-device sync. The profile icon is on the top right."
+    },
+    "step6": {
+      "title": "Add to home screen",
+      "body": "Pin Kyts to your home screen — one tap opens it full-screen like a native app, loads instantly, and the last fetched prices stay visible even offline. We'll show you how in the next step."
+    }
+  },
+  "install": {
+    "eyebrow": "One last thing",
+    "title": "Install Kyts",
+    "why": "One tap opens Kyts full-screen like a native app. No browser bars, loads instantly, and the last prices stay visible even without signal.",
+    "dismiss": "Not now",
+    "aria": {
+      "close": "Dismiss install prompt"
+    },
+    "ios": {
+      "step1": "Tap the Share button at the bottom of Safari",
+      "step2": "Scroll down and tap 'Add to Home Screen'",
+      "step3": "Tap 'Add' in the top right to confirm"
+    },
+    "android": {
+      "cta": "Install now",
+      "installing": "Installing…",
+      "oneTap": "One tap installs Kyts as a real app on your phone — no browser bars, full-screen launch.",
+      "fallback": {
+        "step1": "Open your browser menu (⋮ top right)",
+        "step2": "Choose 'Install app' or 'Add to Home screen'"
+      }
     }
   },
   "profile": {

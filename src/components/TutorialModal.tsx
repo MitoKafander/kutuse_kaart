@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import i18n, { LANGUAGES, type SupportedLanguage } from '../i18n';
 import { capture } from '../utils/analytics';
+import { isPhone, isStandalone } from '../utils/install';
 
 type Outcome = 'completed' | 'skipped';
 
@@ -18,8 +19,6 @@ const COLOR_ORANGE = '#fb923c';
 const COLOR_YELLOW = 'var(--color-fab-cheapest)';
 const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
-
-const STEPS_LENGTH = 6;
 
 // Multilingual title rendered before any language has been picked, so it has to
 // read right in every supported tongue at the same time. Native names of the
@@ -62,6 +61,10 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
   const colorSpan = (color: string, text: string) => (
     <span style={{ color, fontWeight: 600 }}>{text}</span>
   );
+  // Install-to-home-screen step only lands on phones that aren't already
+  // running as a PWA — desktop users and anyone who already installed would
+  // just see noise. The follow-up install modal respects the same gate.
+  const showInstallStep = isPhone() && !isStandalone();
   return [
     {
       icon: <Globe size={44} color={COLOR_BLUE} />,
@@ -114,6 +117,11 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
       title: t('tutorial.step5.title'),
       body: t('tutorial.step5.body'),
     },
+    ...(showInstallStep ? [{
+      icon: <Smartphone size={44} color="var(--color-primary)" />,
+      title: t('tutorial.step6.title'),
+      body: t('tutorial.step6.body'),
+    }] : []),
   ];
 }
 
@@ -127,12 +135,22 @@ export function TutorialModal({
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const startedRef = useRef(false);
+  const currentLng = i18n.resolvedLanguage ?? i18n.language ?? 'et';
 
   const handlePickLanguage = (code: SupportedLanguage) => {
     if (i18n.language !== code) {
       i18n.changeLanguage(code);
     }
   };
+
+  const STEPS = useMemo(
+    () => buildSteps(t, currentLng, handlePickLanguage),
+    // Rebuild when the active language flips (for live-localised labels) so
+    // the translated titles/bodies in the already-mounted modal update in
+    // place instead of waiting for a remount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, currentLng],
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -156,7 +174,7 @@ export function TutorialModal({
         onComplete('skipped', step);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        if (step < STEPS_LENGTH - 1) setStep(step + 1);
+        if (step < STEPS.length - 1) setStep(step + 1);
         else onComplete('completed', step);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -165,11 +183,10 @@ export function TutorialModal({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, step, onComplete]);
+  }, [isOpen, step, onComplete, STEPS.length]);
 
   if (!isOpen) return null;
 
-  const STEPS = buildSteps(t, i18n.resolvedLanguage ?? i18n.language ?? 'et', handlePickLanguage);
   const isLast = step === STEPS.length - 1;
   const current = STEPS[step];
 
