@@ -898,8 +898,10 @@ export function ManualPriceModal({
           </div>
         )}
 
-        {/* Scan button + photo thumbnail — camera-based flows only. */}
-        {!isManualMode && (
+        {/* Scan button + photo thumbnail — camera-based flows, plus manual mode
+            once a station is resolved (lets users batch-upload gallery shots
+            taken earlier in the field and let AI pre-fill the prices). */}
+        {(!isManualMode || resolvedStation) && (
         <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
           {capturedPreviewUrl && (
             <img
@@ -914,10 +916,10 @@ export function ManualPriceModal({
             />
           )}
           {/* Upload-from-gallery is only offered when the user already picked a
-              station (the "muuda hindu" flow). The map FAB launches the camera
-              directly for live totem scans; offering a gallery button there would
-              just confuse the flow. */}
-          {!!station && (
+              station (the "muuda hindu" flow, or manual mode post-picker). The
+              map FAB launches the camera directly for live totem scans; offering
+              a gallery button there would just confuse the flow. */}
+          {(!!station || (isManualMode && resolvedStation)) && (
             <button
               type="button"
               disabled={isAnalyzing}
@@ -954,7 +956,7 @@ export function ManualPriceModal({
         </div>
         )}
 
-        {!isManualMode && (
+        {(!isManualMode || resolvedStation) && (
         <>
           <input
             type="file"
@@ -1092,7 +1094,7 @@ export function ManualPriceModal({
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
             }}
           >
-            <Check size={20} />
+            {loading ? <Loader2 size={20} className="spin" /> : <Check size={20} />}
             {getSubmitLabel()}
           </button>
         </form>
