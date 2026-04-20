@@ -442,8 +442,10 @@
       "brands": {
         "summary": "Margid: {{done}}/{{total}}",
         "noBrands": "Marke pole veel saadaval.",
-        "emptyBrand": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaama.",
-        "remaining": "Avastada jääb veel {{count}} jaama."
+        "emptyBrand_one": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaam.",
+        "emptyBrand_other": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaama.",
+        "remaining_one": "Avastada jääb veel {{count}} jaam.",
+        "remaining_other": "Avastada jääb veel {{count}} jaama."
       }
     },
     "activity": {
