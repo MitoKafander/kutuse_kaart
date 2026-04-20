@@ -391,6 +391,7 @@
     },
     "scanError": {
       "quotaExceeded": "AI pakalpojuma limits ir pilns. Mēģini vēlāk vai ievadi cenas manuāli.",
+      "rateLimited": "Pārāk daudz skenēšanu pēc kārtas. Pagaidi apmēram minūti un mēģini vēlreiz.",
       "aiUpstreamBusy": "AI pakalpojums šobrīd ir pārslogots. Mēģini pēc pāris minūtēm vai ievadi cenas manuāli.",
       "noNearbyStation": "Tuvumā nav atrastas stacijas ({{max}}km rādiusā). Pārbaudi GPS atļaujas vai izvēlies staciju manuāli.",
       "noGps": "GPS signāls netika saņemts. Pārbaudi atrašanās vietas atļaujas un mēģini vēlreiz.",

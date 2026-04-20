@@ -391,6 +391,7 @@
     },
     "scanError": {
       "quotaExceeded": "Tekoälypalvelun raja on täynnä. Yritä myöhemmin uudelleen tai syötä hinnat manuaalisesti.",
+      "rateLimited": "Liian monta skannausta peräkkäin. Odota noin minuutti ja yritä uudelleen.",
       "aiUpstreamBusy": "Tekoälypalvelu on tällä hetkellä ylikuormitettu. Yritä parin minuutin päästä uudelleen tai syötä hinnat manuaalisesti.",
       "noNearbyStation": "Lähistöltä ei löytynyt asemaa ({{max}}km säteellä). Tarkista GPS-oikeudet tai valitse asema manuaalisesti.",
       "noGps": "GPS-signaalia ei saatu. Tarkista sijaintioikeudet ja yritä uudelleen.",

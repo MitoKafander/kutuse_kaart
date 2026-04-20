@@ -391,6 +391,7 @@
     },
     "scanError": {
       "quotaExceeded": "AI service limit reached. Try again later or enter prices manually.",
+      "rateLimited": "Too many scans in a row. Wait about a minute and try again.",
       "aiUpstreamBusy": "AI service is currently overloaded. Try again in a few minutes or enter prices manually.",
       "noNearbyStation": "No fuel station found nearby (within {{max}}km radius). Check GPS permissions or manually select a station.",
       "noGps": "No GPS signal received. Check location permissions and try again.",

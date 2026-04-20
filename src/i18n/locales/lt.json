@@ -391,6 +391,7 @@
     },
     "scanError": {
       "quotaExceeded": "AI paslaugos limitas išnaudotas. Bandykite vėliau arba įveskite kainas rankiniu būdu.",
+      "rateLimited": "Per daug skenavimų iš eilės. Palaukite apie minutę ir bandykite dar kartą.",
       "aiUpstreamBusy": "AI paslauga šiuo metu perkrauta. Bandykite po kelių minučių arba įveskite kainas rankiniu būdu.",
       "noNearbyStation": "Netoliese degalinių nerasta ({{max}}km spinduliu). Patikrinkite GPS leidimus arba pasirinkite degalinę rankiniu būdu.",
       "noGps": "Nėra GPS signalo. Patikrinkite vietos leidimus ir bandykite dar kartą.",

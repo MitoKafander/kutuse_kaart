@@ -184,6 +184,13 @@ function App() {
   }, [mapStyle]);
 
   useEffect(() => {
+    if (sessionStorage.getItem('kyts:pending-action') === 'openScan') {
+      sessionStorage.removeItem('kyts:pending-action');
+      setIsCameraOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (localStorage.getItem('kyts-map-style')) return;
     const mq = window.matchMedia('(prefers-color-scheme: light)');
     const onChange = (e: MediaQueryListEvent) => setMapStyle(e.matches ? 'light' : 'dark');
@@ -955,7 +962,12 @@ function App() {
           Map.tsx). New FABs extend upward instead of downward. */}
       <button
         className="flex-center"
-        onClick={() => setIsCameraOpen(true)}
+        onClick={() => {
+          // Reload tears down the tab's HTTP/2 pool, which can go half-dead on
+          // long Android Chrome sessions and cause Gemini uploads to fail.
+          sessionStorage.setItem('kyts:pending-action', 'openScan');
+          window.location.reload();
+        }}
         title={t('app.fab.camera')}
         style={{
           position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',

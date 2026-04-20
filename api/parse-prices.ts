@@ -74,11 +74,15 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     const perIp = await perIpLimit.limit(ip);
     if (!perIp.success) {
       res.setHeader('Retry-After', String(Math.max(1, Math.ceil((perIp.reset - Date.now()) / 1000))));
-      return res.status(429).json({ error: 'Liiga palju päringuid. Proovi ~1 min pärast.' });
+      // RATE_LIMITED (per-IP burst) is distinct from QUOTA_EXCEEDED (global/day).
+      // Collapsing the two surfaced the "daily limit exhausted" copy every time
+      // a user burned through the 10/min burst with retries — misleading since
+      // the per-IP window resets in seconds.
+      return res.status(429).json({ error: 'Liiga palju päringuid. Proovi ~1 min pärast.', code: 'RATE_LIMITED' });
     }
     const day = await dayLimit.limit('global');
     if (!day.success) {
-      return res.status(429).json({ error: 'Päevane AI-limiit täis, proovi homme.' });
+      return res.status(429).json({ error: 'Päevane AI-limiit täis, proovi homme.', code: 'QUOTA_EXCEEDED' });
     }
   }
 
@@ -205,12 +209,16 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       // doesn't fill the log quota.
       detail: JSON.stringify(error?.errorDetails ?? error?.response?.data ?? null)?.slice(0, 400),
     });
-    const is503 = msg.includes('503') || /service.?unavailable|high demand|overloaded/i.test(msg);
-    const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
-    // Collapse verbose Gemini messages into clean codes the client can branch on
-    // and keep out of Sentry — these are transient upstream conditions, not bugs.
-    if (is429) return res.status(429).json({ error: 'QUOTA_EXCEEDED' });
-    if (is503) return res.status(503).json({ error: 'AI_UPSTREAM_BUSY' });
+    // Gemini surfaces upstream failures through several naming conventions
+    // (HTTP status, GRPC code, free-form prose). Classify them into the two
+    // transient buckets the client can branch on. RESOURCE_EXHAUSTED is
+    // Gemini's GRPC code for throttle/quota and must land on 429, not 503 —
+    // before this explicit check it slipped through as a raw 500.
+    const is429 = msg.includes('429') || /quota|rate.?limit|resource.?exhausted/i.test(msg);
+    const is503 = msg.includes('503') || msg.includes('504')
+      || /service.?unavailable|high demand|overloaded|unavailable|deadline.?exceeded|internal(?!.*server error 500)/i.test(msg);
+    if (is429) return res.status(429).json({ error: 'QUOTA_EXCEEDED', code: 'QUOTA_EXCEEDED' });
+    if (is503) return res.status(503).json({ error: 'AI_UPSTREAM_BUSY', code: 'AI_UPSTREAM_BUSY' });
     return res.status(500).json({ error: msg });
   }
 }

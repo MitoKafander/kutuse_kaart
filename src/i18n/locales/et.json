@@ -151,6 +151,7 @@
     },
     "scanError": {
       "quotaExceeded": "AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.",
+      "rateLimited": "Liiga palju skaneerimisi järjest. Oota minuti jagu ja proovi uuesti.",
       "aiUpstreamBusy": "AI teenus on hetkel ülekoormatud. Proovi paari minuti pärast uuesti või sisesta hinnad käsitsi.",
       "noNearbyStation": "Läheduses ({{max}}km raadiuses) ei leitud ühtegi tankla. Kontrolli GPS-lubasid või vali jaam käsitsi.",
       "noGps": "GPS-signaali ei saadud. Kontrolli asukoha lubasid ja proovi uuesti.",

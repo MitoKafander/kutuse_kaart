@@ -68,6 +68,15 @@ export function ManualPriceModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Scan-failure diagnostics. The reported "AI is overloaded that only clears
+  // after app reopen" pattern isn't answerable from the existing ai_scan_failure
+  // event (which only knows the error code). Stamp the session start and last
+  // success so we can filter PostHog by session age, and keep a streak so we
+  // can nudge users out of the loop with a "try reopening the app" hint.
+  const sessionStartRef = useRef<number>(Date.now());
+  const lastSuccessAtRef = useRef<number | null>(null);
+  const failureStreakRef = useRef<number>(0);
+
   // Reset and initialise state when the modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -115,6 +124,7 @@ export function ManualPriceModal({
   if (!isOpen) return null;
 
   const callGemini = async (base64: string, stationName: string): Promise<any> => {
+    let lastVercelId: string | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
         setRetryStatus(t('manualPrice.camera.retryStatus', { attempt, max: MAX_RETRIES }));
@@ -133,23 +143,32 @@ export function ManualPriceModal({
         // the cross-origin POST preflight on the redirected destination.
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
         const apiBase = host === 'kyts.ee' || host === 'www.kyts.ee' ? 'https://kyts.ee' : '';
+        // cache: 'no-store' defeats HTTP/2 preflight caching that iOS Safari
+        // sometimes resurrects after long PWA backgrounding — a cheap nudge
+        // toward a fresh connection for each scan.
         res = await fetch(`${apiBase}/api/parse-prices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageBase64: base64, stationName }),
           signal: ac.signal,
+          cache: 'no-store',
         });
       } catch (e: any) {
         clearTimeout(timer);
         if (e?.name === 'AbortError') {
           if (attempt < MAX_RETRIES) continue;
-          throw new Error('TIMEOUT');
+          const err: any = new Error('TIMEOUT');
+          err.attemptsMade = attempt + 1;
+          throw err;
         }
         // Network-level failure (DNS, offline, connection dropped). Retry.
         if (attempt < MAX_RETRIES) continue;
-        throw new Error('NETWORK');
+        const err: any = new Error('NETWORK');
+        err.attemptsMade = attempt + 1;
+        throw err;
       }
       clearTimeout(timer);
+      lastVercelId = res.headers.get('x-vercel-id');
 
       if (res.ok) {
         capture('ai_scan_success');
@@ -159,15 +178,35 @@ export function ManualPriceModal({
         try { return await res.json(); }
         catch {
           if (attempt < MAX_RETRIES) continue;
-          throw new Error('NETWORK');
+          const err: any = new Error('NETWORK');
+          err.attemptsMade = attempt + 1;
+          err.vercelId = lastVercelId;
+          throw err;
         }
       }
-      if (res.status === 429) throw new Error('QUOTA_EXCEEDED');
+      // Server distinguishes per-IP burst (RATE_LIMITED) from daily/Gemini
+      // (QUOTA_EXCEEDED) via a code field. Fall back to QUOTA_EXCEEDED only
+      // when the server didn't set a code (old deploys).
+      if (res.status === 429) {
+        const body = await res.json().catch(() => ({}));
+        const err: any = new Error(body.code === 'RATE_LIMITED' ? 'RATE_LIMITED' : 'QUOTA_EXCEEDED');
+        err.attemptsMade = attempt + 1;
+        err.vercelId = lastVercelId;
+        throw err;
+      }
       if (res.status === 503 && attempt < MAX_RETRIES) continue;
-      if (res.status === 503) throw new Error('AI_UPSTREAM_BUSY');
+      if (res.status === 503) {
+        const err: any = new Error('AI_UPSTREAM_BUSY');
+        err.attemptsMade = attempt + 1;
+        err.vercelId = lastVercelId;
+        throw err;
+      }
 
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `HTTP ${res.status}`);
+      const body = await res.json().catch(() => ({}));
+      const err: any = new Error(body.error || `HTTP ${res.status}`);
+      err.attemptsMade = attempt + 1;
+      err.vercelId = lastVercelId;
+      throw err;
     }
   };
 
@@ -300,6 +339,10 @@ export function ManualPriceModal({
     setRetryStatus(null);
     try {
       const parsedJson = await callGemini(base64, stationNameHint);
+      // Reset streak on any successful round-trip, even NO_PRICES_READ —
+      // the upstream path is healthy, the failure is in the photo itself.
+      lastSuccessAtRef.current = Date.now();
+      failureStreakRef.current = 0;
 
       // Server signals when Gemini returned valid JSON but no readable prices —
       // different UX than network failure: keep the photo, show specific copy.
@@ -333,18 +376,29 @@ export function ManualPriceModal({
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
-      // Track every failure by code so we can see the real distribution in
-      // PostHog. Without this we can only guess whether AI_UPSTREAM_BUSY
-      // dominates (Gemini 503), QUOTA_EXCEEDED (rate limit), or something else.
-      capture('ai_scan_failure', { code: error?.message || 'UNKNOWN' });
+      failureStreakRef.current += 1;
+      // Track every failure by code plus session context so we can answer
+      // "does this happen after long idle?" from PostHog. Without age/streak
+      // we only know the distribution of codes, not the pattern triggering
+      // them. Include x-vercel-id so we can cross-reference the server log.
+      capture('ai_scan_failure', {
+        code: error?.message || 'UNKNOWN',
+        session_age_ms: Date.now() - sessionStartRef.current,
+        since_last_success_ms: lastSuccessAtRef.current != null
+          ? Date.now() - lastSuccessAtRef.current
+          : null,
+        failure_streak: failureStreakRef.current,
+        attempts_made: error?.attemptsMade ?? null,
+        vercel_id: error?.vercelId ?? null,
+      });
       // Skip Sentry noise for known user-facing states: quota, transient Gemini
-      // outages, and retry-exhausted client network drops. All four already
+      // outages, and retry-exhausted client network drops. All five already
       // surface UX copy and are not actionable beyond "connection was bad."
-      const skipSentry = new Set(['QUOTA_EXCEEDED', 'AI_UPSTREAM_BUSY', 'NETWORK', 'TIMEOUT']);
+      const skipSentry = new Set(['QUOTA_EXCEEDED', 'RATE_LIMITED', 'AI_UPSTREAM_BUSY', 'NETWORK', 'TIMEOUT']);
       if (!skipSentry.has(error?.message)) {
         Sentry.captureException(error, {
           tags: { feature: 'ai-scan' },
-          extra: { stationHint: stationNameHint },
+          extra: { stationHint: stationNameHint, vercelId: error?.vercelId },
         });
       }
       setScanError(error.message);
@@ -1014,39 +1068,43 @@ export function ManualPriceModal({
           <div style={{
             background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)',
             borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
-            display: 'flex', alignItems: 'center', gap: '10px'
+            display: 'flex', flexDirection: 'column', gap: '8px'
           }}>
-            <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
-              {scanError === 'QUOTA_EXCEEDED'
-                ? t('manualPrice.scanError.quotaExceeded')
-                : scanError === 'AI_UPSTREAM_BUSY'
-                ? t('manualPrice.scanError.aiUpstreamBusy')
-                : scanError === 'NO_NEARBY_STATION'
-                ? t('manualPrice.scanError.noNearbyStation', { max: MAX_SUBMIT_KM })
-                : scanError === 'NO_GPS'
-                ? t('manualPrice.scanError.noGps')
-                : scanError === 'NO_PRICES_READ'
-                ? t('manualPrice.scanError.noPricesRead')
-                : scanError === 'TIMEOUT'
-                ? t('manualPrice.scanError.timeout')
-                : scanError === 'NETWORK'
-                ? t('manualPrice.scanError.network')
-                : t('manualPrice.scanError.generic')}
-            </span>
-            <button
-              onClick={handleManualRetry}
-              disabled={isAnalyzing}
-              style={{
-                background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)',
-                color: '#ef4444', borderRadius: '8px', padding: '6px 12px',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '0.85rem', fontWeight: '600', flexShrink: 0
-              }}
-            >
-              <RefreshCw size={14} />
-              {t('manualPrice.gps.retry')}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <AlertTriangle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+                {scanError === 'QUOTA_EXCEEDED'
+                  ? t('manualPrice.scanError.quotaExceeded')
+                  : scanError === 'RATE_LIMITED'
+                  ? t('manualPrice.scanError.rateLimited')
+                  : scanError === 'AI_UPSTREAM_BUSY'
+                  ? t('manualPrice.scanError.aiUpstreamBusy')
+                  : scanError === 'NO_NEARBY_STATION'
+                  ? t('manualPrice.scanError.noNearbyStation', { max: MAX_SUBMIT_KM })
+                  : scanError === 'NO_GPS'
+                  ? t('manualPrice.scanError.noGps')
+                  : scanError === 'NO_PRICES_READ'
+                  ? t('manualPrice.scanError.noPricesRead')
+                  : scanError === 'TIMEOUT'
+                  ? t('manualPrice.scanError.timeout')
+                  : scanError === 'NETWORK'
+                  ? t('manualPrice.scanError.network')
+                  : t('manualPrice.scanError.generic')}
+              </span>
+              <button
+                onClick={handleManualRetry}
+                disabled={isAnalyzing}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#ef4444', borderRadius: '8px', padding: '6px 12px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                  fontSize: '0.85rem', fontWeight: '600', flexShrink: 0
+                }}
+              >
+                <RefreshCw size={14} />
+                {t('manualPrice.gps.retry')}
+              </button>
+            </div>
           </div>
         )}
 
