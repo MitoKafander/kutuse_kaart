@@ -198,11 +198,13 @@ function App() {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // First-run tutorial: show once after GDPR is accepted. For returning users
-  // who accepted GDPR in a previous session, this fires on mount. For true
-  // first-visit users, GdprBanner.onAccept triggers it after they consent so
-  // the two overlays don't stack. The 400 ms delay lets the GDPR banner's
-  // slide-out animation finish first.
+  // First-run tutorial: show once after the GDPR banner is dismissed (either
+  // accept or decline — the tutorial itself is feature guidance, not
+  // analytics-gated). For returning users who already made a consent decision
+  // in a previous session, this fires on mount. For first-visit users,
+  // GdprBanner.onAccept/onDecline triggers it so the two overlays don't
+  // stack. The 400 ms delay lets the GDPR banner's slide-out animation finish
+  // first.
   const tutorialArmedRef = useRef(false);
   const openTutorialAfterGdpr = () => {
     if (tutorialArmedRef.current) return;
@@ -211,7 +213,13 @@ function App() {
     setTimeout(() => setIsTutorialOpen(true), 400);
   };
   useEffect(() => {
-    if (localStorage.getItem('gdpr_accepted') === 'true') {
+    // Accept both the new consent key and the legacy one so returning users
+    // who clicked Accept before the reject-button rollout still skip the
+    // banner + receive the tutorial on first post-consent load.
+    if (
+      localStorage.getItem('gdpr_consent') === 'accepted' ||
+      localStorage.getItem('gdpr_accepted') === 'true'
+    ) {
       openTutorialAfterGdpr();
     }
   }, []);
@@ -1413,6 +1421,7 @@ function App() {
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
         onAccept={openTutorialAfterGdpr}
+        onDecline={openTutorialAfterGdpr}
       />
     </main>
   );

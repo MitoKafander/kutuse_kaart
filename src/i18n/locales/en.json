@@ -53,8 +53,9 @@
     "signupSuccess": "Account created! Check your email."
   },
   "gdpr": {
-    "body": "Kyts uses only essential cookies (login, preferences). By using it you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.",
-    "accept": "Accept"
+    "body": "Kyts uses cookies for login and preferences, plus anonymous product analytics (PostHog, EU — no cookies). See <terms>terms of use</terms> and <privacy>privacy policy</privacy>.",
+    "accept": "Accept",
+    "decline": "Decline"
   },
   "update": {
     "title": "New version available",
@@ -193,6 +194,10 @@
       "staleDemo": {
         "label": "Show stale prices (demo)",
         "desc": "Also shows prices >24h old"
+      },
+      "analytics": {
+        "label": "Anonymous analytics",
+        "desc": "PostHog (EU) — helps us improve the service"
       },
       "openTutorial": "Open tutorial",
       "feedback": "Send feedback",
@@ -623,7 +628,7 @@
     },
     "s6": "<strong>6. Image processing (AI)</strong><br/>When using camera scanning, the image is securely sent to Google Gemini AI for price detection. The image is <strong>not saved</strong> on our servers or in the database — it is processed immediately and deleted after the JSON response is returned.",
     "s7": "<strong>7. Location data</strong><br/>The map's \"Location\" and \"Cheapest nearby\" features use the browser's GPS only on your device. Your coordinates are <strong>not sent</strong> to our servers.",
-    "s8": "<strong>8. Cookies and local storage</strong><br/>We only use <em>essential</em> cookies: Supabase Auth session tokens (keeps you signed in) and localStorage entries for saving your preferences (e.g. loyalty cards, map style). <strong>No cookies are saved</strong> for analytics — PostHog operates in memory mode. Therefore, we do not require a consent banner.",
+    "s8": "<strong>8. Cookies and local storage</strong><br/>We only use <em>essential</em> cookies: Supabase Auth session tokens (keeps you signed in) and localStorage entries for saving your preferences (e.g. loyalty cards, map style). <strong>No cookies are saved</strong> for analytics — PostHog operates in memory mode. <strong>Analytics loads only with your consent</strong>: on first visit you see a consent banner and can click \"Decline\", in which case PostHog is not initialised. You can revoke consent at any time via Profile &gt; Settings &gt; \"Anonymous analytics\".",
     "s9": {
       "title": "9. Retention periods",
       "item1": "Account + preferences: until you delete your account.",

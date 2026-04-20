@@ -53,8 +53,9 @@
     "signupSuccess": "Tili luotu! Tarkista sähköpostisi."
   },
   "gdpr": {
-    "body": "Kyts käyttää vain välttämättömiä evästeitä (kirjautuminen, asetukset). Käyttämällä palvelua hyväksyt <terms>käyttöehdot</terms> ja <privacy>tietosuojakäytännön</privacy>.",
-    "accept": "Hyväksyn"
+    "body": "Kyts käyttää evästeitä kirjautumiseen ja asetuksiin sekä anonyymiä tuoteanalytiikkaa (PostHog, EU — ei evästeitä). Lue <terms>käyttöehdot</terms> ja <privacy>tietosuojakäytäntö</privacy>.",
+    "accept": "Hyväksyn",
+    "decline": "Hylkää"
   },
   "update": {
     "title": "Uusi versio saatavilla",
@@ -193,6 +194,10 @@
       "staleDemo": {
         "label": "Näytä vanhentuneet hinnat (demo)",
         "desc": "Näyttää myös >24h vanhat hinnat"
+      },
+      "analytics": {
+        "label": "Anonyymi analytiikka",
+        "desc": "PostHog (EU) — auttaa palvelun parantamisessa"
       },
       "openTutorial": "Avaa opastus",
       "feedback": "Lähetä palautetta",

@@ -40,7 +40,15 @@ if (sentryDsn) {
   });
 }
 
-initAnalytics();
+// Gate analytics on GDPR consent: no PostHog network activity until the
+// user accepts (or has previously accepted — legacy `gdpr_accepted` key).
+// GdprBanner.onAccept calls initAnalytics() directly for fresh accepters.
+if (
+  localStorage.getItem('gdpr_consent') === 'accepted' ||
+  localStorage.getItem('gdpr_accepted') === 'true'
+) {
+  initAnalytics();
+}
 
 // PWA update lifecycle. onNeedRefresh fires when a new service worker has
 // been installed and is ready to take over — we surface that via the

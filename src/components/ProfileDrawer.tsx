@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil, Filter, Check } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil, Filter, Check, BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
 import { supabase } from '../supabase';
 import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter } from '../utils';
+import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 
@@ -252,6 +253,16 @@ export function ProfileDrawer({
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName ?? '');
   useEffect(() => { setNameDraft(displayName ?? ''); }, [displayName]);
+
+  // Mirrors the GDPR consent decision. Initialised from localStorage so the
+  // toggle reflects whatever the user clicked on the banner.
+  const [analyticsOn, setAnalyticsOn] = useState(() => {
+    try {
+      const consent = localStorage.getItem('gdpr_consent');
+      const legacy = localStorage.getItem('gdpr_accepted') === 'true';
+      return (consent === 'accepted' || (legacy && consent !== 'declined')) && !isAnalyticsOptedOut();
+    } catch { return false; }
+  });
   const commitName = () => {
     const trimmed = nameDraft.trim();
     if (onDisplayNameChange && trimmed !== (displayName ?? '')) {
@@ -330,6 +341,21 @@ export function ProfileDrawer({
     if (session?.user?.id) {
       await supabase.from('user_profiles').upsert({ id: session.user.id, show_latvian_stations: next });
     }
+  };
+
+  const handleAnalyticsToggle = () => {
+    const next = !analyticsOn;
+    try {
+      if (next) {
+        localStorage.setItem('gdpr_consent', 'accepted');
+        setAnalyticsOptOut(false);
+        initAnalytics();
+      } else {
+        localStorage.setItem('gdpr_consent', 'declined');
+        setAnalyticsOptOut(true);
+      }
+    } catch { /* storage blocked — UI state still flips so the user sees feedback */ }
+    setAnalyticsOn(next);
   };
 
   const handleLanguageChange = async (lang: SupportedLanguage) => {
@@ -1474,6 +1500,35 @@ export function ProfileDrawer({
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
                         position: 'absolute', top: '2px', left: showStaleDemo ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Anonymous analytics (PostHog). Revocation path for the GDPR
+                    banner — flipping off writes gdpr_consent=declined and
+                    opts out of PostHog; flipping on accepts + initialises. */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <BarChart3 size={16} /> {t('profile.settings.analytics.label')}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        {t('profile.settings.analytics.desc')}
+                      </span>
+                    </div>
+                    <div
+                      onClick={handleAnalyticsToggle}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: analyticsOn ? 'var(--color-primary)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: analyticsOn ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>

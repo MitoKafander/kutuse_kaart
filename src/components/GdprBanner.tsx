@@ -1,28 +1,58 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { initAnalytics, setAnalyticsOptOut } from '../utils/analytics';
 
-export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPrivacy: () => void, onOpenTerms?: () => void, onAccept?: () => void }) {
+type Props = {
+  onOpenPrivacy: () => void;
+  onOpenTerms?: () => void;
+  onAccept?: () => void;
+  onDecline?: () => void;
+};
+
+export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept, onDecline }: Props) {
   const { t } = useTranslation();
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const hasAccepted = localStorage.getItem('gdpr_accepted');
-    if (!hasAccepted) {
-      setIsVisible(true);
-    }
-  }, []);
+  // Honour both the new key and the legacy one so returning users who
+  // already consented are not re-prompted.
+  const [isVisible, setIsVisible] = useState(() => {
+    try {
+      const consent = localStorage.getItem('gdpr_consent');
+      const legacy = localStorage.getItem('gdpr_accepted') === 'true';
+      return !consent && !legacy;
+    } catch { return false; }
+  });
 
   if (!isVisible) return null;
 
   const handleAccept = () => {
-    localStorage.setItem('gdpr_accepted', 'true');
+    localStorage.setItem('gdpr_consent', 'accepted');
     setIsVisible(false);
+    initAnalytics();
     onAccept?.();
+  };
+
+  const handleDecline = () => {
+    localStorage.setItem('gdpr_consent', 'declined');
+    setAnalyticsOptOut(true);
+    setIsVisible(false);
+    onDecline?.();
   };
 
   const linkBtnStyle: React.CSSProperties = {
     background: 'none', border: 'none', color: 'var(--color-primary)',
     cursor: 'pointer', padding: 0, font: 'inherit', textDecoration: 'underline',
+  };
+
+  // Both buttons share padding/font/border-radius so reject has equal prominence
+  // to accept (GDPR requirement). Accept is filled-primary; decline is a neutral
+  // filled button — NOT a text link, which would fail the equal-prominence test.
+  const btnBase: React.CSSProperties = {
+    flex: 1,
+    border: 'none',
+    borderRadius: 'var(--radius-md)',
+    padding: '10px',
+    fontSize: '0.95rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
   };
 
   return (
@@ -51,16 +81,28 @@ export function GdprBanner({ onOpenPrivacy, onOpenTerms, onAccept }: { onOpenPri
         />
       </p>
 
-      <button
-        onClick={handleAccept}
-        style={{
-          background: 'var(--color-primary)', color: 'white', border: 'none',
-          borderRadius: 'var(--radius-md)', padding: '10px', fontSize: '0.95rem', fontWeight: 'bold',
-          cursor: 'pointer'
-        }}
-      >
-        {t('gdpr.accept')}
-      </button>
+      <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+        <button
+          onClick={handleDecline}
+          style={{
+            ...btnBase,
+            background: 'var(--color-surface-alpha-12)',
+            color: 'var(--color-text)',
+          }}
+        >
+          {t('gdpr.decline')}
+        </button>
+        <button
+          onClick={handleAccept}
+          style={{
+            ...btnBase,
+            background: 'var(--color-primary)',
+            color: 'white',
+          }}
+        >
+          {t('gdpr.accept')}
+        </button>
+      </div>
     </div>
   );
 }

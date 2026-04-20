@@ -53,8 +53,9 @@
     "signupSuccess": "Paskyra sukurta! Patikrinkite savo el. paštą."
   },
   "gdpr": {
-    "body": "Kyts naudoja tik būtinus slapukus (prisijungimas, nustatymai). Naudodamiesi sutinkate su <terms>naudojimosi sąlygomis</terms> ir <privacy>privatumo politika</privacy>.",
-    "accept": "Sutinku"
+    "body": "Kyts naudoja slapukus prisijungimui ir nustatymams bei anonimiškai produkto analitikai (PostHog, EU — be slapukų). Žr. <terms>naudojimosi sąlygas</terms> ir <privacy>privatumo politiką</privacy>.",
+    "accept": "Sutinku",
+    "decline": "Atmesti"
   },
   "update": {
     "title": "Prieinama nauja versija",
@@ -193,6 +194,10 @@
       "staleDemo": {
         "label": "Rodyti pasenusias kainas (demo)",
         "desc": "Taip pat rodo >24h senumo kainas"
+      },
+      "analytics": {
+        "label": "Anoniminė analitika",
+        "desc": "PostHog (EU) — padeda tobulinti paslaugą"
       },
       "openTutorial": "Atidaryti mokymą",
       "feedback": "Siųsti atsiliepimą",

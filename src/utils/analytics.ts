@@ -6,10 +6,20 @@
 // ready, so early events (tutorial_start, gdpr_accept) aren't lost.
 
 const OPT_OUT_KEY = 'kyts:analytics-opt-out';
+const CONSENT_KEY = 'gdpr_consent';
+const LEGACY_CONSENT_KEY = 'gdpr_accepted';
 
 type PH = typeof import('posthog-js').default;
 let phPromise: Promise<PH | null> | null = null;
 const queue: Array<{ event: string; props?: Record<string, unknown> }> = [];
+
+function hasConsent(): boolean {
+  try {
+    if (localStorage.getItem(CONSENT_KEY) === 'accepted') return true;
+    if (localStorage.getItem(LEGACY_CONSENT_KEY) === 'true') return true;
+  } catch { /* storage blocked */ }
+  return false;
+}
 
 function loadPosthog(): Promise<PH | null> {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
@@ -48,6 +58,11 @@ export function initAnalytics() {
 }
 
 export function capture(event: string, props?: Record<string, unknown>) {
+  // Drop events entirely when the user hasn't consented or has opted out.
+  // Without this, calls from modals/tutorials would queue in memory and
+  // flush retroactively the moment someone toggles analytics back on —
+  // exactly the "retroactive tracking" behavior we want to avoid.
+  if (!hasConsent() || isAnalyticsOptedOut()) return;
   if (!phPromise) {
     queue.push({ event, props });
     return;
@@ -59,7 +74,11 @@ export function capture(event: string, props?: Record<string, unknown>) {
 }
 
 export function isAnalyticsOptedOut(): boolean {
-  return localStorage.getItem(OPT_OUT_KEY) === '1';
+  try {
+    if (localStorage.getItem(OPT_OUT_KEY) === '1') return true;
+    if (localStorage.getItem(CONSENT_KEY) === 'declined') return true;
+  } catch { /* storage blocked */ }
+  return false;
 }
 
 export function setAnalyticsOptOut(optOut: boolean) {

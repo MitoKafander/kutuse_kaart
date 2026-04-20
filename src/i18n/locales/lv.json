@@ -53,8 +53,9 @@
     "signupSuccess": "Konts izveidots! Pārbaudi savu e-pastu."
   },
   "gdpr": {
-    "body": "Kyts izmanto tikai nepieciešamās sīkdatnes (pierakstīšanās, iestatījumi). To lietojot, tu piekrīti <terms>lietošanas noteikumiem</terms> un <privacy>privātuma politikai</privacy>.",
-    "accept": "Piekrītu"
+    "body": "Kyts izmanto sīkdatnes pierakstīšanās un iestatījumu nolūkos, kā arī anonīmu produkta analītiku (PostHog, EU — bez sīkdatnēm). Skatīt <terms>lietošanas noteikumus</terms> un <privacy>privātuma politiku</privacy>.",
+    "accept": "Piekrītu",
+    "decline": "Noraidīt"
   },
   "update": {
     "title": "Pieejama jauna versija",
@@ -193,6 +194,10 @@
       "staleDemo": {
         "label": "Rādīt novecojušas cenas (demo)",
         "desc": "Parāda arī >24h vecas cenas"
+      },
+      "analytics": {
+        "label": "Anonīma analītika",
+        "desc": "PostHog (EU) — palīdz uzlabot pakalpojumu"
       },
       "openTutorial": "Atvērt apmācību",
       "feedback": "Sūtīt atsauksmi",
