@@ -8,6 +8,14 @@ import * as Sentry from '@sentry/react';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
+// Exponential backoff between retry attempts (ms). A flat 2 s gap covered the
+// first retry in ~6–8 s total, which wasn't long enough to ride out typical
+// Gemini 503 "overloaded" bursts — users would burn all 3 attempts against the
+// same overloaded window and only succeed after force-reopening the app 30 s
+// later. 2.5 s → 8 s stretches the total retry window to ~15 s, which covers
+// most transient upstream hiccups without making a genuine outage feel slower.
+// Indexed by attempt number; attempt 0 is the initial try (no wait).
+const RETRY_BACKOFF_MS = [0, 2500, 8000];
 const EMPTY_PRICES = { "Bensiin 95": "", "Bensiin 98": "", "Diisel": "", "LPG": "" };
 // Hard cap on how far a submitter may be from the station they're reporting
 // for. Matches the server trigger in schema_phase31 so both client and DB
@@ -110,7 +118,7 @@ export function ManualPriceModal({
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
         setRetryStatus(t('manualPrice.camera.retryStatus', { attempt, max: MAX_RETRIES }));
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, RETRY_BACKOFF_MS[attempt] ?? 8000));
       }
 
       // Abort after 55 s — one tick under the Node serverless maxDuration (60 s)
