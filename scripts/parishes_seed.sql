@@ -617,7 +617,7 @@ update stations s set parish_id = v.parish_id from (values
 ) as v(station_id, parish_id) where s.id = v.station_id;
 
 -- 4. Recompute denormalized counts.
-update parishes p set station_count = coalesce((select count(*) from stations s where s.parish_id = p.id and s.country = 'EE'), 0);
+update parishes p set station_count = coalesce((select count(*) from stations s where s.parish_id = p.id and s.country = 'EE' and s.active), 0);
 update maakonnad m set station_count = coalesce((select sum(p.station_count) from parishes p where p.maakond_id = m.id), 0);
 
 -- 5. Assertions.

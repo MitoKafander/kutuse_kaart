@@ -305,7 +305,7 @@ function App() {
     // the same HTTP/2 connection, and previously ran serially — PSI showed the
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
     const [stRes, prRes, vtRes, repsRes, insightRes] = await Promise.all([
-      supabase.from('stations').select('*'),
+      supabase.from('stations').select('*').eq('active', true),
       supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000),
       supabase.from('votes').select('*').limit(10000),
       supabase.from('v_reporters').select('user_id, display_name'),
