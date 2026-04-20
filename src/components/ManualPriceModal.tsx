@@ -333,6 +333,10 @@ export function ManualPriceModal({
       }
     } catch (error: any) {
       console.error("AI Analysis failed:", error);
+      // Track every failure by code so we can see the real distribution in
+      // PostHog. Without this we can only guess whether AI_UPSTREAM_BUSY
+      // dominates (Gemini 503), QUOTA_EXCEEDED (rate limit), or something else.
+      capture('ai_scan_failure', { code: error?.message || 'UNKNOWN' });
       // Skip Sentry noise for known user-facing states: quota, transient Gemini
       // outages, and retry-exhausted client network drops. All four already
       // surface UX copy and are not actionable beyond "connection was bad."

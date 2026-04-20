@@ -191,9 +191,21 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     return res.status(200).json(normalized);
 
   } catch (error: any) {
-    console.error('Vision API Error:', error);
-    const msg = error.message || 'Unknown API Exception';
-    const is503 = msg.includes('503') || /service.?unavailable|high demand/i.test(msg);
+    // Log structured context so Vercel function logs tell us which Gemini
+    // failure mode we're in — plain `console.error(error)` buried the status
+    // code inside a stack trace and made frequency analysis impossible.
+    const msg = error?.message || 'Unknown API Exception';
+    console.error('[parse-prices] Gemini call failed', {
+      message: msg,
+      name: error?.name,
+      status: error?.status ?? error?.response?.status,
+      statusText: error?.statusText ?? error?.response?.statusText,
+      // The google-generative-ai SDK wraps the upstream error; keep a short
+      // preview of the serialized payload but cap length so one bad response
+      // doesn't fill the log quota.
+      detail: JSON.stringify(error?.errorDetails ?? error?.response?.data ?? null)?.slice(0, 400),
+    });
+    const is503 = msg.includes('503') || /service.?unavailable|high demand|overloaded/i.test(msg);
     const is429 = msg.includes('429') || /quota|rate.?limit/i.test(msg);
     // Collapse verbose Gemini messages into clean codes the client can branch on
     // and keep out of Sentry — these are transient upstream conditions, not bugs.
