@@ -90,14 +90,16 @@
         "orange": "Oranža",
         "yellow": "Dzeltena",
         "green": "Zaļa",
-        "purple": "Violeta"
+        "purple": "Violeta",
+        "cyan": "Tirkīza"
       },
       "desc": {
         "blue": "nofotografē stendu, AI nolasa cenas.",
         "orange": "ievadi cenas manuāli.",
         "yellow": "lētākās stacijas tuvumā.",
         "green": "lētākā degviela maršrutā.",
-        "purple": "statistika un tendences."
+        "purple": "statistika un tendences.",
+        "cyan": "atklājumu karte — kādas stacijas esi atklājis."
       }
     },
     "step3": {
@@ -315,7 +317,8 @@
       "routeFind": "Lētākā degviela maršrutā",
       "routeResults": "Parādīt maršruta rezultātus",
       "cancelRoute": "Atcelt maršrutu",
-      "stats": "Statistika"
+      "stats": "Statistika",
+      "discovery": "Atklājumu karte"
     },
     "errorBoundary": "Kaut kas nogāja greizi. Lūdzu, atsvaidzini lapu."
   },

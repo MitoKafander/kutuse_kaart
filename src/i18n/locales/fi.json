@@ -90,14 +90,16 @@
         "orange": "Oranssi",
         "yellow": "Keltainen",
         "green": "Vihreä",
-        "purple": "Violetti"
+        "purple": "Violetti",
+        "cyan": "Turkoosi"
       },
       "desc": {
         "blue": "ota kuva hintataulusta, tekoäly lukee hinnat.",
         "orange": "syötä hinnat manuaalisesti.",
         "yellow": "halvimmat asemat lähellä.",
         "green": "halvin polttoaine reitillä.",
-        "purple": "tilastot ja trendit."
+        "purple": "tilastot ja trendit.",
+        "cyan": "löytökartta — mitkä asemat olet löytänyt."
       }
     },
     "step3": {
@@ -315,7 +317,8 @@
       "routeFind": "Halvin polttoaine reitillä",
       "routeResults": "Näytä reitin tulokset",
       "cancelRoute": "Peruuta reitti",
-      "stats": "Tilastot"
+      "stats": "Tilastot",
+      "discovery": "Löytökartta"
     },
     "errorBoundary": "Jotain meni pieleen. Päivitä sivu."
   },

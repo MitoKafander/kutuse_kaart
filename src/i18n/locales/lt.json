@@ -90,14 +90,16 @@
         "orange": "Oranžinė",
         "yellow": "Geltona",
         "green": "Žalia",
-        "purple": "Violetinė"
+        "purple": "Violetinė",
+        "cyan": "Žydra"
       },
       "desc": {
         "blue": "nufotografuokite stendą, dirbtinis intelektas nuskaito kainas.",
         "orange": "įveskite kainas rankiniu būdu.",
         "yellow": "pigiausios degalinės netoliese.",
         "green": "pigiausias kuras maršrute.",
-        "purple": "statistika ir tendencijos."
+        "purple": "statistika ir tendencijos.",
+        "cyan": "atradimų žemėlapis — kurias degalines jau aplankei."
       }
     },
     "step3": {
@@ -315,7 +317,8 @@
       "routeFind": "Pigiausi degalai maršrute",
       "routeResults": "Rodyti maršruto rezultatus",
       "cancelRoute": "Atšaukti maršrutą",
-      "stats": "Statistika"
+      "stats": "Statistika",
+      "discovery": "Atradimų žemėlapis"
     },
     "errorBoundary": "Kažkas nutiko. Prašome atnaujinti puslapį."
   },

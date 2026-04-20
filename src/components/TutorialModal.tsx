@@ -19,6 +19,7 @@ const COLOR_ORANGE = '#fb923c';
 const COLOR_YELLOW = 'var(--color-fab-cheapest)';
 const COLOR_GREEN = '#22c55e';
 const COLOR_PURPLE = '#a855f7';
+const COLOR_CYAN = '#06b6d4';
 
 // Multilingual title rendered before any language has been picked, so it has to
 // read right in every supported tongue at the same time. Native names of the
@@ -84,6 +85,7 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
           <Euro size={32} color={COLOR_YELLOW} />
           <Navigation size={32} color={COLOR_GREEN} />
           <TrendingUp size={32} color={COLOR_PURPLE} />
+          <Compass size={32} color={COLOR_CYAN} />
         </div>
       ),
       title: t('tutorial.step2.title'),
@@ -93,7 +95,8 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
           {colorSpan(COLOR_ORANGE, t('tutorial.step2.color.orange'))} – {t('tutorial.step2.desc.orange')}{' '}
           {colorSpan(COLOR_YELLOW, t('tutorial.step2.color.yellow'))} – {t('tutorial.step2.desc.yellow')}{' '}
           {colorSpan(COLOR_GREEN, t('tutorial.step2.color.green'))} – {t('tutorial.step2.desc.green')}{' '}
-          {colorSpan(COLOR_PURPLE, t('tutorial.step2.color.purple'))} – {t('tutorial.step2.desc.purple')}
+          {colorSpan(COLOR_PURPLE, t('tutorial.step2.color.purple'))} – {t('tutorial.step2.desc.purple')}{' '}
+          {colorSpan(COLOR_CYAN, t('tutorial.step2.color.cyan'))} – {t('tutorial.step2.desc.cyan')}
         </span>
       ),
     },

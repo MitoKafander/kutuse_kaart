@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
+import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Compass } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
@@ -1068,6 +1068,26 @@ function App() {
             }} />
           );
         })()}
+      </button>
+
+      <button
+        className="flex-center"
+        onClick={() => handleShowDiscoveryMapChange(!showDiscoveryMap)}
+        title={t('app.fab.discovery')}
+        aria-pressed={showDiscoveryMap}
+        style={{
+          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          cursor: 'pointer',
+          color: showDiscoveryMap ? '#fff' : '#06b6d4',
+          background: showDiscoveryMap ? '#06b6d4' : 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: `1px solid ${showDiscoveryMap ? '#06b6d4' : 'var(--color-surface-alpha-12)'}`,
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <Compass size={22} />
       </button>
 
       {/* Subtle KütuseKaart Watermark placed at the bottom safe area */}

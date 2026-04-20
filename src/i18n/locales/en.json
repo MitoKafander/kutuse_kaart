@@ -90,14 +90,16 @@
         "orange": "Orange",
         "yellow": "Yellow",
         "green": "Green",
-        "purple": "Purple"
+        "purple": "Purple",
+        "cyan": "Cyan"
       },
       "desc": {
         "blue": "take a photo of the price totem, AI reads the prices.",
         "orange": "enter prices manually.",
         "yellow": "cheapest stations nearby.",
         "green": "cheapest fuel on route.",
-        "purple": "statistics and trends."
+        "purple": "statistics and trends.",
+        "cyan": "discovery map — which stations you have discovered."
       }
     },
     "step3": {
@@ -315,7 +317,8 @@
       "routeFind": "Cheapest fuel on route",
       "routeResults": "Show route results",
       "cancelRoute": "Cancel route",
-      "stats": "Statistics"
+      "stats": "Statistics",
+      "discovery": "Discovery map"
     },
     "errorBoundary": "Something went wrong. Please refresh the page."
   },

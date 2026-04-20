@@ -198,7 +198,8 @@
       "routeFind": "Odavaim kütus marsruudil",
       "routeResults": "Näita marsruudi tulemusi",
       "cancelRoute": "Tühista marsruut",
-      "stats": "Statistika"
+      "stats": "Statistika",
+      "discovery": "Avastuskaart"
     }
   },
   "map": {
@@ -608,14 +609,16 @@
         "orange": "Oranž",
         "yellow": "Kollane",
         "green": "Roheline",
-        "purple": "Lilla"
+        "purple": "Lilla",
+        "cyan": "Türkiis"
       },
       "desc": {
         "blue": "pildista totemit, AI loeb hinnad.",
         "orange": "sisesta hinnad käsitsi.",
         "yellow": "odavaimad jaamad lähedal.",
         "green": "odavaim kütus marsruudil.",
-        "purple": "statistika ja trendid."
+        "purple": "statistika ja trendid.",
+        "cyan": "avastuskaart — millised jaamad oled avastanud."
       }
     },
     "step3": {
