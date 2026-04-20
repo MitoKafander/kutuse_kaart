@@ -1,13 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#5E17EB"/>
-  <text
-    x="256"
-    y="256"
-    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif"
-    font-weight="800"
-    font-size="200"
-    fill="#FF914D"
-    text-anchor="middle"
-    dominant-baseline="central"
-  >KYTS</text>
+  <path fill="#FF914D" d="M256 72C236 132 204 172 184 222C156 252 116 282 124 352C134 432 200 456 256 456C322 456 398 432 392 352C386 292 356 272 340 262C356 226 324 198 302 218C320 166 286 130 256 72Z"/>
+  <circle cx="295" cy="58" r="16" fill="#FF914D"/>
 </svg>

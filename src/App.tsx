@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, Filter, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
+import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
@@ -43,7 +43,6 @@ function lazyWithReload<T extends React.ComponentType<any>>(factory: () => Promi
 const AuthModal = lazyWithReload(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const StationDrawer = lazyWithReload(() => import('./components/StationDrawer').then(m => ({ default: m.StationDrawer })));
 const ManualPriceModal = lazyWithReload(() => import('./components/ManualPriceModal').then(m => ({ default: m.ManualPriceModal })));
-const FilterDrawer = lazyWithReload(() => import('./components/FilterDrawer').then(m => ({ default: m.FilterDrawer })));
 const ProfileDrawer = lazyWithReload(() => import('./components/ProfileDrawer').then(m => ({ default: m.ProfileDrawer })));
 const CheapestNearbyPanel = lazyWithReload(() => import('./components/CheapestNearbyPanel').then(m => ({ default: m.CheapestNearbyPanel })));
 const PrivacyModal = lazyWithReload(() => import('./components/PrivacyModal').then(m => ({ default: m.PrivacyModal })));
@@ -68,7 +67,6 @@ function App() {
   
   // Modals state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<any>(null);
@@ -113,6 +111,7 @@ function App() {
   const [showOnlyFresh, setShowOnlyFresh] = useState(false);
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const hasActiveFilters = selectedFuelType != null || showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
 
   // Theme + display preferences
   const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
@@ -235,11 +234,10 @@ function App() {
     // accept one leaked history entry on programmatic close instead.
     if (isTutorialOpen) list.push({ id: 'tutorial', close: () => setIsTutorialOpen(false), skipRewind: true });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
-    if (isFilterOpen) list.push({ id: 'filter', close: () => setIsFilterOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, isFilterOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -796,30 +794,38 @@ function App() {
           </div>
           
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '16px', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px', alignItems: 'center' }}>
-            <button aria-label={t('header.aria.filter')} onClick={() => setIsFilterOpen(true)} style={{ background: 'none', border: 'none', color: (selectedBrands.length > 0 || selectedFuelType || showOnlyFresh || highlightCheapest) ? 'var(--color-primary)' : 'var(--color-text)', cursor: 'pointer', padding: 0 }}>
-              <Filter size={20} />
-            </button>
-            
+          <div style={{ display: 'flex', borderLeft: '1px solid var(--color-surface-border)', paddingLeft: '16px', alignItems: 'center' }}>
             {session ? (
               <button aria-label={t('header.aria.profile')} onClick={() => setIsProfileOpen(true)} style={{
+                position: 'relative',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '36px', height: '36px', borderRadius: '50%',
                 background: session.user?.user_metadata?.avatar_url ? 'transparent' : 'var(--color-primary)',
                 color: '#fff', border: 'none', cursor: 'pointer', padding: 0,
-                margin: '-8px -10px -8px 0', overflow: 'hidden', flexShrink: 0,
+                margin: '-8px -10px -8px 0', overflow: 'visible', flexShrink: 0,
                 boxShadow: session.user?.user_metadata?.avatar_url ? 'none' : '0 2px 4px rgba(0,0,0,0.1)'
               }}>
-                {session.user?.user_metadata?.avatar_url ? (
-                  <img src={session.user.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
-                ) : (
-                  <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>
-                    {displayName ? displayName.charAt(0).toUpperCase() : (session.user.email ? session.user.email.charAt(0).toUpperCase() : '?')}
-                  </span>
+                <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {session.user?.user_metadata?.avatar_url ? (
+                    <img src={session.user.user_metadata.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                  ) : (
+                    <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>
+                      {displayName ? displayName.charAt(0).toUpperCase() : (session.user.email ? session.user.email.charAt(0).toUpperCase() : '?')}
+                    </span>
+                  )}
+                </div>
+                {hasActiveFilters && (
+                  <span aria-hidden="true" style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: 'var(--color-primary)',
+                    boxShadow: '0 0 0 2px var(--color-bg)',
+                  }} />
                 )}
               </button>
             ) : (
               <button aria-label={t('header.aria.profile')} onClick={() => setIsProfileOpen(true)} style={{
+                position: 'relative',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: '36px', height: '36px', borderRadius: '50%',
                 background: 'var(--color-surface-alpha-12)',
@@ -827,6 +833,14 @@ function App() {
                 margin: '-8px -10px -8px 0', flexShrink: 0
               }}>
                 <UserCircle size={20} />
+                {hasActiveFilters && (
+                  <span aria-hidden="true" style={{
+                    position: 'absolute', top: -2, right: -2,
+                    width: 10, height: 10, borderRadius: '50%',
+                    background: 'var(--color-primary)',
+                    boxShadow: '0 0 0 2px var(--color-bg)',
+                  }} />
+                )}
               </button>
             )}
           </div>
@@ -1073,32 +1087,6 @@ function App() {
       {/* Modals & Drawers — lazy-loaded, each gated by its open-flag so the
           chunk only downloads when the user first triggers that panel. */}
       <Suspense fallback={null}>
-        {isFilterOpen && (
-          <FilterDrawer
-            isOpen={isFilterOpen}
-            onClose={() => setIsFilterOpen(false)}
-            brands={uniqueBrands}
-            selectedBrands={selectedBrands}
-            setSelectedBrands={setSelectedBrands}
-            fuelTypes={FUEL_TYPES}
-            selectedFuelType={selectedFuelType}
-            setSelectedFuelType={setSelectedFuelType}
-            showOnlyFresh={showOnlyFresh}
-            setShowOnlyFresh={setShowOnlyFresh}
-            highlightCheapest={highlightCheapest}
-            setHighlightCheapest={setHighlightCheapest}
-            applyLoyalty={applyLoyalty}
-            onApplyLoyaltyChange={async (v) => {
-              setApplyLoyalty(v);
-              localStorage.setItem('kyts-apply-loyalty', String(v));
-              if (session?.user?.id) {
-                await supabase.from('user_profiles').upsert({ id: session.user.id, apply_loyalty: v });
-              }
-            }}
-            hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
-          />
-        )}
-
         {!!selectedStation && !isPriceModalOpen && (
           <StationDrawer
             station={selectedStation}
@@ -1194,6 +1182,24 @@ function App() {
         preferredBrands={preferredBrands}
         onPreferredBrandsChange={setPreferredBrands}
         allBrands={uniqueBrands}
+        fuelTypes={FUEL_TYPES}
+        selectedFuelType={selectedFuelType}
+        setSelectedFuelType={setSelectedFuelType}
+        selectedBrands={selectedBrands}
+        setSelectedBrands={setSelectedBrands}
+        showOnlyFresh={showOnlyFresh}
+        setShowOnlyFresh={setShowOnlyFresh}
+        highlightCheapest={highlightCheapest}
+        setHighlightCheapest={setHighlightCheapest}
+        applyLoyalty={applyLoyalty}
+        onApplyLoyaltyChange={async (v) => {
+          setApplyLoyalty(v);
+          localStorage.setItem('kyts-apply-loyalty', String(v));
+          if (session?.user?.id) {
+            await supabase.from('user_profiles').upsert({ id: session.user.id, apply_loyalty: v });
+          }
+        }}
+        hasAnyDiscount={Object.values(loyaltyDiscounts).some(v => v > 0)}
         dotStyle={dotStyle}
         onDotStyleChange={(s) => { setDotStyle(s); localStorage.setItem('kyts-dot-style', s); }}
         showClusters={showClusters}

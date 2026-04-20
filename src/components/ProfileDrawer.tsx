@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil, Filter, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
@@ -115,6 +115,18 @@ export function ProfileDrawer({
   preferredBrands,
   onPreferredBrandsChange,
   allBrands,
+  fuelTypes,
+  selectedFuelType,
+  setSelectedFuelType,
+  selectedBrands,
+  setSelectedBrands,
+  showOnlyFresh,
+  setShowOnlyFresh,
+  highlightCheapest,
+  setHighlightCheapest,
+  applyLoyalty,
+  onApplyLoyaltyChange,
+  hasAnyDiscount,
   dotStyle,
   onDotStyleChange,
   showClusters,
@@ -166,6 +178,18 @@ export function ProfileDrawer({
   preferredBrands: string[];
   onPreferredBrandsChange: (brands: string[]) => void;
   allBrands: string[];
+  fuelTypes: string[];
+  selectedFuelType: string | null;
+  setSelectedFuelType: (type: string | null) => void;
+  selectedBrands: string[];
+  setSelectedBrands: (brands: string[]) => void;
+  showOnlyFresh: boolean;
+  setShowOnlyFresh: (v: boolean) => void;
+  highlightCheapest: boolean;
+  setHighlightCheapest: (v: boolean) => void;
+  applyLoyalty: boolean;
+  onApplyLoyaltyChange: (v: boolean) => void;
+  hasAnyDiscount: boolean;
   dotStyle: 'info' | 'brand';
   onDotStyleChange: (style: 'info' | 'brand') => void;
   showClusters: boolean;
@@ -205,6 +229,21 @@ export function ProfileDrawer({
   useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
+  const [brandFilterOpen, setBrandFilterOpen] = useState(false);
+  const hasActiveFilters = selectedFuelType != null || showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
+  const toggleBrandFilter = (brand: string) => {
+    if (selectedBrands.includes(brand)) {
+      setSelectedBrands(selectedBrands.filter(b => b !== brand));
+    } else {
+      setSelectedBrands([...selectedBrands, brand]);
+    }
+  };
+  const resetFilters = () => {
+    setSelectedBrands([]);
+    setSelectedFuelType(null);
+    setShowOnlyFresh(false);
+    setHighlightCheapest(false);
+  };
 
   // Stats grid is a standalone accordion, unlinked from the map-view toggle
   // so users can browse their progress without blanking out the map.
@@ -936,6 +975,166 @@ export function ProfileDrawer({
           </>)}
 
           {activeTab === 'settings' && (<>
+          <div className="glass-panel" style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '1rem' }}>
+                <Filter size={18} /> {t('filter.title')}
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={resetFilters}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--color-surface-border)',
+                    borderRadius: 8, padding: '4px 10px', color: 'var(--color-text-muted)',
+                    fontSize: '0.78rem', cursor: 'pointer',
+                  }}
+                >
+                  {t('filter.resetAll')}
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Fuel type */}
+              <div>
+                <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
+                  <Fuel size={16} /> {t('filter.fuelType')}
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '8px' }}>
+                  {fuelTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedFuelType(selectedFuelType === type ? null : type)}
+                      style={{
+                        padding: '8px',
+                        minWidth: 0,
+                        borderRadius: '8px',
+                        border: selectedFuelType === type ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-border)',
+                        background: selectedFuelType === type ? 'rgba(59, 130, 246, 0.15)' : 'var(--color-surface)',
+                        color: selectedFuelType === type ? 'var(--color-primary)' : 'var(--color-text)',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.2s',
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      {fuelLabel(type, t)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hide stale */}
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <span style={{ fontSize: '0.9rem' }}>{t('filter.hideStale')}</span>
+                <div
+                  onClick={() => setShowOnlyFresh(!showOnlyFresh)}
+                  style={{
+                    width: '44px', height: '24px', borderRadius: '12px',
+                    background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
+                    position: 'relative', transition: 'background 0.2s'
+                  }}
+                >
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
+                  }}/>
+                </div>
+              </label>
+
+              {/* Loyalty prices (only if user has at least one discount set) */}
+              {hasAnyDiscount && (
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                    <CreditCard size={16} /> {t('filter.loyaltyPrices')}
+                  </span>
+                  <div
+                    onClick={() => onApplyLoyaltyChange(!applyLoyalty)}
+                    style={{
+                      width: '44px', height: '24px', borderRadius: '12px',
+                      background: applyLoyalty ? '#f59e0b' : 'var(--color-surface)',
+                      position: 'relative', transition: 'background 0.2s'
+                    }}
+                  >
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                      position: 'absolute', top: '2px', left: applyLoyalty ? '22px' : '2px', transition: 'left 0.2s'
+                    }}/>
+                  </div>
+                </label>
+              )}
+
+              {/* Find cheapest (needs a fuel type selected) */}
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', opacity: selectedFuelType ? 1 : 0.5 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.9rem' }}>{t('filter.findCheapest')}</span>
+                  {!selectedFuelType && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('filter.findCheapestHint')}</span>}
+                </div>
+                <div
+                  onClick={() => { if (selectedFuelType) setHighlightCheapest(!highlightCheapest); }}
+                  style={{
+                    width: '44px', height: '24px', borderRadius: '12px',
+                    background: highlightCheapest ? 'gold' : 'var(--color-surface)',
+                    position: 'relative', transition: 'background 0.2s'
+                  }}
+                >
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                    position: 'absolute', top: '2px', left: highlightCheapest ? '22px' : '2px', transition: 'left 0.2s'
+                  }}/>
+                </div>
+              </label>
+
+              {/* Brand filter (collapsible — "the huge list") */}
+              <div>
+                <button
+                  onClick={() => setBrandFilterOpen(!brandFilterOpen)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', background: 'none', border: 'none',
+                    color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                    <Building2 size={16} /> {t('filter.brand')}
+                    {selectedBrands.length > 0 && (
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>
+                        {t('filter.clearCount', { count: selectedBrands.length })}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown size={16} style={{
+                    transform: brandFilterOpen ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform .2s',
+                  }} />
+                </button>
+                {brandFilterOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', marginTop: '8px' }}>
+                    {allBrands.map(brand => (
+                      <label
+                        key={brand}
+                        onClick={(e) => { e.preventDefault(); toggleBrandFilter(brand); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '8px 0' }}
+                      >
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '4px', border: '2px solid var(--color-primary)',
+                          background: selectedBrands.includes(brand) ? 'var(--color-primary)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          {selectedBrands.includes(brand) && <Check size={14} color="var(--color-bg)" />}
+                        </div>
+                        <span style={{ fontSize: '0.9rem' }}>{brand}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="glass-panel" style={{ padding: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '1rem', marginBottom: '16px' }}>
               <Settings size={18} /> {t('profile.settings.title')}
