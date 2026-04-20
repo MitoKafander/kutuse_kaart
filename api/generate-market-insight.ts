@@ -19,7 +19,6 @@ import { createClient } from '@supabase/supabase-js';
 import { fetchMarketData, fetchLog } from './_lib/marketInsight/fetchMarketData.js';
 import { computeFuelSignal, type KytsFuelStats } from './_lib/marketInsight/computeSignal.js';
 import { translateWithGemini, type TranslatorInput } from './_lib/marketInsight/geminiTranslator.js';
-import { buildFallbackText } from './_lib/marketInsight/fallbackTemplate.js';
 
 export const config = {
   runtime: 'nodejs',
@@ -172,33 +171,43 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       },
     };
 
-    // Step 4: Gemini translation (best-effort — fallback template on any failure).
-    let text: ReturnType<typeof buildFallbackText>;
-    let usedGemini = false;
-    let geminiReason: string = 'GEMINI_API_KEY unset';
-    if (GEMINI_KEY) {
-      const translatorInput: TranslatorInput = {
-        diesel: dieselSignal,
-        gasoline: gasolineSignal,
-        kytsAvg: { diesel: dieselStats.today, gasoline95: gasoline95Stats.today },
-        globals: {
-          brentUsd: market.brent?.today ?? null,
-          brentDelta7d: market.brent ? (market.brent.today - market.brent.prev7) / market.brent.prev7 : null,
-          eurUsd: market.eurUsd?.today ?? null,
-          eurUsdDelta7d: market.eurUsd ? (market.eurUsd.today - market.eurUsd.prev7) / market.eurUsd.prev7 : null,
-          gasoilDelta7d: market.gasoil ? (market.gasoil.today - market.gasoil.prev7) / market.gasoil.prev7 : null,
-          rbobDelta7d: market.rbob ? (market.rbob.today - market.rbob.prev7) / market.rbob.prev7 : null,
-        },
-      };
-      const gemini = await translateWithGemini(GEMINI_KEY, translatorInput);
-      if (gemini.ok) { text = gemini.out; usedGemini = true; geminiReason = 'ok'; }
-      else {
-        text = buildFallbackText(dieselSignal, gasolineSignal);
-        geminiReason = gemini.reason;
+    // Step 4: Gemini translation. If Gemini is unavailable or rejects, we
+    // skip the DB write entirely — the previous active row stays live so
+    // users see the last genuine Gemini-generated insight instead of a
+    // deterministic template.
+    if (!GEMINI_KEY) {
+      const reason = 'GEMINI_API_KEY unset';
+      if (runId) {
+        await sb.from('market_insight_runs')
+          .update({ status: 'failed_skip', completed_at: new Date().toISOString(), error_message: reason, pulse: data })
+          .eq('id', runId);
       }
-    } else {
-      text = buildFallbackText(dieselSignal, gasolineSignal);
+      return res.status(200).json({ ok: true, skipped: true, reason });
     }
+
+    const translatorInput: TranslatorInput = {
+      diesel: dieselSignal,
+      gasoline: gasolineSignal,
+      kytsAvg: { diesel: dieselStats.today, gasoline95: gasoline95Stats.today },
+      globals: {
+        brentUsd: market.brent?.today ?? null,
+        brentDelta7d: market.brent ? (market.brent.today - market.brent.prev7) / market.brent.prev7 : null,
+        eurUsd: market.eurUsd?.today ?? null,
+        eurUsdDelta7d: market.eurUsd ? (market.eurUsd.today - market.eurUsd.prev7) / market.eurUsd.prev7 : null,
+        gasoilDelta7d: market.gasoil ? (market.gasoil.today - market.gasoil.prev7) / market.gasoil.prev7 : null,
+        rbobDelta7d: market.rbob ? (market.rbob.today - market.rbob.prev7) / market.rbob.prev7 : null,
+      },
+    };
+    const gemini = await translateWithGemini(GEMINI_KEY, translatorInput);
+    if (!gemini.ok) {
+      if (runId) {
+        await sb.from('market_insight_runs')
+          .update({ status: 'failed_skip', completed_at: new Date().toISOString(), error_message: gemini.reason, pulse: data })
+          .eq('id', runId);
+      }
+      return res.status(200).json({ ok: true, skipped: true, reason: gemini.reason });
+    }
+    const text = gemini.out;
 
     // Pick a `trend` compatible with the legacy phase-39 schema: if either
     // fuel says buy_now we're trending up; wait implies down; everything
@@ -226,7 +235,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     };
 
     if (dry) {
-      return res.status(200).json({ ok: true, dryRun: true, usedGemini, geminiReason, row: newRow, fetchLog });
+      return res.status(200).json({ ok: true, dryRun: true, row: newRow, fetchLog });
     }
 
     // Step 6: flip previous active rows off, then insert.
@@ -245,11 +254,11 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     if (runId) {
       await sb.from('market_insight_runs')
         .update({
-          status: usedGemini ? 'success' : 'failed_fallback',
+          status: 'success',
           insight_id: insightId,
           completed_at: new Date().toISOString(),
           pulse: data,
-          error_message: usedGemini ? null : 'Gemini unavailable or guardrail-rejected; used template',
+          error_message: null,
         })
         .eq('id', runId);
     }
@@ -257,7 +266,6 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     return res.status(200).json({
       ok: true,
       insightId,
-      usedGemini,
       signal: { diesel: dieselSignal.signal, gasoline: gasolineSignal.signal, confidence },
     });
   } catch (err: any) {
