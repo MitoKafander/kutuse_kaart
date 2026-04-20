@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#FF914C"/>
+  <rect width="512" height="512" fill="#5E17EB"/>
   <text
     x="256"
     y="256"
     font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif"
     font-weight="800"
-    font-size="240"
-    fill="#000000"
+    font-size="200"
+    fill="#FF914D"
     text-anchor="middle"
     dominant-baseline="central"
-  >Kyts</text>
+  >KYTS</text>
 </svg>
