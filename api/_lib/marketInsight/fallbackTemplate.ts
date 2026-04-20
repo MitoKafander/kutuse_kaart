@@ -15,13 +15,16 @@ const PCT = (n: number) => {
 
 type SignalPhrases = Record<FuelSignal['signal'], string>;
 
+// Phrases match the canonical signal pills in src/i18n/locales/*.json (lowercased
+// for inline sentence use). If you edit either side, edit both — the fallback
+// should read the same as the pill the user sees in the drawer header.
 const PHRASES: Record<'et' | 'en' | 'ru' | 'fi' | 'lv' | 'lt', SignalPhrases> = {
-  et: { buy_now: 'osta nüüd',   wait: 'oota paar päeva',  hold: 'püsi paigal',      neutral: 'turg on rahulik' },
-  en: { buy_now: 'buy now',     wait: 'wait a few days',  hold: 'hold',             neutral: 'market is calm' },
-  ru: { buy_now: 'заправляйся', wait: 'подожди пару дней',hold: 'без спешки',       neutral: 'рынок спокоен' },
-  fi: { buy_now: 'tankkaa nyt', wait: 'odota muutama pv', hold: 'pysy paikoillasi', neutral: 'markkinat rauhallinen' },
-  lv: { buy_now: 'uzpildi tagad', wait: 'pagaidi dažas dienas', hold: 'paliec uz vietas', neutral: 'tirgus ir mierīgs' },
-  lt: { buy_now: 'pilk dabar',   wait: 'palauk kelias dienas', hold: 'liki ramus',   neutral: 'rinka rami' },
+  et: { buy_now: 'osta nüüd',     wait: 'oota 3-5 päeva',   hold: 'võid osta',         neutral: 'turg on rahulik' },
+  en: { buy_now: 'buy now',       wait: 'wait 3-5 days',    hold: 'OK to buy',         neutral: 'market is calm' },
+  ru: { buy_now: 'заправляйся',   wait: 'жди 3-5 дней',     hold: 'можно заправиться', neutral: 'рынок спокоен' },
+  fi: { buy_now: 'tankkaa nyt',   wait: 'odota 3-5 pv',     hold: 'voit tankata',      neutral: 'markkinat rauhalliset' },
+  lv: { buy_now: 'uzpildi tagad', wait: 'gaidi 3-5 dienas', hold: 'vari uzpildīt',     neutral: 'tirgus ir mierīgs' },
+  lt: { buy_now: 'pilk dabar',    wait: 'lauk 3-5 dienas',  hold: 'gali pildyti',      neutral: 'rinka rami' },
 };
 
 const FUEL_NAMES = {
