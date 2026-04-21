@@ -73,6 +73,15 @@ function App() {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  // Photo + context restored from sessionStorage after an auto-reload-retry.
+  // When set, ManualPriceModal skips the file picker and immediately re-runs
+  // the AI scan on the existing image.
+  const [pendingScanRestore, setPendingScanRestore] = useState<{
+    base64: string;
+    stationId: string | null;
+    capturedPosition: { lat: number; lon: number } | null;
+    pendingDetectedBrand: string | null;
+  } | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isCheapestNearbyOpen, setIsCheapestNearbyOpen] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(20);
@@ -90,8 +99,18 @@ function App() {
     () => localStorage.getItem('kyts:market-insight-seen')
   );
 
-  // Data state
-  const [stations, setStations] = useState<any[]>([]);
+  // Data state. Stations seed from a localStorage SWR cache so the first
+  // React commit can paint dots immediately — loadData still runs in the
+  // background and overwrites with fresh data. Prices intentionally stay
+  // out of the cache (10k rows = ~2 MB JSON; the parse cost on cold mount
+  // outweighs the perceived-perf win, and the dots themselves are the
+  // "we're alive" signal).
+  const [stations, setStations] = useState<any[]>(() => {
+    try {
+      const raw = localStorage.getItem('kyts:cache:stations');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
   const [prices, setPrices] = useState<any[]>([]);
   const [pricesLoaded, setPricesLoaded] = useState(false);
   const [votes, setVotes] = useState<any[]>([]);
@@ -183,10 +202,22 @@ function App() {
     document.documentElement.setAttribute('data-theme', mapStyle);
   }, [mapStyle]);
 
+  // Auto-reload-and-retry recovery: if the previous tab life stashed an
+  // in-flight scan before reloading (ManualPriceModal "AI_UPSTREAM_BUSY"
+  // escape hatch), re-open the camera modal with the photo + context so
+  // the user sees the scan resume instead of starting over.
   useEffect(() => {
-    if (sessionStorage.getItem('kyts:pending-action') === 'openScan') {
-      sessionStorage.removeItem('kyts:pending-action');
-      setIsCameraOpen(true);
+    const pending = sessionStorage.getItem('kyts:pending-scan');
+    if (!pending) return;
+    sessionStorage.removeItem('kyts:pending-scan');
+    try {
+      const parsed = JSON.parse(pending);
+      if (parsed?.base64) {
+        setPendingScanRestore(parsed);
+        setIsCameraOpen(true);
+      }
+    } catch {
+      sessionStorage.removeItem('kyts:scan-reload-attempted');
     }
   }, []);
 
@@ -330,7 +361,11 @@ function App() {
       supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
 
-    if (stRes.data) setStations(stRes.data);
+    if (stRes.data) {
+      setStations(stRes.data);
+      try { localStorage.setItem('kyts:cache:stations', JSON.stringify(stRes.data)); }
+      catch { /* quota exceeded — non-fatal, next load will retry */ }
+    }
     if (prRes.data) setPrices(prRes.data);
     setPricesLoaded(true);
     if (vtRes.data) setVotes(vtRes.data);
@@ -973,12 +1008,7 @@ function App() {
           Map.tsx). New FABs extend upward instead of downward. */}
       <button
         className="flex-center"
-        onClick={() => {
-          // Reload tears down the tab's HTTP/2 pool, which can go half-dead on
-          // long Android Chrome sessions and cause Gemini uploads to fail.
-          sessionStorage.setItem('kyts:pending-action', 'openScan');
-          window.location.reload();
-        }}
+        onClick={() => setIsCameraOpen(true)}
         title={t('app.fab.camera')}
         style={{
           position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
@@ -1199,11 +1229,12 @@ function App() {
           <ManualPriceModal
             station={null}
             isOpen={isCameraOpen}
-            onClose={() => setIsCameraOpen(false)}
+            onClose={() => { setIsCameraOpen(false); setPendingScanRestore(null); }}
             onPricesSubmitted={handlePricesSubmitted}
             allStations={stations}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
+            pendingScanRestore={pendingScanRestore}
           />
         )}
 

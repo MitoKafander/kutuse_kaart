@@ -31,6 +31,7 @@ export function ManualPriceModal({
   photoExpanded,
   onPhotoExpandedChange,
   mode,
+  pendingScanRestore,
 }: {
   station: any | null,
   isOpen: boolean,
@@ -40,6 +41,15 @@ export function ManualPriceModal({
   photoExpanded: boolean,
   onPhotoExpandedChange: (expanded: boolean) => void,
   mode?: 'station' | 'camera' | 'manual',
+  // When set, the modal is being re-opened post-reload to resume an
+  // interrupted AI scan. Skip the file picker, pre-fill the captured
+  // photo + station context, and immediately re-run the scan.
+  pendingScanRestore?: {
+    base64: string;
+    stationId: string | null;
+    capturedPosition: { lat: number; lon: number } | null;
+    pendingDetectedBrand: string | null;
+  } | null,
 }) {
   // Derive mode when not passed: back-compat with the two original call sites
   // (pre-selected station vs camera FAB). Manual mode is only entered via the
@@ -94,7 +104,30 @@ export function ManualPriceModal({
       setManualGpsError(null);
       setSubmitSuccess(false);
       setPrices(EMPTY_PRICES);
-      if (effectiveMode === 'camera') {
+      // Fresh open (no restore) clears the auto-reload single-shot guard so
+      // a future failure in this session can use the escape hatch again.
+      if (!pendingScanRestore?.base64) {
+        sessionStorage.removeItem('kyts:scan-reload-attempted');
+      }
+      if (effectiveMode === 'camera' && pendingScanRestore?.base64) {
+        // Resume an interrupted scan after the auto-reload-retry. Skip the
+        // file picker, restore the photo + last-known context, and re-run
+        // the scan in place. The scan-reload-attempted sessionStorage flag
+        // stays set until the scan succeeds (or the modal closes), so a
+        // second consecutive failure surfaces the normal error UI instead
+        // of looping into another reload.
+        const restored = pendingScanRestore;
+        setCapturedBase64(restored.base64);
+        setCapturedPreviewUrl(restored.base64);
+        if (restored.capturedPosition) setCapturedPosition(restored.capturedPosition);
+        if (restored.pendingDetectedBrand) setPendingDetectedBrand(restored.pendingDetectedBrand);
+        const preResolved = restored.stationId
+          ? allStations?.find((s: any) => s.id === restored.stationId) ?? null
+          : null;
+        if (preResolved) setResolvedStation(preResolved);
+        capture('ai_scan_reload_restored');
+        runScan(restored.base64, preResolved?.name || '');
+      } else if (effectiveMode === 'camera') {
         // Camera FAB mode: auto-open camera immediately
         setTimeout(() => fileInputRef.current?.click(), 300);
       } else if (effectiveMode === 'manual') {
@@ -138,11 +171,15 @@ export function ManualPriceModal({
       const timer = setTimeout(() => ac.abort(), 55000);
       let res: Response;
       try {
-        // Pin to apex on production hostnames. Old PWA installs load from
-        // www.kyts.ee but Vercel 308-redirects /api/* to apex, and Safari aborts
-        // the cross-origin POST preflight on the redirected destination.
+        // Pin AI calls to a dedicated subdomain on production hostnames. The
+        // browser pools HTTP/2 connections per origin, so giving AI traffic
+        // its own host (ai.kyts.ee) isolates it from any future app-side
+        // activity that could poison the main kyts.ee pool — long-lived tabs
+        // have been seen losing the AI endpoint while the rest of the app
+        // kept working, only recoverable via tab close+reopen.
         const host = typeof window !== 'undefined' ? window.location.hostname : '';
-        const apiBase = host === 'kyts.ee' || host === 'www.kyts.ee' ? 'https://kyts.ee' : '';
+        const isProd = host === 'kyts.ee' || host === 'www.kyts.ee' || host === 'ai.kyts.ee';
+        const apiBase = isProd ? 'https://ai.kyts.ee' : '';
         // cache: 'no-store' defeats HTTP/2 preflight caching that iOS Safari
         // sometimes resurrects after long PWA backgrounding — a cheap nudge
         // toward a fresh connection for each scan.
@@ -343,6 +380,13 @@ export function ManualPriceModal({
       // the upstream path is healthy, the failure is in the photo itself.
       lastSuccessAtRef.current = Date.now();
       failureStreakRef.current = 0;
+      // Mark the auto-reload-retry as recovered so we can measure the fix's
+      // hit rate, then clear the single-shot guard so the next scan in this
+      // session can use the escape hatch again if needed.
+      if (sessionStorage.getItem('kyts:scan-reload-attempted')) {
+        capture('ai_scan_reload_recovered');
+        sessionStorage.removeItem('kyts:scan-reload-attempted');
+      }
 
       // Server signals when Gemini returned valid JSON but no readable prices —
       // different UX than network failure: keep the photo, show specific copy.
@@ -400,6 +444,36 @@ export function ManualPriceModal({
           tags: { feature: 'ai-scan' },
           extra: { stationHint: stationNameHint, vercelId: error?.vercelId },
         });
+      }
+      // Auto-reload-and-retry escape hatch: long-lived sessions can hit a
+      // poisoned client-side connection state where every retry on this tab
+      // continues to fail (user reproduced this with a 3-min gap between
+      // attempts; only a tab close+reopen recovered). Stash the photo + GPS
+      // + brand context, reload, and resume the scan on mount with a fresh
+      // tab. The single-shot guard prevents looping if even the post-reload
+      // attempt fails.
+      const RELOADABLE_CODES = new Set(['AI_UPSTREAM_BUSY', 'NETWORK', 'TIMEOUT']);
+      const alreadyTried = sessionStorage.getItem('kyts:scan-reload-attempted');
+      if (RELOADABLE_CODES.has(error?.message) && !alreadyTried && capturedBase64) {
+        capture('ai_scan_reload_retry', {
+          code: error.message,
+          attempts_made: error?.attemptsMade ?? null,
+        });
+        sessionStorage.setItem('kyts:scan-reload-attempted', '1');
+        try {
+          sessionStorage.setItem('kyts:pending-scan', JSON.stringify({
+            base64: capturedBase64,
+            stationId: station?.id ?? resolvedStation?.id ?? null,
+            capturedPosition,
+            pendingDetectedBrand,
+          }));
+          window.location.reload();
+          return;
+        } catch {
+          // Quota or serialization failure — fall through to the normal
+          // error UI rather than reload into an empty restore.
+          sessionStorage.removeItem('kyts:scan-reload-attempted');
+        }
       }
       setScanError(error.message);
       // Still resolve station candidates on AI failure so user can enter prices manually
