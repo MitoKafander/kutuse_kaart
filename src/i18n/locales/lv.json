@@ -204,6 +204,14 @@
       "legal": {
         "terms": "Lietošanas noteikumi",
         "privacy": "Privātuma politika"
+      },
+      "deleteAccount": {
+        "button": "Dzēst kontu",
+        "inProgress": "Dzēš…",
+        "confirm1": "Vai tiešām vēlies dzēst savu kontu? Tavs profils, izlase un iestatījumi tiks neatgriezeniski dzēsti. Publiskā cenu vēsture tiek saglabāta anonīmi.",
+        "confirm2": "Pēdējais apstiprinājums: šo darbību nevar atcelt. Turpināt?",
+        "success": "Konts dzēsts.",
+        "error": "Konta dzēšana neizdevās: {{message}}"
       }
     },
     "header": {

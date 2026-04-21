@@ -243,8 +243,11 @@ function App() {
     if (isCameraOpen) list.push({ id: 'camera', close: () => setIsCameraOpen(false) });
     if (isManualOpen) list.push({ id: 'manual', close: () => setIsManualOpen(false) });
     if (isAuthOpen) list.push({ id: 'auth', close: () => setIsAuthOpen(false) });
-    if (isPrivacyOpen) list.push({ id: 'privacy', close: () => setIsPrivacyOpen(false) });
-    if (isTermsOpen) list.push({ id: 'terms', close: () => setIsTermsOpen(false) });
+    // Privacy / Terms intentionally skipped: the legal modals can be opened
+    // from the GDPR banner (which lives outside this registry), so tying them
+    // into the history stack produced a rewind-overshoot that walked the tab
+    // off kyts.ee. Close flows are the X button, backdrop click, and the
+    // "sulge" button — no back-gesture support, which is fine for a leaf doc.
     if (isFeedbackOpen) list.push({ id: 'feedback', close: () => setIsFeedbackOpen(false) });
     // Tutorial is marked skipRewind: on first visit it's the first overlay
     // ever pushed, and rewinding one step on Valmis can navigate off-site
@@ -256,7 +259,7 @@ function App() {
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isPrivacyOpen, isTermsOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;

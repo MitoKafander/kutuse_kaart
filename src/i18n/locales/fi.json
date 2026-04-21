@@ -204,6 +204,14 @@
       "legal": {
         "terms": "Käyttöehdot",
         "privacy": "Tietosuojakäytäntö"
+      },
+      "deleteAccount": {
+        "button": "Poista tili",
+        "inProgress": "Poistetaan…",
+        "confirm1": "Haluatko varmasti poistaa tilisi? Profiilisi, suosikkisi ja asetuksesi poistetaan pysyvästi. Julkinen hintahistoria säilyy anonyymisti.",
+        "confirm2": "Lopullinen vahvistus: tätä toimintoa ei voi peruuttaa. Jatketaanko?",
+        "success": "Tili poistettu.",
+        "error": "Tilin poisto epäonnistui: {{message}}"
       }
     },
     "header": {

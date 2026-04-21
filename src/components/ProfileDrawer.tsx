@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil, Filter, Check, BarChart3 } from 'lucide-react';
+import { X, LogOut, Star, UserCircle, Fuel, TrendingDown, TrendingUp, Clock, Building2, Settings, ChevronDown, Navigation, MapPin, Layers, Eye, EyeOff, CreditCard, Trophy, Compass, MessageSquare, HelpCircle, Languages, Pencil, Filter, Check, BarChart3, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
@@ -253,6 +253,39 @@ export function ProfileDrawer({
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName ?? '');
   useEffect(() => { setNameDraft(displayName ?? ''); }, [displayName]);
+
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = async () => {
+    if (deleting) return;
+    if (!window.confirm(t('profile.settings.deleteAccount.confirm1'))) return;
+    if (!window.confirm(t('profile.settings.deleteAccount.confirm2'))) return;
+    setDeleting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) {
+        alert(t('profile.settings.deleteAccount.error', { message: 'no session' }));
+        setDeleting(false);
+        return;
+      }
+      const resp = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({ error: String(resp.status) }));
+        alert(t('profile.settings.deleteAccount.error', { message: body.error ?? resp.status }));
+        setDeleting(false);
+        return;
+      }
+      await supabase.auth.signOut();
+      alert(t('profile.settings.deleteAccount.success'));
+      onClose();
+    } catch (e: any) {
+      alert(t('profile.settings.deleteAccount.error', { message: e?.message ?? 'unknown' }));
+      setDeleting(false);
+    }
+  };
 
   // Mirrors the GDPR consent decision. Initialised from localStorage so the
   // toggle reflects whatever the user clicked on the banner.
@@ -1620,6 +1653,31 @@ export function ProfileDrawer({
               </button>
             )}
           </div>
+        )}
+
+        {/* Self-service account deletion (GDPR art 17). Sits at the very bottom
+            of Seaded so it's out of the way of everyday controls; double-confirm
+            + disabled state guard against accidental clicks. Public prices and
+            votes are anonymized rather than deleted (privacy policy s9 item2). */}
+        {activeTab === 'settings' && session && (
+          <button
+            onClick={handleDeleteAccount}
+            disabled={deleting}
+            style={{
+              marginTop: '24px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              padding: '12px',
+              background: 'none',
+              color: 'var(--color-stale)',
+              border: '1px solid var(--color-stale)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.9rem', fontWeight: '500',
+              cursor: deleting ? 'default' : 'pointer',
+              opacity: deleting ? 0.6 : 1,
+            }}
+          >
+            <Trash2 size={16} /> {deleting ? t('profile.settings.deleteAccount.inProgress') : t('profile.settings.deleteAccount.button')}
+          </button>
         )}
 
       </div>

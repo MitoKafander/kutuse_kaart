@@ -204,6 +204,14 @@
       "legal": {
         "terms": "Naudojimosi sąlygos",
         "privacy": "Privatumo politika"
+      },
+      "deleteAccount": {
+        "button": "Ištrinti paskyrą",
+        "inProgress": "Ištrinama…",
+        "confirm1": "Ar tikrai norite ištrinti paskyrą? Jūsų profilis, mėgstamiausi ir nustatymai bus visam laikui ištrinti. Vieša kainų istorija saugoma anonimiškai.",
+        "confirm2": "Galutinis patvirtinimas: šio veiksmo negalima atšaukti. Tęsti?",
+        "success": "Paskyra ištrinta.",
+        "error": "Paskyros ištrinti nepavyko: {{message}}"
       }
     },
     "header": {

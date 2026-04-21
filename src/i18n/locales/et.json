@@ -509,6 +509,14 @@
       "legal": {
         "terms": "Kasutustingimused",
         "privacy": "Privaatsuspoliitika"
+      },
+      "deleteAccount": {
+        "button": "Kustuta konto",
+        "inProgress": "Kustutan…",
+        "confirm1": "Kas oled kindel, et soovid oma konto kustutada? Sinu profiil, lemmikud ja eelistused kustutatakse jäädavalt. Avalik hinnaajalugu säilib anonüümselt.",
+        "confirm2": "Viimane kinnitus: see tegevus on tagasipööramatu. Jätkan?",
+        "success": "Konto on kustutatud.",
+        "error": "Konto kustutamine ebaõnnestus: {{message}}"
       }
     }
   },
@@ -569,7 +577,7 @@
     "title": "Kasutustingimused",
     "s1": "<strong>1. Teenuse osutaja</strong><br/>Kyts on kogukonnapõhine kütusehindade kaart, mida haldab eraisikuna Mikk Rosin (Eesti). Kontakt: <a>kyts@mikkrosin.ee</a>.",
     "s2": "<strong>2. Teenuse kirjeldus</strong><br/>Kyts võimaldab kasutajatel jagada ja vaadata Eesti tanklate kütusehindu. Hinnad on kasutajate esitatud ja seetõttu võivad olla aegunud, ebatäpsed või valed. Teenus pakutakse põhimõttel \"<em>nagu on</em>\" (as-is), ilma igasuguste garantiideta täpsuse, kättesaadavuse ega sobivuse kohta.",
-    "s3": "<strong>3. Konto ja kasutamine</strong><br/>Konto loomine (Google OAuth või e-post) on vabatahtlik, kuid vajalik hindade esitamiseks ja hääletamiseks. Ühel inimesel peab olema ainult üks konto. Vastutad oma konto turvalisuse eest.",
+    "s3": "<strong>3. Konto ja kasutamine</strong><br/>Hindade esitamiseks ja hääletamiseks ei ole konto kohustuslik. Anonüümsed hääled on piiratud ühe häälega seadme ja hinna kohta. Vabatahtlik konto (Google OAuth või e-post) avab isikliku profiili, punktid, edetabeli ning eelistuste sünkroniseerimise seadmete vahel. Ühel inimesel peab olema ainult üks konto ning vastutad oma konto turvalisuse eest.",
     "s4": {
       "title": "4. Keelatud tegevused",
       "item1": "Teadlikult valede hindade esitamine või manipuleerimine.",
