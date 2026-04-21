@@ -151,7 +151,7 @@
       "fallback": "teine kett"
     },
     "brandNotInArea": {
-      "message": "AI tuvastas pildil <strong>{{detected}}</strong> tankla, aga läheduses pole ühtegi <strong>{{detected}}</strong> tanklat. Kontrolli, et oled õiges kohas, või vali sobiv tankla allpool."
+      "message": "AI tuvastas pildil <strong>{{detected}}</strong> tankla, aga läheduses pole ühtegi <strong>{{detected}}</strong> tanklat. Kontrolli, et oled õiges kohas, või vali sobiv tankla nimekirjast."
     },
     "scanError": {
       "quotaExceeded": "AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.",

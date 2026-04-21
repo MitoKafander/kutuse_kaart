@@ -403,7 +403,7 @@
       "fallback": "cits tīkls"
     },
     "brandNotInArea": {
-      "message": "AI fotoattēlā atpazina <strong>{{detected}}</strong> staciju, bet tuvumā nav nevienas <strong>{{detected}}</strong> stacijas. Pārbaudi, vai esi pareizajā vietā, vai izvēlies staciju zemāk, ja esi pārliecināts."
+      "message": "AI fotoattēlā atpazina <strong>{{detected}}</strong> staciju, bet tuvumā nav nevienas <strong>{{detected}}</strong> stacijas. Pārbaudi, vai esi pareizajā vietā, vai izvēlies staciju no saraksta, ja esi pārliecināts."
     },
     "scanError": {
       "quotaExceeded": "AI pakalpojuma limits ir pilns. Mēģini vēlāk vai ievadi cenas manuāli.",

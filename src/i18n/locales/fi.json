@@ -403,7 +403,7 @@
       "fallback": "toinen ketju"
     },
     "brandNotInArea": {
-      "message": "Tekoäly tunnisti kuvasta <strong>{{detected}}</strong> aseman, mutta lähistöllä ei ole yhtään <strong>{{detected}}</strong> asemaa. Tarkista, että olet oikeassa paikassa, tai valitse asema alta, jos olet varma."
+      "message": "Tekoäly tunnisti kuvasta <strong>{{detected}}</strong> aseman, mutta lähistöllä ei ole yhtään <strong>{{detected}}</strong> asemaa. Tarkista, että olet oikeassa paikassa, tai valitse asema listasta, jos olet varma."
     },
     "scanError": {
       "quotaExceeded": "Tekoälypalvelun raja on täynnä. Yritä myöhemmin uudelleen tai syötä hinnat manuaalisesti.",

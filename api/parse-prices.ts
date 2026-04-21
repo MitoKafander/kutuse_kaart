@@ -19,6 +19,22 @@ const dayLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.fixedWindow(1000, '1 d'), analytics: true, prefix: 'kyts:parse:day' })
   : null;
 
+// Canonical fuel-chain brands that the AI is allowed to return for
+// `detectedBrand`. Mirrors CHAIN_PATTERNS in src/utils.ts — kept inline here
+// because the API runs on Vercel's Node serverless without the React app's
+// import graph. Without this whitelist Gemini hallucinates sub-text on totems
+// (e.g. the "Teeline" loyalty slogan on Olerex signs) as the station brand.
+const ALLOWED_BRANDS = [
+  // Estonian
+  'Olerex', 'Circle K', 'Neste', 'Alexela', 'Terminal', 'Krooning',
+  'Jetoil', 'JetGas', 'Statoil', 'Eesti Autogaas', 'Eksar Transoil',
+  'Premium 7', 'Hepa', 'Thor', 'Saare Kütus',
+  // Latvian (border + LV region)
+  'Virši-A', 'Viada', 'KOOL', 'Astarte Nafta', 'Latvijas Nafta',
+  'Latvijas Propāna Gāze', 'Lateva', 'Gotika Auto',
+] as const;
+const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
+
 function repairAndParseJson(raw: string): Record<string, unknown> | null {
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { /* fall through */ }
@@ -121,19 +137,19 @@ Your job is twofold:
 
 Understand that European signs generally use commas instead of decimals (e.g. 1,749) but you MUST return proper javascript floats (1.749).
 Return strictly a valid JSON object with the following schema:
-- "detectedBrand": The brand identified in the image (e.g., "Olerex", "Circle K", "Neste", "Alexela").
-- "isBrandMatch": boolean (true if detectedBrand is the same company as "${hint}", false if it's clearly a competitor). If there is no branding visible, return true.
+- "detectedBrand": The brand identified in the image. MUST be EXACTLY one of these values, or null if no recognised brand is visible: ${ALLOWED_BRANDS_LIST}. Do NOT invent brand names from sub-text on the sign such as loyalty programmes, slogans, or sub-services (e.g. "Teeline" on an Olerex totem is a loyalty slogan, not a brand — return "Olerex" or null, never "Teeline"). If you cannot map the visible branding to one of the listed values with high confidence, return null.
+- "isBrandMatch": boolean (true if detectedBrand is the same company as "${hint}", false if it's clearly a competitor). If detectedBrand is null, return true.
 - "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible.
 
 Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1.749}`
-      : `You are a high-accuracy vision system analyzing a fuel station price board (totem) at an unknown Estonian fuel station.
+      : `You are a high-accuracy vision system analyzing a fuel station price board (totem) at an unknown Estonian or Latvian fuel station.
 Your job is twofold:
-1. Identify the station's brand based on logos, colors, or text in the image (common Estonian brands: "Olerex", "Circle K", "Neste", "Alexela", "Terminal").
+1. Identify the station's brand based on logos, colors, or text in the image.
 2. Extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
 
 Understand that European signs generally use commas instead of decimals (e.g. 1,749) but you MUST return proper javascript floats (1.749).
 Return strictly a valid JSON object with the following schema:
-- "detectedBrand": The brand identified in the image, or null if no brand is visible.
+- "detectedBrand": The brand identified in the image. MUST be EXACTLY one of these values, or null if no recognised brand is visible: ${ALLOWED_BRANDS_LIST}. Do NOT invent brand names from sub-text on the sign such as loyalty programmes, slogans, or sub-services (e.g. "Teeline" on an Olerex totem is a loyalty slogan, not a brand — return "Olerex" or null, never "Teeline"). If you cannot map the visible branding to one of the listed values with high confidence, return null.
 - "isBrandMatch": Always return true (there is no expected brand to compare against).
 - "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible.
 
@@ -185,8 +201,20 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       console.warn('[parse-prices] No prices extracted. Raw response (truncated):', rawText.slice(0, 400));
     }
 
+    // Belt-and-braces enforcement of the brand whitelist: even with the prompt
+    // instruction Gemini occasionally returns sub-text from the totem (slogans,
+    // loyalty marks). Drop anything not in ALLOWED_BRANDS so the client never
+    // sees an invented brand that would mislead the station picker.
+    const rawBrand = typeof parsed.detectedBrand === 'string' ? parsed.detectedBrand.trim() : null;
+    const brandLower = rawBrand?.toLowerCase() ?? null;
+    const allowedBrand = brandLower
+      ? ALLOWED_BRANDS.find(b => b.toLowerCase() === brandLower) ?? null
+      : null;
+    if (rawBrand && !allowedBrand) {
+      console.warn('[parse-prices] Dropped non-whitelisted brand:', rawBrand);
+    }
     const normalized = {
-      detectedBrand: typeof parsed.detectedBrand === 'string' ? parsed.detectedBrand : null,
+      detectedBrand: allowedBrand,
       isBrandMatch: parsed.isBrandMatch !== false,
       extractedAny,
       ...prices,
