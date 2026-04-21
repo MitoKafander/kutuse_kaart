@@ -402,6 +402,9 @@
       "message": "Šķiet, ka fotoattēlā ir <strong>{{detected}}</strong> stacija, bet tu atjaunini <strong>{{station}}</strong> cenas. Pārbaudi, vai cenas ir pareizas.",
       "fallback": "cits tīkls"
     },
+    "brandNotInArea": {
+      "message": "AI fotoattēlā atpazina <strong>{{detected}}</strong> staciju, bet tuvumā nav nevienas <strong>{{detected}}</strong> stacijas. Pārbaudi, vai esi pareizajā vietā, vai izvēlies staciju zemāk, ja esi pārliecināts."
+    },
     "scanError": {
       "quotaExceeded": "AI pakalpojuma limits ir pilns. Mēģini vēlāk vai ievadi cenas manuāli.",
       "rateLimited": "Pārāk daudz skenēšanu pēc kārtas. Pagaidi apmēram minūti un mēģini vēlreiz.",

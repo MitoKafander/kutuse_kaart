@@ -402,6 +402,9 @@
       "message": "Nuotraukoje matosi <strong>{{detected}}</strong> degalinė, bet jūs atnaujinate <strong>{{station}}</strong> kainas. Patikrinkite, ar kainos teisingos.",
       "fallback": "kitas tinklas"
     },
+    "brandNotInArea": {
+      "message": "AI nuotraukoje atpažino <strong>{{detected}}</strong> degalinę, bet šalia nėra nė vienos <strong>{{detected}}</strong> degalinės. Patikrinkite, ar esate tinkamoje vietoje, arba pasirinkite degalinę žemiau, jei esate tikri."
+    },
     "scanError": {
       "quotaExceeded": "AI paslaugos limitas išnaudotas. Bandykite vėliau arba įveskite kainas rankiniu būdu.",
       "rateLimited": "Per daug skenavimų iš eilės. Palaukite apie minutę ir bandykite dar kartą.",

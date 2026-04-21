@@ -69,6 +69,10 @@ export function ManualPriceModal({
   const [capturedBase64, setCapturedBase64] = useState<string | null>(null);
   const [capturedPreviewUrl, setCapturedPreviewUrl] = useState<string | null>(null);
   const [brandMismatch, setBrandMismatch] = useState<{ detected: string } | null>(null);
+  // FAB-mode counterpart: AI recognised a brand in the photo but no in-range
+  // station of that brand exists. Either the station isn't in our DB, AI
+  // mis-read the sign, or GPS placed the user away from the real spot.
+  const [brandNotInArea, setBrandNotInArea] = useState<{ detected: string } | null>(null);
   const [autoSelectMsg, setAutoSelectMsg] = useState<string | null>(null);
   const [capturedPosition, setCapturedPosition] = useState<{ lat: number; lon: number } | null>(null);
   const [pendingDetectedBrand, setPendingDetectedBrand] = useState<string | null>(null);
@@ -96,6 +100,7 @@ export function ManualPriceModal({
       setCapturedPreviewUrl(null);
       setScanError(null);
       setBrandMismatch(null);
+      setBrandNotInArea(null);
       setAutoSelectMsg(null);
       onPhotoExpandedChange(false);
       setCapturedPosition(null);
@@ -289,19 +294,36 @@ export function ManualPriceModal({
 
     const pool = tight.length > 0 ? tight : fallback;
     let candidates = pool;
+    let brandResolved = false;
     if (detectedBrand) {
       const brandLower = detectedBrand.toLowerCase();
       const brandMatches = pool.filter(s =>
         s.name?.toLowerCase().includes(brandLower) ||
         brandLower.includes(s.name?.toLowerCase())
       );
-      if (brandMatches.length > 0) candidates = brandMatches;
+      if (brandMatches.length > 0) {
+        candidates = brandMatches;
+        brandResolved = true;
+        setBrandNotInArea(null);
+      } else {
+        // AI saw a brand sign that doesn't exist among in-range stations.
+        // Keep the picker (sometimes our brand-name match is too strict, or
+        // the user is at a yet-uncatalogued location), but warn loudly so
+        // they don't tag a Neste photo to the nearest Olerex by accident.
+        setBrandNotInArea({ detected: detectedBrand });
+      }
+    } else {
+      setBrandNotInArea(null);
     }
 
-    // Only auto-select when we had a tight-radius match AND it's unambiguous.
-    // Fallback-radius results always go through the picker so the user
-    // confirms — GPS was already unreliable once, don't compound.
-    if (tight.length > 0 && candidates.length === 1) {
+    // Auto-select when the result is unambiguous AND we have a confidence
+    // signal: either tight-radius co-location (GPS-strong), or AI brand
+    // recognition narrowed the pool to one matching station. The brand match
+    // disambiguates GPS skew — if AI saw a Neste sign and there's exactly one
+    // Neste in range, sub-500 m GPS isn't needed to be sure. A bare single
+    // candidate without either signal still goes through the picker so the
+    // user confirms (defensive: weak GPS, no brand corroboration).
+    if (candidates.length === 1 && (tight.length > 0 || brandResolved)) {
       setResolvedStation(candidates[0]);
       setAutoSelectMsg(t('manualPrice.picker.autoSelected', { name: getStationDisplayName(candidates[0]) }));
       setTimeout(() => setAutoSelectMsg(null), 4000);
@@ -372,6 +394,7 @@ export function ManualPriceModal({
   const runScan = async (base64: string, stationNameHint: string) => {
     setScanError(null);
     setBrandMismatch(null);
+    setBrandNotInArea(null);
     setIsAnalyzing(true);
     setRetryStatus(null);
     try {
@@ -538,6 +561,7 @@ export function ManualPriceModal({
     setCapturedPreviewUrl(null);
     setScanError(null);
     setBrandMismatch(null);
+    setBrandNotInArea(null);
     setAutoSelectMsg(null);
     setCapturedPosition(null);
     setPendingDetectedBrand(null);
@@ -1114,6 +1138,29 @@ export function ManualPriceModal({
             onChange={handleCameraCapture}
           />
         </>
+        )}
+
+        {/* Brand-not-in-area warning (FAB mode): AI saw a brand none of the
+            in-range stations match. Render before brandMismatch so it can't
+            stack with it (only one fires per scan in practice). */}
+        {brandNotInArea && (
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: '16px',
+            display: 'flex', alignItems: 'flex-start', gap: '10px'
+          }}>
+            <AlertTriangle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+            <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--color-text)' }}>
+              <Trans
+                i18nKey="manualPrice.brandNotInArea.message"
+                values={{ detected: brandNotInArea.detected }}
+                components={{ strong: <strong /> }}
+              />
+            </span>
+            <button onClick={() => setBrandNotInArea(null)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0 }}>
+              <X size={16} />
+            </button>
+          </div>
         )}
 
         {/* Brand mismatch warning */}

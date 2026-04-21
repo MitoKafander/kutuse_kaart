@@ -150,6 +150,9 @@
       "message": "Pildil tundub olevat <strong>{{detected}}</strong> tankla, aga uuendad <strong>{{station}}</strong> hindu. Kontrolli, kas hinnad on õiged.",
       "fallback": "teine kett"
     },
+    "brandNotInArea": {
+      "message": "AI tuvastas pildil <strong>{{detected}}</strong> tankla, aga läheduses pole ühtegi <strong>{{detected}}</strong> tanklat. Kontrolli, et oled õiges kohas, või vali sobiv tankla allpool."
+    },
     "scanError": {
       "quotaExceeded": "AI teenuse limiit on täis. Proovi hiljem uuesti või sisesta hinnad käsitsi.",
       "rateLimited": "Liiga palju skaneerimisi järjest. Oota minuti jagu ja proovi uuesti.",

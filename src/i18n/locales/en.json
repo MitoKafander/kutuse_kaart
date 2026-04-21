@@ -402,6 +402,9 @@
       "message": "The photo seems to show a <strong>{{detected}}</strong> station, but you are updating prices for <strong>{{station}}</strong>. Check if the prices are correct.",
       "fallback": "different chain"
     },
+    "brandNotInArea": {
+      "message": "AI detected a <strong>{{detected}}</strong> station in the photo, but no <strong>{{detected}}</strong> exists nearby. Check that you're in the right place, or pick a station below if you're sure."
+    },
     "scanError": {
       "quotaExceeded": "AI service limit reached. Try again later or enter prices manually.",
       "rateLimited": "Too many scans in a row. Wait about a minute and try again.",
