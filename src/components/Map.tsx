@@ -602,21 +602,43 @@ function RegionLabelsLayer({
       const prog = progressByFeatureId && typeof featureId === 'number'
         ? progressByFeatureId.get(featureId) ?? null
         : null;
-      const showCount = !!prog && prog.total > 0 && prog.done > 0 && prog.done < prog.total;
-      const countText = showCount ? `${prog!.done}/${prog!.total}` : '';
-      const countFontSize = Math.max(9, fontSize - 2);
+      const hasPartial = !!prog && prog.total > 0 && prog.done > 0 && prog.done < prog.total;
+      const countText = hasPartial ? `${prog!.done}/${prog!.total}` : '';
+
+      // Pill dimensions. Cyan fraction-pill is deliberately unlike the blue
+      // ring-around-circle cluster icons — different shape (rounded rect vs.
+      // circle), different color, and the slash makes it read as "x of y"
+      // rather than a single count.
+      const countFontSize = 12;
+      const pillPaddingH = 7;
+      const pillPaddingV = 2;
+      const pillMarginTop = 3;
+      const pillTextWidth = countText.length * countFontSize * 0.62;
+      const pillWidth = hasPartial ? pillTextWidth + pillPaddingH * 2 : 0;
+      const pillHeight = hasPartial ? countFontSize + pillPaddingV * 2 + pillMarginTop : 0;
 
       const nameWidth = name.length * fontSize * 0.56 + 6;
-      const countWidth = showCount ? countText.length * countFontSize * 0.6 + 4 : 0;
-      const approxWidth = Math.max(nameWidth, countWidth);
-      const approxHeight = fontSize + 2 + (showCount ? countFontSize + 2 : 0);
+      const nameHeight = fontSize + 2;
+
+      let showCount = hasPartial;
+      let approxWidth = Math.max(nameWidth, pillWidth);
+      let approxHeight = nameHeight + pillHeight;
+
+      // Graceful fallback: if the parish is too small to fit name + pill,
+      // drop the pill so we don't lose the label entirely. Parish is still
+      // visible as a colored polygon, just no fraction overlay.
+      if (showCount && (approxWidth > pxWidth * widthRatio || approxHeight > pxHeight * heightRatio)) {
+        showCount = false;
+        approxWidth = nameWidth;
+        approxHeight = nameHeight;
+      }
 
       if (approxWidth > pxWidth * widthRatio) continue;
       if (approxHeight > pxHeight * heightRatio) continue;
 
       const center: L.LatLngExpression = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
       const countLine = showCount
-        ? `<div style="color:${textColor};opacity:0.85;font-size:${countFontSize}px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0.2px;text-shadow:0 0 3px ${haloColor},0 0 3px ${haloColor},0 0 3px ${haloColor};line-height:1;margin-top:1px;">${countText}</div>`
+        ? `<div style="margin-top:${pillMarginTop}px;padding:${pillPaddingV}px ${pillPaddingH}px;background:rgba(6,182,212,0.95);color:#ffffff;font-size:${countFontSize}px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.3px;border-radius:10px;line-height:1.25;box-shadow:0 1px 3px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.25);">${countText}</div>`
         : '';
       const icon = L.divIcon({
         className: 'region-label',
