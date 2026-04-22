@@ -3,19 +3,21 @@ import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey, fuelLabel } from '../utils';
-import { capture } from '../utils/analytics';
+import { capture, captureReloadSafe } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const MAX_RETRIES = 2;
-// Exponential backoff between retry attempts (ms). A flat 2 s gap covered the
-// first retry in ~6–8 s total, which wasn't long enough to ride out typical
-// Gemini 503 "overloaded" bursts — users would burn all 3 attempts against the
-// same overloaded window and only succeed after force-reopening the app 30 s
-// later. 2.5 s → 8 s stretches the total retry window to ~15 s, which covers
-// most transient upstream hiccups without making a genuine outage feel slower.
-// Indexed by attempt number; attempt 0 is the initial try (no wait).
-const RETRY_BACKOFF_MS = [0, 2500, 8000];
+// Exponential backoff between retry attempts (ms). Indexed by attempt number;
+// attempt 0 is the initial try (no wait). Timeline of this knob:
+//   flat 2 s → [0, 2500, 8000] (2026-04-20): first stretch past a 10 s window
+//   [0, 2500, 8000] → [0, 4000, 12000] (2026-04-22): 48 h of PostHog data
+// showed every failure hit `attempts_made=3` with code AI_UPSTREAM_BUSY — i.e.
+// all three retries landed inside the same hot Gemini overload burst. Wider
+// gaps let the server-side Flash → Flash-Lite fallback clear one burst before
+// we re-enter it. Paired with `thinkingBudget=0` on the server which trims
+// ~5 s off each call, so total worst-case latency stays roughly the same.
+const RETRY_BACKOFF_MS = [0, 4000, 12000];
 const EMPTY_PRICES = { "Bensiin 95": "", "Bensiin 98": "", "Diisel": "", "LPG": "" };
 // Hard cap on how far a submitter may be from the station they're reporting
 // for. Matches the server trigger in schema_phase31 so both client and DB
@@ -213,11 +215,11 @@ export function ManualPriceModal({
       lastVercelId = res.headers.get('x-vercel-id');
 
       if (res.ok) {
-        capture('ai_scan_success');
         // Wrap body-read: iOS Safari can truncate the response stream and throw
         // "TypeError: Load failed" here, which otherwise escapes the fetch
         // try/catch above and surfaces as a raw Sentry error.
-        try { return await res.json(); }
+        let parsed: any;
+        try { parsed = await res.json(); }
         catch {
           if (attempt < MAX_RETRIES) continue;
           const err: any = new Error('NETWORK');
@@ -225,6 +227,13 @@ export function ManualPriceModal({
           err.vercelId = lastVercelId;
           throw err;
         }
+        // Attach the attempt count + model the server actually used so we
+        // can see in PostHog how often the Flash → Flash-Lite fallback fires.
+        capture('ai_scan_success', {
+          attempts_made: attempt + 1,
+          model_used: parsed?.modelUsed ?? null,
+        });
+        return parsed;
       }
       // Server distinguishes per-IP burst (RATE_LIMITED) from daily/Gemini
       // (QUOTA_EXCEEDED) via a code field. Fall back to QUOTA_EXCEEDED only
@@ -448,7 +457,7 @@ export function ManualPriceModal({
       // "does this happen after long idle?" from PostHog. Without age/streak
       // we only know the distribution of codes, not the pattern triggering
       // them. Include x-vercel-id so we can cross-reference the server log.
-      capture('ai_scan_failure', {
+      const failureProps = {
         code: error?.message || 'UNKNOWN',
         session_age_ms: Date.now() - sessionStartRef.current,
         since_last_success_ms: lastSuccessAtRef.current != null
@@ -457,7 +466,7 @@ export function ManualPriceModal({
         failure_streak: failureStreakRef.current,
         attempts_made: error?.attemptsMade ?? null,
         vercel_id: error?.vercelId ?? null,
-      });
+      };
       // Skip Sentry noise for known user-facing states: quota, transient Gemini
       // outages, and retry-exhausted client network drops. All five already
       // surface UX copy and are not actionable beyond "connection was bad."
@@ -477,8 +486,12 @@ export function ManualPriceModal({
       // attempt fails.
       const RELOADABLE_CODES = new Set(['AI_UPSTREAM_BUSY', 'NETWORK', 'TIMEOUT']);
       const alreadyTried = sessionStorage.getItem('kyts:scan-reload-attempted');
-      if (RELOADABLE_CODES.has(error?.message) && !alreadyTried && capturedBase64) {
-        capture('ai_scan_reload_retry', {
+      const willReload = RELOADABLE_CODES.has(error?.message) && !alreadyTried && !!capturedBase64;
+      // Use the reload-safe path when a reload is imminent, so the capture
+      // survives the tab tear-down. Regular capture() is fine otherwise.
+      (willReload ? captureReloadSafe : capture)('ai_scan_failure', failureProps);
+      if (willReload) {
+        captureReloadSafe('ai_scan_reload_retry', {
           code: error.message,
           attempts_made: error?.attemptsMade ?? null,
         });

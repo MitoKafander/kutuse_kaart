@@ -8,6 +8,15 @@
 const OPT_OUT_KEY = 'kyts:analytics-opt-out';
 const CONSENT_KEY = 'gdpr_consent';
 const LEGACY_CONSENT_KEY = 'gdpr_accepted';
+// Events captured via `captureReloadSafe` are persisted here across page
+// reloads. Memory-persistence PostHog drops any capture whose fetch is in
+// flight during `window.location.reload()`, so pre-reload signals (like
+// ai_scan_failure immediately before the auto-reload-retry) were invisible
+// in our telemetry — confirmed by a 1:0 ratio of `ai_scan_reload_restored`
+// to `ai_scan_reload_retry` events in PostHog despite the code capturing
+// both in the same call site.
+const PENDING_CAPTURE_KEY = 'kyts:pending-capture';
+const PENDING_CAPTURE_MAX_AGE_MS = 5 * 60 * 1000;
 
 type PH = typeof import('posthog-js').default;
 let phPromise: Promise<PH | null> | null = null;
@@ -19,6 +28,29 @@ function hasConsent(): boolean {
     if (localStorage.getItem(LEGACY_CONSENT_KEY) === 'true') return true;
   } catch { /* storage blocked */ }
   return false;
+}
+
+function flushPendingReloadSafeCaptures(posthog: PH) {
+  try {
+    const raw = localStorage.getItem(PENDING_CAPTURE_KEY);
+    if (!raw) return;
+    localStorage.removeItem(PENDING_CAPTURE_KEY);
+    const pending = JSON.parse(raw);
+    if (!Array.isArray(pending)) return;
+    const now = Date.now();
+    for (const entry of pending) {
+      if (!entry || typeof entry.event !== 'string') continue;
+      if (typeof entry.timestamp === 'number' && now - entry.timestamp > PENDING_CAPTURE_MAX_AGE_MS) continue;
+      // Tag the replayed event so downstream queries can tell the difference
+      // between a normal capture and one recovered from a pre-reload stash.
+      const props = {
+        ...(entry.props ?? {}),
+        _reload_safe: true,
+        _captured_at: entry.timestamp,
+      };
+      try { posthog.capture(entry.event, props); } catch { /* ignore */ }
+    }
+  } catch { /* storage blocked or parse error — drop silently */ }
 }
 
 function loadPosthog(): Promise<PH | null> {
@@ -44,6 +76,7 @@ function loadPosthog(): Promise<PH | null> {
       try { posthog.capture(event, props); } catch { /* ignore */ }
     }
     queue.length = 0;
+    flushPendingReloadSafeCaptures(posthog);
     return posthog;
   }).catch(() => null);
 }
@@ -71,6 +104,25 @@ export function capture(event: string, props?: Record<string, unknown>) {
     if (!posthog) return;
     try { posthog.capture(event, props); } catch { /* ignore */ }
   });
+}
+
+// Persist a capture across a `window.location.reload()` — the fetch that a
+// normal capture() kicks off gets cancelled when the tab reloads, so events
+// fired immediately before the auto-reload-retry escape hatch were silently
+// lost. This variant stashes the event in localStorage; the next page load
+// flushes everything <5 min old during `loadPosthog()` init.
+export function captureReloadSafe(event: string, props?: Record<string, unknown>) {
+  if (!hasConsent() || isAnalyticsOptedOut()) return;
+  try {
+    const raw = localStorage.getItem(PENDING_CAPTURE_KEY);
+    const existing = raw ? JSON.parse(raw) : [];
+    const pending = Array.isArray(existing) ? existing : [];
+    pending.push({ event, props, timestamp: Date.now() });
+    // Hard cap on stash size so a broken reload loop can't balloon storage.
+    // 50 entries is well above any plausible legitimate burst.
+    const trimmed = pending.slice(-50);
+    localStorage.setItem(PENDING_CAPTURE_KEY, JSON.stringify(trimmed));
+  } catch { /* quota exceeded or storage blocked — drop silently */ }
 }
 
 export function isAnalyticsOptedOut(): boolean {

@@ -113,13 +113,20 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       return res.status(400).json({ error: 'Missing imageBase64 payload.' });
     }
 
-    // Force strictly validated JSON parsing
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+    // Build a fresh model handle for each attempt so the fallback path can
+    // swap to Flash-Lite without mutating state from the primary call.
+    const buildModel = (modelName: string) => genAI.getGenerativeModel({
+      model: modelName,
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0,
-      }
+        // Gemini 2.5 Flash has "thinking" mode on by default. For pure vision
+        // extraction (read the sign, return JSON) reasoning adds 2–10s of
+        // latency and burns quota on invisible tokens. Turn it off — the
+        // market-insight translator did this a week ago (63f2038); parse-prices
+        // was missed. Cast matches that callsite.
+        thinkingConfig: { thinkingBudget: 0 },
+      } as any,
     });
 
     // FAB-mode photo scans don't know the station yet — they pass no hint or
@@ -160,15 +167,37 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     // Strip out the descriptive prefix if the frontend sent it
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-    const result = await model.generateContent([
+    const contents = [
       prompt,
       {
         inlineData: {
           data: base64Data,
-          mimeType: "image/jpeg"
-        }
-      }
-    ]);
+          mimeType: "image/jpeg",
+        },
+      },
+    ];
+
+    const isOverloaded = (msg: string): boolean =>
+      /503|service.?unavailable|overloaded|unavailable|deadline.?exceeded/i.test(msg);
+
+    // Server-side Flash → Flash-Lite fallback. When Gemini 2.5 Flash is
+    // overloaded (the dominant failure pattern in our telemetry — every
+    // ai_scan_failure in the last 48h was AI_UPSTREAM_BUSY), retry once on
+    // Flash-Lite before surfacing a 503 to the client. Lite uses a separate
+    // capacity pool at Google, so it clears while Flash is still hot most of
+    // the time. Accuracy on a structured JSON vision task is within a few
+    // percent of Flash for this use case.
+    let result: Awaited<ReturnType<ReturnType<typeof buildModel>['generateContent']>>;
+    let modelUsed = 'gemini-2.5-flash';
+    try {
+      result = await buildModel(modelUsed).generateContent(contents);
+    } catch (primaryErr: any) {
+      const msg = primaryErr?.message || '';
+      if (!isOverloaded(msg)) throw primaryErr;
+      modelUsed = 'gemini-2.5-flash-lite';
+      console.warn('[parse-prices] Flash overloaded, falling back to Flash-Lite');
+      result = await buildModel(modelUsed).generateContent(contents);
+    }
 
     const rawText = result.response.text();
 
@@ -217,6 +246,9 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       detectedBrand: allowedBrand,
       isBrandMatch: parsed.isBrandMatch !== false,
       extractedAny,
+      // Surfaces whether the Flash → Flash-Lite fallback fired on this call
+      // so the client can PostHog it and we can measure the fallback hit rate.
+      modelUsed,
       ...prices,
     };
 
