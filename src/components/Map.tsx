@@ -602,8 +602,11 @@ function RegionLabelsLayer({
       const prog = progressByFeatureId && typeof featureId === 'number'
         ? progressByFeatureId.get(featureId) ?? null
         : null;
-      const hasPartial = !!prog && prog.total > 0 && prog.done > 0 && prog.done < prog.total;
-      const countText = hasPartial ? `${prog!.done}/${prog!.total}` : '';
+      // Show pill for every vald with at least one station — including 0/N
+      // (nothing contributed yet) and N/N (fully collected). 0/0 valds stay
+      // off since "0/0" is a meaningless signal.
+      const hasProg = !!prog && prog.total > 0;
+      const countText = hasProg ? `${prog!.done}/${prog!.total}` : '';
 
       // Pill dimensions. Cyan fraction-pill is deliberately unlike the blue
       // ring-around-circle cluster icons — different shape (rounded rect vs.
@@ -614,13 +617,13 @@ function RegionLabelsLayer({
       const pillPaddingV = 2;
       const pillMarginTop = 3;
       const pillTextWidth = countText.length * countFontSize * 0.62;
-      const pillWidth = hasPartial ? pillTextWidth + pillPaddingH * 2 : 0;
-      const pillHeight = hasPartial ? countFontSize + pillPaddingV * 2 + pillMarginTop : 0;
+      const pillWidth = hasProg ? pillTextWidth + pillPaddingH * 2 : 0;
+      const pillHeight = hasProg ? countFontSize + pillPaddingV * 2 + pillMarginTop : 0;
 
       const nameWidth = name.length * fontSize * 0.56 + 6;
       const nameHeight = fontSize + 2;
 
-      let showCount = hasPartial;
+      let showCount = hasProg;
       let approxWidth = Math.max(nameWidth, pillWidth);
       let approxHeight = nameHeight + pillHeight;
 
