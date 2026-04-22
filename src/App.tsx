@@ -660,10 +660,10 @@ function App() {
 
   // Parish ids where every station has been contributed by whichever user's
   // footprint is currently on screen (mine when self-viewing, viewedUser
-  // otherwise). Used to paint a subtle completion highlight on the map.
-  // Kept separate from useRegionProgress because that hook fires celebration
-  // toasts off self-progress only.
-  const displayCompletedParishIds = useMemo(() => {
+  // otherwise), plus a per-parish {done,total} map used for the map-label
+  // "X/Y priced" counts. Kept separate from useRegionProgress because that
+  // hook fires celebration toasts off self-progress only.
+  const { displayCompletedParishIds, displayParishProgress } = useMemo(() => {
     const source = viewedUser ? viewedUser.stationIds : userContributedStationIds;
     const perParish = new globalThis.Map<number, number>();
     for (const sid of source) {
@@ -671,10 +671,14 @@ function App() {
       if (pid != null) perParish.set(pid, (perParish.get(pid) || 0) + 1);
     }
     const done = new Set<number>();
+    const progress = new globalThis.Map<number, { done: number; total: number }>();
     for (const p of parishes) {
-      if (p.station_count > 0 && (perParish.get(p.id) || 0) >= p.station_count) done.add(p.id);
+      if (p.station_count <= 0) continue;
+      const d = Math.min(perParish.get(p.id) || 0, p.station_count);
+      progress.set(p.id, { done: d, total: p.station_count });
+      if (d >= p.station_count) done.add(p.id);
     }
-    return done;
+    return { displayCompletedParishIds: done, displayParishProgress: progress };
   }, [viewedUser, userContributedStationIds, parishes, stationParishMap]);
 
   // Station ids that belong to the focused maakond. Null when no focus set
@@ -814,6 +818,7 @@ function App() {
         maakondGeo={maakondGeo}
         parishGeo={parishGeo}
         completedParishIds={displayCompletedParishIds}
+        parishProgress={displayParishProgress}
       />
 
       {(showDiscoveryMap || viewedUser) && (

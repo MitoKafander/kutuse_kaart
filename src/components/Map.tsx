@@ -532,6 +532,7 @@ function RegionLabelsLayer({
   featureVisible,
   widthRatio,
   heightRatio,
+  progressByFeatureId,
 }: {
   geo: any | null;
   isLight: boolean;
@@ -540,6 +541,9 @@ function RegionLabelsLayer({
   featureVisible?: (f: any, zoom: number) => boolean;
   widthRatio: number;
   heightRatio: number;
+  // Optional per-feature {done,total} for a small count line under the name.
+  // Only rendered for partial progress (skip 0/N and N/N — the fill conveys both).
+  progressByFeatureId?: Map<number, { done: number; total: number }> | null;
 }) {
   const map = useMap();
   const { t, i18n } = useTranslation();
@@ -594,22 +598,35 @@ function RegionLabelsLayer({
       const pxWidth = Math.abs(pxNE.x - pxSW.x);
       const pxHeight = Math.abs(pxSW.y - pxNE.y);
 
-      const approxWidth = name.length * fontSize * 0.56 + 6;
-      const approxHeight = fontSize + 2;
+      const featureId = f.properties?.id;
+      const prog = progressByFeatureId && typeof featureId === 'number'
+        ? progressByFeatureId.get(featureId) ?? null
+        : null;
+      const showCount = !!prog && prog.total > 0 && prog.done > 0 && prog.done < prog.total;
+      const countText = showCount ? `${prog!.done}/${prog!.total}` : '';
+      const countFontSize = Math.max(9, fontSize - 2);
+
+      const nameWidth = name.length * fontSize * 0.56 + 6;
+      const countWidth = showCount ? countText.length * countFontSize * 0.6 + 4 : 0;
+      const approxWidth = Math.max(nameWidth, countWidth);
+      const approxHeight = fontSize + 2 + (showCount ? countFontSize + 2 : 0);
 
       if (approxWidth > pxWidth * widthRatio) continue;
       if (approxHeight > pxHeight * heightRatio) continue;
 
       const center: L.LatLngExpression = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+      const countLine = showCount
+        ? `<div style="color:${textColor};opacity:0.85;font-size:${countFontSize}px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0.2px;text-shadow:0 0 3px ${haloColor},0 0 3px ${haloColor},0 0 3px ${haloColor};line-height:1;margin-top:1px;">${countText}</div>`
+        : '';
       const icon = L.divIcon({
         className: 'region-label',
-        html: `<span style="color:${textColor};font-size:${fontSize}px;font-weight:${fontWeight};letter-spacing:0.2px;text-shadow:0 0 3px ${haloColor},0 0 3px ${haloColor},0 0 3px ${haloColor};white-space:nowrap;user-select:none;pointer-events:none;">${name}</span>`,
+        html: `<div style="display:flex;flex-direction:column;align-items:center;white-space:nowrap;user-select:none;pointer-events:none;line-height:1;"><span style="color:${textColor};font-size:${fontSize}px;font-weight:${fontWeight};letter-spacing:0.2px;text-shadow:0 0 3px ${haloColor},0 0 3px ${haloColor},0 0 3px ${haloColor};">${name}</span>${countLine}</div>`,
         iconSize: [approxWidth, approxHeight],
         iconAnchor: [approxWidth / 2, approxHeight / 2],
       });
       L.marker(center, { icon, interactive: false, keyboard: false }).addTo(group);
     }
-  }, [geo, tick, isLight, map, featureVisible, fontSize, fontWeight, widthRatio, heightRatio, i18n.language, t]);
+  }, [geo, tick, isLight, map, featureVisible, fontSize, fontWeight, widthRatio, heightRatio, i18n.language, t, progressByFeatureId]);
 
   return null;
 }
@@ -719,7 +736,7 @@ function createPriceIcon(
     const priceStr = `€${r.price.toFixed(3)}`;
     const rowColor = anyCheapest ? '#1a1a2e' : textColor;
     const fuelBadge = showFuelLabel
-      ? `<span style="font-size:10px;font-weight:700;opacity:0.7;margin-right:4px;min-width:18px;">${FUEL_SHORT[r.fuelType] ?? r.fuelType}</span>`
+      ? `<span style="font-size:10px;font-weight:700;color:${rowColor};opacity:0.6;margin-right:4px;min-width:18px;">${FUEL_SHORT[r.fuelType] ?? r.fuelType}</span>`
       : '';
     const grossStrike = r.discounted
       ? `<span style="font-size:10px;font-weight:500;color:${rowColor};opacity:0.55;text-decoration:line-through;margin-left:3px;">€${r.grossPrice.toFixed(3)}</span>`
@@ -873,6 +890,7 @@ export function Map({
   maakondGeo = null,
   parishGeo = null,
   completedParishIds = null,
+  parishProgress = null,
 }: {
   stations: any[],
   prices: any[],
@@ -898,6 +916,7 @@ export function Map({
   maakondGeo?: any | null,
   parishGeo?: any | null,
   completedParishIds?: Set<number> | null,
+  parishProgress?: Map<number, { done: number; total: number }> | null,
 }) {
   // In discovery mode the "cheapest highlight" would collapse the map to a
   // single dot, which breaks the whole footprint view. Force it off here
@@ -1395,6 +1414,7 @@ export function Map({
               widthRatio={0.75}
               heightRatio={0.55}
               featureVisible={parishLabelVisible}
+              progressByFeatureId={parishProgress}
             />
             <RegionLabelsLayer
               geo={maakondGeo}
