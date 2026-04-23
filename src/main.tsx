@@ -29,11 +29,18 @@ if (sentryDsn) {
     beforeSend(event, hint) {
       const err: any = hint?.originalException;
       const msg = typeof err === 'string' ? err : err?.message;
+      const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
       if (msg === 'Rejected' || err === 'Rejected') {
-        const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? [];
         if (frames.some(f => (f.filename || '').includes('registerSW.js') || (f.function || '').includes('serviceWorker'))) {
           return null;
         }
+      }
+      // Drop crashes originating from Meta in-app browser injections
+      // (Instagram/Facebook IAB inject keylogging/click tracking scripts under
+      // the iabjs:// scheme; "Java object is gone" fires when the WebView is
+      // torn down mid-flight). Not our code, fires on every site Meta loads.
+      if (frames.some(f => (f.filename || '').startsWith('iabjs://'))) {
+        return null;
       }
       return event;
     },

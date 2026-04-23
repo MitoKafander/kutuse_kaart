@@ -212,7 +212,8 @@ export function TutorialModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="tutorial-title"
-        className="glass-panel animate-slide-up"
+        translate="no"
+        className="glass-panel animate-slide-up notranslate"
         style={{
           width: '92%', maxWidth: '520px',
           backgroundColor: 'var(--color-bg)',
