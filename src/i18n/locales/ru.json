@@ -454,6 +454,8 @@
   "stationDrawer": {
     "disputed": "Оспорено",
     "priceConfirmed": "Цена подтверждена ✓",
+    "confirmCooldownMinutes": "Подтверждено — повтор через {{minutes}} мин",
+    "confirmCooldownHours": "Подтверждено — повтор через {{hours}}ч",
     "notEnoughHistory": "Недостаточно истории для этого топлива.",
     "priceLabel": "Цена",
     "voteFailed": "Ошибка голосования.",

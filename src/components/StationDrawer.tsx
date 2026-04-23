@@ -6,6 +6,14 @@ import { supabase } from '../supabase';
 import i18n from '../i18n';
 import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, type ReporterMap } from '../utils';
 
+// Logged-in users can re-confirm an already-up vote after this window. Each
+// re-confirm UPDATEs the existing vote row's created_at so the freshness math
+// (max(reported_at, latest upvote)) picks up the refresh — letting drivers
+// signal "yes, this price is still current" on a return commute without
+// blowing up the upvote count.
+const VOTE_REFRESH_COOLDOWN_HOURS = 4;
+const VOTE_REFRESH_COOLDOWN_MS = VOTE_REFRESH_COOLDOWN_HOURS * 60 * 60 * 1000;
+
 export function StationDrawer({
   station,
   prices,
@@ -35,6 +43,7 @@ export function StationDrawer({
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
   const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
+  const [cooldownToast, setCooldownToast] = useState<{ priceId: string; remainingMin: number } | null>(null);
 
   // Escape-key dismiss — matches the modal pattern used elsewhere in the app.
   useEffect(() => {
@@ -51,6 +60,12 @@ export function StationDrawer({
     const t = setTimeout(() => setVoteConfirm(null), 2000);
     return () => clearTimeout(t);
   }, [voteConfirm]);
+
+  useEffect(() => {
+    if (!cooldownToast) return;
+    const tm = setTimeout(() => setCooldownToast(null), 2500);
+    return () => clearTimeout(tm);
+  }, [cooldownToast]);
 
   if (!isOpen || !station) return null;
 
@@ -106,19 +121,29 @@ export function StationDrawer({
     // Logged-in users: check if they already voted, then update or insert
     const { data: existing } = await supabase
       .from('votes')
-      .select('id')
+      .select('id, vote_type, created_at')
       .eq('price_id', priceId)
       .eq('user_id', userId)
       .maybeSingle();
-    
+
+    // Re-confirming an already-up vote inside the cooldown window: surface a
+    // hint toast instead of silently no-opping. Outside the window, the UPDATE
+    // below bumps created_at so getEffectiveTimestamp() picks up the refresh.
+    if (existing && voteType === 'up' && existing.vote_type === 'up') {
+      const ageMs = Date.now() - new Date(existing.created_at).getTime();
+      if (ageMs < VOTE_REFRESH_COOLDOWN_MS) {
+        const remainingMin = Math.max(1, Math.ceil((VOTE_REFRESH_COOLDOWN_MS - ageMs) / 60000));
+        setCooldownToast({ priceId, remainingMin });
+        return;
+      }
+    }
+
     let error;
     if (existing) {
-      // Update existing vote
       ({ error } = await supabase.from('votes')
-        .update({ vote_type: voteType })
+        .update({ vote_type: voteType, created_at: new Date().toISOString() })
         .eq('id', existing.id));
     } else {
-      // Insert new vote
       ({ error } = await supabase.from('votes')
         .insert({ price_id: priceId, user_id: userId, vote_type: voteType }));
     }
@@ -239,6 +264,19 @@ export function StationDrawer({
                   zIndex: 10, pointerEvents: 'none'
                 }}>
                   {t('stationDrawer.priceConfirmed')}
+                </div>
+              )}
+
+              {cooldownToast && recentPrice && cooldownToast.priceId === recentPrice.id && (
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  background: 'rgba(100, 116, 139, 0.92)', color: '#fff', padding: '6px 12px',
+                  borderRadius: '8px', fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap',
+                  zIndex: 10, pointerEvents: 'none', textAlign: 'center', maxWidth: '90%'
+                }}>
+                  {cooldownToast.remainingMin >= 60
+                    ? t('stationDrawer.confirmCooldownHours', { hours: Math.floor(cooldownToast.remainingMin / 60) })
+                    : t('stationDrawer.confirmCooldownMinutes', { minutes: cooldownToast.remainingMin })}
                 </div>
               )}
 

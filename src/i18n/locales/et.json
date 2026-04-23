@@ -247,6 +247,8 @@
   "stationDrawer": {
     "disputed": "Vaidlustatud",
     "priceConfirmed": "Hind kinnitatud ✓",
+    "confirmCooldownMinutes": "Kinnitatud — uuesti {{minutes}} min pärast",
+    "confirmCooldownHours": "Kinnitatud — uuesti {{hours}}h pärast",
     "notEnoughHistory": "Selle kütuse kohta pole piisavalt ajalugu.",
     "priceLabel": "Hind",
     "voteFailed": "Hääletamine ebaõnnestus.",

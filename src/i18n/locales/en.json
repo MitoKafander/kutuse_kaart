@@ -454,6 +454,8 @@
   "stationDrawer": {
     "disputed": "Disputed",
     "priceConfirmed": "Price confirmed ✓",
+    "confirmCooldownMinutes": "Confirmed — try again in {{minutes}} min",
+    "confirmCooldownHours": "Confirmed — try again in {{hours}}h",
     "notEnoughHistory": "Not enough history for this fuel.",
     "priceLabel": "Price",
     "voteFailed": "Voting failed.",

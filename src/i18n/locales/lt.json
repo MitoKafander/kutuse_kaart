@@ -454,6 +454,8 @@
   "stationDrawer": {
     "disputed": "Ginčijama",
     "priceConfirmed": "Kaina patvirtinta ✓",
+    "confirmCooldownMinutes": "Patvirtinta — bandyk po {{minutes}} min",
+    "confirmCooldownHours": "Patvirtinta — bandyk po {{hours}}h",
     "notEnoughHistory": "Šiam kurui nepakanka istorijos.",
     "priceLabel": "Kaina",
     "voteFailed": "Balsavimas nepavyko.",

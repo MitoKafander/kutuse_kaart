@@ -454,6 +454,8 @@
   "stationDrawer": {
     "disputed": "Kiistetty",
     "priceConfirmed": "Hinta vahvistettu ✓",
+    "confirmCooldownMinutes": "Vahvistettu — yritä {{minutes}} min päästä",
+    "confirmCooldownHours": "Vahvistettu — yritä {{hours}}h päästä",
     "notEnoughHistory": "Ei tarpeeksi historiaa tälle polttoaineelle.",
     "priceLabel": "Hinta",
     "voteFailed": "Äänestäminen epäonnistui.",

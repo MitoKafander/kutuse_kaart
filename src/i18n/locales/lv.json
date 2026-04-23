@@ -454,6 +454,8 @@
   "stationDrawer": {
     "disputed": "Apstrīdēts",
     "priceConfirmed": "Cena apstiprināta ✓",
+    "confirmCooldownMinutes": "Apstiprināts — mēģini pēc {{minutes}} min",
+    "confirmCooldownHours": "Apstiprināts — mēģini pēc {{hours}}h",
     "notEnoughHistory": "Nav pietiekamas vēstures par šo degvielu.",
     "priceLabel": "Cena",
     "voteFailed": "Balsošana neizdevās.",
