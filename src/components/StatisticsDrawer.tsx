@@ -146,9 +146,11 @@ export function StatisticsDrawer({
         arr.push(p.price);
         byDay.set(day, arr);
       }
+      // Median, not mean: a single misread camera scan (€3.25, €5.40 etc.) on a
+      // sparse boundary day used to swing the headline trend by 100¢+.
       const pts = [...byDay.entries()]
         .sort((a, b) => a[0] - b[0])
-        .map(([day, arr]) => ({ day, avg: arr.reduce((s, v) => s + v, 0) / arr.length }));
+        .map(([day, arr]) => ({ day, avg: median(arr) }));
       out[f] = pts;
     }
     return out;
