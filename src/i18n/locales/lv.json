@@ -439,6 +439,7 @@
       "tooFast": "Pārāk ātri! Tavs iepriekšējais cenu ziņojums bija tālu — fiziski nav iespējams nobraukt šādu attālumu šajā laikā.",
       "rls": "Ievade neizturēja pārbaudi. Pārbaudi cenas un mēģini vēlreiz.",
       "notFound": "Stacija netika atrasta. Izvēlies staciju vēlreiz un mēģini vēlreiz.",
+      "outOfBand": "{{fuel}} cena €{{price}} izskatās nepareiza (gaidāms €{{lo}}–€{{hi}}). Izlabo šo rindu vai notīri to un mēģini vēlreiz.",
       "generic": "Saglabāšana neizdevās. Mēģini vēlreiz — ja tas atkārtojas, pārbaudi tīkla savienojumu."
     }
   },

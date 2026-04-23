@@ -439,6 +439,7 @@
       "tooFast": "Too fast! Your previous price report was far away — it's not physically possible to have travelled that far in this time.",
       "rls": "Input failed validation. Check the prices and try again.",
       "notFound": "Station not found. Select the station again and try again.",
+      "outOfBand": "{{fuel}} price €{{price}} looks wrong (expected €{{lo}}–€{{hi}}). Fix that row or clear it and try again.",
       "generic": "Saving failed. Try once more — if it repeats, check your network connection."
     }
   },

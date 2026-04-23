@@ -439,6 +439,7 @@
       "tooFast": "Per greitai! Jūsų ankstesnis kainos pranešimas buvo toli — fiziškai neįmanoma nuvažiuoti tokio atstumo per šį laiką.",
       "rls": "Įvestis nepraėjo patikrinimo. Patikrinkite kainas ir bandykite dar kartą.",
       "notFound": "Degalinė nerasta. Iš naujo pasirinkite degalinę ir bandykite dar kartą.",
+      "outOfBand": "{{fuel}} kaina €{{price}} atrodo neteisinga (tikėtasi €{{lo}}–€{{hi}}). Pataisyk šią eilutę arba ją išvalyk ir bandyk dar kartą.",
       "generic": "Išsaugojimas nepavyko. Bandykite dar kartą — jei kartojasi, patikrinkite tinklo ryšį."
     }
   },

@@ -617,6 +617,18 @@ export function ManualPriceModal({
     const msg: string = err?.message || '';
     if (msg.includes('km from station')) return t('manualPrice.submitError.tooFar');
     if (msg.includes('velocity exceeded')) return t('manualPrice.submitError.tooFast');
+    // Phase 51 band check: parse the structured trigger message so we can
+    // surface the offending fuel slot inline and let the user fix-or-clear
+    // that one row instead of the whole batch.
+    if (msg.includes('outside band for')) {
+      const m = msg.match(/price (\d+\.\d+) outside band for (.+?) \(median \d+\.\d+, expected (\d+\.\d+) to (\d+\.\d+)\)/);
+      if (m) {
+        const [, price, fuel, lo, hi] = m;
+        return t('manualPrice.submitError.outOfBand', {
+          fuel: fuelLabel(fuel, t), price, lo, hi,
+        });
+      }
+    }
     if (code === '42501') return t('manualPrice.submitError.rls');
     if (msg.includes('station') && msg.includes('not found')) return t('manualPrice.submitError.notFound');
     return t('manualPrice.submitError.generic');

@@ -439,6 +439,7 @@
       "tooFast": "Liian nopeaa! Edellinen hintaraporttisi oli kaukana — sitä matkaa ei ole fyysisesti mahdollista ajaa tässä ajassa.",
       "rls": "Syöte ei läpäissyt tarkistusta. Tarkista hinnat ja yritä uudelleen.",
       "notFound": "Asemaa ei löytynyt. Valitse asema uudelleen ja yritä uudelleen.",
+      "outOfBand": "{{fuel}} hinta €{{price}} näyttää väärältä (odotettu €{{lo}}–€{{hi}}). Korjaa tämä rivi tai tyhjennä se ja yritä uudelleen.",
       "generic": "Tallennus epäonnistui. Yritä vielä kerran — jos tämä toistuu, tarkista verkkoyhteys."
     }
   },
