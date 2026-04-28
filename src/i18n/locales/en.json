@@ -195,6 +195,10 @@
         "label": "Show stale prices (demo)",
         "desc": "Also shows prices >24h old"
       },
+      "shareReporterName": {
+        "label": "Show username on reported prices",
+        "desc": "Display \"Reported by: <name>\" on prices you submit"
+      },
       "analytics": {
         "label": "Anonymous analytics",
         "desc": "PostHog (EU) — helps us improve the service"

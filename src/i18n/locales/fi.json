@@ -195,6 +195,10 @@
         "label": "Näytä vanhentuneet hinnat (demo)",
         "desc": "Näyttää myös >24h vanhat hinnat"
       },
+      "shareReporterName": {
+        "label": "Näytä käyttäjänimi hintailmoituksissa",
+        "desc": "Näytä \"Ilmoitti: <nimi>\" lähettämiesi hintojen yhteydessä"
+      },
       "analytics": {
         "label": "Anonyymi analytiikka",
         "desc": "PostHog (EU) — auttaa palvelun parantamisessa"

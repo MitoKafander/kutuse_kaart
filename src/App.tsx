@@ -167,6 +167,7 @@ function App() {
     return localStorage.getItem('kyts-show-discovery-map') === 'true';
   });
   const [sharePublicly, setSharePublicly] = useState(false);
+  const [shareReporterName, setShareReporterName] = useState(true);
   // When a row on the Avastajad leaderboard is clicked, the map enters a
   // "viewing someone else's footprint" mode. Personal toggle state is
   // preserved — exiting the view restores it.
@@ -385,7 +386,7 @@ function App() {
       const [favsRes, loyaltyRes, profRes] = await Promise.all([
         supabase.from('user_favorites').select('*'),
         supabase.from('user_loyalty_discounts').select('brand, discount_cents'),
-        supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, language, theme').eq('id', currentUser.user.id).single(),
+        supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, share_reporter_name, language, theme').eq('id', currentUser.user.id).single(),
       ]);
 
       if (favsRes.data) setFavorites(favsRes.data);
@@ -434,6 +435,9 @@ function App() {
       if (prof?.share_discovery_publicly !== null && prof?.share_discovery_publicly !== undefined) {
         setSharePublicly(prof.share_discovery_publicly);
       }
+      if (prof?.share_reporter_name !== null && prof?.share_reporter_name !== undefined) {
+        setShareReporterName(prof.share_reporter_name);
+      }
       if (prof?.language && (SUPPORTED_LANGUAGES as readonly string[]).includes(prof.language)) {
         if (i18n.language !== prof.language) i18n.changeLanguage(prof.language);
         localStorage.setItem('kyts-language', prof.language);
@@ -460,6 +464,7 @@ function App() {
       setLoyaltyDiscounts({});
       setShowDiscoveryMap(false);
       setSharePublicly(false);
+      setShareReporterName(true);
       setViewedUser(null);
       localStorage.removeItem('kyts-hide-empty-dots');
       localStorage.removeItem('kyts-show-clusters');
@@ -721,6 +726,25 @@ function App() {
       void supabase.from('user_profiles')
         .upsert({ id: session.user.id, share_discovery_publicly: v })
         .then(() => {}, () => {});
+    }
+  };
+
+  const handleShareReporterNameChange = (v: boolean) => {
+    setShareReporterName(v);
+    if (session?.user?.id) {
+      void supabase.from('user_profiles')
+        .upsert({ id: session.user.id, share_reporter_name: v })
+        .then(() => {
+          // Re-pull v_reporters so the user's own name updates in the price
+          // attribution everywhere without a page reload.
+          void supabase.from('v_reporters').select('user_id, display_name').then((res) => {
+            if (res.data) {
+              const map: Record<string, string> = {};
+              res.data.forEach((r: any) => { if (r.user_id && r.display_name) map[r.user_id] = r.display_name; });
+              setReporterMap(map);
+            }
+          });
+        }, () => {});
     }
   };
 
@@ -1320,6 +1344,8 @@ function App() {
         brandProgress={userBrandProgress}
         sharePublicly={sharePublicly}
         onSharePubliclyChange={handleSharePubliclyChange}
+        shareReporterName={shareReporterName}
+        onShareReporterNameChange={handleShareReporterNameChange}
         onMaakondFocus={(id) => {
           // Tile click while stats grid was open but map mode was off:
           // auto-enable the map mode so the focus is actually visible.

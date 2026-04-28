@@ -195,6 +195,10 @@
         "label": "Rodyti pasenusias kainas (demo)",
         "desc": "Taip pat rodo >24h senumo kainas"
       },
+      "shareReporterName": {
+        "label": "Rodyti naudotojo vardą kainų pranešimuose",
+        "desc": "Rodyti \"Pranešė: <vardas>\" prie tavo pateiktų kainų"
+      },
       "analytics": {
         "label": "Anoniminė analitika",
         "desc": "PostHog (EU) — padeda tobulinti paslaugą"

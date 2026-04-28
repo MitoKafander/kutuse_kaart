@@ -506,6 +506,10 @@
         "label": "Näita aegunud hindu (demo)",
         "desc": "Kuvab ka >24h vanu hindu"
       },
+      "shareReporterName": {
+        "label": "Näita kasutajanime hinnateadetes",
+        "desc": "Kuva \"Teatas: <nimi>\" sinu lisatud hindade juures"
+      },
       "analytics": {
         "label": "Anonüümne analüütika",
         "desc": "PostHog (EU) — aita meil teenust parandada"

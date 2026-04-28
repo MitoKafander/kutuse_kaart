@@ -195,6 +195,10 @@
         "label": "Rādīt novecojušas cenas (demo)",
         "desc": "Parāda arī >24h vecas cenas"
       },
+      "shareReporterName": {
+        "label": "Rādīt lietotājvārdu cenu ziņojumos",
+        "desc": "Rādīt \"Ziņoja: <vārds>\" pie tavām pievienotajām cenām"
+      },
       "analytics": {
         "label": "Anonīma analītika",
         "desc": "PostHog (EU) — palīdz uzlabot pakalpojumu"

@@ -154,6 +154,8 @@ export function ProfileDrawer({
   onMaakondFocus,
   sharePublicly,
   onSharePubliclyChange,
+  shareReporterName,
+  onShareReporterNameChange,
   pendingAvastuskaartFocus,
   displayName,
   onDisplayNameChange,
@@ -216,6 +218,8 @@ export function ProfileDrawer({
   onMaakondFocus?: (maakondId: number) => void;
   sharePublicly: boolean;
   onSharePubliclyChange: (v: boolean) => void;
+  shareReporterName: boolean;
+  onShareReporterNameChange: (v: boolean) => void;
   // Counter-prop: each increment triggers a jump-to-Avastuskaart flow —
   // switch to Profiil tab, expand the stats accordion, scroll into view.
   // Used by the DiscoveryBanner to let the user change focused maakond
@@ -1538,6 +1542,37 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
+                {/* Show display_name on price reports ("Teatas: <name>").
+                    Server-enforced via user_profiles.share_reporter_name and
+                    the v_reporters view (phase 52) — opting out makes every
+                    consumer see 'Anonüümne' instead. Leaderboard attribution
+                    is intentionally unaffected. */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <UserCircle size={16} /> {t('profile.settings.shareReporterName.label')}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        {t('profile.settings.shareReporterName.desc')}
+                      </span>
+                    </div>
+                    <div
+                      onClick={() => onShareReporterNameChange(!shareReporterName)}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px',
+                        background: shareReporterName ? 'var(--color-primary)' : 'var(--color-surface)',
+                        position: 'relative', transition: 'background 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                        position: 'absolute', top: '2px', left: shareReporterName ? '22px' : '2px', transition: 'left 0.2s'
+                      }}/>
+                    </div>
+                  </label>
+                </div>
+
                 {/* Anonymous analytics (PostHog). Revocation path for the GDPR
                     banner — flipping off writes gdpr_consent=declined and
                     opts out of PostHog; flipping on accepts + initialises. */}
@@ -1592,11 +1627,11 @@ export function ProfileDrawer({
             </div>
           )}
 
-        </div>
-
         {/* Tutorial revisit — sits above Feedback so the two "meta" CTAs stack
             together at the tab bottom, both visually distinct from the map
-            preference controls above. */}
+            preference controls above. Lives inside the scroll container (phase
+            52) so the static-button stack doesn't shrink the scrollable area
+            on shorter screens. */}
         {activeTab === 'settings' && onOpenTutorial && (
           <button
             onClick={() => { onOpenTutorial(); onClose(); }}
@@ -1679,6 +1714,8 @@ export function ProfileDrawer({
             <Trash2 size={16} /> {deleting ? t('profile.settings.deleteAccount.inProgress') : t('profile.settings.deleteAccount.button')}
           </button>
         )}
+
+        </div>
 
       </div>
     </div>
