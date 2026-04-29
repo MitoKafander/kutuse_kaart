@@ -61,6 +61,56 @@ import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
+// Page a Supabase select past PostgREST's `db-max-rows` cap. The Supabase
+// platform silently truncates any single response to 1000 rows regardless of
+// `.limit()` — which previously dropped older `prices` rows from the client and
+// made Avastuskaart "lose" completed valds the moment the table grew past 1k.
+// Strategy: the first page asks for `count: 'exact'` so the rest can fan out in
+// parallel without a separate HEAD round-trip, and short-circuits if the table
+// fits in one page. Order is preserved across pages by the caller-supplied
+// `apply` callback (must be a stable, non-volatile expression for pagination
+// to be deterministic). Hard cap protects against runaway loops if `count`
+// somehow disagrees with reality.
+async function fetchAllRows<T = any>(
+  table: string,
+  apply: (q: any) => any = (q) => q,
+): Promise<{ data: T[] | null; error: any }> {
+  const PAGE = 1000;
+  const SAFETY_CAP = 100_000;
+  const first = await apply(supabase.from(table).select('*', { count: 'exact' })).range(0, PAGE - 1);
+  if (first.error) return { data: null, error: first.error };
+  const head = (first.data ?? []) as T[];
+  const total = Math.min(first.count ?? head.length, SAFETY_CAP);
+  if (head.length < PAGE || head.length >= total) return { data: head, error: null };
+  const requests: Promise<any>[] = [];
+  for (let from = PAGE; from < total; from += PAGE) {
+    const to = Math.min(from + PAGE - 1, total - 1);
+    requests.push(apply(supabase.from(table).select('*')).range(from, to));
+  }
+  const rest = await Promise.all(requests);
+  // Dedupe by id: parallel pages can both observe the same row when a write
+  // lands between requests (a new row at offset 0 shifts existing rows down,
+  // so the last row of page N reappears as the first row of page N+1).
+  const seen = new Set<any>();
+  const all: T[] = [];
+  for (const row of head) {
+    const id = (row as any)?.id;
+    if (id != null && seen.has(id)) continue;
+    if (id != null) seen.add(id);
+    all.push(row);
+  }
+  for (const r of rest) {
+    if (r.error) return { data: null, error: r.error };
+    for (const row of (r.data ?? []) as T[]) {
+      const id = (row as any)?.id;
+      if (id != null && seen.has(id)) continue;
+      if (id != null) seen.add(id);
+      all.push(row);
+    }
+  }
+  return { data: all, error: null };
+}
+
 function App() {
   const { t } = useTranslation();
   const [session, setSession] = useState<any>(null);
@@ -102,9 +152,9 @@ function App() {
   // Data state. Stations seed from a localStorage SWR cache so the first
   // React commit can paint dots immediately — loadData still runs in the
   // background and overwrites with fresh data. Prices intentionally stay
-  // out of the cache (10k rows = ~2 MB JSON; the parse cost on cold mount
-  // outweighs the perceived-perf win, and the dots themselves are the
-  // "we're alive" signal).
+  // out of the cache: the table is paged in via fetchAllRows and can run to
+  // many MB of JSON; the parse cost on cold mount outweighs the
+  // perceived-perf win, and the dots themselves are the "we're alive" signal.
   const [stations, setStations] = useState<any[]>(() => {
     try {
       const raw = localStorage.getItem('kyts:cache:stations');
@@ -356,8 +406,8 @@ function App() {
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
     const [stRes, prRes, vtRes, repsRes, insightRes] = await Promise.all([
       supabase.from('stations').select('*').eq('active', true),
-      supabase.from('prices').select('*').order('reported_at', { ascending: false }).limit(10000),
-      supabase.from('votes').select('*').limit(10000),
+      fetchAllRows('prices', q => q.order('reported_at', { ascending: false }).order('id', { ascending: false })),
+      fetchAllRows('votes', q => q.order('created_at', { ascending: false }).order('id', { ascending: false })),
       supabase.from('v_reporters').select('user_id, display_name'),
       supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ]);
