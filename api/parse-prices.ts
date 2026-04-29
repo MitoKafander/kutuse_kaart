@@ -136,17 +136,38 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     const hint = (stationName || '').trim();
     const hasKnownStation = hint.length > 0 && hint.toLowerCase() !== 'tankla' && hint.toLowerCase() !== 'gas station';
 
+    // Realistic price bands per fuel type, baked into the prompt so Gemini
+    // can self-correct misclassifications. Sentry KYTS-WEB-N showed 6/8
+    // band-rejections came from camera scans assigning Bensiin/Diisel
+    // prices (€1.5–2.0) to the LPG slot — Gemini reading e.g. "Diisel
+    // Premium 1,999" off a 4-row totem and dropping it under LPG. The
+    // ranges are loose on purpose (wider than phase 51's ±35% sliding
+    // band) so legitimate premium variants and price spikes still go
+    // through; the goal is to kill obvious mis-bucketings, not to
+    // duplicate the server-side enforcement.
+    const FUEL_RANGE_HINT =
+      `Realistic Estonian/Latvian price ranges (€/L) — use these to reject mis-bucketed reads:\n` +
+      `- "Bensiin 95": 1.20–2.30\n` +
+      `- "Bensiin 98": 1.30–2.40\n` +
+      `- "Diisel": 1.20–2.60 (includes premium variants like Diesel Pro / D Premium)\n` +
+      `- "LPG" (vedelgaas/autogaas): 0.55–1.40 — LPG is ALWAYS cheaper than petrol/diesel.\n` +
+      `If a price you read for a fuel falls outside its range, you have almost certainly misread which row that price belongs to. ` +
+      `Re-check the totem and assign the price to the correct fuel slot, or omit it. ` +
+      `Never put a price in the LPG slot just because the totem has 4 rows — many totems have no LPG, and a fourth row may be a premium diesel variant or a payment-method legend rather than an LPG price.`;
+
     const prompt = hasKnownStation
       ? `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station conceptually named "${hint}".
 Your job is twofold:
 1. Identify the station's brand based on logos, colors, or text in the image. Determine if it matches the expected name "${hint}".
 2. Extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
 
+${FUEL_RANGE_HINT}
+
 Understand that European signs generally use commas instead of decimals (e.g. 1,749) but you MUST return proper javascript floats (1.749).
 Return strictly a valid JSON object with the following schema:
 - "detectedBrand": The brand identified in the image. MUST be EXACTLY one of these values, or null if no recognised brand is visible: ${ALLOWED_BRANDS_LIST}. Do NOT invent brand names from sub-text on the sign such as loyalty programmes, slogans, or sub-services (e.g. "Teeline" on an Olerex totem is a loyalty slogan, not a brand — return "Olerex" or null, never "Teeline"). If you cannot map the visible branding to one of the listed values with high confidence, return null.
 - "isBrandMatch": boolean (true if detectedBrand is the same company as "${hint}", false if it's clearly a competitor). If detectedBrand is null, return true.
-- "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible.
+- "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible OR if the price you read falls outside the realistic range for that fuel.
 
 Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1.749}`
       : `You are a high-accuracy vision system analyzing a fuel station price board (totem) at an unknown Estonian or Latvian fuel station.
@@ -154,11 +175,13 @@ Your job is twofold:
 1. Identify the station's brand based on logos, colors, or text in the image.
 2. Extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
 
+${FUEL_RANGE_HINT}
+
 Understand that European signs generally use commas instead of decimals (e.g. 1,749) but you MUST return proper javascript floats (1.749).
 Return strictly a valid JSON object with the following schema:
 - "detectedBrand": The brand identified in the image. MUST be EXACTLY one of these values, or null if no recognised brand is visible: ${ALLOWED_BRANDS_LIST}. Do NOT invent brand names from sub-text on the sign such as loyalty programmes, slogans, or sub-services (e.g. "Teeline" on an Olerex totem is a loyalty slogan, not a brand — return "Olerex" or null, never "Teeline"). If you cannot map the visible branding to one of the listed values with high confidence, return null.
 - "isBrandMatch": Always return true (there is no expected brand to compare against).
-- "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible.
+- "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible OR if the price you read falls outside the realistic range for that fuel.
 
 Always extract any prices you can read, even if you cannot identify the brand.
 
@@ -215,16 +238,39 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     }
 
     const FUEL_KEYS = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'] as const;
+    // Belt-and-braces sanity bands. Mirror the FUEL_RANGE_HINT in the prompt
+    // — even when Gemini ignores the hint and assigns e.g. €1.999 to LPG,
+    // we drop it server-side so the client never sees a misclassified slot
+    // and the user never gets the phase-51 rejection when they hit submit.
+    // Loose on purpose; the server's phase-51 trigger is the actual policy.
+    const FUEL_RANGES: Record<string, [number, number]> = {
+      'Bensiin 95': [1.20, 2.30],
+      'Bensiin 98': [1.30, 2.40],
+      'Diisel':     [1.20, 2.60],
+      'LPG':        [0.55, 1.40],
+    };
     const prices: Record<string, number> = {};
+    const droppedFuels: string[] = [];
     for (const k of FUEL_KEYS) {
       const v = parsed[k];
-      if (typeof v === 'number' && isFinite(v) && v > 0) prices[k] = v;
+      let num: number | null = null;
+      if (typeof v === 'number' && isFinite(v) && v > 0) num = v;
       else if (typeof v === 'string') {
-        const num = parseFloat(v.replace(',', '.'));
-        if (isFinite(num) && num > 0) prices[k] = num;
+        const parsedNum = parseFloat(v.replace(',', '.'));
+        if (isFinite(parsedNum) && parsedNum > 0) num = parsedNum;
       }
+      if (num == null) continue;
+      const [lo, hi] = FUEL_RANGES[k];
+      if (num < lo || num > hi) {
+        droppedFuels.push(`${k}=${num.toFixed(3)}`);
+        continue;
+      }
+      prices[k] = num;
     }
     const extractedAny = Object.keys(prices).length > 0;
+    if (droppedFuels.length) {
+      console.warn('[parse-prices] Dropped out-of-band AI prices:', droppedFuels.join(', '));
+    }
 
     if (!extractedAny) {
       console.warn('[parse-prices] No prices extracted. Raw response (truncated):', rawText.slice(0, 400));
@@ -249,6 +295,9 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
       // Surfaces whether the Flash → Flash-Lite fallback fired on this call
       // so the client can PostHog it and we can measure the fallback hit rate.
       modelUsed,
+      // List of "Fuel=value" strings that the band-filter rejected, for
+      // client-side telemetry. Empty when Gemini stayed in range.
+      droppedFuels,
       ...prices,
     };
 

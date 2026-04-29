@@ -229,9 +229,15 @@ export function ManualPriceModal({
         }
         // Attach the attempt count + model the server actually used so we
         // can see in PostHog how often the Flash → Flash-Lite fallback fires.
+        // dropped_fuels surfaces the server-side band-filter activity so we
+        // can measure how often Gemini still misbuckets after the prompt
+        // change in api/parse-prices.ts (Sentry KYTS-WEB-N follow-up).
+        const dropped: string[] = Array.isArray(parsed?.droppedFuels) ? parsed.droppedFuels : [];
         capture('ai_scan_success', {
           attempts_made: attempt + 1,
           model_used: parsed?.modelUsed ?? null,
+          dropped_fuels_count: dropped.length,
+          dropped_fuels: dropped.length ? dropped.join('|') : null,
         });
         return parsed;
       }

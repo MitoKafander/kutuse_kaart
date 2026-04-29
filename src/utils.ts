@@ -205,6 +205,8 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'premium 7',      canonical: 'Premium 7' },
   { match: 'hepa',           canonical: 'Hepa' },
   { match: 'thor',           canonical: 'Thor' }, // matches "Thor" and "Thori"
+  { match: 'gooil',          canonical: 'GoOil' }, // single-station Tartu chain (gooil.ee), Ringtee 21
+  { match: 'go oil',         canonical: 'GoOil' }, // also matches Jetoil PDF spelling "GO OIL TANKLA"
   // Saare Kütus — Saaremaa chain. OSM tags some nodes with brand=Saare Kütus
   // (caught by the first pattern) but others only carry their local station
   // name, so we enumerate the five current stations explicitly. See
