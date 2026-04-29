@@ -9,6 +9,7 @@ import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { PointsToast, type PointsEvent } from './components/PointsToast';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { UpdateBanner } from './components/UpdateBanner';
+import { FeedbackReplyToast } from './components/FeedbackReplyToast';
 import { type MarketInsight } from './components/MarketInsightDrawer';
 import { useRegionProgress, type Maakond, type Parish } from './hooks/useRegionProgress';
 import i18n, { SUPPORTED_LANGUAGES } from './i18n';
@@ -165,6 +166,10 @@ function App() {
   });
   const [prices, setPrices] = useState<any[]>([]);
   const [pricesLoaded, setPricesLoaded] = useState(false);
+  // Increments on every loadData success so child components (currently
+  // FeedbackReplyToast) can hook a refetch onto the same SWR cycle without
+  // needing direct access to App's data fetches.
+  const [loadDataCounter, setLoadDataCounter] = useState(0);
   const [votes, setVotes] = useState<any[]>([]);
   const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
   const [activeInsight, setActiveInsight] = useState<MarketInsight | null>(null);
@@ -425,6 +430,7 @@ function App() {
     if (vtRes.data) setVotes(vtRes.data);
     if (insightRes?.data) setActiveInsight(insightRes.data);
     lastLoadedAtRef.current = Date.now();
+    setLoadDataCounter(c => c + 1);
 
     // Reporter display-name map for price attribution (phase 36 view).
     if (repsRes.data) {
@@ -922,6 +928,11 @@ function App() {
       <PointsToast events={pointsEvents} onDrain={() => setPointsEvents([])} />
 
       <UpdateBanner />
+
+      <FeedbackReplyToast
+        isAuthed={!!session?.user}
+        loadDataTrigger={loadDataCounter}
+      />
 
       {/* Top Search & Action Bar */}
       <div style={{ position: 'absolute', top: 'calc(20px + env(safe-area-inset-top))', left: '20px', right: '20px', zIndex: 1000 }}>

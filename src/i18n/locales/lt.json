@@ -447,6 +447,15 @@
       "generic": "Išsaugojimas nepavyko. Bandykite dar kartą — jei kartojasi, patikrinkite tinklo ryšį."
     }
   },
+  "feedbackReply": {
+    "title": "Atsakymas į jūsų atsiliepimą",
+    "originalLabel": "Jūsų žinutė:",
+    "showOriginal": "Rodyti žinutę",
+    "hideOriginal": "Slėpti žinutę",
+    "button": {
+      "dismiss": "Aišku"
+    }
+  },
   "geo": {
     "error": {
       "permission": "Vieta nepasiekiama. Leiskite programėlei naudoti vietą ir bandykite dar kartą.",

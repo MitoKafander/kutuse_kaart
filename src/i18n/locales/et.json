@@ -103,6 +103,15 @@
       "submit": "Saatmine ebaõnnestus. Proovi veidi hiljem uuesti."
     }
   },
+  "feedbackReply": {
+    "title": "Vastus su tagasisidele",
+    "originalLabel": "Sinu sõnum:",
+    "showOriginal": "Näita sõnumit",
+    "hideOriginal": "Peida sõnum",
+    "button": {
+      "dismiss": "Sain aru"
+    }
+  },
   "geo": {
     "error": {
       "permission": "Asukoht pole saadaval. Luba rakendusele asukoha kasutamine ja proovi uuesti.",

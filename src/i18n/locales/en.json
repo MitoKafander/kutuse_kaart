@@ -447,6 +447,15 @@
       "generic": "Saving failed. Try once more — if it repeats, check your network connection."
     }
   },
+  "feedbackReply": {
+    "title": "Reply to your feedback",
+    "originalLabel": "Your message:",
+    "showOriginal": "Show message",
+    "hideOriginal": "Hide message",
+    "button": {
+      "dismiss": "Got it"
+    }
+  },
   "geo": {
     "error": {
       "permission": "Location unavailable. Allow the app to use location and try again.",

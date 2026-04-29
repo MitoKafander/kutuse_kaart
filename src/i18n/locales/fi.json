@@ -447,6 +447,15 @@
       "generic": "Tallennus epäonnistui. Yritä vielä kerran — jos tämä toistuu, tarkista verkkoyhteys."
     }
   },
+  "feedbackReply": {
+    "title": "Vastaus palautteeseesi",
+    "originalLabel": "Viestisi:",
+    "showOriginal": "Näytä viesti",
+    "hideOriginal": "Piilota viesti",
+    "button": {
+      "dismiss": "Selvä"
+    }
+  },
   "geo": {
     "error": {
       "permission": "Sijainti ei ole saatavilla. Salli sovelluksen käyttää sijaintia ja yritä uudelleen.",

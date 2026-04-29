@@ -447,6 +447,15 @@
       "generic": "Saglabāšana neizdevās. Mēģini vēlreiz — ja tas atkārtojas, pārbaudi tīkla savienojumu."
     }
   },
+  "feedbackReply": {
+    "title": "Atbilde uz tavām atsauksmēm",
+    "originalLabel": "Tavs ziņojums:",
+    "showOriginal": "Rādīt ziņojumu",
+    "hideOriginal": "Slēpt ziņojumu",
+    "button": {
+      "dismiss": "Skaidrs"
+    }
+  },
   "geo": {
     "error": {
       "permission": "Atrašanās vieta nav pieejama. Atļauj lietotnei izmantot atrašanās vietu un mēģini vēlreiz.",
