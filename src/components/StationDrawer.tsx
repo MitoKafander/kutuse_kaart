@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation } from 'lucide-react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Flag } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
@@ -23,6 +23,7 @@ export function StationDrawer({
   isOpen,
   onClose,
   onOpenPriceForm,
+  onOpenReport,
   onVoteSubmitted,
   isFavorite,
   onToggleFavorite
@@ -35,6 +36,7 @@ export function StationDrawer({
   isOpen: boolean,
   onClose: () => void,
   onOpenPriceForm: () => void,
+  onOpenReport?: () => void,
   onVoteSubmitted: () => void,
   isFavorite: boolean,
   onToggleFavorite: () => void
@@ -435,6 +437,31 @@ export function StationDrawer({
           {t('stationDrawer.updatePrices')}
         </button>
       </div>
+
+      {/* Subdued "Report this station" link for signed-in users only.
+          Anon users can't submit reports (RLS rejects), so hide the entry
+          rather than nag them with a sign-in prompt on a low-frequency
+          action. */}
+      {session?.user && onOpenReport && (
+        <button
+          onClick={onOpenReport}
+          style={{
+            marginTop: '14px',
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-text-muted)',
+            fontSize: '0.82rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 0',
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Flag size={13} /> {t('stationDrawer.reportLink')}
+        </button>
+      )}
     </div>
     </>
   );

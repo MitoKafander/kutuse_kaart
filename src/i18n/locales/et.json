@@ -253,6 +253,7 @@
     "priceLabel": "Hind",
     "voteFailed": "Hääletamine ebaõnnestus.",
     "updatePrices": "Uuenda Hinnad",
+    "reportLink": "Teata jaamast",
     "aria": {
       "confirm": "Kinnita hind",
       "dispute": "Vaidlusta hind"
@@ -260,6 +261,44 @@
     "titles": {
       "history": "Näita hinnaajalugu",
       "navigate": "Navigeeri"
+    }
+  },
+  "stationReport": {
+    "title": "Teata jaamast",
+    "intro": "Kas {{station}} on suletud, vale või pole avalikult ligipääsetav? Vali põhjus, lisa selgitus kui soovid — vaatame raporteid manuaalselt ja teeme parandused.",
+    "kind": {
+      "abandoned": {
+        "label": "Suletud / hüljatud",
+        "hint": "Jaam on füüsiliselt suletud või lammutatud."
+      },
+      "inaccessible": {
+        "label": "Eraomand / pole ligipääsetav",
+        "hint": "Asub eraterritooriumil, nt ettevõtte sisetankla."
+      },
+      "wrong_location": {
+        "label": "Vale asukoht",
+        "hint": "Punkt kaardil pole tegelikus asukohas."
+      },
+      "wrong_info": {
+        "label": "Vale info",
+        "hint": "Brand või muu info on vale."
+      }
+    },
+    "notePlaceholder": "Lisaselgitus (vabatahtlik)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Liiga pikk: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Saada raport",
+      "sending": "Saadan..."
+    },
+    "sent": {
+      "thanks": "Aitäh!",
+      "body": "Sinu raport on meieni jõudnud. Vaatame jaamasid manuaalselt ja teeme vajalikud parandused."
+    },
+    "error": {
+      "submit": "Saatmine ebaõnnestus. Proovi veidi hiljem uuesti."
     }
   },
   "cheapest": {

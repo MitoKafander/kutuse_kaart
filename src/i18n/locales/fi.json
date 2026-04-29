@@ -464,6 +464,7 @@
     "priceLabel": "Hinta",
     "voteFailed": "Äänestäminen epäonnistui.",
     "updatePrices": "Päivitä hinnat",
+    "reportLink": "Ilmoita asemasta",
     "aria": {
       "confirm": "Vahvista hinta",
       "dispute": "Kiistä hinta"
@@ -471,6 +472,44 @@
     "titles": {
       "history": "Näytä hintahistoria",
       "navigate": "Navigoi"
+    }
+  },
+  "stationReport": {
+    "title": "Ilmoita asemasta",
+    "intro": "Onko {{station}} suljettu, väärin merkitty tai ei julkisesti käytettävissä? Valitse syy ja lisää tarvittaessa selitys — käsittelemme ilmoitukset käsin ja päivitämme kartan.",
+    "kind": {
+      "abandoned": {
+        "label": "Suljettu / hylätty",
+        "hint": "Fyysisesti suljettu tai purettu."
+      },
+      "inaccessible": {
+        "label": "Yksityisalue / ei pääsyä",
+        "hint": "Yksityisellä maalla, esim. yritysten oma asema."
+      },
+      "wrong_location": {
+        "label": "Väärä sijainti",
+        "hint": "Pisteen sijainti kartalla on väärin."
+      },
+      "wrong_info": {
+        "label": "Väärät tiedot",
+        "hint": "Brändi tai muut tiedot ovat väärin."
+      }
+    },
+    "notePlaceholder": "Lisätietoja (valinnainen)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Liian pitkä: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Lähetä",
+      "sending": "Lähetetään..."
+    },
+    "sent": {
+      "thanks": "Kiitos!",
+      "body": "Ilmoituksesi on vastaanotettu. Käymme asemat manuaalisesti läpi ja teemme tarvittavat korjaukset."
+    },
+    "error": {
+      "submit": "Lähetys epäonnistui. Yritä uudelleen myöhemmin."
     }
   },
   "cheapest": {

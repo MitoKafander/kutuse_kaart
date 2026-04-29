@@ -48,6 +48,7 @@ const CheapestNearbyPanel = lazyWithReload(() => import('./components/CheapestNe
 const PrivacyModal = lazyWithReload(() => import('./components/PrivacyModal').then(m => ({ default: m.PrivacyModal })));
 const TermsModal = lazyWithReload(() => import('./components/TermsModal').then(m => ({ default: m.TermsModal })));
 const FeedbackModal = lazyWithReload(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+const StationReportModal = lazyWithReload(() => import('./components/StationReportModal').then(m => ({ default: m.StationReportModal })));
 const TutorialModal = lazyWithReload(() => import('./components/TutorialModal').then(m => ({ default: m.TutorialModal })));
 const InstallPromptModal = lazyWithReload(() => import('./components/InstallPromptModal').then(m => ({ default: m.InstallPromptModal })));
 const LeaderboardDrawer = lazyWithReload(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
@@ -143,6 +144,7 @@ function App() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isStationReportOpen, setIsStationReportOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isInstallPromptOpen, setIsInstallPromptOpen] = useState(false);
   const [marketInsightSeenId, setMarketInsightSeenId] = useState<string | null>(
@@ -331,6 +333,7 @@ function App() {
     // off kyts.ee. Close flows are the X button, backdrop click, and the
     // "sulge" button — no back-gesture support, which is fine for a leaf doc.
     if (isFeedbackOpen) list.push({ id: 'feedback', close: () => setIsFeedbackOpen(false) });
+    if (isStationReportOpen) list.push({ id: 'stationReport', close: () => setIsStationReportOpen(false) });
     // Tutorial is marked skipRewind: on first visit it's the first overlay
     // ever pushed, and rewinding one step on Valmis can navigate off-site
     // when the user reached kyts.ee via a real navigation (not a direct
@@ -341,7 +344,7 @@ function App() {
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
     if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
     return list;
-  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isFeedbackOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
+  }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isFeedbackOpen, isStationReportOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
 
   useEffect(() => {
     const stack = overlayStackRef.current;
@@ -1268,6 +1271,7 @@ function App() {
             isOpen={!!selectedStation && !isPriceModalOpen}
             onClose={() => setSelectedStation(null)}
             onOpenPriceForm={handleOpenPriceForm}
+            onOpenReport={() => setIsStationReportOpen(true)}
             onVoteSubmitted={() => loadData()}
             isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
             onToggleFavorite={async () => {
@@ -1504,6 +1508,16 @@ function App() {
           <FeedbackModal
             isOpen={isFeedbackOpen}
             onClose={() => setIsFeedbackOpen(false)}
+            session={session}
+          />
+        )}
+
+        {isStationReportOpen && (
+          <StationReportModal
+            isOpen={isStationReportOpen}
+            onClose={() => setIsStationReportOpen(false)}
+            stationId={selectedStation?.id ?? null}
+            stationName={selectedStation ? getStationDisplayName(selectedStation) : null}
             session={session}
           />
         )}

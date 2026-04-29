@@ -464,6 +464,7 @@
     "priceLabel": "Cena",
     "voteFailed": "Balsošana neizdevās.",
     "updatePrices": "Atjaunināt cenas",
+    "reportLink": "Ziņot par staciju",
     "aria": {
       "confirm": "Apstiprināt cenu",
       "dispute": "Apstrīdēt cenu"
@@ -471,6 +472,44 @@
     "titles": {
       "history": "Parādīt cenu vēsturi",
       "navigate": "Navigēt"
+    }
+  },
+  "stationReport": {
+    "title": "Ziņot par staciju",
+    "intro": "Vai {{station}} ir slēgta, nepareiza vai nav publiski pieejama? Izvēlies iemeslu un, ja vēlies, pievieno paskaidrojumu — mēs pārskatām ziņojumus manuāli un atjauninām karti.",
+    "kind": {
+      "abandoned": {
+        "label": "Slēgta / pamesta",
+        "hint": "Fiziski slēgta vai nojaukta."
+      },
+      "inaccessible": {
+        "label": "Privātīpašums / nav pieejama",
+        "hint": "Privātā teritorijā, piem., uzņēmuma stacija."
+      },
+      "wrong_location": {
+        "label": "Nepareiza atrašanās vieta",
+        "hint": "Punkts kartē nav reālajā vietā."
+      },
+      "wrong_info": {
+        "label": "Nepareiza informācija",
+        "hint": "Zīmols vai cita informācija ir nepareiza."
+      }
+    },
+    "notePlaceholder": "Papildu paskaidrojums (pēc izvēles)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Pārāk garš: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Sūtīt",
+      "sending": "Sūta..."
+    },
+    "sent": {
+      "thanks": "Paldies!",
+      "body": "Tavs ziņojums ir saņemts. Mēs pārskatām stacijas manuāli un veicam nepieciešamos labojumus."
+    },
+    "error": {
+      "submit": "Sūtīšana neizdevās. Mēģini vēlreiz vēlāk."
     }
   },
   "cheapest": {

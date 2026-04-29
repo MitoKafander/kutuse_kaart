@@ -464,6 +464,7 @@
     "priceLabel": "Kaina",
     "voteFailed": "Balsavimas nepavyko.",
     "updatePrices": "Atnaujinti kainas",
+    "reportLink": "Pranešti apie stotį",
     "aria": {
       "confirm": "Patvirtinti kainą",
       "dispute": "Ginčyti kainą"
@@ -471,6 +472,44 @@
     "titles": {
       "history": "Rodyti kainų istoriją",
       "navigate": "Naviguoti"
+    }
+  },
+  "stationReport": {
+    "title": "Pranešti apie stotį",
+    "intro": "Ar {{station}} yra uždaryta, neteisingai pažymėta arba nepasiekiama viešai? Pasirinkite priežastį ir, jei norite, pridėkite paaiškinimą — peržiūrime pranešimus rankiniu būdu ir atnaujiname žemėlapį.",
+    "kind": {
+      "abandoned": {
+        "label": "Uždaryta / apleista",
+        "hint": "Fiziškai uždaryta arba nugriauta."
+      },
+      "inaccessible": {
+        "label": "Privati teritorija / nepasiekiama",
+        "hint": "Privačioje teritorijoje, pvz., įmonių stotis."
+      },
+      "wrong_location": {
+        "label": "Neteisinga vieta",
+        "hint": "Žymeklis žemėlapyje yra ne tikroje vietoje."
+      },
+      "wrong_info": {
+        "label": "Neteisinga informacija",
+        "hint": "Prekės ženklas arba kita informacija yra neteisinga."
+      }
+    },
+    "notePlaceholder": "Papildoma informacija (neprivaloma)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Per ilgas: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Siųsti",
+      "sending": "Siunčiama..."
+    },
+    "sent": {
+      "thanks": "Ačiū!",
+      "body": "Pranešimas gautas. Stočių sąrašą tikriname rankiniu būdu ir atliekame reikiamus pakeitimus."
+    },
+    "error": {
+      "submit": "Nepavyko išsiųsti. Bandykite vėliau."
     }
   },
   "cheapest": {

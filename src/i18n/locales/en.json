@@ -464,6 +464,7 @@
     "priceLabel": "Price",
     "voteFailed": "Voting failed.",
     "updatePrices": "Update Prices",
+    "reportLink": "Report station",
     "aria": {
       "confirm": "Confirm price",
       "dispute": "Dispute price"
@@ -471,6 +472,44 @@
     "titles": {
       "history": "Show price history",
       "navigate": "Navigate"
+    }
+  },
+  "stationReport": {
+    "title": "Report station",
+    "intro": "Is {{station}} closed, wrong, or not publicly accessible? Pick a reason and add a note if you'd like — we review reports manually and update the map accordingly.",
+    "kind": {
+      "abandoned": {
+        "label": "Closed / abandoned",
+        "hint": "Physically closed or demolished."
+      },
+      "inaccessible": {
+        "label": "Private property / not accessible",
+        "hint": "On private land, e.g. a fleet-only depot."
+      },
+      "wrong_location": {
+        "label": "Wrong location",
+        "hint": "Pin on the map isn't where the station actually is."
+      },
+      "wrong_info": {
+        "label": "Wrong info",
+        "hint": "Brand name or other info is incorrect."
+      }
+    },
+    "notePlaceholder": "Additional details (optional)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Too long: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Send report",
+      "sending": "Sending..."
+    },
+    "sent": {
+      "thanks": "Thanks!",
+      "body": "Your report has been received. We review stations manually and make any needed corrections."
+    },
+    "error": {
+      "submit": "Sending failed. Please try again later."
     }
   },
   "cheapest": {
