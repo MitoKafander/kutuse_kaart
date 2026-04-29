@@ -72,24 +72,26 @@ async function fetchKytsFuelStats(
   const prev30End  = new Date(now - 28 * DAY).toISOString();
   const prev30Start = new Date(now - 32 * DAY).toISOString();
 
-  // Join through stations to filter country='EE'. Supabase embedded selects
-  // let us express this as an inner join via `stations!inner(country)`.
-  const baseSelect = 'price, stations!inner(country)';
-  const eeFilter = { col: 'stations.country', eq: 'EE' } as const;
-
+  // Push the aggregate into Postgres (phase 53 RPC). The previous
+  // row-pulling pattern was silently capped at 1000 rows by PostgREST's
+  // db-max-rows ceiling — the moment a fuel-type window crossed that
+  // threshold the average would start biasing toward whichever rows landed
+  // first in the response. The RPC returns one row per call regardless of
+  // window size, so the math stays correct as the table grows.
   async function avg(fromIso: string, toIso?: string) {
-    let q = sb.from('prices')
-      .select(baseSelect)
-      .eq('fuel_type', fuelType)
-      .eq(eeFilter.col, eeFilter.eq)
-      .gte('reported_at', fromIso);
-    if (toIso) q = q.lt('reported_at', toIso);
-    const { data, error } = await q.limit(5000);
-    if (error || !data) return { mean: null as number | null, count: 0 };
-    const rows = data as Array<{ price: number }>;
-    if (rows.length === 0) return { mean: null, count: 0 };
-    const sum = rows.reduce((a, r) => a + r.price, 0);
-    return { mean: sum / rows.length, count: rows.length };
+    const { data, error } = await sb.rpc('get_kyts_fuel_window_avg', {
+      p_fuel_type: fuelType,
+      p_from: fromIso,
+      p_to: toIso ?? null,
+    });
+    if (error || !data || data.length === 0) {
+      return { mean: null as number | null, count: 0 };
+    }
+    const row = data[0] as { mean: number | string | null; sample_count: number | string };
+    const count = Number(row.sample_count);
+    if (!count) return { mean: null, count: 0 };
+    const mean = row.mean == null ? null : Number(row.mean);
+    return { mean, count };
   }
 
   const [todayR, prev7R, prev30R] = await Promise.all([
