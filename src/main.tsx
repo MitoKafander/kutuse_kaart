@@ -84,6 +84,38 @@ scheduleIdle(() => {
   });
 });
 
+// Backstop for stale bundles that lazyWithReload (App.tsx) can't catch.
+// lazyWithReload only fires when a dynamic import 404s — i.e. when the SW
+// served an old index.html whose chunk hashes are no longer on the CDN.
+// But if the SW precache holds BOTH a stale index.html and the matching
+// chunks, every dynamic import succeeds and the user runs old code
+// indefinitely (observed 2026-05-01: a "first visit" user on Chrome iOS
+// still firing pre-2026-04-22 ai_scan_success without the new props).
+//
+// Compare the hash in the running document against a fresh fetch of
+// /index.html; on mismatch, unregister all SWs and reload once. Gated by
+// sessionStorage so a misconfigured CDN can't trap us in a reload loop.
+async function detectStaleBundle() {
+  if (sessionStorage.getItem('kyts:bundle-reloaded') === '1') return;
+  const currentScript = document.querySelector('script[type="module"][src*="/assets/index-"]') as HTMLScriptElement | null;
+  const currentHash = currentScript?.src.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/)?.[1];
+  if (!currentHash) return;
+  try {
+    const res = await fetch('/index.html', { cache: 'reload' });
+    if (!res.ok) return;
+    const html = await res.text();
+    const freshHash = html.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/)?.[1];
+    if (!freshHash || freshHash === currentHash) return;
+    sessionStorage.setItem('kyts:bundle-reloaded', '1');
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister().catch(() => false)));
+    }
+    window.location.reload();
+  } catch { /* offline or fetch blocked — leave running */ }
+}
+scheduleIdle(detectStaleBundle);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Sentry.ErrorBoundary fallback={<div style={{ padding: 24, color: '#fff', background: '#111', minHeight: '100vh' }}>{i18n.t('app.errorBoundary')}</div>}>
