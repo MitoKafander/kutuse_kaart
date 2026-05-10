@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CelebrationEvent } from '../hooks/useRegionProgress';
 import { localizeRegionName } from '../utils';
@@ -14,6 +14,8 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
   const [maakondQueue, setMaakondQueue] = useState<CelebrationEvent[]>([]);
   const drainedRef = useRef(false);
 
+  // Parent owns events; child queues then signals via onDrain — events flips back to [] so the effect short-circuits next pass.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!events.length) return;
     const stations = events.filter(e => e.kind === 'station');
@@ -25,6 +27,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
     // Drain parent queue so we don't process the same events twice.
     if (!drainedRef.current) { drainedRef.current = true; onDrain(); drainedRef.current = false; }
   }, [events, onDrain]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const activeStation = stationQueue[0];
   useEffect(() => {
@@ -178,7 +181,9 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 function MaakondBurst({ event, onDismiss }: { event: CelebrationEvent & { kind: 'maakond' }; onDismiss: () => void }) {
   const { t } = useTranslation();
   // Pre-compute particles once per mount so each render doesn't re-randomize.
-  const particles = useMemo(() => {
+  // useState lazy-init (not useMemo) — under React Compiler useMemo can re-run,
+  // which would re-randomize particles mid-animation.
+  const [particles] = useState(() => {
     const list: Array<{ angle: number; dist: number; size: number; hue: number; delay: number }> = [];
     for (let i = 0; i < 28; i++) {
       list.push({
@@ -190,7 +195,7 @@ function MaakondBurst({ event, onDismiss }: { event: CelebrationEvent & { kind: 
       });
     }
     return list;
-  }, []);
+  });
 
   return (
     <div

@@ -147,6 +147,8 @@ export function ManualPriceModal({
         captureLocationForStation();
       }
     }
+    // Open-modal kickoff effect — only re-runs on isOpen change. Adding the recreated callbacks/captured props as deps would loop or refire mid-scan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // When GPS arrives after the AI scan finishes, resolve station candidates.
@@ -159,6 +161,8 @@ export function ManualPriceModal({
     } else if (scanError) {
       resolveNearbyCandidates(capturedPosition.lat, capturedPosition.lon);
     }
+    // Guarded by the early-return above; re-firing on station/resolveNearbyCandidates/etc. would defeat the once-per-scan-cycle gating.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanError, capturedPosition, pendingDetectedBrand, isAnalyzing]);
 
   if (!isOpen) return null;
@@ -651,7 +655,7 @@ export function ManualPriceModal({
     const user = sessionData?.session?.user;
 
     const parsed = Object.entries(prices)
-      .filter(([_, price]) => price.trim() !== '')
+      .filter(([, price]) => price.trim() !== '')
       .map(([type, price]) => ({
         type,
         value: parseFloat(price.replace(',', '.')),

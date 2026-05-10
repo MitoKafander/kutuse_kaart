@@ -5,11 +5,14 @@ export type PointsEvent = { id: number; amount: number };
 export function PointsToast({ events, onDrain }: { events: PointsEvent[]; onDrain: () => void }) {
   const [queue, setQueue] = useState<PointsEvent[]>([]);
 
+  // Queue draining: parent owns `events`, child accumulates into its own queue and signals back via onDrain. The next pass observes events=[] and short-circuits.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!events.length) return;
     setQueue(q => [...q, ...events]);
     onDrain();
   }, [events, onDrain]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const active = queue[0];
   useEffect(() => {

@@ -73,6 +73,7 @@ export function StationDrawer({
 
   const getAgeColor = (price: any) => {
     const effectiveDate = getEffectiveTimestamp(price, allVotes);
+    // eslint-disable-next-line react-hooks/purity -- relative-time label; Date.now() is the intended source of "now" for display freshness.
     const ageInHours = (Date.now() - effectiveDate.getTime()) / (1000 * 60 * 60);
     if (ageInHours < 1) return 'var(--color-fresh)';
     if (ageInHours < FRESH_HOURS) return 'var(--color-fresh)';
@@ -82,6 +83,7 @@ export function StationDrawer({
 
   const getAgeText = (price: any) => {
     const effectiveDate = getEffectiveTimestamp(price, allVotes);
+    // eslint-disable-next-line react-hooks/purity -- relative-time label; Date.now() is the intended source of "now" for display freshness.
     const ageInHours = (Date.now() - effectiveDate.getTime()) / (1000 * 60 * 60);
 
     if (ageInHours > 24) return t('time.expired');
@@ -132,6 +134,7 @@ export function StationDrawer({
     // hint toast instead of silently no-opping. Outside the window, the UPDATE
     // below bumps created_at so getEffectiveTimestamp() picks up the refresh.
     if (existing && voteType === 'up' && existing.vote_type === 'up') {
+      // eslint-disable-next-line react-hooks/purity -- event handler reading current time to compute cooldown remaining.
       const ageMs = Date.now() - new Date(existing.created_at).getTime();
       if (ageMs < VOTE_REFRESH_COOLDOWN_MS) {
         const remainingMin = Math.max(1, Math.ceil((VOTE_REFRESH_COOLDOWN_MS - ageMs) / 60000));

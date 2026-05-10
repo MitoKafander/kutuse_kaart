@@ -239,6 +239,7 @@ export function MarketInsightDrawer({
   };
 
   const getRelativeTime = (dateStr: string) => {
+    // eslint-disable-next-line react-hooks/purity -- relative-time label; Date.now() is the intended source of "now" for display freshness.
     const diffHours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
     if (diffHours < 1) return t('time.justNow', 'just nüüd');
     if (diffHours < 24) return t('time.hoursAgo', { count: diffHours, defaultValue: `${diffHours}h tagasi` });

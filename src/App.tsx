@@ -269,6 +269,7 @@ function App() {
   // in-flight scan before reloading (ManualPriceModal "AI_UPSTREAM_BUSY"
   // escape hatch), re-open the camera modal with the photo + context so
   // the user sees the scan resume instead of starting over.
+  // One-shot mount-only restore from sessionStorage; needs window/sessionStorage so can't run during render.
   useEffect(() => {
     const pending = sessionStorage.getItem('kyts:pending-scan');
     if (!pending) return;
@@ -400,7 +401,7 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // If user unselects fuel type, automatically turn off cheapest highlight
+  // If user unselects fuel type, automatically turn off cheapest highlight.
   useEffect(() => {
     if (!selectedFuelType) setHighlightCheapest(false);
   }, [selectedFuelType]);
@@ -596,6 +597,8 @@ function App() {
       window.removeEventListener('orientationchange', setAppHeight);
       window.removeEventListener('pageshow', setAppHeight);
     };
+    // loadData is recreated on every render — re-subscribing the auth listener and resize handlers each time would leak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch public data when the tab returns to the foreground after being
@@ -610,6 +613,8 @@ function App() {
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
+    // loadData is stable enough across renders that we drive this effect off `session` only — re-binding on every render would thrash the visibilitychange listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   // Load region catalog (maakonnad + parishes) once; cache locally so Avastuskaart

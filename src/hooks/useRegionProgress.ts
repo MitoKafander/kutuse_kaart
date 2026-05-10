@@ -268,6 +268,8 @@ export function useRegionProgress(opts: {
     lastParishesRef.current = new Set(progress.completedParishIds);
     lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
     lastStationsRef.current = new Set(contributedStationIds);
+    // Celebration events are produced from progress diffs; consumeEvents() drains them, so newEvents will be [] next pass.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
   }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId]);
 

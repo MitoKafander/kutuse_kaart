@@ -23,6 +23,8 @@ export function FeedbackModal({
   const [sent, setSent] = useState(false);
 
   // Reset on close so the next open is a clean slate.
+  // Reset-on-prop-change pattern; alternative would be to remount via key prop in parent.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isOpen) {
       setMessage('');
@@ -31,6 +33,7 @@ export function FeedbackModal({
       setLoading(false);
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!isOpen) return null;
 

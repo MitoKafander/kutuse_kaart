@@ -148,19 +148,18 @@ export function TutorialModal({
 
   const STEPS = useMemo(
     () => buildSteps(t, currentLng, handlePickLanguage),
-    // Rebuild when the active language flips (for live-localised labels) so
-    // the translated titles/bodies in the already-mounted modal update in
-    // place instead of waiting for a remount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, currentLng],
   );
 
+  // Reset step counter when the tutorial closes so reopening starts at step 0.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isOpen) {
       setStep(0);
       startedRef.current = false;
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (isOpen && !startedRef.current) {

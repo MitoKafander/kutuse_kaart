@@ -29,6 +29,8 @@ export function StationReportModal({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
+  // Reset-on-prop-close pattern; alternative would be to remount via key prop in parent.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isOpen) {
       setKind(null);
@@ -38,6 +40,7 @@ export function StationReportModal({
       setLoading(false);
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!isOpen) return null;
 

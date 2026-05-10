@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Pragmatic: Supabase row shapes and Leaflet handlers are intentionally
+      // typed `any` throughout the codebase. Surfacing them as warnings keeps
+      // the signal without breaking the build.
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
   },
 ])

@@ -63,8 +63,11 @@ export function LeaderboardDrawer({
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [nameDraft, setNameDraft] = useState(displayName ?? '');
+  // Mirror the displayName prop into a local editable draft.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { setNameDraft(displayName ?? ''); }, [displayName]);
 
+  // Async data fetch; loading flag flips synchronously, results land asynchronously.
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;

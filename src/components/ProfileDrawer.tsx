@@ -742,6 +742,7 @@ export function ProfileDrawer({
                   if (expired) {
                     timeLabel = t('profile.favorites.time.expired');
                   } else if (latestPrice) {
+                    // eslint-disable-next-line react-hooks/purity -- relative-time label; Date.now() is the intended source of "now" for display freshness.
                     const ageH = (Date.now() - new Date(latestPrice.reported_at).getTime()) / 3600000;
                     const d = new Date(latestPrice.reported_at);
                     const hhmm = d.toLocaleTimeString('et-EE', { hour: '2-digit', minute: '2-digit' });
@@ -1131,8 +1132,7 @@ export function ProfileDrawer({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '1rem', marginBottom: '16px' }}>
               <Settings size={18} /> {t('profile.settings.title')}
             </div>
-            {true && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* Language */}
                 <div>
                   <h4 style={{ fontSize: '0.85rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)' }}>
@@ -1602,7 +1602,6 @@ export function ProfileDrawer({
                   </label>
                 </div>
               </div>
-            )}
           </div>
           </>)}
 

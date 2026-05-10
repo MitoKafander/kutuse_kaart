@@ -143,6 +143,9 @@ export function CheapestNearbyPanel({
       .finally(() => setIsLocating(false));
   };
 
+  // On-open geolocation kickoff. Intentionally only fires on `isOpen` —
+  // adding userLocation/fallbackLocation/requestLocation as deps would
+  // re-trigger the geolocation flow on every position change.
   useEffect(() => {
     if (!isOpen) return;
     setLocationErrorKind(null);
@@ -154,6 +157,7 @@ export function CheapestNearbyPanel({
       return;
     }
     requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   if (!isOpen) return null;

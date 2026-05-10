@@ -203,10 +203,11 @@ function ClusterLayer({
     });
     map.addLayer(group);
     groupRef.current = group;
+    const markerMap = markerMapRef.current;
     return () => {
       map.removeLayer(group);
       groupRef.current = null;
-      markerMapRef.current.clear();
+      markerMap.clear();
     };
   }, [map, iconCreateFunction]);
 
@@ -1009,12 +1010,15 @@ export function Map({
   // state so Marker icon prop stays referentially stable across re-renders —
   // otherwise react-leaflet calls setIcon() which rebuilds the DOM element
   // and clicks land on air while the element is being replaced.
+  // Deps are used as cache keys (not consumed inside the factory) — the lint rule flags them as unnecessary, but they are how we invalidate the cache.
+  /* eslint-disable react-hooks/exhaustive-deps */
   const fadedIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   const freshIconCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   // Separate caches for discovery mode keep the natural caches untouched so
   // toggling the mode off returns the map to pixel-identical rendering.
   const discoveryFadedCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
   const discoveryFreshCache = useMemo(() => new NativeMap<string, L.DivIcon>(), [dotStyle, mapStyle]);
+  /* eslint-enable react-hooks/exhaustive-deps */
   // Pills depend on actual price rows too, so we key by stationId and keep a
   // content hash on the entry — icon is rebuilt only if rows/selection/fuel
   // filter actually change, not on every map re-render.
@@ -1168,6 +1172,8 @@ export function Map({
       dotStations.push({ station: e.station, isFresh: e.rows.some(r => r.isFresh), isCheapest: false, hasFuelData: true });
     });
     return pillStations.filter(e => !demoted.has(e.station.id));
+    // dotStations is intentionally a mutable side-channel from the forEach above; tracking it would defeat memoisation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pillStations, mapInstance, zoomLevel, viewportBounds]);
 
   // In discovery mode we override hideEmptyDots: the whole point of
@@ -1181,7 +1187,7 @@ export function Map({
   // fills represent contributed-vs-total within the cluster. Source from
   // workingStations directly — the pill/dot split above would drop stations
   // with fresh prices at zoom-in, and pills are hidden in discovery mode.
-  const contributedSet = contributedStationIds || new Set<string>();
+  const contributedSet = useMemo(() => contributedStationIds || new Set<string>(), [contributedStationIds]);
   const discoveryDots = showDiscoveryMap
     ? workingStations.map(station => ({
         station,
@@ -1263,6 +1269,8 @@ export function Map({
       lng: d.station.longitude,
       icon: getFadedIcon(d.station, selectedStation?.id === d.station.id),
     })),
+    // getFadedIcon is recreated each render but only reads dotStyle/mapStyle, which are tracked here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [fadedDots, selectedStation?.id, dotStyle, mapStyle]
   );
 
@@ -1273,6 +1281,8 @@ export function Map({
       lng: d.station.longitude,
       icon: getFreshIcon(d.station, selectedStation?.id === d.station.id, d.isFresh, d.isCheapest),
     })),
+    // getFreshIcon is recreated each render but only reads dotStyle/mapStyle, which are tracked here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [freshDots, selectedStation?.id, dotStyle, mapStyle]
   );
 

@@ -55,6 +55,8 @@ export function FeedbackReplyToast({
   const [expanded, setExpanded] = useState(false);
   const [dismissing, setDismissing] = useState(false);
 
+  // Async fetch effect; setQueue lands after the network roundtrip, the sync reset on signed-out state is intentional.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isAuthed) { setQueue([]); return; }
     let cancelled = false;

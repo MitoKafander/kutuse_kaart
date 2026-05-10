@@ -104,6 +104,8 @@ export function RoutePlanModal({
     if (!isOpen) return;
     if (origin) return;
     requestOrigin();
+    // Only kick off geolocation on open; re-firing every time `origin` updates would re-prompt the user.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => { onRouteChange(route); }, [route, onRouteChange]);
@@ -152,6 +154,8 @@ export function RoutePlanModal({
         setRouting(false);
       });
     return () => ctrl.abort();
+    // `t` is included implicitly via the captured closure; re-running route fetches when language changes is wasteful.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [origin, destination]);
 
   if (!isOpen) return null;

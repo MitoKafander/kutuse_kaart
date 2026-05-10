@@ -46,6 +46,8 @@ export function stripRegionSuffix(name: string): string {
   return name.slice(0, lastSpace);
 }
 
+import type { Station } from './types';
+
 export type ReporterMap = Record<string, string>;
 
 // Reporter name for a price. userId may be null on legacy pre-auth rows;
@@ -63,10 +65,6 @@ export function getReporter(
   return name && name.trim() ? name : t('price.anonymous');
 }
 
-export function priceUnit(_type: string): string {
-  return '€/L';
-}
-
 // Shared geolocation helper. Timeout is deliberately generous (15 s) so Brave/desktop
 // users have time to accept the permission prompt on second+ invocations without
 // failing with a bogus "position unavailable".
@@ -75,8 +73,8 @@ export type GeolocationErrorKind = 'permission' | 'unavailable' | 'timeout' | 'u
 export function getCurrentPositionAsync(options: PositionOptions = {}): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
-      const err: any = new Error('Geolocation not supported');
-      err.kind = 'unsupported' as GeolocationErrorKind;
+      const err = new Error('Geolocation not supported') as Error & { kind: GeolocationErrorKind };
+      err.kind = 'unsupported';
       reject(err);
       return;
     }
@@ -87,7 +85,7 @@ export function getCurrentPositionAsync(options: PositionOptions = {}): Promise<
           e.code === 1 ? 'permission' :
           e.code === 3 ? 'timeout' :
           'unavailable';
-        const err: any = new Error(e.message || kind);
+        const err = new Error(e.message || kind) as Error & { kind: GeolocationErrorKind; code: number };
         err.kind = kind;
         err.code = e.code;
         reject(err);
@@ -117,27 +115,29 @@ export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: numb
 export const FRESH_HOURS = 5;
 export const EXPIRY_HOURS = 24;
 
-export function getEffectiveTimestamp(price: any, allVotes: any[]): Date {
+import type { Price, Vote } from './types';
+
+export function getEffectiveTimestamp(price: Pick<Price, 'id' | 'reported_at'>, allVotes: Vote[]): Date {
   const reportedAt = new Date(price.reported_at);
   const latestUpvote = allVotes
-    .filter((v: any) => v.price_id === price.id && v.vote_type === 'up')
-    .reduce((latest: Date, v: any) => {
+    .filter(v => v.price_id === price.id && v.vote_type === 'up')
+    .reduce((latest, v) => {
       const t = new Date(v.created_at);
       return t > latest ? t : latest;
     }, reportedAt);
   return latestUpvote;
 }
 
-export function getPriceAgeHours(price: any, allVotes: any[]): number {
+export function getPriceAgeHours(price: Pick<Price, 'id' | 'reported_at'>, allVotes: Vote[]): number {
   const effective = getEffectiveTimestamp(price, allVotes);
   return (Date.now() - effective.getTime()) / (1000 * 60 * 60);
 }
 
-export function isPriceExpired(price: any, allVotes: any[]): boolean {
+export function isPriceExpired(price: Pick<Price, 'id' | 'reported_at'>, allVotes: Vote[]): boolean {
   return getPriceAgeHours(price, allVotes) > EXPIRY_HOURS;
 }
 
-export function isPriceFresh(price: any, allVotes: any[]): boolean {
+export function isPriceFresh(price: Pick<Price, 'id' | 'reported_at'>, allVotes: Vote[]): boolean {
   return getPriceAgeHours(price, allVotes) <= FRESH_HOURS;
 }
 
@@ -257,7 +257,7 @@ export type BrandProgress = {
 // the Estonian sentinel `Tundmatu` because `getBrand` also returns that string
 // as an internal key used by filters and loyalty lookups — keep the default in
 // sync with that key so data-layer callers (non-UI) don't accidentally localise.
-export const getStationDisplayName = (station: any, unknownLabel: string = 'Tundmatu') => {
+export const getStationDisplayName = (station: Pick<Station, 'name' | 'amenities'>, unknownLabel: string = 'Tundmatu') => {
   const rawBrand = station.name;
   const city = station.amenities?.['addr:city'];
   const street = station.amenities?.['addr:street'];

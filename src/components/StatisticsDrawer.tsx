@@ -127,6 +127,7 @@ export function StatisticsDrawer({
 }) {
   const { t, i18n } = useTranslation();
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
+  // eslint-disable-next-line react-hooks/purity -- horizon "now" anchor for trend window; intentionally captured per render.
   const now = Date.now();
   const horizonMs = DAYS * DAY_MS;
 
@@ -255,6 +256,7 @@ export function StatisticsDrawer({
   const hasSignals = !!(insight && (insight.signal_diesel || insight.signal_gasoline));
 
   const getInsightRelativeTime = (dateStr: string) => {
+    // eslint-disable-next-line react-hooks/purity -- relative-time label; Date.now() is the intended source of "now" for display freshness.
     const diffHours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
     if (diffHours < 1) return t('time.justNow');
     if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
