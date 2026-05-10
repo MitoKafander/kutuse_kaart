@@ -24,13 +24,18 @@ import i18n, { SUPPORTED_LANGUAGES } from './i18n';
 // references chunk hashes (e.g. StatisticsDrawer-D9lfdbbC.js) no longer on
 // the server. Clicking a lazy-loaded panel then throws "Failed to fetch
 // dynamically imported module". Instead of greeting the user with an error
-// boundary, reload once so they get the new index.
+// boundary, reload once so they get the new index. The four message variants
+// cover Chrome ("Failed to fetch ..."), Safari/WebKit older builds
+// ("Importing a module script failed"), Safari/WebKit newer builds
+// ("error loading dynamically imported module" — KYTS-WEB-P/Q/R), and the
+// MIME-type rejection that Safari throws when a stale chunk request is
+// served the SPA index.html instead of a JS file.
 function lazyWithReload<T extends React.ComponentType<any>>(factory: () => Promise<{ default: T }>) {
   return lazy(async () => {
     try { return await factory(); }
     catch (err: any) {
       const msg = String(err?.message || '');
-      if (/Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(msg)
+      if (/Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(msg)
           && !sessionStorage.getItem('kyts:chunk-reloaded')) {
         sessionStorage.setItem('kyts:chunk-reloaded', '1');
         window.location.reload();

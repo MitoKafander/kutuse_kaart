@@ -22,6 +22,11 @@ if (sentryDsn) {
     ignoreErrors: [
       /Failed to fetch dynamically imported module/i,
       /Importing a module script failed/i,
+      // Safari/WebKit newer builds (KYTS-WEB-P/Q/R): same stale-chunk symptom
+      // as Chrome but worded differently. Already handled by lazyWithReload's
+      // auto-reload path; suppressing the Sentry capture so the inbox doesn't
+      // fill with one-shot reload-resolved errors.
+      /error loading dynamically imported module/i,
       // Safari variant of the same stale-chunk symptom: Vercel serves index.html
       // for a 404'd hashed asset, Safari rejects the HTML at MIME-type parse.
       /is not a valid JavaScript MIME type/i,
@@ -40,6 +45,15 @@ if (sentryDsn) {
       // the iabjs:// scheme; "Java object is gone" fires when the WebView is
       // torn down mid-flight). Not our code, fires on every site Meta loads.
       if (frames.some(f => (f.filename || '').startsWith('iabjs://'))) {
+        return null;
+      }
+      // Facebook iOS in-app browser (KYTS-WEB-M) injects scripts inline into
+      // the page and tries to message the native app via
+      // `window.webkit.messageHandlers` — which only exists inside a
+      // configured WKWebView, so it throws on every site loaded inside the
+      // FB IAB. Our own code never references `window.webkit`, so any error
+      // mentioning that bridge is from injected code we don't own.
+      if (typeof msg === 'string' && msg.includes('window.webkit.messageHandlers')) {
         return null;
       }
       return event;
