@@ -56,6 +56,30 @@ if (sentryDsn) {
       if (typeof msg === 'string' && msg.includes('window.webkit.messageHandlers')) {
         return null;
       }
+      // Belt-and-braces backstop for stale-chunk errors. The top-level
+      // `ignoreErrors` regex only inspects the LAST entry in
+      // `event.exception.values` (Sentry SDK `getPossibleEventMessages`); when
+      // the React ErrorBoundary integration wraps the original TypeError into
+      // a `React ErrorBoundary TypeError` cause-chain pair, the message can
+      // end up on a different entry than the one ignoreErrors scans —
+      // observed live (KYTS-WEB-S/T) where the bundle did contain the regex
+      // but Sentry still captured the event. Scan EVERY exception value here
+      // for the stale-chunk wording so it's caught regardless of which slot
+      // the SDK landed it in. lazyWithReload already auto-reloads the user
+      // onto fresh chunks; this just keeps the noise out of the inbox.
+      const staleChunkPatterns = [
+        'Failed to fetch dynamically imported module',
+        'error loading dynamically imported module',
+        'Importing a module script failed',
+        'is not a valid JavaScript MIME type',
+      ];
+      const exceptionValues = event.exception?.values ?? [];
+      if (exceptionValues.some(v => {
+        const vMsg = v.value || '';
+        return staleChunkPatterns.some(p => vMsg.includes(p));
+      })) {
+        return null;
+      }
       return event;
     },
   });
