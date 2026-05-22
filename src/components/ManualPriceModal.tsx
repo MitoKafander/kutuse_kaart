@@ -435,7 +435,16 @@ export function ManualPriceModal({
       if (parsedJson && parsedJson.extractedAny === false) {
         Sentry.captureMessage('AI scan returned no prices', {
           level: 'warning',
-          extra: { detectedBrand: parsedJson.detectedBrand, stationHint: stationNameHint },
+          extra: {
+            detectedBrand: parsedJson.detectedBrand,
+            stationHint: stationNameHint,
+            // Distinguishes "totem had no readable prices" (droppedFuels empty)
+            // from "Gemini read prices the band-filter rejected" (droppedFuels
+            // populated) — without this the two are indistinguishable in the
+            // inbox and the band-filter can't be ruled out without a DB query.
+            droppedFuels: parsedJson.droppedFuels ?? [],
+            modelUsed: parsedJson.modelUsed,
+          },
         });
         setScanError('NO_PRICES_READ');
         if (!station && allStations && capturedPosition && !resolvedStation) {
@@ -704,24 +713,34 @@ export function ManualPriceModal({
       const { error, attempts } = await submitPricesWithRetry(inserts);
       if (error) {
         alert(friendlyPriceSubmitError(error));
-        // Capture to Sentry + PostHog so we stop flying blind on intermittent
-        // failures. Warning level (not error) because the user isn't broken,
-        // just blocked; we don't want to pollute the Sentry inbox with
-        // every transient hiccup that the retry didn't save.
-        Sentry.captureMessage('price_submit_failed', {
-          level: 'warning',
-          tags: { feature: 'price-submit' },
-          extra: {
-            code: error.code,
-            message: error.message,
-            hint: error.hint,
-            details: error.details,
-            attempts,
-            station_id: activeStation.id,
-            fuel_types: parsed.map(p => p.type),
-            entry_method: entryMethod,
-          },
-        });
+        // Skip Sentry for deterministic user-input rejections the DB catches
+        // by design: phase-51 band CHECK (23514 "outside band for…"), 1km
+        // distance/velocity rules, RLS denials. The user sees the friendly
+        // alert above — sending these to Sentry just floods the inbox with
+        // typos (e.g. 1.128€ diesel) that aren't bugs. PostHog still gets
+        // them for product-side counts.
+        const errMsg = error.message || '';
+        const isUserInputRejection =
+          (error.code === '23514' && errMsg.includes('outside band for')) ||
+          errMsg.includes('km from station') ||
+          errMsg.includes('velocity exceeded') ||
+          error.code === '42501';
+        if (!isUserInputRejection) {
+          Sentry.captureMessage('price_submit_failed', {
+            level: 'warning',
+            tags: { feature: 'price-submit' },
+            extra: {
+              code: error.code,
+              message: error.message,
+              hint: error.hint,
+              details: error.details,
+              attempts,
+              station_id: activeStation.id,
+              fuel_types: parsed.map(p => p.type),
+              entry_method: entryMethod,
+            },
+          });
+        }
         capture('price_submit_failed', {
           code: error.code || 'unknown',
           entry_method: entryMethod,
