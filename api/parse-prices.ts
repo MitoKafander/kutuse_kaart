@@ -153,7 +153,13 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       `- "LPG" (vedelgaas/autogaas): 0.55–1.40 — LPG is ALWAYS cheaper than petrol/diesel.\n` +
       `If a price you read for a fuel falls outside its range, you have almost certainly misread which row that price belongs to. ` +
       `Re-check the totem and assign the price to the correct fuel slot, or omit it. ` +
-      `Never put a price in the LPG slot just because the totem has 4 rows — many totems have no LPG, and a fourth row may be a premium diesel variant or a payment-method legend rather than an LPG price.`;
+      `Never put a price in the LPG slot just because the totem has 4 rows — many totems have no LPG, and a fourth row may be a premium diesel variant, a payment-method legend, or AdBlue rather than an LPG price. ` +
+      // AdBlue (~€0.50–0.90/L) overlaps the LPG band, so the numeric filter
+      // can't separate them — a user reported Circle K (which sells no LPG)
+      // getting its AdBlue price logged as LPG. The label is the only reliable
+      // discriminator, so anchor LPG to its explicit row names.
+      `CRITICAL: AdBlue (also written "AdBlue", "AUS 32", "DEF", or "Urea") is a diesel exhaust additive, NOT a fuel. Its price (~€0.50–0.90/L) sits right inside the LPG range, so it is constantly mis-assigned to LPG. ` +
+      `Only return an LPG price when its row is explicitly labelled "LPG", "Vedelgaas", "Autogaas", or "Gaas". If the cheapest row is labelled AdBlue / AUS 32 / DEF / Urea, ignore it entirely — never map it to LPG or any other fuel slot.`;
 
     const prompt = hasKnownStation
       ? `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station conceptually named "${hint}".
