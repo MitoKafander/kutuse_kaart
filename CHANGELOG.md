@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Seed AS Propaan autogas (LPG) stations + Propaan brand - 2026-06-05
+
+### Added ✨
+- 🟢 **4 AS Propaan autogas (LPG) stations seeded** (`migrations/schema_phase59_propaan_autogas_seed.sql` + `schema_phase60_propaan_betooni.sql`): user reported AS Propaan autogas points missing from Kyts and confirmed all four `propaan.ee/autogaas/tanklad` addresses are car-fillable autogaas, not propane-bottle depots. Phase 59 seeded **Propaan Rapla** (Viljandi mnt 67, parish 351883), **Propaan Rakvere** (Kütuse 16, parish 352552), and **Propaan Jõhvi** (Tallinn-Narva mnt 161 km, parish 19894259); phase 60 added **Propaan Betooni** (Betooni 3, Tallinn, parish 350902). Coords from Nominatim, each cross-checked against Overpass to confirm OSM (and therefore `seed_stations.js`) has no `amenity=fuel` node at the site (nearest to Jõhvi is the Elenger CNG tankla ~600 m away, not tracked). `on conflict (latitude, longitude) do nothing` (phase 42/55 precedent); phase-29 trigger auto-bumps parish station_count.
+- 🟢 **New `Propaan` brand** (`src/utils.ts` CHAIN_PATTERNS): `{ match: 'propaan' }` so the four `Propaan <town>` stations collapse under one brand for the filter pill / dot color / Margid collector. Does not collide with the Latvian `propāna` (macron) pattern — distinct strings.
+
+### Key Decisions
+- **Betooni 3 split into its own dot, not folded into Olerex** (phase 60): AS Propaan's Betooni autogas point shares the lot + coordinates (59.42426, 24.85379) with the **Olerex Betooni Automaattankla** already in Kyts. The two are commercially independent operators — Olerex sells petrol/diesel, AS Propaan runs its own co-located LPG dispenser with its own price post + loyalty cards (not sold through Olerex). So the LPG is genuinely a Propaan price; folding it onto the Olerex station would mislabel it. Given its own station at a ~25 m SW coordinate offset so the two markers don't stack exactly. Phase 59 originally held Betooni back; phase 60 resolved it after confirming the separate-operator arrangement.
+
+---
+
 ## [Unreleased] - Stale-bundle backstop + vercel.json missing-asset hole - 2026-05-01
 
 ### Fixed 🐛
