@@ -201,6 +201,8 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'jetgas',         canonical: 'JetGas' },
   { match: 'statoil',        canonical: 'Statoil' },
   { match: 'eesti autogaas', canonical: 'Eesti Autogaas' },
+  { match: 'propaan',        canonical: 'Propaan' }, // AS Propaan autogas (LPG) stations — propaan.ee
+
   { match: 'eksar transoil', canonical: 'Eksar Transoil' },
   { match: 'premium 7',      canonical: 'Premium 7' },
   { match: 'hepa',           canonical: 'Hepa' },
