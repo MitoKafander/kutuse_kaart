@@ -386,7 +386,8 @@
     },
     "cheapestNow": {
       "heading": "Odavaim hetkel",
-      "noFresh": "Pole värsket hinda viimase {{hours}} tunni jooksul."
+      "noFresh": "Pole värsket hinda viimase {{hours}} tunni jooksul.",
+      "stale": "pole värske"
     },
     "brandMedians": {
       "heading": "Soodsaim bränd ({{fuel}}, mediaan)",
@@ -394,7 +395,8 @@
     },
     "drops": {
       "heading": "Suurimad hinnalangused (7 päeva)",
-      "empty": "Hinnalangusi ei tuvastatud."
+      "empty": "Hinnalangusi ei tuvastatud.",
+      "belowMarket": "alla turu"
     },
     "contribution": {
       "heading": "Minu panus",
@@ -776,7 +778,8 @@
         "flat_market": "Turg on rahulik, olulisi liikumisi pole.",
         "aligned": "Pump ja hulgi liiguvad koos — ajaline edumaa puudub.",
         "insufficient_data": "Andmeid pole piisavalt signaaliks.",
-        "low_sample_count": "Liiga vähe Kyts raporteid kindluseks."
+        "low_sample_count": "Liiga vähe Kyts raporteid kindluseks.",
+        "proxy_unreliable": "Diisli hulgihinna näitaja ei ennusta Eesti pumbahinda usaldusväärselt — ajastust ei paku."
       }
     }
   }

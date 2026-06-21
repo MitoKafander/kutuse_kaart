@@ -149,11 +149,23 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     ]);
 
     // Step 3: compute signals deterministically.
-    const dieselSignal = computeFuelSignal(dieselStats, market.gasoil, market.eurUsd);
+    // Diesel's wholesale proxy is the US NY-Harbor ULSD series, which backtested
+    // at ~0 correlation with EE diesel pump moves — so it does NOT earn timing
+    // calls (proxyReliable: false). Gasoline's RBOB proxy did show real lead
+    // skill (r≈0.41), so it keeps the divergence logic. Flip diesel back to
+    // reliable once a European diesel benchmark replaces NY-Harbor ULSD.
+    const dieselSignal = computeFuelSignal(dieselStats, market.gasoil, market.eurUsd, { proxyReliable: false });
     const gasolineSignal = computeFuelSignal(gasoline95Stats, market.rbob, market.eurUsd);
 
-    // Overall confidence = min of the two (take the less certain leg).
-    const confidence = Math.min(dieselSignal.confidence, gasolineSignal.confidence);
+    // Overall confidence = the confidence of the advice a user would actually
+    // act on. If a leg is making a timing call (buy_now/wait), use the least
+    // certain such leg; otherwise both legs are just "hold/neutral" and we take
+    // the min. This stops diesel's deliberately-low 45 (it no longer makes timing
+    // calls — see proxyReliable above) from dragging down a confident gasoline signal.
+    const actionable = [dieselSignal, gasolineSignal].filter(s => s.signal === 'buy_now' || s.signal === 'wait');
+    const confidence = actionable.length
+      ? Math.min(...actionable.map(s => s.confidence))
+      : Math.min(dieselSignal.confidence, gasolineSignal.confidence);
 
     // Assemble the `data` JSONB: this is what the DRAWER renders numbers from.
     const data = {

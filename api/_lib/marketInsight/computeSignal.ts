@@ -38,9 +38,11 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 function confidenceFrom(absDivergence: number): number {
-  // Scale divergence (fractional) → 0–90. 1.5% divergence (the threshold) yields
-  // ~65, 4% yields ~90. Below threshold is handled upstream.
-  return clamp(Math.round(50 + absDivergence * 1000), 50, 90);
+  // Scale divergence (fractional) → 50–70. Recalibrated against the backtest:
+  // even the old conf-90 calls were only ~64% accurate over 76 days of EE data,
+  // so the ceiling is 70 (not 90) and the slope is gentler. 1.5% divergence
+  // yields ~58, 4%+ saturates at 70. Below threshold is handled upstream.
+  return clamp(Math.round(50 + absDivergence * 500), 50, 70);
 }
 
 // Convert USD-denominated wholesale Series to EUR terms on the fly, so "wholesale
@@ -59,7 +61,14 @@ export function computeFuelSignal(
   kyts: KytsFuelStats,
   wholesale: Series | null,
   fx: Series | null,
+  opts: { proxyReliable?: boolean } = {},
 ): FuelSignal {
+  // proxyReliable=false means this fuel's wholesale series doesn't actually
+  // anticipate EE pump moves (diesel: the US NY-Harbor ULSD proxy backtested at
+  // ~0 / slightly negative correlation). We then refuse to emit timing calls off
+  // it — see the early return below.
+  const proxyReliable = opts.proxyReliable !== false;
+
   // Guard rails — any missing input degrades to neutral rather than hallucinating.
   if (!wholesale || !fx || kyts.today == null || kyts.prev7 == null) {
     return {
@@ -86,6 +95,24 @@ export function computeFuelSignal(
   const pumpΔ = (kyts.today - kyts.prev7) / kyts.prev7;
   const wholesaleΔ = (eur.today - eur.prev7) / eur.prev7;
   const divergence = wholesaleΔ - pumpΔ;
+
+  // Unreliable proxy (diesel): the divergence has no demonstrated predictive
+  // power for this fuel, so timing calls off it were just confident-wrong noise
+  // (the backtest showed conf-90 'buy_now' streaks right before diesel fell, and
+  // a pump-mean-reversion alternative failed a bias-free test too). Emit a
+  // descriptive, low-confidence reading and never a directional buy/wait. Remove
+  // this branch the day a European diesel benchmark (ICE Gasoil/ARA) replaces the
+  // US series — then diesel earns the timing logic back.
+  if (!proxyReliable) {
+    return {
+      signal: Math.abs(pumpΔ) < 0.01 ? 'neutral' : 'hold',
+      confidence: 45,
+      pumpDelta7d: pumpΔ,
+      wholesaleDelta7d: wholesaleΔ,
+      divergence,
+      reasonCode: 'proxy_unreliable',
+    };
+  }
 
   // Wholesale surged and pump hasn't caught up → buy before the hike lands.
   if (wholesaleΔ > 0.03 && divergence > 0.015) {
@@ -127,7 +154,7 @@ export function computeFuelSignal(
   // edge either way. "Hold" means: no reason to act on timing.
   return {
     signal: 'hold',
-    confidence: clamp(40 + Math.round(Math.abs(divergence) * 500), 40, 65),
+    confidence: clamp(40 + Math.round(Math.abs(divergence) * 400), 40, 55),
     pumpDelta7d: pumpΔ,
     wholesaleDelta7d: wholesaleΔ,
     divergence,

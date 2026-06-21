@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { X, TrendingUp } from 'lucide-react';
-import { getStationDisplayName, getBrand, FRESH_HOURS, fuelLabel } from '../utils';
+import { getStationDisplayName, getBrand, FRESH_HOURS, EXPIRY_HOURS, fuelLabel } from '../utils';
 import {
   SignalChip,
   ConfidenceBar,
@@ -14,6 +14,17 @@ const FUEL_TYPES = ['Bensiin 95', 'Bensiin 98', 'Diisel', 'LPG'];
 const FUEL_LABEL: Record<string, string> = { 'Bensiin 95': '95', 'Bensiin 98': '98', 'Diisel': 'D', 'LPG': 'LPG' };
 const DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// Robust-trend tuning. Endpoints are pooled over several days so a single
+// boundary report can't swing the headline; see trendsByFuel.
+const MIN_DAY_SAMPLES = 2;        // a day needs this many reports to anchor the sparkline
+const CURRENT_WINDOW_DAYS = 3;    // "current" price = median of the last N days …
+const CURRENT_WIDEN_DAYS = 7;     // … widened to this when the last 3 days are sparse
+const ENDPOINT_WINDOW_DAYS = 5;   // earliest reference = median of the first N days of data
+const MIN_ENDPOINT_SAMPLES = 3;   // each endpoint needs this many reports or the change is hidden
+const BRAND_WINDOW_DAYS = 14;     // brand-median ranking window (fresh + comparable)
+const MIN_BRAND_SAMPLES = 3;      // brands below this are dropped from the ranking
+const DROP_WINDOW_REQ = 2;        // biggest-drops: reports required each side (anti-artifact)
+const DROP_MARKET_MARGIN = 0.005; // …and must beat the market median drop by ≥0.5¢
 
 function median(xs: number[]): number {
   if (xs.length === 0) return 0;
@@ -136,26 +147,60 @@ export function StatisticsDrawer({
     [prices, now, horizonMs]
   );
 
+  // Robust per-fuel trend. Two failure modes we design around:
+  //  · the headline change used to compare a single boundary day to another
+  //    single day — with n=1 on either end, one report swung it by 10¢+;
+  //  · "today" is a partial day (only the morning's reports), so the latest
+  //    day-median jumped around through the day.
+  // Fix: the displayed price is a median over the last few DAYS of reports
+  // (widened if sparse), and the change is that vs. a median over the first
+  // few days of the window — both pooled across days, never a single report.
   const trendsByFuel = useMemo(() => {
-    const out: Record<string, { day: number; avg: number }[]> = {};
+    const ts = (p: any) => new Date(p.reported_at).getTime();
+    const out: Record<string, { pts: { day: number; med: number }[]; current: number | null; delta: number | null }> = {};
     for (const f of FUEL_TYPES) {
+      const rows = recent.filter(p => p.fuel_type === f);
+
+      // Daily medians for the sparkline. Prefer days with enough samples so a
+      // lone report can't spike the line; fall back to all days if that leaves
+      // too few points (sparse fuels like LPG). Median, not mean, per phase 50.
       const byDay = new Map<number, number[]>();
-      for (const p of recent) {
-        if (p.fuel_type !== f) continue;
-        const day = Math.floor(new Date(p.reported_at).getTime() / (24 * 60 * 60 * 1000));
+      for (const p of rows) {
+        const day = Math.floor(ts(p) / DAY_MS);
         const arr = byDay.get(day) || [];
         arr.push(p.price);
         byDay.set(day, arr);
       }
-      // Median, not mean: a single misread camera scan (€3.25, €5.40 etc.) on a
-      // sparse boundary day used to swing the headline trend by 100¢+.
-      const pts = [...byDay.entries()]
+      const allPts = [...byDay.entries()]
         .sort((a, b) => a[0] - b[0])
-        .map(([day, arr]) => ({ day, avg: median(arr) }));
-      out[f] = pts;
+        .map(([day, arr]) => ({ day, med: median(arr), n: arr.length }));
+      let dayPts = allPts.filter(p => p.n >= MIN_DAY_SAMPLES);
+      if (dayPts.length < 2) dayPts = allPts;
+
+      // Robust "current" price: median of the last few days, widened if sparse.
+      const windowMedian = (loDaysAgo: number) => {
+        const lo = now - loDaysAgo * DAY_MS;
+        const xs = rows.filter(p => ts(p) >= lo).map(p => p.price);
+        return { med: xs.length ? median(xs) : null, n: xs.length };
+      };
+      let cur = windowMedian(CURRENT_WINDOW_DAYS);
+      if (cur.n < MIN_ENDPOINT_SAMPLES) cur = windowMedian(CURRENT_WIDEN_DAYS);
+
+      // Robust earliest reference: median of the first few days of data in the
+      // 30-day window. null when too sparse → the headline change is hidden
+      // rather than shown off a single boundary report.
+      let earliest: number | null = null;
+      if (rows.length) {
+        const firstTs = Math.min(...rows.map(ts));
+        const xs = rows.filter(p => ts(p) <= firstTs + ENDPOINT_WINDOW_DAYS * DAY_MS).map(p => p.price);
+        earliest = xs.length >= MIN_ENDPOINT_SAMPLES ? median(xs) : null;
+      }
+      const current = cur.med;
+      const delta = current != null && earliest != null ? current - earliest : null;
+      out[f] = { pts: dayPts.map(p => ({ day: p.day, med: p.med })), current, delta };
     }
     return out;
-  }, [recent]);
+  }, [recent, now]);
 
   const stationById = useMemo(() => {
     const m = new Map<string, any>();
@@ -163,10 +208,17 @@ export function StatisticsDrawer({
     return m;
   }, [stations]);
 
+  // Per-brand median over a single recent window (not the full 30 days). The
+  // 30-day median read ~10¢ stale in a trending month, and mixing windows made
+  // the ranking unfair — a brand with only older reports looked pricier than it
+  // is. One shared window keeps every brand on the same fresh, comparable basis;
+  // exact ties break toward the brand with more samples.
   const brandMedians = useMemo(() => {
+    const lo = now - BRAND_WINDOW_DAYS * DAY_MS;
     const byBrand = new Map<string, number[]>();
     for (const p of recent) {
       if (p.fuel_type !== selectedFuel) continue;
+      if (new Date(p.reported_at).getTime() < lo) continue;
       const st = stationById.get(p.station_id);
       if (!st) continue;
       const brand = getBrand(st.name);
@@ -176,19 +228,21 @@ export function StatisticsDrawer({
     }
     return [...byBrand.entries()]
       .map(([brand, arr]) => ({ brand, median: median(arr), n: arr.length }))
-      .filter(x => x.n >= 3)
-      .sort((a, b) => a.median - b.median);
-  }, [recent, stationById, selectedFuel]);
+      .filter(x => x.n >= MIN_BRAND_SAMPLES)
+      .sort((a, b) => a.median - b.median || b.n - a.n);
+  }, [recent, stationById, selectedFuel, now]);
 
-  // Latest FRESH price per station for the selected fuel — used by "Odavaim hetkel"
-  // so we don't surface stale numbers as current. 5h matches the app's freshness bar.
+  // Latest price per station for the selected fuel within the 24h expiry window.
+  // "Odavaim hetkel" prefers genuinely fresh (≤5h) data, but a hard 5h gate left
+  // the flagship tile blank most of the day (overnight gaps + bursty reporting),
+  // so we fall back to the freshest report inside 24h and mark it stale in the UI.
   const freshLatestByStation = useMemo(() => {
     const m = new Map<string, { price: number; reportedAt: number }>();
-    const freshCutoff = now - FRESH_HOURS * 60 * 60 * 1000;
+    const cutoff = now - EXPIRY_HOURS * 60 * 60 * 1000;
     for (const p of recent) {
       if (p.fuel_type !== selectedFuel) continue;
       const t = new Date(p.reported_at).getTime();
-      if (t < freshCutoff) continue;
+      if (t < cutoff) continue;
       const cur = m.get(p.station_id);
       if (!cur || t > cur.reportedAt) m.set(p.station_id, { price: p.price, reportedAt: t });
     }
@@ -205,33 +259,53 @@ export function StatisticsDrawer({
     return best;
   }, [freshLatestByStation, stationById]);
 
-  // Biggest 7-day drops: compare latest price in 0–7d window vs. 7–14d window per (station, fuel).
+  // Older than the 5h freshness bar → keep showing it (better than blank) but
+  // drop the green "fresh" framing and flag it as a not-current price.
+  const cheapestNowStale = cheapestNow ? now - cheapestNow.reportedAt > FRESH_HOURS * 60 * 60 * 1000 : false;
+
+  // Biggest 7-day drops, reworked to surface genuine station-specific bargains
+  // instead of market beta. Three reliability changes vs. the old version:
+  //  · compares the MEDIAN of each window, not a single latest report, so one
+  //    misread (or a premium-vs-regular reading inside the "Diisel" bucket)
+  //    can't fabricate a drop — both sides need ≥2 corroborating reports;
+  //  · subtracts the market-wide median drop for that fuel, so a station only
+  //    qualifies if it fell MORE than the market did;
+  //  · ranks by that market-relative excess.
   const biggestDrops = useMemo(() => {
-    const cutoffNow = now;
     const cutoff7 = now - 7 * DAY_MS;
     const cutoff14 = now - 14 * DAY_MS;
-    const map = new Map<string, { recent: { price: number; t: number } | null; prior: { price: number; t: number } | null; fuel: string; stationId: string }>();
+    const map = new Map<string, { recent: number[]; prior: number[]; fuel: string; stationId: string }>();
     for (const p of recent) {
       const t = new Date(p.reported_at).getTime();
       const key = `${p.station_id}|${p.fuel_type}`;
-      const entry = map.get(key) || { recent: null, prior: null, fuel: p.fuel_type, stationId: p.station_id };
-      if (t >= cutoff7 && t <= cutoffNow) {
-        if (!entry.recent || t > entry.recent.t) entry.recent = { price: p.price, t };
-      } else if (t >= cutoff14 && t < cutoff7) {
-        if (!entry.prior || t > entry.prior.t) entry.prior = { price: p.price, t };
-      }
+      const entry = map.get(key) || { recent: [] as number[], prior: [] as number[], fuel: p.fuel_type, stationId: p.station_id };
+      if (t >= cutoff7 && t <= now) entry.recent.push(p.price);
+      else if (t >= cutoff14 && t < cutoff7) entry.prior.push(p.price);
       map.set(key, entry);
     }
-    const rows: { station: any; fuel: string; oldPrice: number; newPrice: number; delta: number }[] = [];
+    // Corroborated per-(station,fuel) median delta + the market median delta per fuel.
+    const perStation: { stationId: string; fuel: string; oldPrice: number; newPrice: number; delta: number }[] = [];
+    const marketDeltas = new Map<string, number[]>();
     for (const e of map.values()) {
-      if (!e.recent || !e.prior) continue;
-      const delta = e.recent.price - e.prior.price;
-      if (delta >= 0) continue;
-      const st = stationById.get(e.stationId);
-      if (!st) continue;
-      rows.push({ station: st, fuel: e.fuel, oldPrice: e.prior.price, newPrice: e.recent.price, delta });
+      if (e.recent.length < DROP_WINDOW_REQ || e.prior.length < DROP_WINDOW_REQ) continue;
+      const newPrice = median(e.recent);
+      const oldPrice = median(e.prior);
+      const delta = newPrice - oldPrice;
+      perStation.push({ stationId: e.stationId, fuel: e.fuel, oldPrice, newPrice, delta });
+      const arr = marketDeltas.get(e.fuel) || [];
+      arr.push(delta);
+      marketDeltas.set(e.fuel, arr);
     }
-    return rows.sort((a, b) => a.delta - b.delta).slice(0, 5);
+    const marketDelta = new Map<string, number>();
+    for (const [fuel, arr] of marketDeltas) marketDelta.set(fuel, median(arr));
+
+    return perStation
+      .map(r => ({ ...r, excess: r.delta - (marketDelta.get(r.fuel) ?? 0) }))
+      .filter(r => r.delta < 0 && r.excess < -DROP_MARKET_MARGIN)
+      .map(r => ({ station: stationById.get(r.stationId), fuel: r.fuel, oldPrice: r.oldPrice, newPrice: r.newPrice, delta: r.delta, excess: r.excess }))
+      .filter(r => !!r.station)
+      .sort((a, b) => a.excess - b.excess)
+      .slice(0, 5);
   }, [recent, stationById, now]);
 
   const userCount = useMemo(
@@ -396,16 +470,22 @@ export function StatisticsDrawer({
               className="glass-panel"
               style={{
                 padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 12,
-                background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.3)',
+                background: cheapestNowStale ? 'var(--color-surface)' : 'rgba(34,197,94,0.10)',
+                border: cheapestNowStale ? '1px solid var(--color-surface-border)' : '1px solid rgba(34,197,94,0.3)',
                 display: 'block', width: '100%', textAlign: 'left',
                 color: 'var(--color-text)', font: 'inherit',
                 cursor: onStationSelect ? 'pointer' : 'default',
               }}
             >
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>{t('stats.cheapestNow.heading')}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span>{t('stats.cheapestNow.heading')}</span>
+                {cheapestNowStale && (
+                  <span style={{ color: 'var(--color-warning)' }}>{t('stats.cheapestNow.stale', 'pole värske')}</span>
+                )}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{getStationDisplayName(cheapestNow.station)}</span>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{cheapestNow.price.toFixed(3)}</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: cheapestNowStale ? 'var(--color-text)' : 'var(--color-primary)' }}>€{cheapestNow.price.toFixed(3)}</span>
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {(() => {
@@ -440,8 +520,9 @@ export function StatisticsDrawer({
           <h3 style={{ fontSize: '1rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('stats.trends.heading')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {FUEL_TYPES.map(f => {
-              const pts = trendsByFuel[f];
-              if (!pts || pts.length < 2) {
+              const trend = trendsByFuel[f];
+              const pts = trend?.pts ?? [];
+              if (!trend || trend.current == null || pts.length < 2) {
                 return (
                   <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontSize: '0.85rem' }}>{fuelLabel(f, t)}</div>
@@ -449,24 +530,25 @@ export function StatisticsDrawer({
                   </div>
                 );
               }
-              const min = Math.min(...pts.map(p => p.avg));
-              const max = Math.max(...pts.map(p => p.avg));
+              const min = Math.min(...pts.map(p => p.med));
+              const max = Math.max(...pts.map(p => p.med));
               const w = 140, h = 40;
               const first = pts[0].day, last = pts[pts.length - 1].day;
               const xs = (d: number) => last === first ? w : ((d - first) / (last - first)) * w;
               const ys = (v: number) => max === min ? h / 2 : h - ((v - min) / (max - min)) * h;
-              const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xs(p.day).toFixed(1)} ${ys(p.avg).toFixed(1)}`).join(' ');
-              const latest = pts[pts.length - 1].avg;
-              const earliest = pts[0].avg;
-              const delta = latest - earliest;
+              const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xs(p.day).toFixed(1)} ${ys(p.med).toFixed(1)}`).join(' ');
+              const current = trend.current;
+              const delta = trend.delta;
               return (
                 <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{fuelLabel(f, t)}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{latest.toFixed(3)}</span>
-                    <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>
-                      {delta >= 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(1)}¢
-                    </span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{current.toFixed(3)}</span>
+                    {delta != null && (
+                      <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>
+                        {delta >= 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(1)}¢
+                      </span>
+                    )}
                   </div>
                   <svg width={w} height={h} style={{ marginTop: 4 }}>
                     <path d={path} fill="none" stroke="var(--color-primary)" strokeWidth={1.5} />
@@ -492,6 +574,10 @@ export function StatisticsDrawer({
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
                     {FUEL_LABEL[d.fuel] ?? d.fuel} · €{d.oldPrice.toFixed(3)} → €{d.newPrice.toFixed(3)}
+                    {' · '}
+                    <span style={{ color: 'var(--color-fresh)' }}>
+                      {Math.abs(d.excess * 100).toFixed(1)}¢ {t('stats.drops.belowMarket', 'alla turu')}
+                    </span>
                   </div>
                 </div>
                 <span style={{ fontWeight: 700, color: 'var(--color-fresh)' }}>

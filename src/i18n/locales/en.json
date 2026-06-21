@@ -597,7 +597,8 @@
     "fuelLabel": "Fuel:",
     "cheapestNow": {
       "heading": "Cheapest right now",
-      "noFresh": "No fresh price in the last {{hours}} hours."
+      "noFresh": "No fresh price in the last {{hours}} hours.",
+      "stale": "not fresh"
     },
     "brandMedians": {
       "heading": "Cheapest brand ({{fuel}}, median)",
@@ -605,7 +606,8 @@
     },
     "drops": {
       "heading": "Biggest price drops (7 days)",
-      "empty": "No price drops detected."
+      "empty": "No price drops detected.",
+      "belowMarket": "below market"
     },
     "contribution": {
       "heading": "My contribution",
@@ -774,7 +776,8 @@
         "flat_market": "Market is calm, no meaningful moves.",
         "aligned": "Pump and wholesale moving together — no timing edge.",
         "insufficient_data": "Not enough data to produce a signal.",
-        "low_sample_count": "Too few Kyts reports for confidence."
+        "low_sample_count": "Too few Kyts reports for confidence.",
+        "proxy_unreliable": "The diesel wholesale benchmark doesn't reliably predict Estonian pump prices — no timing edge offered."
       }
     }
   }
