@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Statistics-page reliability rework + advice-signal honesty - 2026-06-22
+
+Audited whether the Statistics page numbers + the buy/wait advice actually held up against the live data — 5,639 EE reports over 76 days, 107 published `market_insights`, 127 cron runs, all pulled read-only via the service-role key — then fixed where they misled. Commit `490a88a`.
+
+### Fixed 🐛
+- 🟡 **Trend headline (the "▼X¢") was computed off single n=1 boundary days** (`src/components/StatisticsDrawer.tsx` `trendsByFuel`): the earliest and latest day-medians could each be a single report, so one submission swung the 30-day change by 10¢+. Now both ends are pooled across days — the displayed "current" price is the median of the last 3 days (widened to 7 if sparse), and the change compares it to the median of the first 5 days of the window. When an endpoint has fewer than 3 reports the change is hidden rather than shown off one point. The sparkline also prefers days with ≥2 reports (falls back to all days for sparse fuels like LPG).
+- 🟡 **"Odavaim hetkel" (Cheapest now) was blank for all four fuels most of the day** (`freshLatestByStation`): the hard 5h freshness gate meant the flagship tile showed its empty state overnight and between report bursts (0 fresh reports for every fuel at audit time). Now falls back to the freshest report within the 24h expiry window and marks it stale (`stats.cheapestNow.stale`, neutral styling instead of green) rather than hiding it.
+- 🟢 **Biggest drops were just market beta + single-report artifacts** (`biggestDrops`): every "drop" was the whole market falling, and a single misread (e.g. a premium-vs-regular reading inside the "Diisel" bucket) could fabricate one. Now compares the *median* of each window with ≥2 reports required on each side, and ranks by **market-relative excess** — a station only appears if it fell more than the market median for that fuel, surfaced as "X¢ alla turu" (`stats.drops.belowMarket`).
+
+### Changed 🔧
+- 🟢 **Brand-median ranking switched from a 30-day blend to a single 14-day window** (`brandMedians`): the 30-day median read ~10¢ stale in a trending month, and mixing windows made the ranking unfair (a brand with only older reports looked pricier than it is). One shared 14-day window keeps every brand fresh and comparable; exact ties break toward the brand with more samples.
+- 🟡 **Market-signal confidence recalibrated to a 70 ceiling** (`api/_lib/marketInsight/computeSignal.ts` `confidenceFrom`): backtest showed the old conf-90 calls were only ~64% accurate, so the cap dropped 90 → 70 with a gentler slope (1.5% divergence → ~58, 4%+ → 70). The `hold` ceiling dropped 65 → 55.
+- 🔴 **Diesel signal no longer makes timing calls** (`computeFuelSignal` gains `opts.proxyReliable`; `api/generate-market-insight.ts` passes `proxyReliable: false` for diesel): the diesel leg's wholesale proxy is the **US NY-Harbor ULSD** series, which backtested at ~0 to −0.14 correlation with EE diesel pump moves and produced confident-wrong `buy_now` streaks (≈10 conf-90 "buy now" calls in late May right before diesel fell ~7%). Diesel now emits a descriptive hold/neutral at confidence 45 (reasonCode `proxy_unreliable`, with et+en `marketInsight.why.reason.proxy_unreliable` copy) and **never** a directional buy/wait. Gasoline's RBOB proxy is genuinely predictive (r≈0.41) and keeps the timing logic untouched.
+- 🟢 **Overall confidence now follows the actionable leg** (`generate-market-insight.ts`): was `min(diesel, gasoline)`, which let diesel's deliberately-low 45 drag down a confident gasoline call. Now uses the least-certain *actionable* (buy_now/wait) leg, falling back to `min` only when neither leg is making a call.
+
+### Key Decisions
+- **Mean-reversion was proposed, tested, and REJECTED.** EE pump *looked* strongly mean-reverting (pump's last-7d move vs next-7d move r≈−0.53), which suggested a diesel signal built from our own data needing no external feed. A bias-free re-test — splitting each anchor level into two disjoint report halves so the before/after changes share no measurement noise — collapsed it to **r≈−0.05**; the −0.53 was a shared-noise artifact. The actionable rule scored a coin-flip (55% diesel / 43% gasoline), because in a downtrend "buy after a drop" just keeps catching falling prices. Not shipped — it would have swapped one coin-flip for another.
+- **Diesel left dormant rather than repointed at a "free" European benchmark.** Verified empirically (from a non-Vercel machine, so not a Vercel-only quirk) that Yahoo returns 429 and Stooq returns a JS bot-challenge page — both genuinely block scripted access, confirming the existing `fetchMarketData.ts` comment. No *free* programmatic ICE Gasoil feed exists: Twelve Data gates all commodities incl. Brent behind paid "Grow/Venture"; Alpha Vantage has no distillates; FMP's commodities are the same US products; Eurostat's EE diesel is weekly + lagged (not a leading signal). Mikk's call: not paying (~$20-30/mo EOD gasoil would be the entry point) — so diesel dormancy is the accepted final state, not a stopgap.
+
+### Open Items
+- **Watch the next 1–2 cron firings** (06:00 / 15:00 UTC): the signal changes take effect only when the cron next writes a `market_insights` row. Confirm `signal_diesel` is now `hold`/`neutral` (never `buy_now`/`wait`) and `confidence` ≤ 70.
+- **Diesel timing stays off until a gasoil feed is wired.** On-switch is `proxyReliable: true` in `generate-market-insight.ts` once a European diesel benchmark exists — and validate it correlates before trusting it (this 76-day window had EE diesel diverging from *all* wholesale, so even a correct feed may not light up timing immediately).
+
+### Gotchas / lessons
+- **Yahoo/Stooq are dead for serverless fetches, permanently.** Yahoo's chart API now needs a cookie+crumb handshake (429 otherwise, from anywhere); Stooq returns a JS bot-challenge instead of CSV. The market-data sources that *do* work from Vercel (EIA, Frankfurter) are proper APIs — the lesson is use a keyed/keyless API, never a browser-scraping endpoint, and don't re-attempt these two.
+- **Overlapping-window autocorrelation lies.** Measuring momentum/mean-reversion with windows that share an endpoint level manufactures a negative correlation out of pure measurement noise. Estimate the shared level from disjoint data (split-half) before believing any autocorrelation result.
+
+---
+
 ## [Unreleased] - Seed AS Propaan autogas (LPG) stations + Propaan brand - 2026-06-05
 
 ### Added ✨
