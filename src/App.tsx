@@ -139,6 +139,9 @@ function App() {
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isAdminPriceOpen, setIsAdminPriceOpen] = useState(false);
+  // Station the admin modal opens locked onto (map/StationDrawer flow). null =
+  // FAB flow, where the modal shows its own search instead.
+  const [adminPreselectStation, setAdminPreselectStation] = useState<any>(null);
   // Long-press bookkeeping for the owner-only admin FAB gesture.
   const adminPressTimer = useRef<number | null>(null);
   const adminLongPressFired = useRef(false);
@@ -855,6 +858,13 @@ function App() {
     setIsPriceModalOpen(true);
   };
 
+  // Owner only: open the admin price modal locked onto the currently selected
+  // station (from the StationDrawer), bypassing the geo/band guards.
+  const handleOpenAdminPriceForm = () => {
+    setAdminPreselectStation(selectedStation);
+    setIsAdminPriceOpen(true);
+  };
+
   const handleDisplayNameChange = session?.user?.id
     ? async (name: string) => {
         setDisplayName(name);
@@ -1135,6 +1145,7 @@ function App() {
           adminLongPressFired.current = false;
           adminPressTimer.current = window.setTimeout(() => {
             adminLongPressFired.current = true;
+            setAdminPreselectStation(null); // FAB flow = search for the station
             setIsAdminPriceOpen(true);
           }, 550);
         } : undefined}
@@ -1324,6 +1335,8 @@ function App() {
             isOpen={!!selectedStation && !isPriceModalOpen}
             onClose={() => setSelectedStation(null)}
             onOpenPriceForm={handleOpenPriceForm}
+            isAdmin={session?.user?.id === KYTS_ADMIN_UID}
+            onOpenAdminPriceForm={handleOpenAdminPriceForm}
             onOpenReport={() => setIsStationReportOpen(true)}
             onVoteSubmitted={() => loadData()}
             isFavorite={favorites.some(f => f.station_id === selectedStation?.id)}
@@ -1384,6 +1397,7 @@ function App() {
             allStations={stations}
             onPricesSubmitted={handlePricesSubmitted}
             userId={session?.user?.id ?? null}
+            preselectedStation={adminPreselectStation}
           />
         )}
 

@@ -26,12 +26,16 @@ export function AdminPriceModal({
   allStations,
   onPricesSubmitted,
   userId,
+  preselectedStation,
 }: {
   isOpen: boolean;
   onClose: () => void;
   allStations: any[];
   onPricesSubmitted: (pointsEarned?: number) => void;
   userId: string | null;
+  // When set (opened from the map / StationDrawer), skip the search and lock
+  // straight onto this station. null = opened from the FAB, show the search.
+  preselectedStation?: any | null;
 }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
@@ -42,32 +46,38 @@ export function AdminPriceModal({
   const [done, setDone] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Reset every time the modal is (re)opened.
+  // Reset every time the modal is (re)opened. If a station was preselected
+  // (map / StationDrawer flow), lock onto it and skip the search entirely.
   useEffect(() => {
     if (isOpen) {
       setQuery('');
-      setSelected(null);
+      setSelected(preselectedStation ?? null);
       setPrices({});
       setWhenLocal(toLocalInput(new Date()));
       setError(null);
       setDone(false);
       setSubmitting(false);
-      setTimeout(() => searchRef.current?.focus(), 50);
+      if (!preselectedStation) setTimeout(() => searchRef.current?.focus(), 50);
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedStation]);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    const scored = allStations
+    // Mirror the global search's field coverage (App.tsx searchResults) so the
+    // same stations are findable here — name, city, STREET and OSM node name.
+    // Missing addr:street was why "Linnu tee" didn't resolve. Plus country.
+    return allStations
       .filter(s => {
         const name = (s.name || '').toLowerCase();
         const city = (s.amenities?.['addr:city'] || '').toLowerCase();
+        const street = (s.amenities?.['addr:street'] || '').toLowerCase();
+        const nodeName = (s.amenities?.name || '').toLowerCase();
         const country = (s.country || 'EE').toLowerCase();
-        return name.includes(q) || city.includes(q) || country.includes(q);
+        return name.includes(q) || city.includes(q) || street.includes(q)
+          || nodeName.includes(q) || country.includes(q);
       })
       .slice(0, 40);
-    return scored;
   }, [query, allStations]);
 
   if (!isOpen) return null;

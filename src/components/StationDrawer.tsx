@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Flag } from 'lucide-react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Flag, ShieldCheck } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
@@ -23,6 +23,8 @@ export function StationDrawer({
   isOpen,
   onClose,
   onOpenPriceForm,
+  isAdmin,
+  onOpenAdminPriceForm,
   onOpenReport,
   onVoteSubmitted,
   isFavorite,
@@ -36,6 +38,10 @@ export function StationDrawer({
   isOpen: boolean,
   onClose: () => void,
   onOpenPriceForm: () => void,
+  // Owner-only: opens the admin price modal locked onto this station,
+  // bypassing the geo/band guards. Undefined/false for everyone else.
+  isAdmin?: boolean,
+  onOpenAdminPriceForm?: () => void,
   onOpenReport?: () => void,
   onVoteSubmitted: () => void,
   isFavorite: boolean,
@@ -440,6 +446,22 @@ export function StationDrawer({
           {t('stationDrawer.updatePrices')}
         </button>
       </div>
+
+      {/* Owner-only: add a price to THIS station bypassing the geo/band guards
+          (phase 62). Only rendered for the admin uid. */}
+      {isAdmin && onOpenAdminPriceForm && (
+        <button
+          onClick={onOpenAdminPriceForm}
+          style={{
+            marginTop: '10px', width: '100%', background: 'transparent',
+            color: '#fb923c', border: '1px solid #fb923c', borderRadius: 'var(--radius-md)',
+            padding: '12px', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}
+        >
+          <ShieldCheck size={18} /> Admin: lisa hind (bypass)
+        </button>
+      )}
 
       {/* Subdued "Report this station" link for signed-in users only.
           Anon users can't submit reports (RLS rejects), so hide the entry
