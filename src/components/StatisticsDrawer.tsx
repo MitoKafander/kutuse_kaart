@@ -309,7 +309,8 @@ export function StatisticsDrawer({
   }, [recent, stationById, now]);
 
   const userCount = useMemo(
-    () => session?.user?.id ? prices.filter(p => p.user_id === session.user.id).length : 0,
+    // Exclude owner admin-entered rows (phase 62/63) — not personal scans.
+    () => session?.user?.id ? prices.filter(p => p.user_id === session.user.id && p.entry_method !== 'admin').length : 0,
     [prices, session]
   );
 

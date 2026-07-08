@@ -434,9 +434,10 @@ export function ProfileDrawer({
       return 0;
     });
 
-  // Build recent activity (last 8 items)
+  // Build recent activity (last 8 items). Exclude owner admin-entered rows
+  // (phase 62/63) — curated far/cross-border data, not personal scans.
   const userPriceEntries = !session ? [] : prices
-    .filter(p => p.user_id === session.user.id)
+    .filter(p => p.user_id === session.user.id && p.entry_method !== 'admin')
     .slice(0, 8)
     .map(p => {
       const station = stations.find(s => s.id === p.station_id);

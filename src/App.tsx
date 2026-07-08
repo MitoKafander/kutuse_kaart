@@ -697,7 +697,9 @@ function App() {
     if (!uid) return new Set<string>();
     const set = new Set<string>();
     for (const p of prices) {
-      if (p.user_id === uid && p.station_id != null) set.add(String(p.station_id));
+      // entry_method 'admin' = owner-curated far/cross-border rows (phase 62);
+      // they must not count toward discovery/brand progress (phase 63).
+      if (p.user_id === uid && p.station_id != null && p.entry_method !== 'admin') set.add(String(p.station_id));
     }
     return set;
   }, [prices, session?.user?.id]);
