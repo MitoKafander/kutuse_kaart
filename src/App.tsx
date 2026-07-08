@@ -60,6 +60,7 @@ const InstallPromptModal = lazyWithReload(() => import('./components/InstallProm
 const LeaderboardDrawer = lazyWithReload(() => import('./components/LeaderboardDrawer').then(m => ({ default: m.LeaderboardDrawer })));
 const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal').then(m => ({ default: m.RoutePlanModal })));
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
+const AdminPriceModal = lazyWithReload(() => import('./components/AdminPriceModal').then(m => ({ default: m.AdminPriceModal })));
 import { supabase } from './supabase';
 import { getStationDisplayName, getBrand } from './utils';
 import type { LoyaltyDiscounts, BrandProgress } from './utils';
@@ -67,6 +68,13 @@ import { shouldAutoShowInstallPrompt } from './utils/install';
 import './index.css';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+
+// Owner-only price entry (phase62). Long-pressing the camera FAB opens an admin
+// modal that inserts prices for any station with a chosen timestamp, bypassing
+// the proximity/velocity/band guards — for cross-border postings that can't be
+// crowd-sourced. Gated on this UUID; the DB (phase62 triggers + RLS) is the real
+// authority, so exposing the id here is harmless. = mikk.rosin@gmail.com.
+const KYTS_ADMIN_UID = '3eac34e5-0db4-4d64-a1e8-e5391f83db4a';
 
 // Page a Supabase select past PostgREST's `db-max-rows` cap. The Supabase
 // platform silently truncates any single response to 1000 rows regardless of
@@ -130,6 +138,10 @@ function App() {
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isAdminPriceOpen, setIsAdminPriceOpen] = useState(false);
+  // Long-press bookkeeping for the owner-only admin FAB gesture.
+  const adminPressTimer = useRef<number | null>(null);
+  const adminLongPressFired = useRef(false);
   // Photo + context restored from sessionStorage after an auto-reload-retry.
   // When set, ManualPriceModal skips the file picker and immediately re-runs
   // the AI scan on the existing image.
@@ -1111,7 +1123,27 @@ function App() {
           Map.tsx). New FABs extend upward instead of downward. */}
       <button
         className="flex-center"
-        onClick={() => setIsCameraOpen(true)}
+        onClick={() => {
+          // A long-press (handled below) opens the owner-only admin modal and
+          // suppresses this click. Normal tap = camera scan.
+          if (adminLongPressFired.current) { adminLongPressFired.current = false; return; }
+          setIsCameraOpen(true);
+        }}
+        // Owner only: press-and-hold the camera FAB for ~550 ms to enter admin
+        // price entry. No-op handlers for everyone else.
+        onPointerDown={session?.user?.id === KYTS_ADMIN_UID ? () => {
+          adminLongPressFired.current = false;
+          adminPressTimer.current = window.setTimeout(() => {
+            adminLongPressFired.current = true;
+            setIsAdminPriceOpen(true);
+          }, 550);
+        } : undefined}
+        onPointerUp={session?.user?.id === KYTS_ADMIN_UID ? () => {
+          if (adminPressTimer.current) { clearTimeout(adminPressTimer.current); adminPressTimer.current = null; }
+        } : undefined}
+        onPointerLeave={session?.user?.id === KYTS_ADMIN_UID ? () => {
+          if (adminPressTimer.current) { clearTimeout(adminPressTimer.current); adminPressTimer.current = null; }
+        } : undefined}
         title={t('app.fab.camera')}
         style={{
           position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
@@ -1339,6 +1371,19 @@ function App() {
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
             pendingScanRestore={pendingScanRestore}
+          />
+        )}
+
+        {/* Owner-only admin price entry (long-press camera FAB). Bypasses the
+            proximity/velocity/band guards via phase62 for far/cross-border
+            postings. Only rendered for the owner uid. */}
+        {isAdminPriceOpen && session?.user?.id === KYTS_ADMIN_UID && (
+          <AdminPriceModal
+            isOpen={isAdminPriceOpen}
+            onClose={() => setIsAdminPriceOpen(false)}
+            allStations={stations}
+            onPricesSubmitted={handlePricesSubmitted}
+            userId={session?.user?.id ?? null}
           />
         )}
 
