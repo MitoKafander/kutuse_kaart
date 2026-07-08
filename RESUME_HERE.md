@@ -11,6 +11,12 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~151 `no-explicit-any` warnings (deliberate).
 - **Migrations:** run by hand in the Supabase SQL editor (not the MCP). Latest applied = phase 60.
 
+## Verified state (2026-07-08, commit `49982db`, migration applied + deployed)
+- **Owner-only admin price entry (phase 62)** — `migrations/schema_phase62_admin_price_bypass.sql` (applied) + `src/components/AdminPriceModal.tsx` + `App.tsx`. Lets **only** mikk.rosin@gmail.com (uid `3eac34e5-…`, email/password login) insert prices for **any station with a custom `reported_at`**, bypassing the proximity/velocity/band triggers — for cheap far-away/cross-border prices (the Latvia/Lithuania Facebook group) the crowd flow can't reach. Reached by **long-pressing the camera FAB (~550 ms)**; the modal renders only for the owner uid, normal tap = camera scan for everyone.
+  - ⚠️ **The trigger bypass is deliberate, not a bug.** `is_kyts_admin(auth.uid())` early-returns in the phase31/43/51 trigger fns; RLS lets owner rows skip `submitted_lat/lon`; `entry_method` widened to `'admin'`. The 0.30–4.00 € CHECK still applies to the owner. Gated on `auth.uid()` (caller's JWT), so a forged `user_id` can't bypass.
+  - Scope = existing stations only (modal can't create stations). Missing LV/LT stations need a seed first (`scripts/seed_latvia_border.js`).
+  - FB scraping stays a NO (login wall — WebFetch only sees group title/author). Workflow: screenshot post → drop image in chat → read prices → enter via modal.
+
 ## Verified state (2026-06-22, commit `490a88a`, deployed to prod)
 - **Statistics page hardened** (`src/components/StatisticsDrawer.tsx`): robust pooled trend endpoints (no more n=1 swings), 14-day brand ranking, 24h "cheapest now" fallback with stale-marking, market-relative biggest-drops.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
