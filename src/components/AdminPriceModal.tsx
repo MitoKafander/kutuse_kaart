@@ -20,6 +20,24 @@ function toLocalInput(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Mirror ManualPriceModal's price-field UX: type digits with no separator and
+// a decimal comma auto-inserts after the first digit ("1639" → "1,639"). ET
+// locale uses comma; accept either on input, normalise to comma, cap 3 dp.
+function formatPriceInput(raw: string, prev: string): string {
+  let v = raw.replace(/[^\d.,]/g, '').replace(/\./g, ',');
+  const firstSep = v.indexOf(',');
+  if (firstSep >= 0) v = v.slice(0, firstSep + 1) + v.slice(firstSep + 1).replace(/,/g, '');
+  if (!v.includes(',') && v.length === 2 && prev.length === 1) v = v[0] + ',' + v[1];
+  const sep = v.indexOf(',');
+  if (sep >= 0 && v.length - sep - 1 > 3) v = v.slice(0, sep + 4);
+  return v;
+}
+
+// Submit path swaps comma → dot before parseFloat.
+function parsePrice(s: string | undefined): number {
+  return parseFloat((s || '').replace(',', '.'));
+}
+
 export function AdminPriceModal({
   isOpen,
   onClose,
@@ -83,7 +101,7 @@ export function AdminPriceModal({
   if (!isOpen) return null;
 
   const anyPrice = FUEL_TYPES.some(f => {
-    const v = parseFloat(prices[f]);
+    const v = parsePrice(prices[f]);
     return Number.isFinite(v) && v > 0;
   });
 
@@ -100,7 +118,7 @@ export function AdminPriceModal({
     }
 
     const rows = FUEL_TYPES
-      .map(f => ({ f, v: parseFloat(prices[f]) }))
+      .map(f => ({ f, v: parsePrice(prices[f]) }))
       .filter(({ v }) => Number.isFinite(v) && v > 0)
       .map(({ f, v }) => ({
         station_id: selected.id,
@@ -256,13 +274,11 @@ export function AdminPriceModal({
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <label style={{ width: '92px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>{f}</label>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    step="0.001"
-                    min="0"
                     value={prices[f] ?? ''}
-                    onChange={e => setPrices(p => ({ ...p, [f]: e.target.value }))}
-                    placeholder="—"
+                    onChange={e => setPrices(p => ({ ...p, [f]: formatPriceInput(e.target.value, p[f] || '') }))}
+                    placeholder="0,000"
                     style={{
                       flex: 1, boxSizing: 'border-box', padding: '10px 12px',
                       borderRadius: 'var(--radius-md)', border: '1px solid var(--color-surface-border)',
