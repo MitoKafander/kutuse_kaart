@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Owner-only admin price entry + gamification exclusion - 2026-07-08
+
+Added a single trusted-owner path for entering prices at far-away / cross-border stations that the crowd flow structurally can't reach — the cheap Latvia/Lithuania postings in the "Kütuse ja kütte hinnad Lätis, Leedus jm" Facebook group — then made those rows invisible to the owner's own gamification. Commits `49982db` (phase 62), `2f33375` (map-first + search), `4a5847e` (retry), `22e8703` (phase 63).
+
+### Added ✨
+- 🟡 **Owner-only "admin" price inserts that bypass the geo/band guards** (`migrations/schema_phase62_admin_price_bypass.sql`, `src/components/AdminPriceModal.tsx`): a modal that inserts prices for **any** station with a manually chosen **date/time** (`reported_at`), skipping the phase31 proximity (≤1 km), phase43 velocity (130 km/h) and phase51 ±35% median-band triggers. Gated on `is_kyts_admin(auth.uid())` (hardcoded owner UUID = mikk.rosin@gmail.com) so only the genuinely-authenticated owner can use it; the hard €0.30–4.00 sanity CHECK still applies. Rows are tagged `entry_method='admin'` (enum widened) and shown publicly like any other price.
+- 🟢 **Two entry points into the admin modal:** long-press the camera FAB (~550 ms → search-first, mirrors the global search fields) and a "Admin: lisa hind (bypass)" button in the StationDrawer (map-first, station pre-selected). Both owner-only; pointer handlers are `undefined` for everyone else so a normal FAB tap still opens the camera scan.
+
+### Fixed 🐛
+- 🟡 **Admin-modal search missed street matches** (`AdminPriceModal.tsx`): it filtered on name/city/country only, so "Linnu tee" (an `addr:street`) never resolved even though the global search found it. Now mirrors the global search's field coverage (name, city, **street**, OSM node name, country).
+- 🟢 **Transient network failures forced a manual re-tap** (`AdminPriceModal.tsx`): a single insert surfaced `TypeError: Failed to fetch` (request never reached Supabase — mobile blip / tracking-blocker) as a hard error. Now auto-retries up to 3× with backoff, mirroring the crowd flow's `submitPricesWithRetry`; still fails fast on deterministic DB errors (integrity 23*, RLS 42501).
+
+### Changed 🔧
+- 🟡 **Admin price rows excluded from all gamification** (`migrations/schema_phase63_admin_rows_excluded_from_gamification.sql`, `src/App.tsx`, `StatisticsDrawer.tsx`, `ProfileDrawer.tsx`): admin rows carry the owner's `user_id` but are curated data, not personal scans, so they must not inflate his leaderboard points, discovered maakonnad/vallad, brand collector, public footprint or profile counters. Gamification is read-time, so `entry_method <> 'admin'` was added to `v_prices_earning` (prices_count + dedup self-joins), `v_user_discoveries` (discovery/parish cascade), the three leaderboard views' `upvotes_received` subqueries, `get_user_footprint`, and the client `userContributedStationIds` memo (one line covers brand/region/profile/self-map) plus the two per-user counters. Retroactive — recomputes on read, no data cleanup.
+
+### Key Decisions
+- **Facebook scraping stays a NO.** Re-confirmed the group's posts/images are behind Facebook's login wall (WebFetch returns only the group title + author, never the post body or image). The workflow is manual-in-the-loop: Mikk screenshots a post → drops the image into chat → Claude reads the prices → Mikk enters them via the admin modal. This is why the admin path exists instead of an automated feed.
+- **Owner identity hardcoded, not a self-writable flag.** `is_kyts_admin(uid)` compares against a literal UUID rather than an `is_admin` column, because Postgres RLS is row-level not column-level — a user with UPDATE on their own `user_profiles` row could otherwise grant themselves admin. The bypass keys off `auth.uid()` (the caller's JWT), never the row's `user_id`, so a forged `user_id` can't slip past the triggers either.
+- **Scope: existing stations only.** The admin modal can't create stations. Missing LV/LT stations need a seed first (`scripts/seed_latvia_border.js`); add a station-create step only when it actually blocks.
+
+### Open Items
+- **Seeding foreign stations on demand.** When a FB posting names a LV/LT station not yet on the map, it isn't addable until seeded — handle case-by-case.
+- ⚠️ **Any new "my contributions" tally must exclude `entry_method='admin'`** or this exclusion silently regresses.
+
+### Gotchas / lessons
+- **`CREATE OR REPLACE VIEW` can drop `security_invoker`.** Phase 47 set `security_invoker=true` on all public views; phase 63 re-asserts it via `ALTER VIEW … SET` after each replace so the recreated views don't fall back to definer-rights.
+- **"Failed to fetch" ≠ a rejected insert.** It's a transport error — the request never reached the server, so the row didn't insert and a retry is safe (verified the earlier double-tap left exactly one Neste row set, no duplicate).
+
 ## [Unreleased] - Statistics-page reliability rework + advice-signal honesty - 2026-06-22
 
 Audited whether the Statistics page numbers + the buy/wait advice actually held up against the live data — 5,639 EE reports over 76 days, 107 published `market_insights`, 127 cron runs, all pulled read-only via the service-role key — then fixed where they misled. Commit `490a88a`.
