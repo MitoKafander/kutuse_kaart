@@ -123,22 +123,35 @@ export function AdminPriceModal({
     }
 
     setSubmitting(true);
-    try {
-      const { error: insErr } = await supabase.from('prices').insert(rows);
-      if (insErr) {
-        Sentry.captureException(insErr, { tags: { flow: 'admin-price-insert' } });
-        setError(insErr.message || 'Insert failed.');
-        setSubmitting(false);
-        return;
+
+    // Retry transient/network failures ("TypeError: Failed to fetch" — request
+    // never reached Supabase, e.g. a mobile network blip or an ad/tracking
+    // blocker hiccup) up to 3 attempts with backoff, mirroring the crowd flow's
+    // submitPricesWithRetry. Fail fast on deterministic DB errors (integrity
+    // 23*, RLS 42501) — those won't change on retry.
+    let lastErr: any = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { error: insErr } = await supabase.from('prices').insert(rows);
+        if (!insErr) { lastErr = null; break; }
+        lastErr = insErr;
+        const code: string = insErr.code || '';
+        if (code === '42501' || code.startsWith('23')) break; // deterministic
+      } catch (e: any) {
+        lastErr = e; // network/transport error — retryable
       }
-      setDone(true);
-      onPricesSubmitted(0);
-      setTimeout(onClose, 900);
-    } catch (e: any) {
-      Sentry.captureException(e, { tags: { flow: 'admin-price-insert' } });
-      setError(e?.message || 'Insert failed.');
-      setSubmitting(false);
+      if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 800));
     }
+
+    if (lastErr) {
+      Sentry.captureException(lastErr, { tags: { flow: 'admin-price-insert' } });
+      setError(lastErr.message || String(lastErr) || 'Insert failed.');
+      setSubmitting(false);
+      return;
+    }
+    setDone(true);
+    onPricesSubmitted(0);
+    setTimeout(onClose, 900);
   }
 
   return (
