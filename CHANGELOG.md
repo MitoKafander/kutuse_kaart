@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Vald borders re-sourced from OSM (double-line fully fixed) - 2026-07-21
+
+Completes the boundary fix below. A user screenshot showed the doubling was ALSO between adjacent **valds** (not just county-vs-vald): the shipped `parishes.geojson` was simplified per-polygon, so neighbours' shared borders were digitised independently and only ~26% of vald-vald edges coincided → two dashed lines with a gap. Snapping the shipped data can't fix it without collapsing the coastline, so both layers were re-sourced from **current OpenStreetMap** boundaries where adjacent municipalities reference the same ways (topology correct by construction).
+
+- 🟢 **`public/parishes.geojson` + `public/maakonnad.geojson` regenerated from OSM** (`scripts/rebuild_boundaries.mjs` — Overpass admin_level=7 → `scripts/osm_assemble_boundaries.cjs` stitches ways into rings → DB-join by osm_id → mapshaper topology-preserving simplify 25% → dissolve for counties). Idempotent; documents the full recipe.
+- 🟢 **Verified single lines:** interior vald-vald shared-edge fraction **~26% → 100%** (all 11 landlocked municipalities), county-vs-vald coincidence **11.8% → 99.8%**. Adjacent valds now draw one border.
+- 🟢 **Exact id join, zero counting risk:** the app's 78 parish ids ARE the OSM relation ids (verified 78/78 == osm_id). Avastuskaart counting is 100% DB-driven (parishes.station_count + stations.parish_id); the geojson is drawn only — so the geometry swap changes visuals, never counts. Property schema unchanged `{id,maakond_id,name,bbox}`; all 78 parish + 15 maakond ids/names match the DB.
+- 🟢 **No data loss:** 0/78 parishes changed area >2% (max Hiiumaa +0.8%); total 43,068 km² (~correct); all named islands retained (Saaremaa, Hiiumaa, Muhu, Vormsi, Kihnu, Ruhnu, Prangli, Naissaar, Aegna, Piirissaar …). ~1,359 sub-0.012 km² skerries dropped by simplification (invisible at map scale).
+- 🟢 **Current 78-municipality set is correct:** Toila vald merged into Jõhvi vald 2025-11-28, so Estonia has 78, matching the app exactly (my earlier "missing Toila" was wrong).
+- Post-processing (`rebuild_boundaries.mjs`): drops degenerate zero-area rings (a simplifier artifact on one Saaremaa skerry); strips all dissolve-artifact pinhole holes from the maakonnad layer (counties have no legitimate holes); keeps real parish holes (8 valds wrap enclosed linnad, e.g. Rapla vald↔Rapla linn).
+- Verified via a 4-lens adversarial workflow (DB integrity, geometry/data-loss, app-code compatibility, regression) — all pass.
+- ⚠️ **Tradeoff:** parishes.geojson gzip 151 KB → 286 KB (maakonnad → 174 KB); it's lazy-loaded once in discovery mode, and the extra vertex detail is used at the deep zoom levels users actually inspect. Residual: 5 mid-water doubled arcs on Võrtsjärv/Peipsi lakeshores (OSM shares land ways, not lake ways) — 55–80 m apart, sub-pixel.
+
 ## [Unreleased] - Boundary double-line fix + Alexela Mustla phantom - 2026-07-21
 
 Follow-up "check feedback" pass. Closed the open vald-boundary "double line" report and triaged one new station report.
