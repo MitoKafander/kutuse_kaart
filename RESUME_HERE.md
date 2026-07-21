@@ -9,7 +9,13 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA.
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
 - **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~151 `no-explicit-any` warnings (deliberate).
-- **Migrations:** run by hand in the Supabase SQL editor (not the MCP). Latest applied = phase 60.
+- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 64** (active-aware recount trigger, 2026-07-16). Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
+- **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)` so these don't hit the auto-mode classifier.
+
+## Verified state (2026-07-16)
+- **Avastuskaart count integrity fixed (phase 64, applied + verified).** `recount_parish()` is now active-aware — deactivating/reactivating a station auto-adjusts `parishes.station_count` (the discovery-map denominator). Before, soft-deactivates never decremented → valds stranded at N-1/N. All 78 parishes + 15 maakonnad reconciled; global drift 0. See memory `reference_kyts_avastuskaart_counts`.
+- **Phantom/duplicate audit applied** (`scripts/apply_station_audit_fix.mjs`): 11 stations deactivated + Circle K Pärnu-mnt-236 pair merged (kept "Circle K Järve automaat"). Removed shadow-dups from the "Jetoil PDF 2026-04-29" seed batch + gas/AdBlue/private/fleet-depot points. Counts auto-adjusted by the phase-64 trigger.
+- **Station-report triage:** Airok→Elenger (deactivated, CNG/CBG out of scope), Terminal Oil Maardu (deactivated, fleet diislipunkt), Circle K Mustvee → rebranded Olerex, Hepa Kehtna dup deactivated.
 
 ## Verified state (2026-07-08, commit `49982db`, migration applied + deployed)
 - **Owner-only admin price entry (phase 62)** — `migrations/schema_phase62_admin_price_bypass.sql` (applied) + `src/components/AdminPriceModal.tsx` + `App.tsx`. Lets **only** mikk.rosin@gmail.com (uid `3eac34e5-…`, email/password login) insert prices for **any station with a custom `reported_at`**, bypassing the proximity/velocity/band triggers — for cheap far-away/cross-border prices (the Latvia/Lithuania Facebook group) the crowd flow can't reach. Reached by **long-pressing the camera FAB (~550 ms)**; the modal renders only for the owner uid, normal tap = camera scan for everyone.
@@ -25,7 +31,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
 ## Next steps (loose priority)
-1. **Check feedback** when asked: `SELECT * FROM v_open_feedback;` (service-role / SQL editor). Never seed prices from feedback; anonymous feedback can't receive replies. Detail in memory `project_kyts_feedback_triage`.
+1. **Check feedback** when asked — **TWO channels:** general `feedback` → `v_open_feedback`, AND per-station complaints → `station_reports` / `v_station_report_counts` (no `resolved_at` — closing = taking the action). Never seed prices from feedback; anonymous feedback can't receive replies. Detail in memory `project_kyts_feedback_triage`. **Open now:** vald-boundary "double line" report (root-caused, not fixed — see gotcha); Jetoil Betooni/Laekvere DP scope call.
 2. **Diesel timing stays OFF** unless Mikk subscribes to a gasoil feed (~$20-30/mo Twelve Data Grow / EODHD — he declined for now). If he does: wire the feed in `api/_lib/marketInsight/fetchMarketData.ts`, flip `proxyReliable: true` in `api/generate-market-insight.ts`, then **validate it correlates** with EE diesel before trusting it.
 3. Progressive TS typing pass (the 151 `any`s) — only worth doing alongside `supabase gen types typescript`.
 
@@ -34,4 +40,6 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Yahoo & Stooq are dead for serverless fetches:** Yahoo 429s (needs cookie+crumb), Stooq returns a JS bot-challenge page. Use proper APIs (EIA, Frankfurter) only — don't re-attempt scraping them.
 - **Price inserts have DB guards** (phases 31/43/50/51): proximity (1 km), velocity (130 km/h), static band (€0.30–4.00), per-fuel ±35% median band. Rejections surface as SQLSTATE 23514 → friendly Estonian copy. Don't "fix" a rejected insert by loosening these without checking the data first.
 - **Overlapping-window stats lie:** the diesel "mean-reversion" that looked real (r=−0.53) was a measurement artifact; a bias-free split-half test put it at −0.05. Validate any autocorrelation with disjoint windows.
-- **Read-only analysis scripts are throwaway:** the DB-audit scripts this session were written under `scripts/` and deleted after use — recreate from the `diagnose_point_spam.js` pattern when needed.
+- **Read-only analysis scripts are throwaway:** the DB-audit scripts this session were written under `scripts/` and deleted after use — recreate from the `diagnose_point_spam.js` pattern when needed. (Exception kept as a record: `apply_station_audit_fix.mjs`, idempotent.)
+- **Deactivating a station strands its vald pre-phase-64** unless `station_count` is recomputed. Post-phase-64 the trigger auto-adjusts; the old `hide_*.sql` scripts did a manual recompute. If you ever bulk-edit `active`, verify `station_count` drift = 0 after.
+- **Vald-boundary "double lines" are a DATA problem, not styling.** `maakonnad.geojson` + `parishes.geojson` are independent geometries at ~2–3-decimal precision (~62% shared vertices), so county and vald edges draw offset with gaps. Fix = regenerate with mapshaper topology-preserving simplify + derive maakonnad by dissolving the vald layer (`-dissolve maakond_id`). Not yet done.

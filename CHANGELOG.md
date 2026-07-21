@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Feedback triage + Avastuskaart count integrity + phantom/duplicate audit - 2026-07-16
+
+Worked a "check feedback" request into a full data-quality pass: triaged the open station reports, then chased a user's "3/4 Kehtna, but only 3 stations" observation to a latent bug in the discovery-map counter, fixed it for good (phase 64), and ran an OSM+web-verified audit of the whole active station set. Applied via `scripts/apply_station_audit_fix.mjs` (service-role); phase 64 run in the SQL editor by the owner.
+
+### Station-report triage
+- 🟢 **"Check feedback" is TWO channels, not one.** General feedback lives in `feedback` → `v_open_feedback`; per-station complaints live in the separate `station_reports` table → `v_station_report_counts` (phase 54), which has **no `resolved_at`** — closing one means taking the action. Always check both.
+- 🟢 **"Airok gaasitankla" (Viljandi) → renamed `Elenger`, deactivated.** Owner report: it's Elenger selling maagaas/rohegaas (CNG/CBG) — out of Kyts scope (petrol/diesel/LPG). Tagged `amenities.kyts_note` + corrected fuel tags. Parked note: `Notes/Plan_CNG_CBG_Stations.md`.
+- 🟢 **"Circle K" (Mustvee) → rebranded `Olerex`.** Verified Mustvee has one station and it's Olerex (Tartu tn 74, ~290 m from the pin); no Circle K exists in town — stale OSM label.
+- 🟢 **"Terminal Oil" (Maardu) → deactivated.** It's the Maardu *diislipunkt* — unmanned, diesel-only, Terminal-card-only; no public price possible.
+
+### Avastuskaart count integrity — phase 64
+- 🟡 **`recount_parish()` made active-aware** (`migrations/schema_phase64_active_aware_recount.sql`). The phase-29 trigger bumped `parishes.station_count` on INSERT/DELETE and parish-moves but **never decremented on a soft-deactivate** (`active=false`), so every deactivation stranded that vald at N-1/N on the discovery map (denominator = the stored `station_count`, read in `App.tsx`→`useRegionProgress.ts`; map only loads `active=true`). Now counts a station iff `parish_id IS NOT NULL AND active`, so deactivate/reactivate self-correct. Re-declares `search_path = public, pg_temp` (CREATE OR REPLACE drops the phase-48 SET). Verified live via a round-trip toggle.
+- 🟡 **Reconciled the pre-existing drift.** Full recompute of all 78 parishes + 15 maakonnad from the live active set — only 3 parishes were ever off (Kehtna, Maardu, Viljandi = this session's own un-recomputed deactivations; all older `hide_*.sql` runs had recomputed). Global drift now 0.
+
+### Phantom / duplicate station audit
+- 🟡 **11 stations deactivated + 1 merge** (`scripts/apply_station_audit_fix.mjs`), from a 47-suspect audit (each ground-truthed against OSM reverse-geocode + brand sites + web, then an independent agent tried to refute every removal). Removed: 4 Hepa/Krooning **shadow-duplicates** of already-correct stations (the `manual: Jetoil PDF 2026-04-29; OSM has no amenity=fuel here` seed batch, incl. "Hepa Kehtna tankla" — the original report), the Alexela LPG sub-node, a Propaan dup, Eler Hydraulic (AdBlue-only), Vedelgaas.ee (`access=private`), and the Terminal+Jetoil Kunda depot points. Counts auto-adjusted via the phase-64 trigger.
+- 🟢 **Circle K Pärnu mnt 236 merged** → kept "Circle K Järve automaat" (`91c6ac16`, freshest price + fuel tags copied over), deactivated its 4 m twin (`31d9cb27`). Per `circlek.ee` it's one physical station mapped twice.
+
+### Decisions made
+- **Left Jetoil Betooni DP + Laekvere DP active.** The `diislipunkt` fleet-vs-public call is genuinely fuzzy (Jetoil DPs accept bank cards; the audit *kept* two identical standalone Jetoil DPs, Tõrvandi & Mauri). Removing these two would be inconsistent and might kill a usable station — held for the owner's local knowledge.
+- **Duplicate = deactivate the redundant record, never delete prices.** For the Circle K pair (both had 43 owner-entered prices) the survivor is the record with the freshest price, not a blind drop.
+
+### Open items remaining
+- **General feedback still open:** vald-boundary "double line / no-man's-land" report — root-caused but not fixed (see gotcha). Left in `v_open_feedback`.
+- **Jetoil Betooni/Laekvere DP** pending an owner scope call.
+
+### Gotchas / lessons
+- 🟡 **Deactivating a station requires updating `station_count`** — pre-phase-64 it did not auto-decrement; the `hide_*.sql` scripts compensated with a manual recompute, ad-hoc `supabase-js` deactivations did not. Post-phase-64 the trigger handles it.
+- **Vald-boundary double lines are a DATA problem.** `maakonnad.geojson` and `parishes.geojson` are independent geometries (only ~62% of maakond vertices coincide with a parish vertex) at ~2–3-decimal precision, so a county edge and its vald edge draw as two offset lines with gaps between neighbouring valds. Fix = regenerate with **mapshaper topology-preserving simplify** and **derive maakonnad by dissolving the vald layer** (`-dissolve maakond_id`) so the two layers can't diverge. Styling in `Map.tsx` can't fix mismatched geometry.
+- **The "Jetoil PDF 2026-04-29" seed batch is a phantom/duplicate source.** Rows with `amenities.source` containing `OSM has no amenity=fuel here` + 0 prices are shadow copies of real stations already in the DB at correct coords — verify before trusting.
+
 ## [Unreleased] - Owner-only admin price entry + gamification exclusion - 2026-07-08
 
 Added a single trusted-owner path for entering prices at far-away / cross-border stations that the crowd flow structurally can't reach — the cheap Latvia/Lithuania postings in the "Kütuse ja kütte hinnad Lätis, Leedus jm" Facebook group — then made those rows invisible to the owner's own gamification. Commits `49982db` (phase 62), `2f33375` (map-first + search), `4a5847e` (retry), `22e8703` (phase 63).
