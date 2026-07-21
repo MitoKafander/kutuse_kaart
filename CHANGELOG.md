@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Boundary double-line fix + Alexela Mustla phantom - 2026-07-21
+
+Follow-up "check feedback" pass. Closed the open vald-boundary "double line" report and triaged one new station report.
+
+### Vald-boundary "double line" — FIXED (county layer)
+- 🟢 **Regenerated `public/maakonnad.geojson` as the dissolved union of `public/parishes.geojson`** (`scripts/rebuild_maakonnad.mjs`, idempotent: `npx mapshaper snap-interval=0.0012 -dissolve maakond_id`, coords rounded to 3 dp, id/name/bbox preserved). The county layer had shipped as an independently-digitised geometry (solid blue in `Map.tsx`) sharing only **11.8%** of its edges with the dashed-grey parish outer edges → the "kaks joont … eikellegimaa" the user saw. Deriving the counties FROM the valds makes the county line ride on the vald outer edges: edge coincidence **11.8% → 88.6%**, all 15 counties intact, extents match the parishes within ~1.7 km.
+- 🟢 **`parishes.geojson` left byte-for-byte untouched.** Snapping the valds hard enough to share arcs collapses ~2000 sub-130 m coastal islets (2285 → 277 rings) — unacceptable for the layer users zoom into. The snap here only shapes the county layer, where those islets are invisible at country scale.
+- 🟡 **Residual, not fixed:** the *vald-vald* doubling (only ~26% of adjacent-vald borders are shared arcs) can't be resolved without re-sourcing topological admin-boundary data; both use the same dashed style so it reads as a slightly fuzzy line, not the stark solid-vs-dashed gap. Follow-up if reported again.
+
+### Station-report triage
+- 🟢 **"Alexela" Mustla (Viljandi vald, `871c60af…`) → deactivated (verified phantom).** Owner report: only a Coop Kaubamaja + a gas-cylinder cabinet, no pumps. Verified across 4 sources: OSM way 853228690 is bare `amenity=fuel` + `shop=gas` with **no `fuel:*` tags** (bottled-gas-cabinet signature); Coop Mustla Konsum lists a "gaasivahetuspunkt"; Alexela's balloon-gas *nutikapp* is a separate product from their tanklad; not in Alexela's Viljandimaa filling-station list. Set `active=false` + `amenities.kyts_note`/`kyts_out_of_scope`. Viljandi vald `station_count` auto-dropped 5→4 (phase-64 trigger). Heuristic: **`shop=gas` + no `fuel:*` = an Alexela-at-Coop cabinet → exclude.**
+- Added `scripts/check_feedback.mjs` — one-shot dump of both feedback channels (`v_open_feedback` + `v_station_report_counts` + raw `station_reports`) via the service-role client, since the Supabase MCP `execute_sql` is unauthorized.
+
 ## [Unreleased] - Feedback triage + Avastuskaart count integrity + phantom/duplicate audit - 2026-07-16
 
 Worked a "check feedback" request into a full data-quality pass: triaged the open station reports, then chased a user's "3/4 Kehtna, but only 3 stations" observation to a latent bug in the discovery-map counter, fixed it for good (phase 64), and ran an OSM+web-verified audit of the whole active station set. Applied via `scripts/apply_station_audit_fix.mjs` (service-role); phase 64 run in the SQL editor by the owner.
