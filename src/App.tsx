@@ -891,19 +891,34 @@ function App() {
     });
   }, [stations, selectedBrands, showLatvianStations]);
 
-  // Compute live search dropdown results (max 10 results to not overwhelm UI)
+  // Compute live search dropdown results (max 10 results to not overwhelm UI).
+  // Tokenised + multi-field + diacritic-insensitive: the query is split on
+  // whitespace and every token must match *somewhere* across the station's
+  // brand / raw name / city / street / operator. This lets a brand plus a
+  // location hint in any order — "olerex pärnu", "rapla circle k" — find the
+  // station even though no single field contains the whole string as a
+  // substring. Folding diacritics also lets "parnu" match "Pärnu".
   const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    
+    const fold = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    const tokens = fold(searchQuery).split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return [];
+
     return stations
       .filter(station => {
-        const brandMatch = station.name?.toLowerCase().includes(query);
-        const cityMatch = station.amenities?.['addr:city']?.toLowerCase().includes(query);
-        const streetMatch = station.amenities?.['addr:street']?.toLowerCase().includes(query);
-        const nameMatch = station.amenities?.name?.toLowerCase().includes(query);
-        
-        return brandMatch || cityMatch || streetMatch || nameMatch;
+        const haystack = fold(
+          [
+            station.name,
+            getBrand(station.name), // canonical brand (e.g. Saare Kütus from a local station name)
+            station.amenities?.['addr:city'],
+            station.amenities?.['addr:street'],
+            station.amenities?.name,
+            station.amenities?.operator,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        );
+        return tokens.every((tok) => haystack.includes(tok));
       })
       .slice(0, 10);
   }, [stations, searchQuery]);
