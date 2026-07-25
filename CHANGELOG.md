@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Main-screen search: brand + location queries fixed + ranked - 2026-07-25
+
+The top-bar station search couldn't find anything for the natural "brand + place" queries users actually type — "olerex pärnu", "rapla circle k". Diagnosed live (Playwright), fixed, adversarially reviewed (14-agent workflow, 0 blockers), then hardened. Commits `2b68a85` (core fix) + `afcf89a` (ranking/perf/edge) — both pushed to `origin/main`. Files: `src/App.tsx` only.
+
+- 🟡 **Multi-word cross-field search now works.** The old `searchResults` memo matched the *whole* query string with a single `.includes()` against each field separately — so "olerex pärnu" (brand in `name`, city in `addr:city`) matched nothing, because no single field holds the full string. Now the query is **tokenised on whitespace** and *every* token must match *some* field (AND across tokens, OR across fields: brand+canonical / city / OSM `name` / street / operator). Word order no longer matters.
+- 🟢 **Diacritic-insensitive.** Query + fields are folded via `.normalize('NFD').replace(/\p{Diacritic}/gu,'')`, so "parnu" matches "Pärnu" — helps on a phone keyboard.
+- 🟢 **Relevance ranking added.** Matches were previously shown in arbitrary `stations`-array order under a hard 10-cap, so a broad query could bury the intended station. Results are now scored by summed field weight (**city/brand = 5 > OSM-name = 3 > street = 2 > operator = 1**, `+3` for a whole-word hit) and sorted before `.slice(0,10)`. Verified: "tallinn olerex" returns 10 genuine Tallinn-*city* Olerex, no longer letting a Kuressaare station on "Tallinna mnt" take a slot.
+- 🟢 **Per-station index (`searchIndex`, keyed on `[stations]`).** The folded/weighted haystack is built once per station list instead of rebuilt on every keystroke; only the token scan runs per keystroke.
+- 🟢 **`getBrand()` added to the searchable text** so canonical brands resolve (e.g. "saare kütus" finds a station whose `name` is a local "…tankla"). Guarded so the `'Tundmatu'` sentinel (returned only for null-named stations) is kept *out* of the haystack — a "tundmatu" query no longer matches every unnamed station.
+
+### Decisions made
+- **City weighted equal to brand (both 5), above street (2).** This is what resolves the reviewer's flagged case: "tallinn" landing on the actual city must outrank "tallinn" merely appearing inside a street name ("Tallinna mnt") elsewhere.
+- **Match semantics unchanged, only ordering + the Tundmatu edge changed** — the token-AND / field-OR match set is identical to the first commit; the follow-up only reorders it and drops the sentinel.
+
+### Verified
+- Against **live prod data** (local `vite preview` of the exact shipped bundle): "olerex pärnu" → 3 Pärnu Olerex; "rapla circle k" → the Rapla Circle K (matched via `name`, whose addr is tagged Uusküla/Risti); "tallinn olerex" → 10 Tallinn-city Olerex, ranked; "tallinna mnt neste" → Neste on Tallinna mnt across cities (multi-word **street** still resolves — no regression). Build + `tsc --noEmit` green.
+
+### Gotcha
+- **`Circle K (Uusküla, Risti)` IS the Rapla station** — its OSM `name` carries "Rapla" while `addr:city`/`addr:street` are tagged the neighbouring Uusküla / Risti. So "rapla circle k" correctly finds it via the brand/name haystack even though its displayed address shows no "Rapla". Don't mistake the address mismatch for a bad match.
+
 ## [Unreleased] - Feedback triage: Jõelähtme rebrand + boundary report closed - 2026-07-25
 
 "Check feedback" pass. Both channels (`v_open_feedback` + `v_station_report_counts`) triaged; **open queue now 0**. One new station report actioned, the last open general-feedback item closed and its reporter thanked. Applied via committed `scripts/apply_feedback_triage_2026-07-25.mjs` (commit `02594f2`, pushed).
