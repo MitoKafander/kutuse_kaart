@@ -891,37 +891,71 @@ function App() {
     });
   }, [stations, selectedBrands, showLatvianStations]);
 
-  // Compute live search dropdown results (max 10 results to not overwhelm UI).
-  // Tokenised + multi-field + diacritic-insensitive: the query is split on
-  // whitespace and every token must match *somewhere* across the station's
-  // brand / raw name / city / street / operator. This lets a brand plus a
-  // location hint in any order — "olerex pärnu", "rapla circle k" — find the
-  // station even though no single field contains the whole string as a
-  // substring. Folding diacritics also lets "parnu" match "Pärnu".
+  // Per-station search index — folded, weighted fields, built once per station
+  // list rather than on every keystroke. Diacritics are stripped via NFD so
+  // "parnu" matches "Pärnu". Each field carries a weight so relevance ranking
+  // (below) can rank a city/brand hit above an incidental street substring.
+  const searchIndex = useMemo(() => {
+    const fold = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    return stations.map((station) => {
+      // getBrand returns the 'Tundmatu' sentinel only when name is null — keep
+      // that out of the searchable text so unnamed stations don't all match it.
+      const canonical = getBrand(station.name);
+      const brand = [station.name, canonical !== 'Tundmatu' ? canonical : null]
+        .filter(Boolean)
+        .join(' ');
+      // { folded text, weight }. City/brand outweigh street/operator so a
+      // location hint that lands on the actual city beats one that merely
+      // appears inside a street name (e.g. "tallinn" as a Kuressaare address).
+      return {
+        station,
+        fields: [
+          { text: fold(brand), weight: 5 },
+          { text: fold(station.amenities?.['addr:city'] ?? ''), weight: 5 },
+          { text: fold(station.amenities?.name ?? ''), weight: 3 },
+          { text: fold(station.amenities?.['addr:street'] ?? ''), weight: 2 },
+          { text: fold(station.amenities?.operator ?? ''), weight: 1 },
+        ],
+      };
+    });
+  }, [stations]);
+
+  // Live dropdown results (max 10, so ranking matters). The query is tokenised
+  // on whitespace and *every* token must match some field — so a brand plus a
+  // location hint in any order ("olerex pärnu", "rapla circle k") finds the
+  // station even though no single field holds the whole string. Matches are
+  // then ranked by summed field weight (+3 for a whole-word hit) so the most
+  // relevant stations survive the 10-cap instead of arbitrary array order.
   const searchResults = useMemo(() => {
     const fold = (s: string) =>
       s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
     const tokens = fold(searchQuery).split(/\s+/).filter(Boolean);
     if (tokens.length === 0) return [];
 
-    return stations
-      .filter(station => {
-        const haystack = fold(
-          [
-            station.name,
-            getBrand(station.name), // canonical brand (e.g. Saare Kütus from a local station name)
-            station.amenities?.['addr:city'],
-            station.amenities?.['addr:street'],
-            station.amenities?.name,
-            station.amenities?.operator,
-          ]
-            .filter(Boolean)
-            .join(' '),
-        );
-        return tokens.every((tok) => haystack.includes(tok));
+    const wholeWord = (text: string, tok: string) =>
+      ` ${text} `.includes(` ${tok} `);
+
+    return searchIndex
+      .flatMap((entry) => {
+        let score = 0;
+        for (const tok of tokens) {
+          let best = 0;
+          for (const field of entry.fields) {
+            if (field.text.includes(tok)) {
+              const s = field.weight + (wholeWord(field.text, tok) ? 3 : 0);
+              if (s > best) best = s;
+            }
+          }
+          if (best === 0) return []; // this token matched nothing → drop station
+          score += best;
+        }
+        return [{ station: entry.station, score }];
       })
-      .slice(0, 10);
-  }, [stations, searchQuery]);
+      .sort((a, b) => b.score - a.score) // stable: equal scores keep list order
+      .slice(0, 10)
+      .map((r) => r.station);
+  }, [searchIndex, searchQuery]);
 
   return (
     <main style={{ position: 'relative', width: '100vw', height: 'calc(var(--app-height, 100dvh) + env(safe-area-inset-bottom))', overflow: 'hidden' }}>
