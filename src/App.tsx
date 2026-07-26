@@ -1192,9 +1192,10 @@ function App() {
       </div>
 
       {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats,
-          Hide-empty toggle, Avastuskaart. 60px pitch. Bottom FAB sits at 200px
-          so the stack clears the GPS locator button (bottom 30px in Map.tsx)
-          with comfortable room. New FABs extend upward. */}
+          Hide-empty toggle, Avastuskaart. 60px pitch. Bottom FAB stays at 140px
+          (Avastuskaart↔GPS gap unchanged); the hide-empty toggle takes the slot
+          above it and everything else extends upward. GPS locator is at bottom
+          30px in Map.tsx. */}
       <button
         className="flex-center"
         onClick={() => {
@@ -1221,7 +1222,7 @@ function App() {
         } : undefined}
         title={t('app.fab.camera')}
         style={{
-          position: 'absolute', bottom: 'calc(560px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(500px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-primary)',
@@ -1240,7 +1241,7 @@ function App() {
         onClick={() => setIsManualOpen(true)}
         title={t('app.fab.manual')}
         style={{
-          position: 'absolute', bottom: 'calc(500px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#fb923c',
@@ -1259,7 +1260,7 @@ function App() {
         onClick={() => setIsCheapestNearbyOpen(true)}
         title={t('app.fab.cheapestNearby')}
         style={{
-          position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-fab-cheapest)',
@@ -1278,7 +1279,7 @@ function App() {
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? t('app.fab.routeResults') : t('app.fab.routeFind')}
         style={{
-          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
@@ -1298,7 +1299,7 @@ function App() {
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title={t('app.fab.cancelRoute')}
           style={{
-            position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))',
+            position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
@@ -1325,7 +1326,7 @@ function App() {
         }}
         title={t('app.fab.stats')}
         style={{
-          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
@@ -1361,7 +1362,7 @@ function App() {
         title={t('profile.settings.hideEmpty.label')}
         aria-pressed={hideEmptyDots}
         style={{
-          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: hideEmptyDots ? '#fff' : '#64748b',
@@ -1381,7 +1382,7 @@ function App() {
         title={t('app.fab.discovery')}
         aria-pressed={showDiscoveryMap}
         style={{
-          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: showDiscoveryMap ? '#fff' : '#06b6d4',
