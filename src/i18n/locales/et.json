@@ -215,6 +215,9 @@
       "cancelRoute": "Tühista marsruut",
       "stats": "Statistika",
       "discovery": "Avastuskaart"
+    },
+    "pills": {
+      "hideEmpty": "Peida hinnata"
     }
   },
   "map": {

@@ -358,12 +358,10 @@ export function ProfileDrawer({
     }
   };
 
-  const handleHideEmptyDotsToggle = async () => {
-    const next = !hideEmptyDots;
-    onHideEmptyDotsChange(next);
-    if (session?.user?.id) {
-      await supabase.from('user_profiles').upsert({ id: session.user.id, hide_empty_dots: next });
-    }
+  const handleHideEmptyDotsToggle = () => {
+    // Parent (App) owns the write path (state + localStorage + DB), shared with
+    // the main-screen filter pill.
+    onHideEmptyDotsChange(!hideEmptyDots);
   };
 
   const handleDiscoveryMapToggle = () => {

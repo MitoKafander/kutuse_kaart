@@ -337,7 +337,10 @@
       "stats": "Tilastot",
       "discovery": "Löytökartta"
     },
-    "errorBoundary": "Jotain meni pieleen. Päivitä sivu."
+    "errorBoundary": "Jotain meni pieleen. Päivitä sivu.",
+    "pills": {
+      "hideEmpty": "Piilota hinnattomat"
+    }
   },
   "map": {
     "gps": {

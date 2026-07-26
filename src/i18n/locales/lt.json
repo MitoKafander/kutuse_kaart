@@ -337,7 +337,10 @@
       "stats": "Statistika",
       "discovery": "Atradimų žemėlapis"
     },
-    "errorBoundary": "Kažkas nutiko. Prašome atnaujinti puslapį."
+    "errorBoundary": "Kažkas nutiko. Prašome atnaujinti puslapį.",
+    "pills": {
+      "hideEmpty": "Slėpti be kainos"
+    }
   },
   "map": {
     "gps": {

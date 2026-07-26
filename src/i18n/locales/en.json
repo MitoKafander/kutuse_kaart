@@ -337,7 +337,10 @@
       "stats": "Statistics",
       "discovery": "Discovery map"
     },
-    "errorBoundary": "Something went wrong. Please refresh the page."
+    "errorBoundary": "Something went wrong. Please refresh the page.",
+    "pills": {
+      "hideEmpty": "Hide unpriced"
+    }
   },
   "map": {
     "gps": {

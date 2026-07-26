@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Compass } from 'lucide-react';
+import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Compass, EyeOff } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
@@ -806,6 +806,19 @@ function App() {
     }
   };
 
+  // Centralized so the main-screen filter pill and the profile-settings toggle
+  // share one write path (state + localStorage mirror + DB persistence).
+  const handleHideEmptyDotsChange = (v: boolean) => {
+    setHideEmptyDots(v);
+    localStorage.setItem('kyts-hide-empty-dots', String(v));
+    if (session?.user?.id) {
+      // Thenable Postgrest builder — must call `.then()` to actually send.
+      void supabase.from('user_profiles')
+        .upsert({ id: session.user.id, hide_empty_dots: v })
+        .then(() => {}, () => {});
+    }
+  };
+
   const handleSharePubliclyChange = (v: boolean) => {
     setSharePublicly(v);
     if (session?.user?.id) {
@@ -1104,6 +1117,26 @@ function App() {
             position: 'relative',
           }}>
             <BrandPickerPill selected={selectedBrands} onChange={setSelectedBrands} />
+            {/* Hide/show stations without prices — same state as the profile
+                settings toggle, surfaced here because it's toggled often. */}
+            <button
+              onClick={() => handleHideEmptyDotsChange(!hideEmptyDots)}
+              title={t('profile.settings.hideEmpty.label')}
+              aria-pressed={hideEmptyDots}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: '20px',
+                border: hideEmptyDots ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
+                background: hideEmptyDots ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
+                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                color: hideEmptyDots ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                fontSize: '0.85rem', fontWeight: hideEmptyDots ? 600 : 400,
+                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <EyeOff size={14} /> {t('app.pills.hideEmpty')}
+            </button>
             {FUEL_TYPES.map(type => {
               const isActive = selectedFuelType === type;
               const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type;
@@ -1511,7 +1544,7 @@ function App() {
         showClusters={showClusters}
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
         hideEmptyDots={hideEmptyDots}
-        onHideEmptyDotsChange={(v) => { setHideEmptyDots(v); localStorage.setItem('kyts-hide-empty-dots', String(v)); }}
+        onHideEmptyDotsChange={handleHideEmptyDotsChange}
         showLatvianStations={showLatvianStations}
         onShowLatvianStationsChange={(v) => { setShowLatvianStations(v); localStorage.setItem('kyts-show-latvian-stations', String(v)); }}
         showStaleDemo={showStaleDemo}
