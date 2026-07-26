@@ -1117,26 +1117,6 @@ function App() {
             position: 'relative',
           }}>
             <BrandPickerPill selected={selectedBrands} onChange={setSelectedBrands} />
-            {/* Hide/show stations without prices — same state as the profile
-                settings toggle, surfaced here because it's toggled often. */}
-            <button
-              onClick={() => handleHideEmptyDotsChange(!hideEmptyDots)}
-              title={t('profile.settings.hideEmpty.label')}
-              aria-pressed={hideEmptyDots}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: '20px',
-                border: hideEmptyDots ? '1px solid var(--color-primary)' : '1px solid var(--color-surface-alpha-12)',
-                background: hideEmptyDots ? 'rgba(59, 130, 246, 0.2)' : 'var(--color-surface-alpha-06)',
-                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                color: hideEmptyDots ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                fontSize: '0.85rem', fontWeight: hideEmptyDots ? 600 : 400,
-                cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <EyeOff size={14} /> {t('app.pills.hideEmpty')}
-            </button>
             {FUEL_TYPES.map(type => {
               const isActive = selectedFuelType === type;
               const shortLabel = type === 'Bensiin 95' ? '95' : type === 'Bensiin 98' ? '98' : type === 'Diisel' ? 'D' : type;
@@ -1211,10 +1191,10 @@ function App() {
         )}
       </div>
 
-      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats, Market Insight.
-          Bottom of stack stays at 140px so the bottom FAB keeps ~60px of clear
-          space above the GPS locator button (which sits at bottom 30px in
-          Map.tsx). New FABs extend upward instead of downward. */}
+      {/* FAB stack (top → bottom): Camera, Manual, Nearby, Navigation, Stats,
+          Hide-empty toggle, Avastuskaart. 60px pitch. Bottom FAB sits at 200px
+          so the stack clears the GPS locator button (bottom 30px in Map.tsx)
+          with comfortable room. New FABs extend upward. */}
       <button
         className="flex-center"
         onClick={() => {
@@ -1241,7 +1221,7 @@ function App() {
         } : undefined}
         title={t('app.fab.camera')}
         style={{
-          position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(560px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-primary)',
@@ -1260,7 +1240,7 @@ function App() {
         onClick={() => setIsManualOpen(true)}
         title={t('app.fab.manual')}
         style={{
-          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(500px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#fb923c',
@@ -1279,7 +1259,7 @@ function App() {
         onClick={() => setIsCheapestNearbyOpen(true)}
         title={t('app.fab.cheapestNearby')}
         style={{
-          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(440px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: 'var(--color-fab-cheapest)',
@@ -1298,7 +1278,7 @@ function App() {
         onClick={() => { setRouteMounted(true); setIsRouteOpen(true); }}
         title={routePolyline ? t('app.fab.routeResults') : t('app.fab.routeFind')}
         style={{
-          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#22c55e',
@@ -1318,7 +1298,7 @@ function App() {
           onClick={() => { setRoutePolyline(null); setIsRouteOpen(false); setRouteMounted(false); }}
           title={t('app.fab.cancelRoute')}
           style={{
-            position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))',
+            position: 'absolute', bottom: 'calc(380px + env(safe-area-inset-bottom))',
             right: 'calc(20px + 50px + 10px)',
             width: '42px', height: '42px', borderRadius: '21px', zIndex: 1000,
             cursor: 'pointer',
@@ -1345,7 +1325,7 @@ function App() {
         }}
         title={t('app.fab.stats')}
         style={{
-          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(320px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: '#a855f7',
@@ -1372,13 +1352,36 @@ function App() {
         })()}
       </button>
 
+      {/* Hide/show stations without prices — same state as the profile
+          settings toggle, surfaced as a FAB because it's toggled often.
+          Filled when active, mirroring the Avastuskaart toggle below it. */}
+      <button
+        className="flex-center"
+        onClick={() => handleHideEmptyDotsChange(!hideEmptyDots)}
+        title={t('profile.settings.hideEmpty.label')}
+        aria-pressed={hideEmptyDots}
+        style={{
+          position: 'absolute', bottom: 'calc(260px + env(safe-area-inset-bottom))', right: '20px',
+          width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
+          cursor: 'pointer',
+          color: hideEmptyDots ? '#fff' : '#64748b',
+          background: hideEmptyDots ? 'var(--color-primary)' : 'var(--color-surface-alpha-06)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: `1px solid ${hideEmptyDots ? 'var(--color-primary)' : 'var(--color-surface-alpha-12)'}`,
+          transition: 'all 0.2s ease',
+        }}
+      >
+        <EyeOff size={22} />
+      </button>
+
       <button
         className="flex-center"
         onClick={() => handleShowDiscoveryMapChange(!showDiscoveryMap)}
         title={t('app.fab.discovery')}
         aria-pressed={showDiscoveryMap}
         style={{
-          position: 'absolute', bottom: 'calc(140px + env(safe-area-inset-bottom))', right: '20px',
+          position: 'absolute', bottom: 'calc(200px + env(safe-area-inset-bottom))', right: '20px',
           width: '50px', height: '50px', borderRadius: '25px', zIndex: 1000,
           cursor: 'pointer',
           color: showDiscoveryMap ? '#fff' : '#06b6d4',

@@ -337,10 +337,7 @@
       "stats": "Statistika",
       "discovery": "Atklājumu karte"
     },
-    "errorBoundary": "Kaut kas nogāja greizi. Lūdzu, atsvaidzini lapu.",
-    "pills": {
-      "hideEmpty": "Slēpt bez cenas"
-    }
+    "errorBoundary": "Kaut kas nogāja greizi. Lūdzu, atsvaidzini lapu."
   },
   "map": {
     "gps": {
