@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal static sitemap: the homepage only, for now. This establishes the
+     Search Console / Bing sitemap pipeline and makes the robots.txt reference
+     valid. When the server-rendered SEO routes ship (county/city/fuel/brand/
+     station), replace this static file with a dynamic /api/sitemap.ts that
+     enumerates every active route with a real <lastmod> from the latest price
+     row (add a /sitemap.xml rewrite BEFORE the catch-all in vercel.json). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://kyts.ee/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

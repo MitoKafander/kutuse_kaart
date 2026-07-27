@@ -27,6 +27,38 @@
     <meta name="twitter:description" content="Eesti kütusehindade kogukonnakaart. Reaalajas hinnad 500+ tanklast." />
     <meta name="twitter:image" content="https://kyts.ee/logo.png" />
 
+    <!-- Static JSON-LD for entity signals (name/logo/site). Lives in the served
+         HTML — not React-rendered — so crawlers read it despite the empty #root
+         CSR shell. Deliberately NO SearchAction (Google removed the sitelinks
+         searchbox in Nov 2024) and NO FAQPage rich-result play (restricted to
+         gov/health since Aug 2023). Per-page GasStation/Product/Offer JSON-LD is
+         added later on the server-rendered station/city routes, not here. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://kyts.ee/#organization",
+          "name": "Kyts",
+          "url": "https://kyts.ee/",
+          "logo": "https://kyts.ee/logo.png",
+          "description": "Eesti kütusehindade kogukonnakaart — reaalajas hinnad 500+ tanklast.",
+          "areaServed": { "@type": "Country", "name": "Estonia" }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://kyts.ee/#website",
+          "url": "https://kyts.ee/",
+          "name": "Kyts",
+          "description": "Eesti kütusehindade kogukonnakaart.",
+          "inLanguage": "et-EE",
+          "publisher": { "@id": "https://kyts.ee/#organization" }
+        }
+      ]
+    }
+    </script>
+
     <!-- Preconnects: cut ~300-500ms off LCP on Slow 4G by warming up the DNS+TLS+TCP
          handshake for origins the app hits within the first 100ms of boot.
          Supabase hosts the four initial queries (stations/prices/votes/reporters),
