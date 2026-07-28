@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/linn/tallinn", "destination": "/linn/tallinn.html" },
     {
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
