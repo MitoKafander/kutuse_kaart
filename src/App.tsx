@@ -918,6 +918,16 @@ function App() {
       const brand = [station.name, canonical !== 'Tundmatu' ? canonical : null]
         .filter(Boolean)
         .join(' ');
+      // Most rows carry the settlement in addr:city, but a few rural ones use
+      // addr:place / addr:village instead — all three answer "which locality",
+      // so they share one field rather than competing as separate ones.
+      const locality = [
+        station.amenities?.['addr:city'],
+        station.amenities?.['addr:place'],
+        station.amenities?.['addr:village'],
+      ]
+        .filter(Boolean)
+        .join(' ');
       // { folded text, weight }. City/brand outweigh street/operator so a
       // location hint that lands on the actual city beats one that merely
       // appears inside a street name (e.g. "tallinn" as a Kuressaare address).
@@ -925,7 +935,12 @@ function App() {
         station,
         fields: [
           { text: fold(brand), weight: 5 },
-          { text: fold(station.amenities?.['addr:city'] ?? ''), weight: 5 },
+          { text: fold(locality), weight: 5 },
+          // alt_name is frequently the ONLY field holding the location — OSM
+          // stores "Neste Peetri" there on a row whose name is bare "Neste"
+          // and whose addr:city is missing. Without it those stations are
+          // unreachable by the name everyone actually calls them.
+          { text: fold(station.amenities?.alt_name ?? ''), weight: 3 },
           { text: fold(station.amenities?.name ?? ''), weight: 3 },
           { text: fold(station.amenities?.['addr:street'] ?? ''), weight: 2 },
           { text: fold(station.amenities?.operator ?? ''), weight: 1 },
