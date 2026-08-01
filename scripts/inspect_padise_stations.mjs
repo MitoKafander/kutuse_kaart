@@ -18,7 +18,9 @@ const sb = createClient(
 const { data } = await sb
   .from('stations')
   .select('id, name, latitude, longitude, active, parish_id, amenities')
-  .gte('latitude', 59.2).lte('latitude', 59.25)
+  // Widened north to 59.28 so it also covers the Ämari fuel way (59.2507/24.2059)
+  // that the OSM sweep turned up near Padise.
+  .gte('latitude', 59.2).lte('latitude', 59.28)
   .gte('longitude', 24.1).lte('longitude', 24.32);
 
 for (const s of data) {
