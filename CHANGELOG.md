@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Ops] - Gemini API billing switched to prepay - 2026-09-13
+
+No code change. Google AI Studio asked to move the Kyts Gemini API key's billing account from postpay to prepay; Mikk confirmed.
+
+- 🟡 **Gemini billing is now PREPAY (irreversible), €25 initial credit.** When the balance reaches 0, Gemini calls fail instead of billing. Affects both consumers: the camera totem scan (`api/parse-prices.ts`) and the market-insight translator cron (06:00/15:00 UTC). The app keeps running, but scans error out and the insight text stops updating, with no alert.
+
+### Open items remaining
+- **Post-switch smoke test not done yet.** Last PostHog `ai_scan_success` (×2, `gemini-2.5-flash`) was 2026-09-11, before the switch, so nothing has exercised prepay. Mikk will run one camera scan on 2026-09-14; then check PostHog for `ai_scan_success`/`ai_scan_failure`.
+- **Auto-reload / low-balance alert status not confirmed** in AI Studio.
+
+### Gotcha
+- **Scans or insights failing with an auth/quota/billing-type error (not `AI_UPSTREAM_BUSY` overload) → check the AI Studio credit balance first**, before debugging code.
+
 ## [Unreleased] - Main-screen search: brand + location queries fixed + ranked - 2026-07-25
 
 The top-bar station search couldn't find anything for the natural "brand + place" queries users actually type — "olerex pärnu", "rapla circle k". Diagnosed live (Playwright), fixed, adversarially reviewed (14-agent workflow, 0 blockers), then hardened. Commits `2b68a85` (core fix) + `afcf89a` (ranking/perf/edge) — both pushed to `origin/main`. Files: `src/App.tsx` only.

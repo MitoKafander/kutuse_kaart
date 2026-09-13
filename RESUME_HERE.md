@@ -6,6 +6,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Repo:** `/Users/mitokafander/Documents/AI Projects/kytuse_kaart/` · GitHub `MitoKafander/kutuse_kaart` (repo still named *kutuse_kaart*; the app is **Kyts**).
 - **Deploy:** push to `origin/main` → Vercel auto-deploys to **https://kyts.ee**. No staging. Mikk's MO is "ship and roll back if it breaks" — commit + push when the build is green. Rollback: `git revert <sha> && git push`, or one click in the Vercel dashboard.
 - **Stack:** React/TS/Vite PWA · Supabase (project `sdtwolcoibcobpzgfqxx`) · Gemini 2.5 Flash (AI totem scan + market-insight text) · Vercel serverless (`api/`).
+- **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA.
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
 - **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~151 `no-explicit-any` warnings (deliberate).
@@ -40,11 +41,13 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
 ## Next steps (loose priority)
+0. 🔖 **Confirm Gemini works on prepay.** Mikk runs one camera scan on 2026-09-14, then check PostHog (`~/.config/kyts/posthog.json`, HogQL on `ai_scan_success`/`ai_scan_failure` with `model_used`/`code`). The last scan before the switch was 2026-09-11. Also confirm auto-reload or a low-balance alert is set in AI Studio.
 1. **Check feedback** when asked — **TWO channels:** general `feedback` → `v_open_feedback`, AND per-station complaints → `station_reports` / `v_station_report_counts` (no `resolved_at` — closing = taking the action). Never seed prices from feedback; anonymous feedback can't receive replies. Detail in memory `project_kyts_feedback_triage`. Fast path: `node scripts/check_feedback.mjs`. **Both queues empty as of 2026-07-25.** Standing scope call: Jetoil Betooni/Laekvere DP. _(Vald-boundary "double line" FULLY FIXED 2026-07-21 — both layers re-sourced from OSM; see gotcha.)_
 2. **Diesel timing stays OFF** unless Mikk subscribes to a gasoil feed (~$20-30/mo Twelve Data Grow / EODHD — he declined for now). If he does: wire the feed in `api/_lib/marketInsight/fetchMarketData.ts`, flip `proxyReliable: true` in `api/generate-market-insight.ts`, then **validate it correlates** with EE diesel before trusting it.
 3. Progressive TS typing pass (the 151 `any`s) — only worth doing alongside `supabase gen types typescript`.
 
 ## Gotchas (the time-costing ones)
+- **AI scan / market insight failing with an auth/quota/billing error (not `AI_UPSTREAM_BUSY`)?** Check the Gemini prepay credit balance in AI Studio first. Since 2026-09-13 an empty balance stops the calls instead of billing.
 - **PostgREST 1000-row cap:** any `.limit(N>1000)` silently truncates. Use the `fetchAllRows` helper (App.tsx) / paging in scripts.
 - **Yahoo & Stooq are dead for serverless fetches:** Yahoo 429s (needs cookie+crumb), Stooq returns a JS bot-challenge page. Use proper APIs (EIA, Frankfurter) only — don't re-attempt scraping them.
 - **Price inserts have DB guards** (phases 31/43/50/51): proximity (1 km), velocity (130 km/h), static band (€0.30–4.00), per-fuel ±35% median band. Rejections surface as SQLSTATE 23514 → friendly Estonian copy. Don't "fix" a rejected insert by loosening these without checking the data first.
