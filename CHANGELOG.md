@@ -13,6 +13,14 @@ Supabase retires the legacy `anon`/`service_role` JWT keys at the end of 2026.
 ### Open items remaining
 - **Legacy keys are still ENABLED.** Every known consumer is migrated (no GitHub workflows). Disable them (Dashboard → Settings → API Keys, reversible) after a 24h `edge_logs` check for legacy use (`request.sb.jwt.apikey.payload.role` ≠ '') — that needs the Supabase dashboard login.
 
+## [Unreleased] - Map tiles: CARTO basemap key (no more "API KEY REQUIRED" watermark) - 2026-09-18
+
+CARTO started stamping "API KEY REQUIRED" on keyless raster tiles, so the whole map was watermarked.
+
+- 🟡 **Tiles now carry a CARTO basemaps key** (`930110e`). `src/components/Map.tsx` appends `?key=` from `VITE_CARTO_KEY` to both tile URLs (dark_all + voyager), and `index.html`'s LCP tile preloads use `?key=%VITE_CARTO_KEY%` so they still match the first tile request. The two must stay in sync, or the preload is wasted.
+- 🟢 **CARTO attribution added** next to OpenStreetMap's, as CARTO's basemap terms require.
+- `.env.example` documents `VITE_CARTO_KEY`. The key lives in Vercel **Production** env only (type Config, public by design) and is **referer-restricted to kyts.ee + www.kyts.ee**, so local dev still shows the watermark, which is harmless. Free tier = 5M tiles/mo, non-commercial; managed at carto.com/basemaps/apikey (sign in with info@mikkrosin.ee). Details in `RESUME_HERE.md` Gotchas.
+
 ## [Ops] - Gemini API billing switched to prepay - 2026-09-13
 
 No code change. Google AI Studio asked to move the Kyts Gemini API key's billing account from postpay to prepay; Mikk confirmed.
