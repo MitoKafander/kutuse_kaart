@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Ops] - Supabase service key → new `sb_secret_` key + Node 24 pin - 2026-09-18
+
+Supabase retires the legacy `anon`/`service_role` JWT keys at the end of 2026.
+
+- 🟡 **`SUPABASE_SERVICE_ROLE_KEY` now holds the new `sb_secret_` key** in Vercel (Production + Preview, Sensitive) and in local `.env`. The name is kept and there's no code change: `api/` and `scripts/` all go through supabase-js, which handles the new keys. Production redeployed (from `7aa62a8`) and verified with `GET kyts.ee/api/generate-market-insight?dryRun=1` (Bearer `$CRON_SECRET`) → 200 `dryRun:true` with real DB data (`samples7d` diesel 53 / gasoline95 49 — a 200 alone proves nothing, `avg()` swallows RPC errors), plus local DB-read and `auth.admin` checks (the calls `delete-account` makes). The same run produced Gemini headline/content, so **Gemini works on prepay**.
+- 🟢 `package.json` pins `engines.node = 24.x` (`a799151`) — Vercel drops Node 20 on 2026-10-01. The project setting was already 24.x.
+- The frontend has shipped `sb_publishable_` since 2026-04-06 (verified in the live bundle).
+
+### Open items remaining
+- **Legacy keys are still ENABLED.** Every known consumer is migrated (no GitHub workflows). Disable them (Dashboard → Settings → API Keys, reversible) after a 24h `edge_logs` check for legacy use (`request.sb.jwt.apikey.payload.role` ≠ '') — that needs the Supabase dashboard login.
+
 ## [Ops] - Gemini API billing switched to prepay - 2026-09-13
 
 No code change. Google AI Studio asked to move the Kyts Gemini API key's billing account from postpay to prepay; Mikk confirmed.
