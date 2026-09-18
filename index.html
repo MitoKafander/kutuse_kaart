@@ -88,8 +88,8 @@
          it in HTTP cache either way. Two variants by color-scheme —
          only the matching one is actually fetched, and the React
          theme-resolution logic in App.tsx uses the same heuristic. -->
-    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/dark_all/7/72/37.png" media="(prefers-color-scheme: dark)" fetchpriority="high" />
-    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/rastertiles/voyager/7/72/37.png" media="(prefers-color-scheme: light)" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/dark_all/7/72/37.png?key=%VITE_CARTO_KEY%" media="(prefers-color-scheme: dark)" fetchpriority="high" />
+    <link rel="preload" as="image" href="https://b.basemaps.cartocdn.com/rastertiles/voyager/7/72/37.png?key=%VITE_CARTO_KEY%" media="(prefers-color-scheme: light)" fetchpriority="high" />
 
     <!-- Outfit font loaded here (not via @import in index.css) so the request
          starts in parallel with the CSS download instead of chaining behind it.

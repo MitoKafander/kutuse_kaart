@@ -1034,9 +1034,13 @@ export function Map({
   // costing ~350 KiB per viewport on LCP-critical paths (PSI called out
   // 348 KiB savings). Basemap detail is sparse — label sharpness comes
   // from the marker overlays, not the raster.
+  // CARTO now watermarks keyless tiles "API KEY REQUIRED" (2026). Free key
+  // from carto.com/basemaps/apikey, passed as ?key=. Must stay in sync with
+  // the LCP tile preload in index.html or the preload is wasted.
+  const tileKey = import.meta.env.VITE_CARTO_KEY ? `?key=${import.meta.env.VITE_CARTO_KEY}` : '';
   const tileUrl = mapStyle === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+    ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png${tileKey}`
+    : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png${tileKey}`;
 
   // Per-fuel most-recent valid price per station (applies freshness + vote filters).
   // isFresh is carried for pill styling. null if no showable price for that fuel.
@@ -1374,7 +1378,7 @@ export function Map({
       >
         <TileLayer
           key={mapStyle}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url={tileUrl}
         />
         <LocationTracker followMode={followMode} position={userLocation} setPosition={setUserLocation} />
