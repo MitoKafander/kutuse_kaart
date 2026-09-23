@@ -6,7 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
-import { getPriceAgeHours, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
+import { FRESH_HOURS, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -809,16 +809,6 @@ function createPriceIcon(
 
 const DOWNVOTE_THRESHOLD = -3;
 
-function calculateVoteScore(priceId: string, allVotes: any[]): number {
-  let score = 0;
-  allVotes.forEach(v => {
-    if (v.price_id === priceId) {
-      if (v.vote_type === 'up') score += 1;
-      if (v.vote_type === 'down') score -= 1;
-    }
-  });
-  return score;
-}
 
 // Custom cluster icon. Cache by (size, count) so MCG reuses the same DivIcon
 // instance across re-renders instead of rebuilding the cluster DOM mid-click.
@@ -1052,28 +1042,76 @@ export function Map({
     : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png${tileKey}`;
 
   // Per-fuel most-recent valid price per station (applies freshness + vote filters).
-  // isFresh is carried for pill styling. null if no showable price for that fuel.
-  const freshPriceByStationFuel = useMemo(() => {
-    const map: NativeMap<string, NativeMap<string, { price: number; isFresh: boolean }>> = new NativeMap();
-    workingStations.forEach(station => {
-      const inner: NativeMap<string, { price: number; isFresh: boolean }> = new NativeMap();
-      FUEL_TYPES_ALL.forEach(ft => {
-        const recent = prices
-          .filter(p => p.station_id === station.id && p.fuel_type === ft)
-          .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
-        if (!recent) return;
-        if (calculateVoteScore(recent.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
-        // The user's freshness slider owns the cutoff. It defaults to
-        // EXPIRY_HOURS, which is the fixed limit this used to hardcode, so
-        // nothing changes until they drag it. showStaleDemo still overrides
-        // everything for the stale-styling demo.
-        if (!showStaleDemo && getPriceAgeHours(recent, allVotes) > maxPriceAgeHours) return;
-        inner.set(ft, { price: recent.price, isFresh: isPriceFresh(recent, allVotes) });
+  // Newest price per (station, fuel), indexed ONCE per prices/votes change.
+  //
+  // This used to be done inside the loop below: for every station, for every
+  // fuel, a full `prices.filter()` plus three separate scans of `allVotes`.
+  // At 1,772 stations and 8,634 prices that is ~61M comparisons, and the
+  // freshness slider re-ran the whole thing on every drag step. Indexing first
+  // makes the slider's own work O(stations x fuels) map lookups.
+  //
+  // `reportedMs` picks the winning row (newest report wins, exactly as the old
+  // sort did); `effectiveMs` carries max(reported, latest upvote) and is what
+  // age is measured from, so a re-upvoted price counts as refreshed.
+  const priceIndexByStation = useMemo(() => {
+    const score: NativeMap<string, number> = new NativeMap();
+    const latestUpvoteMs: NativeMap<string, number> = new NativeMap();
+    for (const v of allVotes) {
+      const cur = score.get(v.price_id) ?? 0;
+      if (v.vote_type === 'up') {
+        score.set(v.price_id, cur + 1);
+        const t = new Date(v.created_at).getTime();
+        const prev = latestUpvoteMs.get(v.price_id);
+        if (prev === undefined || t > prev) latestUpvoteMs.set(v.price_id, t);
+      } else if (v.vote_type === 'down') {
+        score.set(v.price_id, cur - 1);
+      }
+    }
+
+    const byStation: NativeMap<string, NativeMap<string, { price: number; reportedMs: number; effectiveMs: number; score: number }>> = new NativeMap();
+    for (const p of prices) {
+      if (!p.station_id) continue;
+      const reportedMs = new Date(p.reported_at).getTime();
+      let inner = byStation.get(p.station_id);
+      if (!inner) { inner = new NativeMap(); byStation.set(p.station_id, inner); }
+      const cur = inner.get(p.fuel_type);
+      if (cur && cur.reportedMs >= reportedMs) continue;
+      const up = latestUpvoteMs.get(p.id);
+      inner.set(p.fuel_type, {
+        price: p.price,
+        reportedMs,
+        effectiveMs: up !== undefined && up > reportedMs ? up : reportedMs,
+        score: score.get(p.id) ?? 0,
       });
+    }
+    return byStation;
+  }, [prices, allVotes]);
+
+  // isFresh is carried for pill styling. Absent if no showable price for that fuel.
+  const freshPriceByStationFuel = useMemo(() => {
+    const nowMs = Date.now();
+    const maxAgeMs = maxPriceAgeHours * 3_600_000;
+    const freshMs = FRESH_HOURS * 3_600_000;
+    const map: NativeMap<string, NativeMap<string, { price: number; isFresh: boolean }>> = new NativeMap();
+    for (const station of workingStations) {
+      const indexed = priceIndexByStation.get(station.id);
+      if (!indexed) continue;
+      const inner: NativeMap<string, { price: number; isFresh: boolean }> = new NativeMap();
+      for (const ft of FUEL_TYPES_ALL) {
+        const entry = indexed.get(ft);
+        if (!entry) continue;
+        if (entry.score <= DOWNVOTE_THRESHOLD) continue;
+        const ageMs = nowMs - entry.effectiveMs;
+        // The freshness slider owns the cutoff. It defaults to EXPIRY_HOURS,
+        // the fixed limit this used to hardcode, so nothing changes until the
+        // user drags it. showStaleDemo still overrides for the styling demo.
+        if (!showStaleDemo && ageMs > maxAgeMs) continue;
+        inner.set(ft, { price: entry.price, isFresh: ageMs <= freshMs });
+      }
       if (inner.size > 0) map.set(station.id, inner);
-    });
+    }
     return map;
-  }, [workingStations, prices, allVotes, maxPriceAgeHours, showStaleDemo]);
+  }, [workingStations, priceIndexByStation, maxPriceAgeHours, showStaleDemo]);
 
   // Top-N cheapest stations per fuel type within the current viewport bounds.
   // Zoom-gated: when no fuel filter and zoomed out (<12), collapse each station's

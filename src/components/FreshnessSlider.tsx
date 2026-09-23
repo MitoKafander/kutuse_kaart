@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react';
 import { AGE_STOPS, ageStopLabel } from '../utils';
@@ -6,18 +6,22 @@ import { AGE_STOPS, ageStopLabel } from '../utils';
 // Vertical "how stale may a price be" slider, pinned to the left edge of the map.
 //
 // It replaces the old boolean "hide stale prices" switch, which cut at
-// FRESH_HOURS (5h) and therefore left about ten stations visible in the whole
-// country — a control nobody could use. The map's own hard 24h cutoff had the
-// same problem from the other side: 320 Estonian stations carry a price and
-// only ~13 of them are under a day old, so the rest were simply invisible.
+// FRESH_HOURS (5h) and so left about ten stations visible in the whole country
+// — a control nobody could use. The map's own hard 24h cutoff had the same
+// problem from the other side.
 //
-// Top = freshest, bottom = everything. The default sits on 24h, which is
-// exactly what the map did before this existed, so the slider changes nothing
-// until it is dragged.
+// Top = freshest, bottom = 48h. The default sits on 24h, exactly what the map
+// did before this existed, so the slider changes nothing until it is dragged.
 //
-// The per-stop counts matter as much as the slider: they tell you *where the
-// data is* before you drag, so the control teaches the shape of the dataset
-// rather than making you hunt for it.
+// COMMITS ON RELEASE. The thumb, the label and the station count follow the
+// finger immediately — they read from a precomputed per-stop array, so they
+// cost nothing — but the map is only told the new cutoff when the drag ends.
+// Even with the map's price lookup indexed, re-rendering a few thousand
+// markers mid-drag is the kind of thing that turns smooth into sticky on a
+// phone, and there is no value in rendering the stops you are sliding past.
+//
+// The per-stop counts matter as much as the slider itself: they show *where
+// the data is* before you touch it.
 
 export function FreshnessSlider({
   maxAgeHours,
@@ -32,10 +36,21 @@ export function FreshnessSlider({
   const { t } = useTranslation();
   const [dragging, setDragging] = useState(false);
 
-  const index = useMemo(() => {
-    const i = AGE_STOPS.indexOf(maxAgeHours);
+  const committedIndex = useMemo(() => {
+    const i = (AGE_STOPS as readonly number[]).indexOf(maxAgeHours);
     return i === -1 ? AGE_STOPS.length - 1 : i;
   }, [maxAgeHours]);
+
+  // What the thumb shows right now. Diverges from the committed value only
+  // between pointerdown and release.
+  const [pendingIndex, setPendingIndex] = useState(committedIndex);
+  useEffect(() => { setPendingIndex(committedIndex); }, [committedIndex]);
+  const index = dragging ? pendingIndex : committedIndex;
+
+  const commit = (i: number) => {
+    setDragging(false);
+    if (AGE_STOPS[i] !== maxAgeHours) onChange(AGE_STOPS[i]);
+  };
 
   // The range input runs 0..n-1 left-to-right and is rotated -90°, which puts 0
   // at the bottom. We want the freshest at the TOP, so the slider value is the
@@ -81,11 +96,17 @@ export function FreshnessSlider({
             value={sliderValue}
             aria-label={t('freshness.label')}
             aria-valuetext={`${ageStopLabel(AGE_STOPS[index], t)} · ${t('freshness.stations', { count })}`}
-            onChange={(e) => onChange(AGE_STOPS[AGE_STOPS.length - 1 - Number(e.target.value)])}
+            onChange={(e) => {
+              const next = AGE_STOPS.length - 1 - Number(e.target.value);
+              setPendingIndex(next);
+              // Keyboard and click-on-track produce a change with no drag in
+              // progress — commit those immediately, they are single steps.
+              if (!dragging) commit(next);
+            }}
             onPointerDown={() => setDragging(true)}
-            onPointerUp={() => setDragging(false)}
-            onPointerCancel={() => setDragging(false)}
-            onBlur={() => setDragging(false)}
+            onPointerUp={() => commit(pendingIndex)}
+            onPointerCancel={() => commit(pendingIndex)}
+            onBlur={() => commit(pendingIndex)}
             style={{
               // Rotating a horizontal range is the portable way to get a
               // vertical one — `writing-mode: vertical-*` on a range input is

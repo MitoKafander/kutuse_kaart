@@ -116,22 +116,26 @@ export const FRESH_HOURS = 5;
 export const EXPIRY_HOURS = 24;
 
 /**
- * Stops for the freshness slider, in hours; Infinity means "no cutoff".
+ * Stops for the freshness slider, in hours.
  *
- * Log-spaced rather than linear because that is how the data is actually
- * shaped: of the ~320 Estonian stations carrying any price, ~13 are under a
- * day old and ~233 are older than a month. Linear hour steps would spend most
- * of the travel on an empty range.
+ * Capped at 48h on purpose. The map is a "what does fuel cost right now" tool:
+ * a month-old price rendered next to a two-hour-old one is worse than no price,
+ * and the styling only distinguishes fresh from not-fresh. Two days is the
+ * outer edge of still-probably-true.
  *
- * EXPIRY_HOURS (24) is one of the stops AND the default, so the map behaves
- * exactly as it did before the slider existed until someone drags it.
+ * EXPIRY_HOURS (24) is both a stop and the default, so the map behaves exactly
+ * as it did before the slider existed until someone drags it.
  */
-export const AGE_STOPS = [FRESH_HOURS, 12, EXPIRY_HOURS, 72, 168, 720, Infinity] as const;
+export const AGE_STOPS = [2, FRESH_HOURS, 12, EXPIRY_HOURS, 48] as const;
 
-/** "5 h" / "3 d" / "all" for a stop, localised. */
+/**
+ * "5 h" / "48 h" for a stop, localised. Every stop is expressed in hours: the
+ * scale tops out at 48, and "48 h" reads as a freshness budget in a way that
+ * "2 d" does not. The days branch only exists for a future wider scale.
+ */
 export function ageStopLabel(hours: number, t: (key: string, opts?: any) => string): string {
   if (!Number.isFinite(hours)) return t('freshness.all');
-  if (hours <= 24) return t('freshness.hours', { n: hours });
+  if (hours <= 48) return t('freshness.hours', { n: hours });
   return t('freshness.days', { n: Math.round(hours / 24) });
 }
 

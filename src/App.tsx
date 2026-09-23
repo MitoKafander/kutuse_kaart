@@ -225,16 +225,17 @@ function App() {
   // hardcode — so the map opens exactly as it always did. Device-level like
   // theme: remembered locally, not synced to the profile.
   const [maxPriceAgeHours, setMaxPriceAgeHours] = useState<number>(() => {
-    const raw = localStorage.getItem('kyts-max-price-age');
-    if (raw === 'all') return Infinity;
-    const n = Number(raw);
+    // Anything not currently a stop — including the 'all'/30d values an
+    // earlier build wrote — falls back to the default rather than wedging the
+    // thumb somewhere the scale no longer has.
+    const n = Number(localStorage.getItem('kyts-max-price-age'));
     return (AGE_STOPS as readonly number[]).includes(n) ? n : EXPIRY_HOURS;
   });
   const handleMaxPriceAgeChange = (hours: number) => {
     setMaxPriceAgeHours(hours);
-    try { localStorage.setItem('kyts-max-price-age', Number.isFinite(hours) ? String(hours) : 'all'); }
+    try { localStorage.setItem('kyts-max-price-age', String(hours)); }
     catch { /* private mode */ }
-    capture('freshness_slider_changed', { hours: Number.isFinite(hours) ? hours : -1 });
+    capture('freshness_slider_changed', { hours });
   };
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
