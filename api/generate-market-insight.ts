@@ -37,8 +37,22 @@ export const config = {
 
 const GENERATION_VERSION = 'v1.2-2026-09-23';
 
-/** Countries the cron generates an insight for, in order. */
-const COUNTRIES = ['EE', 'LV', 'LT'] as const;
+/**
+ * Countries the cron generates an insight for.
+ *
+ * Read from the DATA, not hardcoded: api/ compiles under its own tsconfig and
+ * cannot import src/constants/countries.ts, so a literal list here is a second
+ * registry that nothing keeps in sync — add a fourth country to the frontend
+ * and its market insight would just never be generated, silently. Asking the
+ * stations table which countries exist makes that impossible.
+ */
+async function countriesWithStations(sb: any): Promise<string[]> {
+  const { data, error } = await sb.from('stations').select('country').eq('active', true);
+  if (error) throw new Error(`country list: ${error.message}`);
+  const seen = new Set<string>();
+  for (const row of data ?? []) if (row.country) seen.add(row.country);
+  return [...seen].sort();
+}
 
 /**
  * Minimum local price samples in the 2-day window before a country gets an
@@ -325,8 +339,16 @@ export default async function handler(req: NodeReq, res: NodeRes) {
 
   // `?country=LV` runs one country (manual re-run after a fix); default is all.
   const only = /[?&]country=([A-Za-z]{2})/.exec(req.url ?? '')?.[1]?.toUpperCase();
-  const countries = only ? COUNTRIES.filter(c => c === only) : COUNTRIES;
-  if (!countries.length) return res.status(400).json({ error: `Unknown country: ${only}` });
+  let countries: string[];
+  try {
+    const all = await countriesWithStations(sb);
+    countries = only ? all.filter(c => c === only) : all;
+    if (!countries.length) {
+      return res.status(400).json({ error: only ? `No active stations in ${only}` : 'No active stations at all' });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || 'could not list countries' });
+  }
 
   try {
     // The global series are identical for every country — fetch once, and let

@@ -102,13 +102,18 @@ export function LeaderboardDrawer({
         });
     } else {
       supabase
-        // select('*') + a client-side country filter, so this still works
-        // against a database where the phase-65 migration hasn't run yet
-        // (no `country` column -> every row reads as Estonian, which is
-        // exactly what those rows were).
+        // Filter server-side by country. This used to select('*') and filter
+        // client-side under .limit(300) — exactly 3 countries x the view's
+        // 100-per-country cap, so country number four would have silently
+        // truncated whichever country sorted last. Asking for one country's
+        // rows has no such ceiling to trip over, and moves less over the wire.
+        //
+        // Safe to filter on `country` now: the phase-65 migration is applied
+        // in prod, so the column exists on every row.
         .from('v_discovery_leaderboard')
         .select('*')
-        .limit(300)
+        .eq('country', activeCountry)
+        .limit(100)
         .then(({ data }) => {
           if (cancelled) return;
           const mapped: DiscoveryRow[] = (data ?? [])
