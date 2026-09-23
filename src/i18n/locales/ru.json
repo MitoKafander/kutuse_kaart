@@ -635,7 +635,7 @@
     "maakondDiscovered": "{{name}} открыта!",
     "allStationsCovered": "Все станции покрыты",
     "brandCollected": "{{brand}} собран!",
-    "brandProgress": "Все {{count}} станций",
+    "brandProgress": "Все станции: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} станций собрано"
   },

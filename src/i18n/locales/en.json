@@ -637,7 +637,7 @@
     "maakondDiscovered": "{{name}} discovered!",
     "allStationsCovered": "All stations covered",
     "brandCollected": "{{brand}} collected!",
-    "brandProgress": "All {{count}} stations",
+    "brandProgress": "All {{n}} stations",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} stations collected"
   },

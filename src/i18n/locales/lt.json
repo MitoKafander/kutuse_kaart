@@ -635,7 +635,7 @@
     "maakondDiscovered": "{{name}} atrasta!",
     "allStationsCovered": "Visos degalinės įveiktos",
     "brandCollected": "{{brand}} surinkta!",
-    "brandProgress": "Visos {{count}} degalinės",
+    "brandProgress": "Visos degalinės: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} degalinių surinkta"
   },

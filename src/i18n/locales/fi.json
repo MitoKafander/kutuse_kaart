@@ -635,7 +635,7 @@
     "maakondDiscovered": "{{name}} löydetty!",
     "allStationsCovered": "Kaikki asemat katettu",
     "brandCollected": "{{brand}} kerätty!",
-    "brandProgress": "Kaikki {{count}} asemaa",
+    "brandProgress": "Kaikki {{n}} asemaa",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} asemaa kerätty"
   },

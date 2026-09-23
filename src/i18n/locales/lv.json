@@ -635,7 +635,7 @@
     "maakondDiscovered": "{{name}} atklāts!",
     "allStationsCovered": "Visas stacijas pabeigtas",
     "brandCollected": "{{brand}} savākts!",
-    "brandProgress": "Visas {{count}} stacijas",
+    "brandProgress": "Visas stacijas: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} stacijas savāktas"
   },

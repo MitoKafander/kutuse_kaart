@@ -420,7 +420,7 @@
     "maakondDiscovered": "{{name}} avastatud!",
     "allStationsCovered": "Kõik jaamad kaetud",
     "brandCollected": "{{brand}} kogutud!",
-    "brandProgress": "Kõik {{count}} jaama",
+    "brandProgress": "Kõik {{n}} jaama",
     "milestone": "{{name}} — {{pct}}%",
     "milestoneProgress": "{{done}}/{{total}} jaama kogutud"
   },

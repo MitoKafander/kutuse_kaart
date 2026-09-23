@@ -36,7 +36,21 @@ export type CelebrationEvent =
   // 22% of Estonian contributors have ever finished a vald in five years), so
   // a 13-station Latvian novads gave no feedback at all until the thirteenth
   // visit. These are the rungs on the way up.
-  | { kind: 'milestone'; id: number; name: string; pct: 25 | 50 | 75; done: number; total: number };
+  | {
+      kind: 'milestone';
+      id: number;
+      name: string;
+      /** The rung that was crossed — drives the emoji tier and the store key. */
+      pct: 25 | 50 | 75;
+      /**
+       * The user's ACTUAL percentage, which is what the toast shows. Crossing
+       * the 25% rung at 4 of 13 stations is 31%, and a headline reading "25%"
+       * above a subtitle reading "4/13" contradicts itself.
+       */
+      actualPct: number;
+      done: number;
+      total: number;
+    };
 
 /**
  * Per-country, because region ids only mean anything inside their own country
@@ -86,13 +100,21 @@ function passedMilestones(progress: RegionProgress): string[] {
   for (const pm of progress.perMaakond) {
     for (const p of pm.parishes) {
       if (p.stationsTotal <= 0 || p.stationsDone <= 0) continue;
-      if (p.stationsDone >= p.stationsTotal) continue; // completion owns 100%
-      const pct = (p.stationsDone / p.stationsTotal) * 100;
+      // A COMPLETED region banks all three rungs rather than being skipped.
+      // Skipping meant its rungs were never marked seen, so the moment the
+      // catalog grew — a new station seeded into a finished vald — it dropped
+      // below 100% and replayed 25/50/75 as if they were new.
+      const pct = p.stationsDone >= p.stationsTotal
+        ? 100
+        : (p.stationsDone / p.stationsTotal) * 100;
       for (const rung of MILESTONE_RUNGS) if (pct >= rung) out.push(`${p.parish.id}:${rung}`);
     }
   }
   return out;
 }
+
+/** Highest rung in a "<id>:<rung>" key. */
+const rungOf = (key: string) => Number(key.split(':')[1]);
 
 // Given a user's contributed station ids + the region catalog, compute
 // counters, per-maakond drilldown, and a queue of celebration events for
@@ -261,7 +283,7 @@ export function useRegionProgress(opts: {
       // long-time contributor doesn't get a burst of fireworks for old work.
       const seedBrands = new Set([
         ...store.brands,
-        ...brandProgress.filter(b => b.total > 0 && b.done >= b.total).map(b => b.brand),
+        ...brandProgress.filter(b => b.total >= 2 && b.done >= b.total).map(b => b.brand),
       ]);
       const seedMilestones = new Set([...store.milestones, ...passedMilestones(progress)]);
       writeCelebrated(country, {
@@ -348,7 +370,12 @@ export function useRegionProgress(opts: {
     // not to the map-view mode. That matters most for LV/LT, where the map
     // toggle is off by default and the region loop is the slow one.
     for (const b of brandProgress) {
-      if (b.total <= 0 || b.done < b.total) continue;
+      // A one-station "chain" is not a chain — getBrand() falls back to the
+      // raw station name for anything CHAIN_PATTERNS doesn't match, so 120 of
+      // the 122 single-member brands are just independent forecourts. Firing
+      // "chain completed" on top of "station discovered" for the same single
+      // price is noise, not a reward.
+      if (b.total < 2 || b.done < b.total) continue;
       if (lastBrandsRef.current.has(b.brand)) continue;
       if (celebratedBrands.has(b.brand)) continue;
       celebratedBrands.add(b.brand);
@@ -359,21 +386,33 @@ export function useRegionProgress(opts: {
     // user who hasn't opened the Avastuskaart has no context for "half of
     // Ogres novads".
     if (emitCelebrations) {
+      // Bank every new rung, but toast only the HIGHEST one per region in this
+      // pass. A 2-station vald crosses 25% and 50% on the same price (12 of
+      // Estonia's 78 vallad have exactly 2), and a 0->77% jump crosses all
+      // three — one reward per action, not three.
+      const freshByRegion = new globalThis.Map<number, string>();
       for (const key of passedMilestones(progress)) {
         if (lastMilestonesRef.current.has(key)) continue;
         if (celebratedMilestones.has(key)) continue;
         celebratedMilestones.add(key);
-        const [idStr, pctStr] = key.split(':');
-        const id = Number(idStr);
+        const id = Number(key.split(':')[0]);
+        const best = freshByRegion.get(id);
+        if (!best || rungOf(key) > rungOf(best)) freshByRegion.set(id, key);
+      }
+      for (const [id, key] of freshByRegion) {
         const entry = progress.perMaakond
           .flatMap(pm => pm.parishes)
           .find(x => x.parish.id === id);
         if (!entry) continue;
+        // A region that is already complete gets no milestone — the parish
+        // completion event owns that moment. Its rungs are still banked above.
+        if (entry.stationsDone >= entry.stationsTotal) continue;
         newEvents.push({
           kind: 'milestone',
           id,
           name: entry.parish.name,
-          pct: Number(pctStr) as 25 | 50 | 75,
+          pct: rungOf(key) as 25 | 50 | 75,
+          actualPct: Math.round((entry.stationsDone / entry.stationsTotal) * 100),
           done: entry.stationsDone,
           total: entry.stationsTotal,
         });
@@ -407,7 +446,7 @@ export function useRegionProgress(opts: {
     // replay everything. The three older kinds re-set from progress/
     // contributedStationIds for exactly this reason.
     lastBrandsRef.current = new Set(
-      brandProgress.filter(b => b.total > 0 && b.done >= b.total).map(b => b.brand),
+      brandProgress.filter(b => b.total >= 2 && b.done >= b.total).map(b => b.brand),
     );
     lastMilestonesRef.current = new Set(passedMilestones(progress));
     // Celebration events are produced from progress diffs; consumeEvents() drains them, so newEvents will be [] next pass.

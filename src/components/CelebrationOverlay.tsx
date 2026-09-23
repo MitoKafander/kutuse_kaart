@@ -103,7 +103,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
               {t('celebration.brandCollected', { brand: activeStation.brand })}
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-              {t('celebration.brandProgress', { count: activeStation.total })}
+              {t('celebration.brandProgress', { n: activeStation.total })}
             </span>
           </div>
         </div>
@@ -195,7 +195,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
           <span style={{ fontSize: 22 }}>{activeToast.pct >= 75 ? '🔥' : activeToast.pct >= 50 ? '⚡' : '🌱'}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
-              {t('celebration.milestone', { pct: activeToast.pct, name: localizeRegionName(activeToast.name, t) })}
+              {t('celebration.milestone', { pct: activeToast.actualPct, name: localizeRegionName(activeToast.name, t) })}
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
               {t('celebration.milestoneProgress', { done: activeToast.done, total: activeToast.total })}
