@@ -8,19 +8,9 @@
 // point and the Terminal Oil depot.
 //
 // Run from project root: `node scripts/audit_military_and_private.mjs`
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { sb, fetchAll } from './_lib/db.mjs';
 
-const here = dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: join(here, '..', '.env') });
-
-const sb = createClient(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false, autoRefreshToken: false } }
-);
+// sb + fetchAll come from _lib/db.mjs so the 1000-row cap is handled in one place.
 
 const UA = 'kyts-station-audit/1.0 (+https://kyts.ee)';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -55,10 +45,9 @@ function inside(x, y, poly) {
   return c;
 }
 
-const { data: stations } = await sb
-  .from('stations')
-  .select('id, name, latitude, longitude, country, amenities')
-  .eq('active', true);
+// Paged: the active catalog passed PostgREST's 1000-row cap with the Baltic
+// expansion, and a bare select would silently audit only the first 1000.
+const stations = await fetchAll('stations', 'id, name, latitude, longitude, country, amenities', (q) => q.eq('active', true));
 console.log(`Active stations: ${stations.length}`);
 
 console.log('Fetching Estonian military areas from OSM...');

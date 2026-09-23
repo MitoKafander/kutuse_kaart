@@ -19,14 +19,11 @@
 //   · shop=gas with no fuel:*   an Alexela-at-Coop-style bottled-gas cabinet
 // LPG is NOT excluded — it's one of the four fuel types Kyts tracks.
 
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import { sb, fetchAll, chunk } from './_lib/db.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CACHE_DIR, pointInRings } from './_lib/overpass.mjs';
 import { loadRegionTree } from './_lib/baltic_regions.mjs';
-
-dotenv.config({ path: '.env' });
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
@@ -36,25 +33,8 @@ const COUNTRIES = wanted.length ? wanted : ['LV', 'LT'];
 /** Two OSM points closer than this are the same forecourt. */
 const MATCH_METRES = 120;
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing Supabase credentials (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env).');
-  process.exit(1);
-}
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-
-async function fetchAll(table, select, filter = (q) => q) {
-  const out = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await filter(sb.from(table).select(select)).range(from, from + 999);
-    if (error) throw new Error(`${table}: ${error.message}`);
-    out.push(...data);
-    if (data.length < 1000) return out;
-  }
-}
-
-const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+// sb / fetchAll / chunk come from _lib/db.mjs — one definition of the
+// 1000-row paging every script needs.
 
 function metresBetween(aLat, aLon, bLat, bLon) {
   const R = 6371000;

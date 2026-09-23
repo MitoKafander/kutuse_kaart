@@ -15,38 +15,17 @@
 //
 // Estonia is deliberately NOT touched by this script.
 
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import { sb, fetchAll, chunk } from './_lib/db.mjs';
 import { loadRegionTree } from './_lib/baltic_regions.mjs';
 import { pointInRings } from './_lib/overpass.mjs';
-
-dotenv.config({ path: '.env' });
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
 const COUNTRIES = wanted.length ? wanted : ['LV', 'LT'];
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing Supabase credentials (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env).');
-  process.exit(1);
-}
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-
-// PostgREST caps every response at 1000 rows regardless of .limit().
-async function fetchAll(table, select, filter = (q) => q) {
-  const out = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await filter(sb.from(table).select(select)).range(from, from + 999);
-    if (error) throw new Error(`${table}: ${error.message}`);
-    out.push(...data);
-    if (data.length < 1000) return out;
-  }
-}
-
-const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+// sb / fetchAll / chunk come from _lib/db.mjs — one definition of the
+// 1000-row paging every script needs.
 
 for (const cc of COUNTRIES) {
   console.log(`\n=== ${cc} ===`);
