@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Fix] - Stations fetch was truncated at 1000 rows - 2026-09-23
+
+Follow-up to phase 65, caught by Mikk within minutes of the seed: *"lithuania shows
+suspiciously few stations"*.
+
+- 🔴 **`App.tsx` loaded stations with a bare `.select()`**, which PostgREST silently caps
+  at 1000 rows. The seed took the active catalog from 557 to 1,772, so the live map was
+  serving **EE 430/482, LV 547/548, LT 23/742** — Lithuania looked almost empty, and
+  Estonia quietly lost 52 stations despite every DB-side check passing. Fixed by routing
+  through `fetchAllRows`, the helper already used for prices and votes in the same
+  function (`e127486`).
+- 🟡 **`scripts/audit_military_and_private.mjs`** had the same bare read, and RESUME_HERE
+  tells you to re-run it after any bulk seed — precisely when it would have audited 1000
+  of 1,772 and pronounced the rest clean. Now paged (`887572b`).
+- 🟢 New `scripts/_lib/db.mjs` — one service-role client + `fetchAll` + `chunk`, replacing
+  three copies of the same paging loop.
+- Swept every other table the client and scripts read: parishes 180, maakonnad 30,
+  v_reporters 41, user_profiles 61, station_reports 10. **`stations` is the only one over
+  the cap.**
+- Lesson recorded in RESUME_HERE: the verifier checked the *database* and was green
+  throughout. Nothing checked what the client actually receives, which is where the bug
+  lived.
+
 ## [Shipped] - Baltic expansion: Latvia + Lithuania as first-class countries (phase 65) - 2026-09-23
 
 Kyts covers all three Baltic states. Latvia goes from a 75-station border strip to its

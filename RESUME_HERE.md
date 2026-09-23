@@ -124,7 +124,7 @@ explicit `drop view` of the dependent + the view first.
   in `LV_MUNICIPALITY_REGION`, not geometry. The loader throws if OSM's municipality list
   and that table ever disagree in either direction — if a Latvian reform lands, that's the
   error you'll see, and the table is what needs editing.
-- **PostgREST 1000-row cap:** any `.limit(N>1000)` silently truncates. Use the `fetchAllRows` helper (App.tsx) / paging in scripts.
+- **PostgREST 1000-row cap — `stations` is now OVER it** (1,825 rows since the Baltic seed; it was 610). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
 - **Yahoo & Stooq are dead for serverless fetches:** Yahoo 429s (needs cookie+crumb), Stooq returns a JS bot-challenge page. Use proper APIs (EIA, Frankfurter) only — don't re-attempt scraping them.
 - **Price inserts have DB guards** (phases 31/43/50/51): proximity (1 km), velocity (130 km/h), static band (€0.30–4.00), per-fuel ±35% median band. Rejections surface as SQLSTATE 23514 → friendly Estonian copy. Don't "fix" a rejected insert by loosening these without checking the data first.
 - **Overlapping-window stats lie:** the diesel "mean-reversion" that looked real (r=−0.53) was a measurement artifact; a bias-free split-half test put it at −0.05. Validate any autocorrelation with disjoint windows.
