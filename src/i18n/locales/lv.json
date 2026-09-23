@@ -226,6 +226,10 @@
       "countries": {
         "label": "Valstis kartē",
         "desc": "Izvēlieties, kuru valstu degvielas uzpildes stacijas rādīt kartē"
+      },
+      "activeCountry": {
+        "label": "Jūsu valsts",
+        "desc": "Nosaka kartes skatu, statistiku un atklājumu karti"
       }
     },
     "header": {

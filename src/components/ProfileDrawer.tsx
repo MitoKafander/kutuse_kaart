@@ -1522,6 +1522,45 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
+                {/* Which country the app is "in" — drives the map's home view,
+                    Statistics, the market insight and the Avastuskaart. It also
+                    lives above the badge grid in the Profile tab, but that tab
+                    only exists when signed in, and everything it drives is
+                    visible to anonymous users too. So it belongs here as well. */}
+                {availableCountries.length > 1 && (
+                  <div>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                      <Compass size={16} /> {t('profile.settings.activeCountry.label')}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px', marginTop: 2 }}>
+                      {t('profile.settings.activeCountry.desc')}
+                    </span>
+                    <div role="tablist" aria-label={t('profile.settings.activeCountry.label')} style={{ display: 'flex', gap: 6, paddingLeft: '24px', marginTop: 8 }}>
+                      {availableCountries.map(code => {
+                        const meta = COUNTRIES[code];
+                        const active = code === activeCountry;
+                        return (
+                          <button
+                            key={code}
+                            role="tab"
+                            aria-selected={active}
+                            onClick={() => onActiveCountryChange(code)}
+                            style={{
+                              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                              padding: '6px 8px', borderRadius: 8, cursor: 'pointer', fontSize: '0.78rem',
+                              background: active ? 'var(--color-primary)' : 'var(--color-surface)',
+                              color: active ? 'white' : 'var(--color-text-muted)',
+                              border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                            }}
+                          >
+                            <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Which countries' stations appear on the map (phase 65).
                     Replaces the single Latvia switch: one row per country Kyts
                     covers, so adding a country never needs new settings UI. */}

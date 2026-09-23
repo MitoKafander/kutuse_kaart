@@ -226,6 +226,10 @@
       "countries": {
         "label": "Šalys žemėlapyje",
         "desc": "Pasirinkite, kurių šalių degalinės rodomos žemėlapyje"
+      },
+      "activeCountry": {
+        "label": "Jūsų šalis",
+        "desc": "Nustato žemėlapio vaizdą, statistiką ir atradimų žemėlapį"
       }
     },
     "header": {

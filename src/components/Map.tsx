@@ -807,6 +807,24 @@ function createPriceIcon(
   });
 }
 
+// Flies to a country's home view when the active country changes.
+//
+// MapContainer's `center`/`zoom` are read once at mount, so switching country
+// used to leave a Latvian looking at Estonia until they panned there
+// themselves. Skips the very first run: on mount the map is already at
+// homeCenter, and flying then would fight the GPS locate that usually follows.
+function CountryHomeFlyTo({ country, center, zoom }: { country: string; center: [number, number]; zoom: number }) {
+  const map = useMap();
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    if (previous.current !== null && previous.current !== country) {
+      map.flyTo(center, zoom, { duration: 0.8 });
+    }
+    previous.current = country;
+  }, [country, center, zoom, map]);
+  return null;
+}
+
 const DOWNVOTE_THRESHOLD = -3;
 
 
@@ -912,6 +930,7 @@ export function Map({
   parishProgress = null,
   homeCenter = ESTONIA_CENTER,
   homeZoom = 7,
+  activeCountry = 'EE',
 }: {
   stations: any[],
   prices: any[],
@@ -942,6 +961,8 @@ export function Map({
   /** First view before geolocation resolves — the active country's home box. */
   homeCenter?: [number, number],
   homeZoom?: number,
+  /** Changing this flies the map to the new country's home box. */
+  activeCountry?: string,
 }) {
   // In discovery mode the "cheapest highlight" would collapse the map to a
   // single dot, which breaks the whole footprint view. Force it off here
@@ -1244,7 +1265,11 @@ export function Map({
   const discoveryDots = showDiscoveryMap
     ? workingStations.map(station => ({
         station,
-        isContributed: station.country === 'EE' && contributedSet.has(String(station.id)),
+        // Any country: this dot means "you have priced this station". The EE
+        // gate here predates the Baltic expansion — with it, a Latvian could
+        // submit a price and watch the dot stay grey forever, which is the
+        // entire collecting loop failing silently.
+        isContributed: contributedSet.has(String(station.id)),
       }))
     : [];
 
@@ -1425,6 +1450,7 @@ export function Map({
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
+        <CountryHomeFlyTo country={activeCountry} center={homeCenter} zoom={homeZoom} />
         <TileLayer
           key={mapStyle}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'

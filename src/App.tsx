@@ -1218,6 +1218,7 @@ function App() {
         maakondGeo={maakondGeo}
         homeCenter={COUNTRIES[activeCountry].center}
         homeZoom={COUNTRIES[activeCountry].zoom}
+        activeCountry={activeCountry}
         parishGeo={parishGeo}
         completedParishIds={displayCompletedParishIds}
         parishProgress={displayParishProgress}
@@ -1406,7 +1407,7 @@ function App() {
               >
                 <span style={{ fontWeight: 500 }}>{getStationDisplayName(station)}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  {station.amenities?.['addr:street'] || station.amenities?.['addr:city'] || t('app.search.fallbackCountry')}
+                  {station.amenities?.['addr:street'] || station.amenities?.['addr:city'] || t(COUNTRIES[toCountryCode(station.country)].nameKey)}
                 </span>
               </button>
             ))}

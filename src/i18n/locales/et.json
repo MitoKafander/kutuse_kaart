@@ -589,6 +589,10 @@
       "countries": {
         "label": "Riigid kaardil",
         "desc": "Vali, milliste riikide tanklad kaardil näidatakse"
+      },
+      "activeCountry": {
+        "label": "Sinu riik",
+        "desc": "Määrab kaardi vaate, statistika ja avastuskaardi"
       }
     }
   },

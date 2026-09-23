@@ -226,6 +226,10 @@
       "countries": {
         "label": "Countries on the map",
         "desc": "Choose which countries' stations appear on the map"
+      },
+      "activeCountry": {
+        "label": "Your country",
+        "desc": "Sets the map view, statistics and discovery map"
       }
     },
     "header": {

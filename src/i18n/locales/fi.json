@@ -226,6 +226,10 @@
       "countries": {
         "label": "Maat kartalla",
         "desc": "Valitse, minkä maiden asemat näkyvät kartalla"
+      },
+      "activeCountry": {
+        "label": "Maasi",
+        "desc": "Määrittää karttanäkymän, tilastot ja löytökartan"
       }
     },
     "header": {
