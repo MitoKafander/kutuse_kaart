@@ -1,10 +1,10 @@
 // Phase 65 step 3: seed the full Latvian and Lithuanian station catalogs from
 // OpenStreetMap.
 //
-//   node scripts/fetch_baltic_osm.mjs             # fills .osm-cache/
-//   node scripts/seed_baltic_regions.mjs          # parishes must exist (FK)
-//   node scripts/seed_baltic_stations.mjs --dry-run
-//   node scripts/seed_baltic_stations.mjs
+//   node scripts/fetch_country_osm.mjs             # fills .osm-cache/
+//   node scripts/seed_country_regions.mjs          # parishes must exist (FK)
+//   node scripts/seed_country_stations.mjs --dry-run
+//   node scripts/seed_country_stations.mjs
 //
 // Idempotent by PROXIMITY, not by coordinate equality: an OSM point within
 // MATCH_METRES of a station already in the DB is treated as that station and
@@ -23,7 +23,7 @@ import { sb, fetchAll, chunk } from './_lib/db.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CACHE_DIR, pointInRings } from './_lib/overpass.mjs';
-import { loadRegionTree } from './_lib/baltic_regions.mjs';
+import { loadRegionTree } from './_lib/regions.mjs';
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
@@ -129,4 +129,4 @@ for (const cc of COUNTRIES) {
   console.log(`  inserted ${inserted} station(s)`);
 }
 
-console.log(`\nDone — ${grandNew} new station(s). Verify with: node scripts/verify_baltic_expansion.mjs`);
+console.log(`\nDone — ${grandNew} new station(s). Verify with: node scripts/verify_countries.mjs`);

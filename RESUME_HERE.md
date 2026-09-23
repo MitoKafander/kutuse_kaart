@@ -57,13 +57,13 @@ after an OSM refresh, and follow the same order when adding a fourth country):
    what keeps Estonia's catalog separate from the new ones. Rollback block is at the bottom
    of the file. **Rehearsed** against a container restored from `supabase db dump --linked`,
    where it applies clean and its triggers/views behave (see "SQL access" below).
-2. `node scripts/fetch_baltic_osm.mjs` — caches OSM into `.osm-cache/` (gitignored,
+2. `node scripts/fetch_country_osm.mjs` — caches OSM into `.osm-cache/` (gitignored,
    ~18 MB, reused for 72 h). Read-only. Expect mirror 504s; it rotates and retries.
-3. `node scripts/seed_baltic_regions.mjs --dry-run` then without the flag — writes 5+10
+3. `node scripts/seed_country_regions.mjs --dry-run` then without the flag — writes 5+10
    level-1 regions and 42+60 municipalities, then points existing LV stations at theirs.
-4. `node scripts/seed_baltic_stations.mjs --dry-run` then without the flag — inserts
+4. `node scripts/seed_country_stations.mjs --dry-run` then without the flag — inserts
    **1,215** new stations (LV +473, LT +742). The dry run prints exactly what it would do.
-5. `node scripts/verify_baltic_expansion.mjs` — must end "All checks passed". The checks
+5. `node scripts/verify_countries.mjs` — must end "All checks passed". The checks
    that matter are the Estonian invariants (15 maakonnad / 78 parishes / 0 count drift).
 6. Merge + push. Vercel redeploys; **disable the build cache** only if a `VITE_*` changed
    (none did here).
@@ -117,7 +117,7 @@ explicit `drop view` of the dependent + the view first.
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
 - **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210
-  (`scripts/_lib/baltic_regions.mjs`). They're `maakonnad.id` in prod AND `maakond_id`
+  (`scripts/_lib/regions.mjs`). They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.
 - **Latvia has no admin_level=4 in OSM.** Its 5 planning regions are a statutory grouping

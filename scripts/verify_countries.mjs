@@ -1,7 +1,7 @@
 // Phase 65 verification. Read-only — run it before AND after the seeds and
 // compare, or just run it after and read the verdicts.
 //
-//   node scripts/verify_baltic_expansion.mjs
+//   node scripts/verify_countries.mjs
 //
 // The question it exists to answer is not "did Latvia and Lithuania arrive"
 // (that's visible on the map) but "is Estonia exactly as it was". Every EE

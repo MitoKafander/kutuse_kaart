@@ -6,7 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
-import { FRESH_HOURS, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
+import { FRESH_HOURS, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName, stripRegionSuffix } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -591,7 +591,15 @@ function RegionLabelsLayer({
       if (!bb || !rawName) continue;
       if (featureVisible && !featureVisible(f, zoom)) continue;
 
-      const name = localizeRegionName(rawName, t);
+      // Two candidates: the full localised name, and the bare place name. The
+      // full one is preferred (Estonia has always shown "Jõelähtme vald"), but
+      // if it cannot fit inside the region's own shape we fall back to the
+      // short form rather than dropping the label entirely. Without this every
+      // Lithuanian label vanished — "Vilkaviškio rajono savivaldybė" is 30
+      // characters and never fits, so 0 of 60 rendered.
+      const fullName = localizeRegionName(rawName, t);
+      const shortName = stripRegionSuffix(rawName);
+      let name = fullName;
 
       const [minLng, minLat, maxLng, maxLat] = bb;
       const featBounds = L.latLngBounds([minLat, minLng], [maxLat, maxLng]);
@@ -624,7 +632,12 @@ function RegionLabelsLayer({
       const pillWidth = hasProg ? pillTextWidth + pillPaddingH * 2 : 0;
       const pillHeight = hasProg ? countFontSize + pillPaddingV * 2 + pillMarginTop : 0;
 
-      const nameWidth = name.length * fontSize * 0.56 + 6;
+      const widthOf = (n: string) => n.length * fontSize * 0.56 + 6;
+      // Shorten first if the full name alone cannot fit the shape's width.
+      if (widthOf(fullName) > pxWidth * widthRatio && shortName !== fullName) {
+        name = shortName;
+      }
+      const nameWidth = widthOf(name);
       const nameHeight = fontSize + 2;
 
       let showCount = hasProg;

@@ -961,7 +961,14 @@ function App() {
     if (!liveUserLocation) return;
     if (localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
     const guess = countryForCoords(liveUserLocation.lat, liveUserLocation.lon);
-    if (guess) setActiveCountry(prev => (prev === guess ? prev : guess));
+    if (!guess) return;
+    // Persist it. Standing where you are is a stronger signal than the browser
+    // language guess that got us here, and without writing it the app re-guesses
+    // (and briefly re-renders Estonia) on every single load.
+    setActiveCountry(prev => {
+      if (prev !== guess) writeActiveCountry(guess);
+      return guess;
+    });
   }, [liveUserLocation]);
 
   const handleActiveCountryChange = (next: CountryCode) => {

@@ -1,8 +1,8 @@
 // Phase 65 step 4: build the Avastuskaart boundary layers for Latvia and
 // Lithuania, the same way rebuild_boundaries.mjs builds Estonia's.
 //
-//   node scripts/fetch_baltic_osm.mjs          # fills .osm-cache/
-//   node scripts/rebuild_boundaries_baltic.mjs
+//   node scripts/fetch_country_osm.mjs          # fills .osm-cache/
+//   node scripts/rebuild_boundaries_country.mjs
 //
 // Writes, per country:
 //   public/municipalities_<cc>.geojson   level-2 outlines (properties: id, maakond_id, name, bbox)
@@ -15,14 +15,14 @@
 // municipalities keep a single shared line instead of a doubled seam.
 //
 // Requires: npx mapshaper (downloaded on first run). Reads no database —
-// region names and ids come from scripts/_lib/baltic_regions.mjs, the same
+// region names and ids come from scripts/_lib/regions.mjs, the same
 // source the DB seed uses, so the geojson and the catalog cannot drift.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRegionTree } from './_lib/baltic_regions.mjs';
+import { loadRegionTree } from './_lib/regions.mjs';
 import { cleanGeom, bboxOf, geometryFromRings } from './_lib/geojson.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));

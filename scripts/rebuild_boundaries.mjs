@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-// Shared with rebuild_boundaries_baltic.mjs so "what counts as a degenerate ring"
+// Shared with rebuild_boundaries_country.mjs so "what counts as a degenerate ring"
 // has one definition across both boundary builders (phase 65).
 import { cleanGeom, bboxOf } from './_lib/geojson.mjs';
 

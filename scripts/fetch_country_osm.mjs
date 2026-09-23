@@ -2,9 +2,9 @@
 // under .osm-cache/. Read-only — touches no database. Safe to re-run; cached
 // responses younger than 72h are reused.
 //
-//   node scripts/fetch_baltic_osm.mjs            # LV + LT
-//   node scripts/fetch_baltic_osm.mjs LV         # one country
-//   node scripts/fetch_baltic_osm.mjs --force    # ignore cache
+//   node scripts/fetch_country_osm.mjs            # LV + LT
+//   node scripts/fetch_country_osm.mjs LV         # one country
+//   node scripts/fetch_country_osm.mjs --force    # ignore cache
 //
 // What it caches, per country:
 //   <cc>_municipalities.json  admin_level=5 relations WITH member geometry.
@@ -13,7 +13,7 @@
 //   <cc>_counties.json        admin_level=4 relations (LT only — Lithuania's
 //                             10 apskritys are the level-1 tier). Latvia has
 //                             no admin_level=4 in OSM; its 5 planning regions
-//                             come from the static map in seed_baltic_regions.
+//                             come from the static map in seed_country_regions.
 //   <cc>_fuel.json            amenity=fuel nodes + ways (centre + tags).
 //
 // Expected magnitudes, asserted so a throttled mirror answering `{elements:[]}`

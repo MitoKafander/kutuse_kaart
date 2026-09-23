@@ -1,5 +1,5 @@
 // Geometry helpers shared by the boundary builders (Estonia's
-// rebuild_boundaries.mjs and the Baltic rebuild_boundaries_baltic.mjs), so
+// rebuild_boundaries.mjs and the Baltic rebuild_boundaries_country.mjs), so
 // "what counts as a degenerate ring" has exactly one definition.
 
 import { pointInRing } from './overpass.mjs';

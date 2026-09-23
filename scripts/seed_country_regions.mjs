@@ -2,10 +2,10 @@
 // Lithuania, then point every station in those countries at the municipality
 // it stands in.
 //
-//   node scripts/fetch_baltic_osm.mjs           # must run first (fills .osm-cache/)
-//   node scripts/seed_baltic_regions.mjs --dry-run
-//   node scripts/seed_baltic_regions.mjs
-//   node scripts/seed_baltic_regions.mjs LV     # one country
+//   node scripts/fetch_country_osm.mjs           # must run first (fills .osm-cache/)
+//   node scripts/seed_country_regions.mjs --dry-run
+//   node scripts/seed_country_regions.mjs
+//   node scripts/seed_country_regions.mjs LV     # one country
 //
 // Idempotent: re-running upserts the same ids (level-1 hand-allocated, level-2
 // = OSM relation id) and recomputes every station's parish_id. Requires
@@ -16,7 +16,7 @@
 // Estonia is deliberately NOT touched by this script.
 
 import { sb, fetchAll, chunk } from './_lib/db.mjs';
-import { loadRegionTree } from './_lib/baltic_regions.mjs';
+import { loadRegionTree } from './_lib/regions.mjs';
 import { pointInRings } from './_lib/overpass.mjs';
 
 const args = process.argv.slice(2);
@@ -95,4 +95,4 @@ for (const cc of COUNTRIES) {
   console.log(`  assigned ${done} station(s)`);
 }
 
-console.log('\nDone. Verify with: node scripts/verify_baltic_expansion.mjs');
+console.log('\nDone. Verify with: node scripts/verify_countries.mjs');

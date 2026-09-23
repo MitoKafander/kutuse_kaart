@@ -33,7 +33,7 @@ full station map, Avastuskaart with real administrative regions, per-country Ava
 board, brand collector, search, statistics and market insight.
 
 **✅ LIVE on kyts.ee** (merged to `main` as `7ca38f1`, migration applied, seeds run,
-`scripts/verify_baltic_expansion.mjs` → all checks passed). Prod now carries
+`scripts/verify_countries.mjs` → all checks passed). Prod now carries
 **482 EE + 548 LV + 742 LT = 1,772 active stations**, and Estonia is untouched: still
 exactly 15 maakonnad / 78 vallad, `station_count` drift 0 at both levels.
 
@@ -49,17 +49,17 @@ filter and would have merged all three catalogs into one Estonian Avastuskaart.
   would otherwise fill every slot forever).
 - 🟢 **Region catalogs.** LV = its 5 statutory planning regions + 42 municipalities
   (OSM has no admin_level=4 for Latvia, so the grouping is a statutory table in
-  `scripts/_lib/baltic_regions.mjs` that fails loudly if OSM's list ever stops matching
+  `scripts/_lib/regions.mjs` that fails loudly if OSM's list ever stops matching
   it in either direction). LT = the 10 apskritys + 60 savivaldybės straight from OSM,
   each municipality assigned to the county its centroid falls in — `map_to_area`
   membership lists a municipality under every county it *touches* (Vilniaus r. and
   Molėtų r. each came back in two), so geometry decides and membership only cross-checks.
   Region ids are hand-allocated and stable: EE 1-15, LV 101-105, LT 201-210.
 - 🟢 **Boundary layers** `public/{regions,municipalities}_{lv,lt}.geojson`, built by
-  `scripts/rebuild_boundaries_baltic.mjs` through the same topology-preserving mapshaper
+  `scripts/rebuild_boundaries_country.mjs` through the same topology-preserving mapshaper
   pipeline Estonia uses. Level-1 is *dissolved* from level-2 so the two layers share exact
   border lines. Fetched lazily per country: an Estonian user downloads none of them.
-- 🟢 **1,215 new stations** (LV +473, LT +742) from OSM via `scripts/seed_baltic_stations.mjs`.
+- 🟢 **1,215 new stations** (LV +473, LT +742) from OSM via `scripts/seed_country_stations.mjs`.
   Deduped by **proximity** (120 m), not coordinate equality — 74 of the 75 existing Latvian
   border rows were correctly recognised as already present, and 75 same-forecourt
   node/way pairs collapsed. Same scope exclusions as Estonia (private/fleet depots,
@@ -88,7 +88,7 @@ filter and would have merged all three catalogs into one Estonian Avastuskaart.
   it was dormant rather than broken, but a denormalized counter that only a manual block
   can fix is a trap with a thousand stations about to land. The trigger now maintains both
   levels.
-- 🟢 `scripts/verify_baltic_expansion.mjs` asserts the invariants that matter: Estonia still
+- 🟢 `scripts/verify_countries.mjs` asserts the invariants that matter: Estonia still
   has exactly 15 maakonnad / 78 parishes, `station_count` drift is 0 at both levels in every
   country, no station points at another country's municipality, region ids stay in their
   bands, and every catalog row has drawn geometry.

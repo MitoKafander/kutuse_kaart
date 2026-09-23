@@ -5,7 +5,7 @@
 // Both are device-level defaults that get overridden by the signed-in profile
 // when one loads, mirroring how every other Kyts preference behaves.
 
-import { COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, isCountryCode, type CountryCode } from '../constants/countries';
+import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, isCountryCode, type CountryCode } from '../constants/countries';
 
 export const HIDDEN_COUNTRIES_KEY = 'kyts-hidden-countries';
 export const ACTIVE_COUNTRY_KEY = 'kyts-active-country';
@@ -73,7 +73,37 @@ export function readActiveCountry(coords?: { lat: number; lon: number } | null):
     const guess = countryForCoords(coords.lat, coords.lon);
     if (guess) return guess;
   }
-  return DEFAULT_COUNTRY;
+  return countryFromBrowserLanguage() ?? DEFAULT_COUNTRY;
+}
+
+/**
+ * Best guess from the browser's language list, used before geolocation is
+ * available — which on a first visit is always, since the map only starts
+ * locating once permission has already been granted.
+ *
+ * Without this a Latvian got a Latvian *interface* (i18next reads the same
+ * navigator.languages) laid over an Estonian map, Estonian statistics and
+ * Estonia's 78 vallad — the one combination guaranteed to look broken. Matches
+ * on the language subtag against each country's preferredLocale, so 'lv-LV'
+ * and 'lv' both resolve; a region subtag wins outright ('lt-LT').
+ */
+export function countryFromBrowserLanguage(): CountryCode | null {
+  let langs: readonly string[] = [];
+  try {
+    langs = navigator.languages?.length ? navigator.languages : [navigator.language].filter(Boolean);
+  } catch { return null; }
+  for (const raw of langs) {
+    const tag = raw.toLowerCase();
+    const region = tag.split('-')[1];
+    if (region) {
+      const byRegion = COUNTRY_CODES.find((c) => c.toLowerCase() === region);
+      if (byRegion) return byRegion;
+    }
+    const base = tag.split('-')[0];
+    const byLocale = COUNTRY_CODES.find((c) => COUNTRIES[c].preferredLocale === base);
+    if (byLocale) return byLocale;
+  }
+  return null;
 }
 
 export function writeActiveCountry(country: CountryCode) {

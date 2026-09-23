@@ -21,6 +21,25 @@ export function fuelLabel(type: string, t?: (key: string) => string): string {
 const REGION_SUFFIXES = ['maakond', 'vald', 'linn'] as const;
 type RegionSuffix = typeof REGION_SUFFIXES[number];
 
+/**
+ * Administrative nouns to drop when a region name has to fit inside its own
+ * shape on the map. Estonian names are short ("Jõelähtme vald", 14 chars) but
+ * Latvian and Lithuanian ones carry much longer tails — "Vilkaviškio rajono
+ * savivaldybė" is 30 — and the label renderer skips any name too wide for the
+ * region's bounding box, which silently hid every Lithuanian label.
+ *
+ * Matched case-insensitively from the END, repeatedly, so two-word tails like
+ * "rajono savivaldybė" and "miesto savivaldybė" both reduce to the place name.
+ */
+const STRIPPABLE_TAIL_WORDS = new Set([
+  // Estonian
+  'maakond', 'vald', 'linn',
+  // Latvian
+  'novads', 'pilsēta', 'reģions',
+  // Lithuanian
+  'apskritis', 'savivaldybė', 'rajono', 'miesto', 'rajonas',
+]);
+
 // Region names ship from the DB as Estonian strings — "Harju maakond",
 // "Jõelähtme vald", "Narva linn". The proper-name part stays as-is in every
 // locale; only the trailing administrative noun gets swapped via region.suffix.*
@@ -36,14 +55,18 @@ export function localizeRegionName(name: string, t?: (key: string) => string): s
   return `${name.slice(0, lastSpace)} ${translated}`;
 }
 
-// Same swap as localizeRegionName but strips the suffix entirely — used by
-// compact tiles where the type is implied by context (e.g. the maakond grid).
+/**
+ * Strips the administrative noun entirely — for compact tiles and map labels
+ * where the type is implied by context. Handles multi-word tails, so
+ * "Vilkaviškio rajono savivaldybė" -> "Vilkaviškio" and "Alūksnes novads" ->
+ * "Alūksnes". Never strips the last remaining word: "Rīga" stays "Rīga".
+ */
 export function stripRegionSuffix(name: string): string {
-  const lastSpace = name.lastIndexOf(' ');
-  if (lastSpace === -1) return name;
-  const suffix = name.slice(lastSpace + 1) as RegionSuffix;
-  if (!REGION_SUFFIXES.includes(suffix)) return name;
-  return name.slice(0, lastSpace);
+  const parts = name.trim().split(/\s+/);
+  while (parts.length > 1 && STRIPPABLE_TAIL_WORDS.has(parts[parts.length - 1].toLowerCase())) {
+    parts.pop();
+  }
+  return parts.join(' ');
 }
 
 import type { Station } from './types';
