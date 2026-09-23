@@ -180,7 +180,17 @@ update user_profiles
 
 -- Unchanged shape + `country`, so the client can scope the Avastuskaart to one
 -- country. `pa.station_count > 0` still hides empty regions from denominators.
-create or replace view v_user_parish_progress as
+--
+-- DROP then CREATE, not CREATE OR REPLACE: replacing a view can only APPEND
+-- columns, and `country` belongs next to maakond_id rather than tacked on the
+-- end ("cannot change name of view column ..."). v_discovery_leaderboard is the
+-- only dependent and is recreated immediately below, so it's dropped first
+-- rather than left to CASCADE — an explicit drop can't silently take something
+-- else with it.
+drop view if exists v_discovery_leaderboard;
+drop view if exists v_user_parish_progress;
+
+create view v_user_parish_progress as
 select
   d.user_id,
   s.parish_id,
@@ -198,7 +208,7 @@ group by d.user_id, s.parish_id, pa.maakond_id, pa.country, pa.station_count;
 -- Top 100 PER COUNTRY. A user who contributes in two countries appears on both
 -- boards, each row counting only that country's regions/stations — which is
 -- also what makes an Estonian's row identical to what it is today.
-create or replace view v_discovery_leaderboard as
+create view v_discovery_leaderboard as
 with parish_done as (
   select user_id, parish_id, maakond_id, country
   from v_user_parish_progress

@@ -51,9 +51,11 @@ Supabase SQL editor, which Claude can't reach. Full detail in CHANGELOG 2026-09-
 
 **Run in this order.** Each step is idempotent and safe to re-run.
 
-1. **Apply the migration** — paste `migrations/schema_phase65_baltic_countries.sql` into
-   the Supabase SQL editor. Nothing else works before this; it's also what keeps Estonia's
-   catalog separate from the new ones. Rollback block is at the bottom of the file.
+1. **Apply the migration** — `supabase db query --linked -f migrations/schema_phase65_baltic_countries.sql`
+   (or paste it into the Supabase SQL editor). Nothing else works before this; it's also
+   what keeps Estonia's catalog separate from the new ones. Rollback block is at the bottom
+   of the file. **Rehearsed** against a container restored from `supabase db dump --linked`,
+   where it applies clean and its triggers/views behave (see "SQL access" below).
 2. `node scripts/fetch_baltic_osm.mjs` — caches OSM into `.osm-cache/` (gitignored,
    ~18 MB, reused for 72 h). Read-only. Expect mirror 504s; it rotates and retries.
 3. `node scripts/seed_baltic_regions.mjs --dry-run` then without the flag — writes 5+10
@@ -68,10 +70,36 @@ Supabase SQL editor, which Claude can't reach. Full detail in CHANGELOG 2026-09-
    `curl -H "Authorization: Bearer $CRON_SECRET" .../api/generate-market-insight?country=LV`
    — under 20 local samples it deliberately skips rather than inventing an insight.
 
-**Order matters** in exactly one place: regions before stations, because a station's
-`parish_id` is an FK. Deploying the code before step 1 is safe — the client reads
-`select('*')` and treats a missing `country` column as Estonia, which is what those rows
-are — but the map won't show a single new station until step 4.
+**Order matters** in two places:
+- **Regions before stations**, because a station's `parish_id` is an FK.
+- **Deploy the new bundle BEFORE the region seed** (step 3). The migration alone is safe
+  against the live old bundle — it reads explicit column lists that adding a column can't
+  break — but the moment LV/LT rows land in `maakonnad`/`parishes`, an old bundle with no
+  country filter would merge all three countries into one Estonian Avastuskaart (30
+  regions, inflated denominators). The new bundle scopes by country, so once it's out the
+  seeds are invisible until you switch countries.
+
+### SQL access (Claude CAN run DDL here)
+`supabase db query --linked "<sql>"` and `-f <file>` work: the **CLI is authenticated**
+even though the Supabase **MCP is not** (`SUPABASE_ACCESS_TOKEN` unset → every
+`mcp__supabase__*` call returns Unauthorized). Link once with
+`supabase link --project-ref sdtwolcoibcobpzgfqxx --yes`. Note the auto-mode classifier
+denies applying a migration as a "Production Deploy" — that needs Mikk's go-ahead or a
+Bash permission rule.
+
+**Rehearse any migration before prod**, it's cheap and it already paid:
+```
+supabase db dump --linked -f /tmp/prod_schema.sql          # read-only
+docker run -d --name pg-rehearsal -e POSTGRES_PASSWORD=postgres \
+  public.ecr.aws/supabase/postgres:17.6.1.104              # same version as prod
+docker exec -i pg-rehearsal psql -U postgres -q < /tmp/prod_schema.sql     # ON_ERROR_STOP off: the dump re-creates an extension the image has
+docker exec -i pg-rehearsal psql -U postgres -v ON_ERROR_STOP=1 < migrations/<file>.sql
+```
+The image restarts Postgres once during init, so wait for **two consecutive** successful
+`select 1`s, not one. This caught phase 65 failing *halfway through*: `CREATE OR REPLACE
+VIEW` can only APPEND columns, so adding `country` in the middle of
+`v_user_parish_progress` errors with "cannot change name of view column" — it needs an
+explicit `drop view` of the dependent + the view first.
 
 ## Next steps (loose priority)
 0. 🔖 **Gemini on prepay: calls WORK** (2026-09-18 prod dry-run insight generated Gemini text). Still open: confirm auto-reload or a low-balance alert in AI Studio → Billing. Camera-scan health: PostHog (`~/.config/kyts/posthog.json`, HogQL on `ai_scan_success`/`ai_scan_failure` with `model_used`/`code`).
