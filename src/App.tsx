@@ -778,9 +778,29 @@ function App() {
   // Built off the full catalog (ignoring the `Tundmatu` sentinel) so totals
   // stay stable regardless of the LV-stations view toggle. Sorted by
   // done-desc then brand-alpha so the user's trophy row grows top-down.
+  // The active country's stations. Everything that asks "how am I doing HERE"
+  // runs off this: the Avastuskaart badge grid, the brand collector, and
+  // Statistics (medians pooled across three countries would describe nowhere).
+  // Cheapest-nearby and the route planner deliberately stay cross-border —
+  // that's the whole point of a border station — and only drop countries the
+  // user switched off.
+  const countryStations = useMemo(
+    () => stations.filter(s => toCountryCode(s.country) === activeCountry),
+    [stations, activeCountry],
+  );
+  const countryPrices = useMemo(() => {
+    const ids = new Set(countryStations.map(s => String(s.id)));
+    return prices.filter(p => ids.has(String(p.station_id)));
+  }, [countryStations, prices]);
+
+  // Brand collector, scoped to the active country (phase 65 follow-up). It used
+  // catalog-wide totals on purpose while Latvia was a 75-station border strip —
+  // but across three countries "Circle K 37/246" counts forecourts in Vilnius
+  // against an Estonian driver, which is unreachable rather than aspirational.
+  // Same country as the badge grid above it: both live in the Avastuskaart panel.
   const userBrandProgress = useMemo<BrandProgress[]>(() => {
     const perBrand = new globalThis.Map<string, { total: number; done: number; collected: string[] }>();
-    for (const s of stations) {
+    for (const s of countryStations) {
       const brand = getBrand(s.name);
       if (brand === 'Tundmatu') continue;
       const entry = perBrand.get(brand) || { total: 0, done: 0, collected: [] };
@@ -796,7 +816,7 @@ function App() {
     }));
     arr.sort((a, b) => (b.done - a.done) || a.brand.localeCompare(b.brand, 'et'));
     return arr;
-  }, [stations, userContributedStationIds]);
+  }, [countryStations, userContributedStationIds]);
 
   // The Avastuskaart is one country at a time. Scoping the catalog here (not
   // the fetch) keeps every country's badge grid, counters and celebrations
@@ -888,19 +908,6 @@ function App() {
         .then(() => {}, () => {});
     }
   };
-
-  // Statistics answers "what is fuel doing in MY market", so it runs on one
-  // country — medians pooled across three would describe nowhere. Cheapest-
-  // nearby and the route planner deliberately stay cross-border (that's the
-  // point of a border station) and only drop countries the user switched off.
-  const countryStations = useMemo(
-    () => stations.filter(s => toCountryCode(s.country) === activeCountry),
-    [stations, activeCountry],
-  );
-  const countryPrices = useMemo(() => {
-    const ids = new Set(countryStations.map(s => String(s.id)));
-    return prices.filter(p => ids.has(String(p.station_id)));
-  }, [countryStations, prices]);
 
   const activeInsight = useMemo<MarketInsight | null>(() => {
     if (!activeInsights.length) return null;
