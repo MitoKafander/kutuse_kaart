@@ -34,3 +34,6 @@ Images/
 *.sln
 *.sw?
 .osm-cache/
+
+# Personal Claude Code permissions — this repo is public, keep them out of it
+.claude/settings.local.json
