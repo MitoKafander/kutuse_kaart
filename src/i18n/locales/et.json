@@ -15,6 +15,16 @@
       "maakond": "maakond",
       "vald": "vald",
       "linn": "linn"
+    },
+    "level1": {
+      "EE": "maakonda",
+      "LV": "regiooni",
+      "LT": "maakonda"
+    },
+    "level2": {
+      "EE": "valda",
+      "LV": "omavalitsust",
+      "LT": "omavalitsust"
     }
   },
   "price": {
@@ -368,9 +378,9 @@
     },
     "stats": {
       "prices": "{{count}} hinda",
-      "maakonnad": "{{done}}/{{total}} maakonda",
       "parishes": "{{count}} valda",
-      "stations": "{{count}} jaama"
+      "stations": "{{count}} jaama",
+      "level1": "{{done}}/{{total}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Vaata selle kasutaja avastuskaarti",
@@ -415,8 +425,8 @@
     "loading": "Regioone pole veel laetud…",
     "tile": {
       "stations": "{{done}}/{{total}} jaama",
-      "parishes": "{{done}}/{{total}} valda",
-      "noStations": "pole jaamu"
+      "noStations": "pole jaamu",
+      "level2": "{{done}}/{{total}} {{unit}}"
     }
   },
   "profile": {
@@ -492,8 +502,8 @@
       "description": "Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.",
       "stats": {
         "stations": "{{done}}/{{total}} jaama",
-        "parishes": "{{done}}/{{total}} valda",
-        "maakonnad": "{{done}}/{{total}} maakonda"
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
       },
       "shareLabel": "Jaga avalikult",
       "shareDesc": "Teised näevad su nimel klõpsates, millised jaamad oled avastanud.",
@@ -504,7 +514,8 @@
         "emptyBrand_other": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaama.",
         "remaining_one": "Avastada jääb veel {{count}} jaam.",
         "remaining_other": "Avastada jääb veel {{count}} jaama."
-      }
+      },
+      "countryPicker": "Vali riik"
     },
     "activity": {
       "title": "Viimased tegevused"
@@ -548,10 +559,6 @@
         "label": "Peida jaamad ilma hindadeta",
         "desc": "Kiirem pan/zoom, vähem segadust"
       },
-      "latvian": {
-        "label": "Näita Läti jaamu",
-        "desc": "Piiriäärsed jaamad Lätis"
-      },
       "staleDemo": {
         "label": "Näita aegunud hindu (demo)",
         "desc": "Kuvab ka >24h vanu hindu"
@@ -577,6 +584,10 @@
         "confirm2": "Viimane kinnitus: see tegevus on tagasipööramatu. Jätkan?",
         "success": "Konto on kustutatud.",
         "error": "Konto kustutamine ebaõnnestus: {{message}}"
+      },
+      "countries": {
+        "label": "Riigid kaardil",
+        "desc": "Vali, milliste riikide tanklad kaardil näidatakse"
       }
     }
   },
@@ -782,5 +793,10 @@
         "proxy_unreliable": "Diisli hulgihinna näitaja ei ennusta Eesti pumbahinda usaldusväärselt — ajastust ei paku."
       }
     }
+  },
+  "country": {
+    "EE": "Eesti",
+    "LV": "Läti",
+    "LT": "Leedu"
   }
 }

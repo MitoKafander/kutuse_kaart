@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export type Maakond = { id: number; name: string; emoji: string | null; station_count: number };
-export type Parish = { id: number; maakond_id: number; name: string; station_count: number };
+// `country` arrived with phase 65. It's optional because a client can be
+// running against a DB where the migration hasn't been applied yet — absent
+// means Estonia, which is what every pre-phase-65 row was.
+export type Maakond = { id: number; name: string; emoji: string | null; station_count: number; country?: string | null };
+export type Parish = { id: number; maakond_id: number; name: string; station_count: number; country?: string | null };
 
 export type RegionProgress = {
   stations: { done: number; total: number };
@@ -59,11 +62,11 @@ export function useRegionProgress(opts: {
   contributedStationIds: Set<string>;
   maakonnad: Maakond[];
   parishes: Parish[];
-  // station -> parish mapping (only EE stations with parish_id)
+  // station -> parish mapping, for every country (a station without a
+  // parish_id — e.g. one seeded outside any mapped municipality — is simply
+  // absent and can't contribute to region progress).
   stationParishMap: Map<string, number>;
-  // station -> display name, used for station-discovery toast copy. Only EE
-  // stations need to be covered — LV border stations don't have parish_id so
-  // they won't fire discovery events anyway.
+  // station -> display name, used for station-discovery toast copy.
   stationNamesMap: Map<string, string>;
   // Gate parish/maakond celebrations on the Avastuskaart toggle being live.
   // Station-discovery toasts fire independently — they're tied to the act of
@@ -84,7 +87,9 @@ export function useRegionProgress(opts: {
   const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId } = opts;
 
   const progress = useMemo<RegionProgress>(() => {
-    // Sort maakonnad Estonian-alpha for consistent grid order.
+    // Sort the level-1 regions alphabetically for a stable grid order. The
+    // 'et' collation orders ÕÄÖÜ correctly and leaves Latvian/Lithuanian
+    // diacritics in a sane place; the catalog is single-country anyway.
     const sortedMaakonnad = [...maakonnad].sort((a, b) => a.name.localeCompare(b.name, 'et'));
     const parishesByMaakond = new Map<number, Parish[]>();
     for (const p of parishes) {

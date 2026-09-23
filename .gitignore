@@ -33,3 +33,4 @@ Images/
 *.njsproj
 *.sln
 *.sw?
+.osm-cache/

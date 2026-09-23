@@ -184,7 +184,7 @@ export function hasDiscount(brand: string, discounts: LoyaltyDiscounts, apply: b
   return (discounts[brand] ?? 0) > 0;
 }
 
-// Canonical Estonian fuel chains. The `match` value is a normalized substring
+// Canonical Baltic fuel chains. The `match` value is a normalized substring
 // (lowercase, hyphens → spaces, whitespace collapsed) and is searched anywhere
 // in the station name, so "Kristiine Circle K tankla", "Kärdla Olerex",
 // "Eksar-Transoil Masti tankla", "HEPA", "Jetgas", "Premium-7", and "Thori
@@ -219,26 +219,55 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'pihtla tee tankla', canonical: 'Saare Kütus' },
   { match: 'roomassaare tankla', canonical: 'Saare Kütus' },
   { match: 'orissaare tankla', canonical: 'Saare Kütus' },
-  // Latvian chains (border-strip + future Latvia region)
-  { match: 'virsi',          canonical: 'Virši-A' }, // matches "Virši", "Virši-A", "Virsi"
-  { match: 'viada',          canonical: 'Viada' },
-  { match: 'kool',           canonical: 'KOOL' },
+  // Latvian chains. Counts are OSM's as of the phase-65 seed, for scale.
+  { match: 'virsi',          canonical: 'Virši-A' },      // "Virši", "Virši-A", "Virsi" — 97
+  { match: 'viada',          canonical: 'Viada' },        // 102, also the biggest LT chain
+  { match: 'kool',           canonical: 'KOOL' },         // "KOOL" / "Kool" — 38
   { match: 'astarte',        canonical: 'Astarte Nafta' },
   { match: 'latvijas nafta', canonical: 'Latvijas Nafta' },
-  { match: 'propāna',        canonical: 'Latvijas Propāna Gāze' }, // collapses case variants
+  { match: 'propana',        canonical: 'Latvijas Propāna Gāze' }, // folded: matches "Propāna"
   { match: 'lateva',         canonical: 'Lateva' },
   { match: 'gotika',         canonical: 'Gotika Auto' },
+  { match: 'straujupite',    canonical: 'Straujupīte' },  // folded: matches "Straujupīte"
+  { match: 'ziemelu nafta',  canonical: 'Ziemeļu Nafta' },
+  { match: 'dinaz',          canonical: 'Dinaz' },
+  { match: 'ingrida',        canonical: 'Ingrīda' },
+  { match: 'kings',          canonical: 'Kings' },
+
+  // Lithuanian chains. Viada, Circle K and Neste (above) are the top three
+  // there too; these are the ones Lithuania has and Latvia doesn't.
+  { match: 'baltic petroleum', canonical: 'Baltic Petroleum' }, // 77
+  { match: 'orlen',          canonical: 'Orlen' },              // 29, ex-Orlen Lietuva
+  { match: 'jozita',         canonical: 'Jozita' },
+  { match: 'saurida',        canonical: 'Saurida' },
+  { match: 'emsi',           canonical: 'EMSI' },               // "Emsi" / "EMSI"
+  { match: 'alausa',         canonical: 'Alauša' },             // folded: matches "Alauša"
+  { match: 'stateta',        canonical: 'Stateta' },
+  { match: 'kvistija',       canonical: 'Kvistija' },
+  { match: 'trevena',        canonical: 'Trevena' },
+  { match: 'apsaga',         canonical: 'Apsaga' },
+  { match: 'skulas',         canonical: 'Skulas' },
+  { match: 'milda',          canonical: 'Milda' },
 ];
 
+// Diacritics are folded on BOTH sides (pattern and station name) so one
+// pattern covers every spelling a chain shows up under across the Baltics:
+// "Virši" / "Virši-A" / "Virsi", "Propāna" / "Propana", "Alauša" / "Alausa".
+// Folding can only make a pattern match MORE names, never fewer, and the
+// patterns below are written in their folded form.
+function foldDiacritics(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function normalizeBrandKey(s: string): string {
-  return s.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+  return foldDiacritics(s.toLowerCase()).replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 export function getBrand(name: string | null | undefined): string {
   if (!name) return 'Tundmatu';
   const n = normalizeBrandKey(name);
   for (const { match, canonical } of CHAIN_PATTERNS) {
-    if (n.includes(match)) return canonical;
+    if (n.includes(normalizeBrandKey(match))) return canonical;
   }
   return name;
 }

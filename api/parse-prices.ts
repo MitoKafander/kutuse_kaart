@@ -146,7 +146,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     // through; the goal is to kill obvious mis-bucketings, not to
     // duplicate the server-side enforcement.
     const FUEL_RANGE_HINT =
-      `Realistic Estonian/Latvian price ranges (€/L) — use these to reject mis-bucketed reads:\n` +
+      `Realistic Baltic (EE/LV/LT) price ranges (€/L) — use these to reject mis-bucketed reads:\n` +
       `- "Bensiin 95": 1.20–2.30\n` +
       `- "Bensiin 98": 1.30–2.40\n` +
       `- "Diisel": 1.20–2.60 (includes premium variants like Diesel Pro / D Premium)\n` +
@@ -159,7 +159,15 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       // getting its AdBlue price logged as LPG. The label is the only reliable
       // discriminator, so anchor LPG to its explicit row names.
       `CRITICAL: AdBlue (also written "AdBlue", "AUS 32", "DEF", or "Urea") is a diesel exhaust additive, NOT a fuel. Its price (~€0.50–0.90/L) sits right inside the LPG range, so it is constantly mis-assigned to LPG. ` +
-      `Only return an LPG price when its row is explicitly labelled "LPG", "Vedelgaas", "Autogaas", or "Gaas". If the cheapest row is labelled AdBlue / AUS 32 / DEF / Urea, ignore it entirely — never map it to LPG or any other fuel slot.`;
+      `Only return an LPG price when its row is explicitly labelled "LPG", "Vedelgaas", "Autogaas", "Gaas", "Gāze", "Auto gāze" (Latvian) or "Dujos", "Automobilinės dujos", "SND" (Lithuanian). If the cheapest row is labelled AdBlue / AUS 32 / DEF / Urea, ignore it entirely — never map it to LPG or any other fuel slot.\n` +
+      // Totems across the border are labelled in the local language. Without
+      // this, a Latvian "Dīzeļdegviela" or Lithuanian "Dyzelinas" row reads as
+      // an unknown fuel and the scan comes back empty on a perfectly good photo.
+      `Fuel row labels vary by country — map them to the four slots above:\n` +
+      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95.\n` +
+      `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, 100, 99 (premium petrol grades).\n` +
+      `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D.\n` +
+      `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND.`;
 
     const prompt = hasKnownStation
       ? `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station conceptually named "${hint}".

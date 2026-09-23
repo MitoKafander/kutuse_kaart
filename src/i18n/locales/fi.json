@@ -15,6 +15,16 @@
       "maakond": "maakunta",
       "vald": "kunta",
       "linn": "kaupunki"
+    },
+    "level1": {
+      "EE": "maakuntaa",
+      "LV": "aluetta",
+      "LT": "maakuntaa"
+    },
+    "level2": {
+      "EE": "kuntaa",
+      "LV": "kuntaa",
+      "LT": "kuntaa"
     }
   },
   "price": {
@@ -187,10 +197,6 @@
         "label": "Piilota asemat ilman hintoja",
         "desc": "Nopeampi siirto/zoomaus, vähemmän sotkua"
       },
-      "latvian": {
-        "label": "Näytä Latvian asemat",
-        "desc": "Raja-asemat Latviassa"
-      },
       "staleDemo": {
         "label": "Näytä vanhentuneet hinnat (demo)",
         "desc": "Näyttää myös >24h vanhat hinnat"
@@ -216,6 +222,10 @@
         "confirm2": "Lopullinen vahvistus: tätä toimintoa ei voi peruuttaa. Jatketaanko?",
         "success": "Tili poistettu.",
         "error": "Tilin poisto epäonnistui: {{message}}"
+      },
+      "countries": {
+        "label": "Maat kartalla",
+        "desc": "Valitse, minkä maiden asemat näkyvät kartalla"
       }
     },
     "header": {
@@ -286,8 +296,8 @@
       "description": "Katso, mitkä asemat olet löytänyt. Täytä kunnat ja maakunnat noustaksesi löytäjien tulostaululla.",
       "stats": {
         "stations": "{{done}}/{{total}} asemaa",
-        "parishes": "{{done}}/{{total}} kuntaa",
-        "maakonnad": "{{done}}/{{total}} maakuntaa"
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
       },
       "shareLabel": "Jaa julkisesti",
       "shareDesc": "Muut näkevät löytämäsi asemat napsauttamalla nimeäsi.",
@@ -296,7 +306,8 @@
         "noBrands": "Merkkejä ei ole vielä saatavilla.",
         "emptyBrand": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
         "remaining": "Löydettävänä vielä {{count}} asemaa."
-      }
+      },
+      "countryPicker": "Valitse maa"
     },
     "activity": {
       "title": "Viimeisin toiminta"
@@ -319,7 +330,7 @@
     "tile": {
       "noStations": "ei asemia",
       "stations": "{{done}}/{{total}} asemaa",
-      "parishes": "{{done}}/{{total}} kuntaa"
+      "level2": "{{done}}/{{total}} {{unit}}"
     }
   },
   "app": {
@@ -579,9 +590,9 @@
     "youSuffix": "(sinä)",
     "stats": {
       "prices": "{{count}} hintaa",
-      "maakonnad": "{{done}}/{{total}} maakuntaa",
       "parishes": "{{count}} kuntaa",
-      "stations": "{{count}} asemaa"
+      "stations": "{{count}} asemaa",
+      "level1": "{{done}}/{{total}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Katso tämän käyttäjän löytökartta",
@@ -698,5 +709,10 @@
         "low_sample_count": "Liian vähän Kyts-raportteja varmuudelle."
       }
     }
+  },
+  "country": {
+    "EE": "Viro",
+    "LV": "Latvia",
+    "LT": "Liettua"
   }
 }

@@ -12,6 +12,9 @@ import type { LoyaltyDiscounts } from '../utils';
 type NativeMap<K, V> = globalThis.Map<K, V>;
 const NativeMap = globalThis.Map;
 
+// Fallback home view, used only until geolocation resolves (or if it's
+// denied). Phase 65 makes it follow the user's country instead of always
+// dropping a Latvian or Lithuanian driver into the middle of Estonia.
 const ESTONIA_CENTER: [number, number] = [58.5953, 25.0136];
 
 const BRAND_COLORS: Record<string, string> = {
@@ -917,6 +920,8 @@ export function Map({
   parishGeo = null,
   completedParishIds = null,
   parishProgress = null,
+  homeCenter = ESTONIA_CENTER,
+  homeZoom = 7,
 }: {
   stations: any[],
   prices: any[],
@@ -943,6 +948,9 @@ export function Map({
   parishGeo?: any | null,
   completedParishIds?: Set<number> | null,
   parishProgress?: Map<number, { done: number; total: number }> | null,
+  /** First view before geolocation resolves — the active country's home box. */
+  homeCenter?: [number, number],
+  homeZoom?: number,
 }) {
   // In discovery mode the "cheapest highlight" would collapse the map to a
   // single dot, which breaks the whole footprint view. Force it off here
@@ -1371,8 +1379,8 @@ export function Map({
   return (
     <div style={{ height: 'calc(var(--app-height, 100dvh) + env(safe-area-inset-bottom))', width: '100vw', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
       <MapContainer
-        center={ESTONIA_CENTER}
-        zoom={7}
+        center={homeCenter}
+        zoom={homeZoom}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >

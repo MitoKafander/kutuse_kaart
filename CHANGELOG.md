@@ -2,6 +2,73 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - Baltic expansion: Latvia + Lithuania as first-class countries (phase 65) - 2026-09-23
+
+Kyts covers all three Baltic states. Latvia goes from a 75-station border strip to its
+whole catalog, Lithuania arrives from nothing, and both get the same app Estonia has —
+full station map, Avastuskaart with real administrative regions, per-country Avastajad
+board, brand collector, search, statistics and market insight.
+
+**⚠️ Not yet applied to prod.** Branch `baltic-expansion`. The code is safe to deploy
+before the migration (it degrades to today's behaviour), but the data is not there until
+the sequence in `RESUME_HERE.md` → "Baltic expansion runbook" is run.
+
+- 🟡 **`migrations/schema_phase65_baltic_countries.sql`** — `country` on `maakonnad` /
+  `parishes` / `market_insights` / `market_insight_runs`, `user_profiles.hidden_countries`
+  (replaces `show_latvian_stations`, old column kept for rollback), country-scoped price
+  band trigger, `get_kyts_fuel_window_avg(…, p_country)`, and a per-country
+  `v_discovery_leaderboard` (top 100 **per country** — Estonia's five-year head start
+  would otherwise fill every slot forever).
+- 🟢 **Region catalogs.** LV = its 5 statutory planning regions + 42 municipalities
+  (OSM has no admin_level=4 for Latvia, so the grouping is a statutory table in
+  `scripts/_lib/baltic_regions.mjs` that fails loudly if OSM's list ever stops matching
+  it in either direction). LT = the 10 apskritys + 60 savivaldybės straight from OSM,
+  each municipality assigned to the county its centroid falls in — `map_to_area`
+  membership lists a municipality under every county it *touches* (Vilniaus r. and
+  Molėtų r. each came back in two), so geometry decides and membership only cross-checks.
+  Region ids are hand-allocated and stable: EE 1-15, LV 101-105, LT 201-210.
+- 🟢 **Boundary layers** `public/{regions,municipalities}_{lv,lt}.geojson`, built by
+  `scripts/rebuild_boundaries_baltic.mjs` through the same topology-preserving mapshaper
+  pipeline Estonia uses. Level-1 is *dissolved* from level-2 so the two layers share exact
+  border lines. Fetched lazily per country: an Estonian user downloads none of them.
+- 🟢 **1,215 new stations** (LV +473, LT +742) from OSM via `scripts/seed_baltic_stations.mjs`.
+  Deduped by **proximity** (120 m), not coordinate equality — 74 of the 75 existing Latvian
+  border rows were correctly recognised as already present, and 75 same-forecourt
+  node/way pairs collapsed. Same scope exclusions as Estonia (private/fleet depots,
+  CNG/CBG/LNG/H2/EV-only, bottled-gas cabinets); LPG stays in, it's a tracked fuel.
+- 🟢 **Per-country station visibility.** The single "show Latvian stations" switch became
+  one toggle per country, backed by `hidden_countries`. Hiding a country now also removes
+  it from search results.
+- 🟢 **Brand normalisation folds diacritics** on both the pattern and the station name, so
+  `virsi` finally catches "Virši"/"Virši-A" as its comment always claimed. Replayed over
+  every row in prod: **9 rows changed (all Virši → Virši-A), 0 Estonian stations affected.**
+  17 Latvian and Lithuanian chains added (Viada, Baltic Petroleum, Orlen, EMSI, Alauša, …).
+- 🟢 **Search** indexes `addr:district`/`addr:subdistrict`/`addr:municipality` at weight 3.
+  Latvian rows tag novads/pagasts there and 46 of them have no city at all, so they were
+  previously unreachable — a gap `RESUME_HERE` had already noted.
+- 🟢 **The AI totem scanner** learned Latvian and Lithuanian fuel labels (Dīzeļdegviela,
+  Dyzelinas, Benzīns, Dujos, SND …). Without them a perfectly good photo from across the
+  border scanned as empty.
+- 🟢 **Market insight runs per country**, sharing one fetch of the global series. A country
+  with fewer than 20 local samples in the window is **skipped**, not given an insight
+  computed from oil futures alone — Latvia and Lithuania stay quiet until their own crowd
+  data arrives, then light up on the next cron with no code change.
+- 🔴 **Fixed a pre-existing counter bug found while verifying this phase.** `recount_parish()`
+  has maintained `parishes.station_count` since phase 64 but never `maakonnad.station_count`,
+  which only a hand-run reconcile ever fixed — 7 counties had drifted by 1-5 since
+  2026-07-16 (Harju stored 173 vs 168 actual). Nothing in the client reads that column, so
+  it was dormant rather than broken, but a denormalized counter that only a manual block
+  can fix is a trap with a thousand stations about to land. The trigger now maintains both
+  levels.
+- 🟢 `scripts/verify_baltic_expansion.mjs` asserts the invariants that matter: Estonia still
+  has exactly 15 maakonnad / 78 parishes, `station_count` drift is 0 at both levels in every
+  country, no station points at another country's municipality, region ids stay in their
+  bands, and every catalog row has drawn geometry.
+- 🟢 `scripts/_lib/overpass.mjs` — a shared Overpass client that rotates mirrors until a
+  response passes a declared sanity check. The public mirrors answer `200 {elements: []}`
+  under load, which the older one-shot seeds would have read as "this country has no
+  municipalities"; during this work three mirrors did exactly that.
+
 ## [Ops] - Supabase service key → new `sb_secret_` key + Node 24 pin - 2026-09-18
 
 Supabase retires the legacy `anon`/`service_role` JWT keys at the end of 2026.

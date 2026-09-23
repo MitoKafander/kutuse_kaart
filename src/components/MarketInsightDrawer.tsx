@@ -38,6 +38,8 @@ export type InsightData = {
 export interface MarketInsight {
   id: string;
   created_at: string;
+  /** Which country this insight describes (phase 65). Absent on pre-migration rows = EE. */
+  country?: string | null;
   content_et: string;
   content_en?: string | null;
   content_ru?: string | null;

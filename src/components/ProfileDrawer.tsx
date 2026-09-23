@@ -8,6 +8,7 @@ import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getRepo
 import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
+import { COUNTRIES, COUNTRY_LIST, type CountryCode } from '../constants/countries';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
@@ -133,8 +134,11 @@ export function ProfileDrawer({
   onShowClustersChange,
   hideEmptyDots,
   onHideEmptyDotsChange,
-  showLatvianStations,
-  onShowLatvianStationsChange,
+  hiddenCountries,
+  onHiddenCountriesChange,
+  activeCountry,
+  onActiveCountryChange,
+  availableCountries,
   showStaleDemo,
   onShowStaleDemoChange,
   allBrandsForLoyalty,
@@ -197,8 +201,14 @@ export function ProfileDrawer({
   onShowClustersChange: (show: boolean) => void;
   hideEmptyDots: boolean;
   onHideEmptyDotsChange: (hide: boolean) => void;
-  showLatvianStations: boolean;
-  onShowLatvianStationsChange: (show: boolean) => void;
+  /** Countries whose stations are hidden from the map (phase 65). */
+  hiddenCountries: CountryCode[];
+  onHiddenCountriesChange: (hidden: CountryCode[]) => void;
+  /** Which country's Avastuskaart is on screen. */
+  activeCountry: CountryCode;
+  onActiveCountryChange: (country: CountryCode) => void;
+  /** Countries that actually have a region catalog seeded. */
+  availableCountries: CountryCode[];
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
   allBrandsForLoyalty: string[];
@@ -370,12 +380,11 @@ export function ProfileDrawer({
     onShowDiscoveryMapChange(!showDiscoveryMap);
   };
 
-  const handleShowLatvianStationsToggle = async () => {
-    const next = !showLatvianStations;
-    onShowLatvianStationsChange(next);
-    if (session?.user?.id) {
-      await supabase.from('user_profiles').upsert({ id: session.user.id, show_latvian_stations: next });
-    }
+  const handleCountryVisibilityToggle = (code: CountryCode) => {
+    const next = hiddenCountries.includes(code)
+      ? hiddenCountries.filter(c => c !== code)
+      : [...hiddenCountries, code];
+    onHiddenCountriesChange(next);
   };
 
   const handleAnalyticsToggle = () => {
@@ -852,6 +861,36 @@ export function ProfileDrawer({
               {t('profile.discovery.description')}
             </p>
 
+            {/* Country switcher. Hidden while Estonia is the only seeded
+                catalog, so nothing changes for an Estonia-only install. */}
+            {availableCountries.length > 1 && (
+              <div role="tablist" aria-label={t('profile.discovery.countryPicker')} style={{ display: 'flex', gap: 6 }}>
+                {availableCountries.map(code => {
+                  const meta = COUNTRIES[code];
+                  const active = code === activeCountry;
+                  return (
+                    <button
+                      key={code}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => onActiveCountryChange(code)}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                        fontSize: '0.78rem',
+                        background: active ? 'var(--color-primary)' : 'var(--color-surface)',
+                        color: active ? 'white' : 'var(--color-text-muted)',
+                        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                        transition: 'background 0.15s, color 0.15s',
+                      }}
+                    >
+                      <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <button
               onClick={() => setStatsExpanded(e => !e)}
               style={{
@@ -865,9 +904,17 @@ export function ProfileDrawer({
               <span>
                 {t('profile.discovery.stats.stations', { done: regionProgress.stations.done, total: regionProgress.stations.total })}
                 {' · '}
-                {t('profile.discovery.stats.parishes', { done: regionProgress.parishes.done, total: regionProgress.parishes.total })}
+                {t('profile.discovery.stats.level2', {
+                  done: regionProgress.parishes.done,
+                  total: regionProgress.parishes.total,
+                  unit: t(COUNTRIES[activeCountry].level2Key, { count: regionProgress.parishes.total }),
+                })}
                 {' · '}
-                {t('profile.discovery.stats.maakonnad', { done: regionProgress.maakonnad.done, total: regionProgress.maakonnad.total })}
+                {t('profile.discovery.stats.level1', {
+                  done: regionProgress.maakonnad.done,
+                  total: regionProgress.maakonnad.total,
+                  unit: t(COUNTRIES[activeCountry].level1Key, { count: regionProgress.maakonnad.total }),
+                })}
               </span>
               <ChevronDown
                 size={16}
@@ -881,7 +928,11 @@ export function ProfileDrawer({
 
             {statsExpanded && (
               <>
-                <DiscoveryBadgeGrid progress={regionProgress} onMaakondFocus={onMaakondFocus} />
+                <DiscoveryBadgeGrid
+                  progress={regionProgress}
+                  onMaakondFocus={onMaakondFocus}
+                  level2Unit={t(COUNTRIES[activeCountry].level2Key)}
+                />
 
                 <label style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -1458,31 +1509,44 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
-                {/* Show Latvian border-strip stations on the map */}
+                {/* Which countries' stations appear on the map (phase 65).
+                    Replaces the single Latvia switch: one row per country Kyts
+                    covers, so adding a country never needs new settings UI. */}
                 <div>
-                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <MapPin size={16} /> {t('profile.settings.latvian.label')}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
-                        {t('profile.settings.latvian.desc')}
-                      </span>
-                    </div>
-                    <div
-                      onClick={handleShowLatvianStationsToggle}
-                      style={{
-                        width: '44px', height: '24px', borderRadius: '12px',
-                        background: showLatvianStations ? 'var(--color-primary)' : 'var(--color-surface)',
-                        position: 'relative', transition: 'background 0.2s'
-                      }}
-                    >
-                      <div style={{
-                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                        position: 'absolute', top: '2px', left: showLatvianStations ? '22px' : '2px', transition: 'left 0.2s'
-                      }}/>
-                    </div>
-                  </label>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                    <MapPin size={16} /> {t('profile.settings.countries.label')}
+                  </span>
+                  <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px', marginTop: 2 }}>
+                    {t('profile.settings.countries.desc')}
+                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: '24px', marginTop: 8 }}>
+                    {COUNTRY_LIST.map(meta => {
+                      const visible = !hiddenCountries.includes(meta.code);
+                      return (
+                        <label key={meta.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                            <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
+                          </span>
+                          <div
+                            role="switch"
+                            aria-checked={visible}
+                            aria-label={t(meta.nameKey)}
+                            onClick={() => handleCountryVisibilityToggle(meta.code)}
+                            style={{
+                              width: '44px', height: '24px', borderRadius: '12px',
+                              background: visible ? 'var(--color-primary)' : 'var(--color-surface)',
+                              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                            }}
+                          >
+                            <div style={{
+                              width: '20px', height: '20px', borderRadius: '50%', background: 'white',
+                              position: 'absolute', top: '2px', left: visible ? '22px' : '2px', transition: 'left 0.2s'
+                            }}/>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Find cheapest fuel (needs a fuel type selected) */}

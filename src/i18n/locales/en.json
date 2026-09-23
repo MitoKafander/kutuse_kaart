@@ -15,6 +15,16 @@
       "maakond": "County",
       "vald": "Parish",
       "linn": "City"
+    },
+    "level1": {
+      "EE": "counties",
+      "LV": "regions",
+      "LT": "counties"
+    },
+    "level2": {
+      "EE": "parishes",
+      "LV": "municipalities",
+      "LT": "municipalities"
     }
   },
   "price": {
@@ -187,10 +197,6 @@
         "label": "Hide stations without prices",
         "desc": "Faster pan/zoom, less clutter"
       },
-      "latvian": {
-        "label": "Show Latvian stations",
-        "desc": "Border stations in Latvia"
-      },
       "staleDemo": {
         "label": "Show stale prices (demo)",
         "desc": "Also shows prices >24h old"
@@ -216,6 +222,10 @@
         "confirm2": "Final confirmation: this action cannot be undone. Continue?",
         "success": "Account deleted.",
         "error": "Account deletion failed: {{message}}"
+      },
+      "countries": {
+        "label": "Countries on the map",
+        "desc": "Choose which countries' stations appear on the map"
       }
     },
     "header": {
@@ -286,8 +296,8 @@
       "description": "See which stations you've discovered. Complete parishes and counties to rise in the Discoverers' leaderboard.",
       "stats": {
         "stations": "{{done}}/{{total}} stations",
-        "parishes": "{{done}}/{{total}} parishes",
-        "maakonnad": "{{done}}/{{total}} counties"
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
       },
       "shareLabel": "Share publicly",
       "shareDesc": "Others will see which stations you've discovered when they click your name.",
@@ -296,7 +306,8 @@
         "noBrands": "No brands available yet.",
         "emptyBrand": "No stations collected yet. {{count}} left to discover.",
         "remaining": "{{count}} more to discover."
-      }
+      },
+      "countryPicker": "Choose country"
     },
     "activity": {
       "title": "Recent activity"
@@ -319,7 +330,7 @@
     "tile": {
       "noStations": "no stations",
       "stations": "{{done}}/{{total}} stations",
-      "parishes": "{{done}}/{{total}} parishes"
+      "level2": "{{done}}/{{total}} {{unit}}"
     }
   },
   "app": {
@@ -579,9 +590,9 @@
     "youSuffix": "(you)",
     "stats": {
       "prices": "{{count}} prices",
-      "maakonnad": "{{done}}/{{total}} counties",
       "parishes": "{{count}} parishes",
-      "stations": "{{count}} stations"
+      "stations": "{{count}} stations",
+      "level1": "{{done}}/{{total}} {{unit}}"
     },
     "viewFootprint": {
       "title": "View this user's discovery map",
@@ -780,5 +791,10 @@
         "proxy_unreliable": "The diesel wholesale benchmark doesn't reliably predict Estonian pump prices — no timing edge offered."
       }
     }
+  },
+  "country": {
+    "EE": "Estonia",
+    "LV": "Latvia",
+    "LT": "Lithuania"
   }
 }

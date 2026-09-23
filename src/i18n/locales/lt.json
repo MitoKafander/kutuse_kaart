@@ -15,6 +15,16 @@
       "maakond": "apskritis",
       "vald": "valsčius",
       "linn": "miestas"
+    },
+    "level1": {
+      "EE": "apskritys",
+      "LV": "regionai",
+      "LT": "apskritys"
+    },
+    "level2": {
+      "EE": "valsčiai",
+      "LV": "savivaldybės",
+      "LT": "savivaldybės"
     }
   },
   "price": {
@@ -187,10 +197,6 @@
         "label": "Slėpti degalines be kainų",
         "desc": "Greitesnis poslinkis/mastelis, mažiau netvarkos"
       },
-      "latvian": {
-        "label": "Rodyti Latvijos degalines",
-        "desc": "Pasienio degalinės Latvijoje"
-      },
       "staleDemo": {
         "label": "Rodyti pasenusias kainas (demo)",
         "desc": "Taip pat rodo >24h senumo kainas"
@@ -216,6 +222,10 @@
         "confirm2": "Galutinis patvirtinimas: šio veiksmo negalima atšaukti. Tęsti?",
         "success": "Paskyra ištrinta.",
         "error": "Paskyros ištrinti nepavyko: {{message}}"
+      },
+      "countries": {
+        "label": "Šalys žemėlapyje",
+        "desc": "Pasirinkite, kurių šalių degalinės rodomos žemėlapyje"
       }
     },
     "header": {
@@ -286,8 +296,8 @@
       "description": "Pažiūrėkite, kurias degalines atradote. Užpildykite valsčius ir apskritis, kad pakiltumėte atradėjų lyderių lentelėje.",
       "stats": {
         "stations": "{{done}}/{{total}} degalinės",
-        "parishes": "{{done}}/{{total}} valsčiai",
-        "maakonnad": "{{done}}/{{total}} apskritys"
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
       },
       "shareLabel": "Dalintis viešai",
       "shareDesc": "Kiti matys jūsų atrastas degalines, paspaudę ant jūsų vardo.",
@@ -296,7 +306,8 @@
         "noBrands": "Ženklų kol kas nėra.",
         "emptyBrand": "Dar neatrasta nei viena degalinė. Liko atrasti {{count}}.",
         "remaining": "Dar liko atrasti {{count}}."
-      }
+      },
+      "countryPicker": "Pasirinkite šalį"
     },
     "activity": {
       "title": "Paskutinė veikla"
@@ -319,7 +330,7 @@
     "tile": {
       "noStations": "nėra degalinių",
       "stations": "{{done}}/{{total}} degalinės",
-      "parishes": "{{done}}/{{total}} valsčiai"
+      "level2": "{{done}}/{{total}} {{unit}}"
     }
   },
   "app": {
@@ -579,9 +590,9 @@
     "youSuffix": "(jūs)",
     "stats": {
       "prices": "{{count}} kainos",
-      "maakonnad": "{{done}}/{{total}} apskritys",
       "parishes": "{{count}} valsčiai",
-      "stations": "{{count}} degalinės"
+      "stations": "{{count}} degalinės",
+      "level1": "{{done}}/{{total}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Žiūrėti šio vartotojo atradimų žemėlapį",
@@ -698,5 +709,10 @@
         "low_sample_count": "Per mažai Kyts ataskaitų tikrumui."
       }
     }
+  },
+  "country": {
+    "EE": "Estija",
+    "LV": "Latvija",
+    "LT": "Lietuva"
   }
 }

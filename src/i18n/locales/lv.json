@@ -15,6 +15,16 @@
       "maakond": "apriņķis",
       "vald": "pagasts",
       "linn": "pilsēta"
+    },
+    "level1": {
+      "EE": "apriņķi",
+      "LV": "reģioni",
+      "LT": "apriņķi"
+    },
+    "level2": {
+      "EE": "pagasti",
+      "LV": "novadi",
+      "LT": "pašvaldības"
     }
   },
   "price": {
@@ -187,10 +197,6 @@
         "label": "Slēpt stacijas bez cenām",
         "desc": "Ātrāka pārvietošana/tālummaiņa, mazāk haosa"
       },
-      "latvian": {
-        "label": "Rādīt Latvijas stacijas",
-        "desc": "Robežas stacijas Latvijā"
-      },
       "staleDemo": {
         "label": "Rādīt novecojušas cenas (demo)",
         "desc": "Parāda arī >24h vecas cenas"
@@ -216,6 +222,10 @@
         "confirm2": "Pēdējais apstiprinājums: šo darbību nevar atcelt. Turpināt?",
         "success": "Konts dzēsts.",
         "error": "Konta dzēšana neizdevās: {{message}}"
+      },
+      "countries": {
+        "label": "Valstis kartē",
+        "desc": "Izvēlieties, kuru valstu degvielas uzpildes stacijas rādīt kartē"
       }
     },
     "header": {
@@ -286,8 +296,8 @@
       "description": "Apskati, kādas stacijas esi atklājis. Aizpildi pagastus un apriņķus, lai paceltos atklājēju līderu sarakstā.",
       "stats": {
         "stations": "{{done}}/{{total}} stacijas",
-        "parishes": "{{done}}/{{total}} pagasti",
-        "maakonnad": "{{done}}/{{total}} apriņķi"
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
       },
       "shareLabel": "Dalīties atklāti",
       "shareDesc": "Citi redzēs atklātās stacijas, noklikšķinot uz tava vārda.",
@@ -296,7 +306,8 @@
         "noBrands": "Zīmolu pagaidām nav.",
         "emptyBrand": "Vēl nav atklāta neviena stacija. Atklājamas {{count}} stacijas.",
         "remaining": "Vēl atklājamas {{count}} stacijas."
-      }
+      },
+      "countryPicker": "Izvēlieties valsti"
     },
     "activity": {
       "title": "Pēdējās aktivitātes"
@@ -319,7 +330,7 @@
     "tile": {
       "noStations": "nav staciju",
       "stations": "{{done}}/{{total}} stacijas",
-      "parishes": "{{done}}/{{total}} pagasti"
+      "level2": "{{done}}/{{total}} {{unit}}"
     }
   },
   "app": {
@@ -579,9 +590,9 @@
     "youSuffix": "(tu)",
     "stats": {
       "prices": "{{count}} cenas",
-      "maakonnad": "{{done}}/{{total}} apriņķi",
       "parishes": "{{count}} pagasti",
-      "stations": "{{count}} stacijas"
+      "stations": "{{count}} stacijas",
+      "level1": "{{done}}/{{total}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Apskatīt šī lietotāja atklājumu karti",
@@ -698,5 +709,10 @@
         "low_sample_count": "Pārāk maz Kyts atskaišu pārliecībai."
       }
     }
+  },
+  "country": {
+    "EE": "Igaunija",
+    "LV": "Latvija",
+    "LT": "Lietuva"
   }
 }

@@ -2,6 +2,16 @@
 // deterministically, ask Gemini only to rewrite the numbers as readable text,
 // then write a fresh market_insights row and flip the previous one inactive.
 //
+// Phase 65: this runs once PER COUNTRY. The global series (Brent, RBOB, gasoil,
+// EUR/USD) are fetched once and shared; the pump-price side is country-scoped
+// through get_kyts_fuel_window_avg(p_country). A country with fewer than
+// MIN_SAMPLES local prices in the window is SKIPPED rather than given an
+// insight computed from global proxies alone — an oil-futures readout dressed
+// up as "what fuel costs near you" would be worse than showing nothing, and
+// it would burn Gemini credit per run to say it. Latvia and Lithuania
+// therefore stay quiet until their own crowd data arrives, then light up on
+// the next cron with no code change.
+//
 // Plan: /Users/mitokafander/.claude/plans/ultrathink-this-part-through-whimsical-sparkle.md
 // Schema: migrations/schema_phase40_market_insights_v2.sql
 //
@@ -25,7 +35,17 @@ export const config = {
   maxDuration: 60,
 };
 
-const GENERATION_VERSION = 'v1.1-2026-04-19';
+const GENERATION_VERSION = 'v1.2-2026-09-23';
+
+/** Countries the cron generates an insight for, in order. */
+const COUNTRIES = ['EE', 'LV', 'LT'] as const;
+
+/**
+ * Minimum local price samples in the 2-day window before a country gets an
+ * insight at all. Matches the phase-51 band trigger's bootstrap threshold, for
+ * the same reason: below this the local signal is noise.
+ */
+const MIN_SAMPLES = 20;
 
 type NodeReq = {
   method?: string;
@@ -62,6 +82,7 @@ function isDryRun(url?: string): boolean {
 async function fetchKytsFuelStats(
   sb: any,
   fuelType: string,
+  country: string,
 ): Promise<KytsFuelStats> {
   const now = Date.now();
   const DAY = 86400_000;
@@ -83,6 +104,7 @@ async function fetchKytsFuelStats(
       p_fuel_type: fuelType,
       p_from: fromIso,
       p_to: toIso ?? null,
+      p_country: country,
     });
     if (error || !data || data.length === 0) {
       return { mean: null as number | null, count: 0 };
@@ -108,45 +130,49 @@ async function fetchKytsFuelStats(
   };
 }
 
-export default async function handler(req: NodeReq, res: NodeRes) {
-  // Vercel Cron only POSTs. A manual curl may GET. Accept either.
-  if (req.method && !['GET', 'POST'].includes(req.method)) {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-  if (!authOk(req)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const dry = isDryRun(req.url);
-  const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-  const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const GEMINI_KEY = process.env.GEMINI_API_KEY;
-
-  if (!SUPABASE_URL || !SERVICE_ROLE) {
-    return res.status(500).json({ error: 'Server missing Supabase service-role credentials.' });
-  }
-
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
+/**
+ * One country's full pipeline: local averages -> deterministic signals ->
+ * Gemini prose -> a fresh active row. Returns what happened, so the handler
+ * can report per country without any one of them failing the whole cron.
+ */
+async function runForCountry(
+  sb: any,
+  country: string,
+  market: Awaited<ReturnType<typeof fetchMarketData>>,
+  geminiKey: string | undefined,
+  dry: boolean,
+): Promise<{ country: string; ok: boolean; skipped?: boolean; reason?: string; insightId?: string; row?: any; signal?: any }> {
   const startedAt = new Date().toISOString();
   let runId: string | null = null;
   if (!dry) {
     const { data: runRow } = await sb.from('market_insight_runs')
-      .insert({ started_at: startedAt, status: 'failed_skip' })
+      .insert({ started_at: startedAt, status: 'failed_skip', country })
       .select('id')
       .single();
     runId = (runRow as any)?.id ?? null;
   }
 
+  const finishRun = async (status: string, extra: Record<string, any> = {}) => {
+    if (!runId) return;
+    await sb.from('market_insight_runs')
+      .update({ status, completed_at: new Date().toISOString(), ...extra })
+      .eq('id', runId);
+  };
+
   try {
-    // Step 1 + 2 in parallel: Kyts avgs + global market series.
-    const [dieselStats, gasoline95Stats, market] = await Promise.all([
-      fetchKytsFuelStats(sb, 'Diisel'),
-      fetchKytsFuelStats(sb, 'Bensiin 95'),
-      fetchMarketData(),
+    const [dieselStats, gasoline95Stats] = await Promise.all([
+      fetchKytsFuelStats(sb, 'Diisel', country),
+      fetchKytsFuelStats(sb, 'Bensiin 95', country),
     ]);
+
+    // Not enough local prices to say anything about local pumps. Skip before
+    // spending a Gemini call — see MIN_SAMPLES.
+    const samples = dieselStats.samples7d + gasoline95Stats.samples7d;
+    if (samples < MIN_SAMPLES) {
+      const reason = `only ${samples} local sample(s) in window (need ${MIN_SAMPLES})`;
+      await finishRun('failed_skip', { error_message: reason });
+      return { country, ok: true, skipped: true, reason };
+    }
 
     // Step 3: compute signals deterministically.
     // Diesel's wholesale proxy is the US NY-Harbor ULSD series, which backtested
@@ -169,6 +195,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
 
     // Assemble the `data` JSONB: this is what the DRAWER renders numbers from.
     const data = {
+      country,
       kyts: {
         diesel: { today: dieselStats.today, prev7: dieselStats.prev7, samples7d: dieselStats.samples7d },
         gasoline95: { today: gasoline95Stats.today, prev7: gasoline95Stats.prev7, samples7d: gasoline95Stats.samples7d },
@@ -189,14 +216,10 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     // skip the DB write entirely — the previous active row stays live so
     // users see the last genuine Gemini-generated insight instead of a
     // deterministic template.
-    if (!GEMINI_KEY) {
+    if (!geminiKey) {
       const reason = 'GEMINI_API_KEY unset';
-      if (runId) {
-        await sb.from('market_insight_runs')
-          .update({ status: 'failed_skip', completed_at: new Date().toISOString(), error_message: reason, pulse: data })
-          .eq('id', runId);
-      }
-      return res.status(200).json({ ok: true, skipped: true, reason });
+      await finishRun('failed_skip', { error_message: reason, pulse: data });
+      return { country, ok: true, skipped: true, reason };
     }
 
     const translatorInput: TranslatorInput = {
@@ -212,14 +235,10 @@ export default async function handler(req: NodeReq, res: NodeRes) {
         rbobDelta7d: market.rbob ? (market.rbob.today - market.rbob.prev7) / market.rbob.prev7 : null,
       },
     };
-    const gemini = await translateWithGemini(GEMINI_KEY, translatorInput);
+    const gemini = await translateWithGemini(geminiKey, translatorInput);
     if (!gemini.ok) {
-      if (runId) {
-        await sb.from('market_insight_runs')
-          .update({ status: 'failed_skip', completed_at: new Date().toISOString(), error_message: gemini.reason, pulse: data })
-          .eq('id', runId);
-      }
-      return res.status(200).json({ ok: true, skipped: true, reason: gemini.reason });
+      await finishRun('failed_skip', { error_message: gemini.reason, pulse: data });
+      return { country, ok: true, skipped: true, reason: gemini.reason };
     }
     const text = gemini.out;
 
@@ -233,6 +252,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       : 'flat';
 
     const newRow = {
+      country,
       content_et: text.content_et, content_en: text.content_en,
       content_ru: text.content_ru, content_fi: text.content_fi,
       content_lv: text.content_lv, content_lt: text.content_lt,
@@ -248,14 +268,14 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       is_active: true,
     };
 
-    if (dry) {
-      return res.status(200).json({ ok: true, dryRun: true, row: newRow, fetchLog });
-    }
+    if (dry) return { country, ok: true, row: newRow };
 
-    // Step 6: flip previous active rows off, then insert.
+    // Step 6: flip THIS COUNTRY's previous active row off, then insert. Scoped
+    // by country so generating Latvia's insight can't blank Estonia's.
     const { error: deactErr } = await sb.from('market_insights')
       .update({ is_active: false })
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .eq('country', country);
     if (deactErr) throw new Error(`deactivate failed: ${deactErr.message}`);
 
     const { data: inserted, error: insErr } = await sb.from('market_insights')
@@ -265,31 +285,71 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     if (insErr) throw new Error(`insert failed: ${insErr.message}`);
     const insightId = (inserted as any)?.id as string;
 
-    if (runId) {
-      await sb.from('market_insight_runs')
-        .update({
-          status: 'success',
-          insight_id: insightId,
-          completed_at: new Date().toISOString(),
-          pulse: data,
-          error_message: null,
-        })
-        .eq('id', runId);
-    }
+    await finishRun('success', { insight_id: insightId, pulse: data, error_message: null });
 
-    return res.status(200).json({
+    return {
+      country,
       ok: true,
       insightId,
       signal: { diesel: dieselSignal.signal, gasoline: gasolineSignal.signal, confidence },
+    };
+  } catch (err: any) {
+    const msg = err?.message || 'unknown error';
+    console.error(`[generate-market-insight] ${country} pipeline failed:`, msg);
+    await finishRun('failed_skip', { error_message: msg });
+    return { country, ok: false, reason: msg };
+  }
+}
+
+export default async function handler(req: NodeReq, res: NodeRes) {
+  // Vercel Cron only POSTs. A manual curl may GET. Accept either.
+  if (req.method && !['GET', 'POST'].includes(req.method)) {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+  if (!authOk(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const dry = isDryRun(req.url);
+  const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+  const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const GEMINI_KEY = process.env.GEMINI_API_KEY;
+
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    return res.status(500).json({ error: 'Server missing Supabase service-role credentials.' });
+  }
+
+  const sb = createClient(SUPABASE_URL, SERVICE_ROLE, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // `?country=LV` runs one country (manual re-run after a fix); default is all.
+  const only = /[?&]country=([A-Za-z]{2})/.exec(req.url ?? '')?.[1]?.toUpperCase();
+  const countries = only ? COUNTRIES.filter(c => c === only) : COUNTRIES;
+  if (!countries.length) return res.status(400).json({ error: `Unknown country: ${only}` });
+
+  try {
+    // The global series are identical for every country — fetch once, and let
+    // one upstream outage fail the whole cron exactly as it did before.
+    const market = await fetchMarketData();
+
+    // Sequential, not parallel: three concurrent Gemini calls is how you meet
+    // a rate limit, and the cron has 60s of headroom for three small requests.
+    const results = [];
+    for (const cc of countries) {
+      results.push(await runForCountry(sb, cc, market, GEMINI_KEY, dry));
+    }
+
+    const failed = results.filter(r => !r.ok);
+    return res.status(failed.length === results.length ? 500 : 200).json({
+      ok: failed.length < results.length,
+      dryRun: dry || undefined,
+      results,
+      fetchLog: dry ? fetchLog : undefined,
     });
   } catch (err: any) {
     const msg = err?.message || 'unknown error';
-    console.error('[generate-market-insight] pipeline failed:', msg);
-    if (runId) {
-      await sb.from('market_insight_runs')
-        .update({ status: 'failed_skip', completed_at: new Date().toISOString(), error_message: msg })
-        .eq('id', runId);
-    }
+    console.error('[generate-market-insight] market fetch failed:', msg);
     return res.status(500).json({ error: msg });
   }
 }

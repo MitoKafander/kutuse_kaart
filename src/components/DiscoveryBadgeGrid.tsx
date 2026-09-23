@@ -4,7 +4,8 @@ import { Check, ChevronDown } from 'lucide-react';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { localizeRegionName, stripRegionSuffix } from '../utils';
 
-// 3-column grid of 15 maakond tiles + inline-expandable parish list per tile.
+// 3-column grid of the active country's level-1 region tiles (15 for Estonia,
+// 5 for Latvia, 10 for Lithuania) + an inline-expandable level-2 list per tile.
 // Visual language deliberately mirrors the contributor-tier badge in
 // ProfileDrawer (emoji + accent color + subtle border) so the two feel
 // like they're from the same "game" vocabulary.
@@ -12,9 +13,15 @@ import { localizeRegionName, stripRegionSuffix } from '../utils';
 export function DiscoveryBadgeGrid({
   progress,
   onMaakondFocus,
+  level2Unit,
 }: {
   progress: RegionProgress;
   onMaakondFocus?: (maakondId: number) => void;
+  /**
+   * What this country calls its level-2 units, already translated ("valda",
+   * "novadi", "savivaldybės"). The grid itself is country-agnostic.
+   */
+  level2Unit: string;
 }) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -119,7 +126,7 @@ export function DiscoveryBadgeGrid({
                   lineHeight: 1.2,
                 }}>
                   <span>{t('discoveryGrid.tile.stations', { done: stationsDone, total: stationsTotal })}</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>{t('discoveryGrid.tile.parishes', { done: parishesDone, total: parishesTotal })}</span>
+                  <span style={{ fontSize: '0.62rem', opacity: 0.8 }}>{t('discoveryGrid.tile.level2', { done: parishesDone, total: parishesTotal, unit: level2Unit })}</span>
                 </div>
               ) : (
                 <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{t('discoveryGrid.tile.noStations')}</span>

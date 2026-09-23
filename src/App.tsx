@@ -65,7 +65,18 @@ import { supabase } from './supabase';
 import { getStationDisplayName, getBrand } from './utils';
 import type { LoyaltyDiscounts, BrandProgress } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
+import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, type CountryCode } from './constants/countries';
+import {
+  readHiddenCountries, writeHiddenCountries, clearCountryPrefs,
+  sanitizeHiddenCountries, readActiveCountry, writeActiveCountry,
+  ACTIVE_COUNTRY_KEY,
+} from './utils/countryPrefs';
 import './index.css';
+
+// Bumped from v1 for phase 65: cached region rows now carry a `country`, and a
+// v1 cache would render every Latvian and Lithuanian region as Estonian until
+// the background refresh landed.
+const REGION_CACHE_KEY = 'kyts-regions-v2';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
@@ -192,7 +203,11 @@ function App() {
   const [loadDataCounter, setLoadDataCounter] = useState(0);
   const [votes, setVotes] = useState<any[]>([]);
   const [reporterMap, setReporterMap] = useState<Record<string, string>>({});
-  const [activeInsight, setActiveInsight] = useState<MarketInsight | null>(null);
+  // One active market insight per country (phase 65); `activeInsight` below
+  // narrows it to the user's. A country with too little local price data
+  // simply has no row — the drawer then shows its empty state rather than an
+  // oil-futures readout pretending to be local advice.
+  const [activeInsights, setActiveInsights] = useState<MarketInsight[]>([]);
   const [pointsEvents, setPointsEvents] = useState<PointsEvent[]>([]);
   
   // User specialized state (Phase 8)
@@ -227,9 +242,13 @@ function App() {
   const [hideEmptyDots, setHideEmptyDots] = useState(() => {
     return localStorage.getItem('kyts-hide-empty-dots') === 'true';
   });
-  const [showLatvianStations, setShowLatvianStations] = useState(() => {
-    return localStorage.getItem('kyts-show-latvian-stations') !== 'false';
-  });
+  // Phase 65: per-country station visibility. Replaces the single
+  // show_latvian_stations boolean — an empty array means "show every country".
+  const [hiddenCountries, setHiddenCountries] = useState<CountryCode[]>(() => readHiddenCountries());
+  // Which country's Avastuskaart is on screen. Region catalogs, boundary
+  // polygons and the Avastajad board are all scoped to this, so an Estonian
+  // user's counters are exactly what they were before the expansion.
+  const [activeCountry, setActiveCountry] = useState<CountryCode>(() => readActiveCountry());
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
   });
@@ -252,13 +271,13 @@ function App() {
   // Region catalog — loaded once, cached locally so toggle-ON is instant.
   const [maakonnad, setMaakonnad] = useState<Maakond[]>(() => {
     try {
-      const cached = JSON.parse(localStorage.getItem('kyts-regions-v1') || 'null');
+      const cached = JSON.parse(localStorage.getItem(REGION_CACHE_KEY) || 'null');
       return Array.isArray(cached?.maakonnad) ? cached.maakonnad : [];
     } catch { return []; }
   });
   const [parishes, setParishes] = useState<Parish[]>(() => {
     try {
-      const cached = JSON.parse(localStorage.getItem('kyts-regions-v1') || 'null');
+      const cached = JSON.parse(localStorage.getItem(REGION_CACHE_KEY) || 'null');
       return Array.isArray(cached?.parishes) ? cached.parishes : [];
     } catch { return []; }
   });
@@ -273,8 +292,12 @@ function App() {
   // toggles are instant without a refetch.
   const [maakondGeo, setMaakondGeo] = useState<any | null>(null);
   const [parishGeo, setParishGeo] = useState<any | null>(null);
-  const maakondGeoFetchRef = useRef(false);
-  const parishGeoFetchRef = useRef(false);
+  // In-flight or settled geojson fetch per country, so switching back and
+  // forth is instant. Caching the PROMISE (not the resolved data) is what
+  // makes a second effect run while the first is still in the air reuse it
+  // rather than issue a duplicate request.
+  const maakondGeoCacheRef = useRef<Partial<Record<CountryCode, Promise<any | null>>>>({});
+  const parishGeoCacheRef = useRef<Partial<Record<CountryCode, Promise<any | null>>>>({});
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mapStyle);
@@ -438,7 +461,10 @@ function App() {
       fetchAllRows('prices', q => q.order('reported_at', { ascending: false }).order('id', { ascending: false })),
       fetchAllRows('votes', q => q.order('created_at', { ascending: false }).order('id', { ascending: false })),
       supabase.from('v_reporters').select('user_id, display_name'),
-      supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      // One active insight PER COUNTRY since phase 65 — fetch them all (there
+      // are at most a handful) and pick the user's below, rather than letting
+      // whichever country generated most recently win.
+      supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(20),
     ]);
 
     if (stRes.data) {
@@ -449,7 +475,7 @@ function App() {
     if (prRes.data) setPrices(prRes.data);
     setPricesLoaded(true);
     if (vtRes.data) setVotes(vtRes.data);
-    if (insightRes?.data) setActiveInsight(insightRes.data);
+    if (insightRes?.data) setActiveInsights(insightRes.data as MarketInsight[]);
     lastLoadedAtRef.current = Date.now();
     setLoadDataCounter(c => c + 1);
 
@@ -466,7 +492,10 @@ function App() {
       const [favsRes, loyaltyRes, profRes] = await Promise.all([
         supabase.from('user_favorites').select('*'),
         supabase.from('user_loyalty_discounts').select('brand, discount_cents'),
-        supabase.from('user_profiles').select('default_fuel_type, preferred_brands, dot_style, show_clusters, hide_empty_dots, show_latvian_stations, apply_loyalty, display_name, show_discovery_map, share_discovery_publicly, share_reporter_name, language, theme').eq('id', currentUser.user.id).single(),
+        // select('*') rather than a column list: user_profiles is RLS-self-only and
+        // one row, and listing columns means a deploy that lands before its
+        // migration 400s the entire profile fetch (phase 65 added hidden_countries).
+        supabase.from('user_profiles').select('*').eq('id', currentUser.user.id).single(),
       ]);
 
       if (favsRes.data) setFavorites(favsRes.data);
@@ -500,9 +529,15 @@ function App() {
         setHideEmptyDots(prof.hide_empty_dots);
         localStorage.setItem('kyts-hide-empty-dots', String(prof.hide_empty_dots));
       }
-      if (prof?.show_latvian_stations !== null && prof?.show_latvian_stations !== undefined) {
-        setShowLatvianStations(prof.show_latvian_stations);
-        localStorage.setItem('kyts-show-latvian-stations', String(prof.show_latvian_stations));
+      // hidden_countries (phase 65) wins; fall back to the phase-27 boolean so
+      // the preference survives both an unapplied migration and an old row.
+      if (Array.isArray(prof?.hidden_countries)) {
+        const hidden = sanitizeHiddenCountries(prof.hidden_countries);
+        setHiddenCountries(hidden);
+        writeHiddenCountries(hidden);
+      } else if (prof?.show_latvian_stations === false) {
+        setHiddenCountries(['LV']);
+        writeHiddenCountries(['LV']);
       }
       if (prof?.apply_loyalty !== null && prof?.apply_loyalty !== undefined) {
         setApplyLoyalty(prof.apply_loyalty);
@@ -538,7 +573,9 @@ function App() {
       setDisplayName('');
       setHideEmptyDots(false);
       setShowClusters(true);
-      setShowLatvianStations(true);
+      setHiddenCountries([]);
+      // activeCountry is NOT reset — see clearCountryPrefs(). It's device-level
+      // like theme, and signing out doesn't move you to another country.
       setDotStyle('info');
       setApplyLoyalty(true);
       setLoyaltyDiscounts({});
@@ -548,7 +585,7 @@ function App() {
       setViewedUser(null);
       localStorage.removeItem('kyts-hide-empty-dots');
       localStorage.removeItem('kyts-show-clusters');
-      localStorage.removeItem('kyts-show-latvian-stations');
+      clearCountryPrefs();
       localStorage.removeItem('kyts-dot-style');
       localStorage.removeItem('kyts-apply-loyalty');
       localStorage.removeItem('kyts-loyalty-discounts');
@@ -638,15 +675,22 @@ function App() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // select('*') so a bundle that ships before the phase-65 migration still
+      // gets its regions (a missing `country` column would 400 a column list).
+      // Rows without one are Estonian by definition — that's what they were.
       const [{ data: mk }, { data: pa }] = await Promise.all([
-        supabase.from('maakonnad').select('id, name, emoji, station_count'),
-        supabase.from('parishes').select('id, maakond_id, name, station_count'),
+        supabase.from('maakonnad').select('*'),
+        supabase.from('parishes').select('*'),
       ]);
       if (cancelled) return;
-      if (mk) setMaakonnad(mk as Maakond[]);
-      if (pa) setParishes(pa as Parish[]);
+      const withCountry = <T extends { country?: string | null }>(rows: T[] | null) =>
+        (rows ?? []).map((r) => ({ ...r, country: toCountryCode(r.country) }));
+      const mkRows = withCountry(mk as Maakond[] | null) as Maakond[];
+      const paRows = withCountry(pa as Parish[] | null) as Parish[];
+      if (mk) setMaakonnad(mkRows);
+      if (pa) setParishes(paRows);
       try {
-        localStorage.setItem('kyts-regions-v1', JSON.stringify({ maakonnad: mk, parishes: pa }));
+        localStorage.setItem(REGION_CACHE_KEY, JSON.stringify({ maakonnad: mkRows, parishes: paRows }));
       } catch { /* quota */ }
     })();
     return () => { cancelled = true; };
@@ -659,27 +703,38 @@ function App() {
     if (!showDiscoveryMap) setFocusedMaakondId(null);
   }, [showDiscoveryMap]);
 
-  // Fetch maakond boundary geojson once, the first time discovery mode is
-  // enabled. Static asset from public/ — browser caches it aggressively.
+  // Boundary geojson for the active Avastuskaart country, fetched the first
+  // time discovery mode opens for it and then kept in memory. Per-country
+  // files mean an Estonian user never downloads Latvian or Lithuanian
+  // polygons — each pair is ~150 KB gzipped.
   useEffect(() => {
-    if (!showDiscoveryMap || maakondGeoFetchRef.current) return;
-    maakondGeoFetchRef.current = true;
-    fetch('/maakonnad.geojson')
-      .then(r => (r.ok ? r.json() : null))
-      .then(data => { if (data) setMaakondGeo(data); })
-      .catch(() => { /* non-critical */ });
-  }, [showDiscoveryMap]);
-
-  // Parish outlines are bigger (~150 KB gzipped) than maakonnad so we fetch
-  // them separately and the map layer hides them until zoom ≥ 9 regardless.
-  useEffect(() => {
-    if (!showDiscoveryMap || parishGeoFetchRef.current) return;
-    parishGeoFetchRef.current = true;
-    fetch('/parishes.geojson')
-      .then(r => (r.ok ? r.json() : null))
-      .then(data => { if (data) setParishGeo(data); })
-      .catch(() => { /* non-critical */ });
-  }, [showDiscoveryMap]);
+    if (!showDiscoveryMap) return;
+    const meta = COUNTRIES[activeCountry];
+    let cancelled = false;
+    const load = async (
+      url: string,
+      cache: React.MutableRefObject<Partial<Record<CountryCode, Promise<any | null>>>>,
+      set: (v: any) => void,
+    ) => {
+      const country = activeCountry;
+      let pending = cache.current[country];
+      if (!pending) {
+        // A country whose boundaries haven't been built yet 404s — the map
+        // then simply draws no outlines, which is the honest empty state.
+        pending = fetch(url)
+          .then(r => (r.ok ? r.json() : null))
+          .catch(() => null);
+        cache.current[country] = pending;
+      }
+      const data = await pending;
+      if (data && !cancelled) set(data);
+    };
+    // Level-2 outlines are the bigger file and the map hides them below zoom 9
+    // anyway, so the level-1 layer is requested first and rendered on arrival.
+    void load(meta.boundaries.level1, maakondGeoCacheRef, setMaakondGeo);
+    void load(meta.boundaries.level2, parishGeoCacheRef, setParishGeo);
+    return () => { cancelled = true; };
+  }, [showDiscoveryMap, activeCountry]);
 
   // station.id -> parish.id, only for EE stations with a parish_id.
   // `Map` is shadowed by the Map component import — use globalThis.Map.
@@ -738,10 +793,33 @@ function App() {
     return arr;
   }, [stations, userContributedStationIds]);
 
+  // The Avastuskaart is one country at a time. Scoping the catalog here (not
+  // the fetch) keeps every country's badge grid, counters and celebrations
+  // self-contained — and keeps an Estonian user's denominators at the exact
+  // 15 maakonnad / 78 vallad they were before Latvia and Lithuania existed.
+  const countryMaakonnad = useMemo(
+    () => maakonnad.filter(m => toCountryCode(m.country) === activeCountry),
+    [maakonnad, activeCountry],
+  );
+  const countryParishes = useMemo(
+    () => parishes.filter(p => toCountryCode(p.country) === activeCountry),
+    [parishes, activeCountry],
+  );
+
+  // Only offer a country switcher for countries that actually have a region
+  // catalog seeded — before the Baltic seed runs, that's Estonia alone and
+  // the switcher stays hidden.
+  const availableCountries = useMemo(() => {
+    const seen = new Set<CountryCode>();
+    for (const m of maakonnad) seen.add(toCountryCode(m.country));
+    seen.add(DEFAULT_COUNTRY);
+    return COUNTRY_CODES.filter(c => seen.has(c));
+  }, [maakonnad]);
+
   const { progress: regionProgress, events: celebrationEvents, consumeEvents } = useRegionProgress({
     contributedStationIds: userContributedStationIds,
-    maakonnad,
-    parishes,
+    maakonnad: countryMaakonnad,
+    parishes: countryParishes,
     stationParishMap,
     stationNamesMap,
     emitCelebrations: showDiscoveryMap,
@@ -804,6 +882,64 @@ function App() {
         .upsert({ id: session.user.id, show_discovery_map: v })
         .then(() => {}, () => {});
     }
+  };
+
+  // Statistics answers "what is fuel doing in MY market", so it runs on one
+  // country — medians pooled across three would describe nowhere. Cheapest-
+  // nearby and the route planner deliberately stay cross-border (that's the
+  // point of a border station) and only drop countries the user switched off.
+  const countryStations = useMemo(
+    () => stations.filter(s => toCountryCode(s.country) === activeCountry),
+    [stations, activeCountry],
+  );
+  const countryPrices = useMemo(() => {
+    const ids = new Set(countryStations.map(s => String(s.id)));
+    return prices.filter(p => ids.has(String(p.station_id)));
+  }, [countryStations, prices]);
+
+  const activeInsight = useMemo<MarketInsight | null>(() => {
+    if (!activeInsights.length) return null;
+    // A row without `country` predates the migration and is Estonia's.
+    return activeInsights.find(i => toCountryCode(i.country) === activeCountry) ?? null;
+  }, [activeInsights, activeCountry]);
+
+  // Phase 65 station visibility. Writes BOTH the new array and the phase-27
+  // boolean: the array is the truth, the boolean keeps an installed PWA still
+  // running the pre-expansion bundle in agreement about Latvia. If the profile
+  // write is rejected because the column doesn't exist yet (migration not
+  // applied), fall back to writing the legacy boolean alone so the toggle
+  // still persists instead of silently doing nothing.
+  const handleHiddenCountriesChange = (next: CountryCode[]) => {
+    setHiddenCountries(next);
+    writeHiddenCountries(next);
+    if (session?.user?.id) {
+      const uid = session.user.id;
+      void supabase.from('user_profiles')
+        .upsert({ id: uid, hidden_countries: next, show_latvian_stations: !next.includes('LV') })
+        .then(({ error }) => {
+          if (!error) return;
+          void supabase.from('user_profiles')
+            .upsert({ id: uid, show_latvian_stations: !next.includes('LV') })
+            .then(() => {}, () => {});
+        }, () => {});
+    }
+  };
+
+  // First fix on the user's position picks their country for them, unless
+  // they've already chosen one. A Latvian shouldn't have to find a setting to
+  // stop looking at Estonia's discovery map.
+  useEffect(() => {
+    if (!liveUserLocation) return;
+    if (localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
+    const guess = countryForCoords(liveUserLocation.lat, liveUserLocation.lon);
+    if (guess) setActiveCountry(prev => (prev === guess ? prev : guess));
+  }, [liveUserLocation]);
+
+  const handleActiveCountryChange = (next: CountryCode) => {
+    setActiveCountry(next);
+    writeActiveCountry(next);
+    // Region focus belongs to the country we're leaving.
+    setFocusedMaakondId(null);
   };
 
   // Centralized so the main-screen filter pill and the profile-settings toggle
@@ -895,14 +1031,22 @@ function App() {
   }, [stations]);
 
   // Compute filtered stations based on Brand Menu ONLY
+  // Everything in a country the user hasn't switched off. This is the honest
+  // "stations that exist for me" set: the map filters it further by brand,
+  // and search runs off it directly so hiding Lithuania also stops Lithuanian
+  // stations turning up in the search dropdown.
+  const countryVisibleStations = useMemo(
+    () => stations.filter(station => !hiddenCountries.includes(toCountryCode(station.country))),
+    [stations, hiddenCountries],
+  );
+
   const filteredStations = useMemo(() => {
-    return stations.filter(station => {
-      if (!showLatvianStations && station.country === 'LV') return false;
+    return countryVisibleStations.filter(station => {
       // Filter by Brand Menu (canonical chain)
       if (selectedBrands.length > 0 && !selectedBrands.includes(getBrand(station.name))) return false;
       return true;
     });
-  }, [stations, selectedBrands, showLatvianStations]);
+  }, [countryVisibleStations, selectedBrands]);
 
   // Per-station search index — folded, weighted fields, built once per station
   // list rather than on every keystroke. Diacritics are stripped via NFD so
@@ -911,7 +1055,7 @@ function App() {
   const searchIndex = useMemo(() => {
     const fold = (s: string) =>
       s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-    return stations.map((station) => {
+    return countryVisibleStations.map((station) => {
       // getBrand returns the 'Tundmatu' sentinel only when name is null — keep
       // that out of the searchable text so unnamed stations don't all match it.
       const canonical = getBrand(station.name);
@@ -928,6 +1072,17 @@ function App() {
       ]
         .filter(Boolean)
         .join(' ');
+      // Latvian rows overwhelmingly tag novads/pagasts as addr:district /
+      // addr:subdistrict and often carry no city at all (46 of them have
+      // nothing else to locate them by). Indexed below city weight so an exact
+      // city hit still outranks "every station in this novads".
+      const adminArea = [
+        station.amenities?.['addr:district'],
+        station.amenities?.['addr:subdistrict'],
+        station.amenities?.['addr:municipality'],
+      ]
+        .filter(Boolean)
+        .join(' ');
       // { folded text, weight }. City/brand outweigh street/operator so a
       // location hint that lands on the actual city beats one that merely
       // appears inside a street name (e.g. "tallinn" as a Kuressaare address).
@@ -940,6 +1095,7 @@ function App() {
           // stores "Neste Peetri" there on a row whose name is bare "Neste"
           // and whose addr:city is missing. Without it those stations are
           // unreachable by the name everyone actually calls them.
+          { text: fold(adminArea), weight: 3 },
           { text: fold(station.amenities?.alt_name ?? ''), weight: 3 },
           { text: fold(station.amenities?.name ?? ''), weight: 3 },
           { text: fold(station.amenities?.['addr:street'] ?? ''), weight: 2 },
@@ -947,7 +1103,7 @@ function App() {
         ],
       };
     });
-  }, [stations]);
+  }, [countryVisibleStations]);
 
   // Live dropdown results (max 10, so ranking matters). The query is tokenised
   // on whitespace and *every* token must match some field — so a brand plus a
@@ -1010,6 +1166,8 @@ function App() {
         focusedMaakondId={focusedMaakondId}
         focusedMaakondStationIds={focusedMaakondStationIds}
         maakondGeo={maakondGeo}
+        homeCenter={COUNTRIES[activeCountry].center}
+        homeZoom={COUNTRIES[activeCountry].zoom}
         parishGeo={parishGeo}
         completedParishIds={displayCompletedParishIds}
         parishProgress={displayParishProgress}
@@ -1564,8 +1722,11 @@ function App() {
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
         hideEmptyDots={hideEmptyDots}
         onHideEmptyDotsChange={handleHideEmptyDotsChange}
-        showLatvianStations={showLatvianStations}
-        onShowLatvianStationsChange={(v) => { setShowLatvianStations(v); localStorage.setItem('kyts-show-latvian-stations', String(v)); }}
+        hiddenCountries={hiddenCountries}
+        onHiddenCountriesChange={handleHiddenCountriesChange}
+        activeCountry={activeCountry}
+        onActiveCountryChange={handleActiveCountryChange}
+        availableCountries={availableCountries}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}
@@ -1624,6 +1785,9 @@ function App() {
             onViewFootprint={handleViewUserFootprint}
             displayName={displayName}
             onDisplayNameChange={handleDisplayNameChange}
+            activeCountry={activeCountry}
+            level1Total={regionProgress.maakonnad.total}
+            level1Unit={t(COUNTRIES[activeCountry].level1Key)}
           />
         )}
 
@@ -1631,7 +1795,7 @@ function App() {
           <CheapestNearbyPanel
             isOpen={isCheapestNearbyOpen}
             onClose={() => setIsCheapestNearbyOpen(false)}
-            stations={stations}
+            stations={countryVisibleStations}
             prices={prices}
             allVotes={votes}
             reporterMap={reporterMap}
@@ -1648,7 +1812,7 @@ function App() {
         {routeMounted && <RoutePlanModal
           isOpen={isRouteOpen}
           onClose={() => setIsRouteOpen(false)}
-          stations={stations}
+          stations={countryVisibleStations}
           prices={prices}
           allVotes={votes}
           reporterMap={reporterMap}
@@ -1663,8 +1827,8 @@ function App() {
           <StatisticsDrawer
             isOpen={isStatsOpen}
             onClose={() => setIsStatsOpen(false)}
-            stations={stations}
-            prices={prices}
+            stations={countryStations}
+            prices={countryPrices}
             session={session}
             onStationSelect={setSelectedStation}
             insight={activeInsight}

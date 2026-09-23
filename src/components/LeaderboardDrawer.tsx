@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { toCountryCode, type CountryCode } from '../constants/countries';
 import { useTranslation } from 'react-i18next';
 import { X, Trophy, Star, Compass, Map as MapIcon, UserCircle } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -49,6 +50,9 @@ export function LeaderboardDrawer({
   onViewFootprint,
   displayName,
   onDisplayNameChange,
+  activeCountry,
+  level1Total,
+  level1Unit,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -56,6 +60,16 @@ export function LeaderboardDrawer({
   onViewFootprint?: (userId: string, displayName: string) => void;
   displayName?: string;
   onDisplayNameChange?: (name: string) => void;
+  /**
+   * Avastajad is ranked per country (phase 65). Estonia's 78 vallad took a
+   * five-year head start; a Latvian completing Latvia has to be able to top
+   * Latvia's board, not sit behind every Estonian forever.
+   */
+  activeCountry: CountryCode;
+  /** Level-1 regions with at least one station, in the active country. */
+  level1Total: number;
+  /** Translated name for those regions ("maakonda", "reģioni", "apskritys"). */
+  level1Unit: string;
 }) {
   const { t } = useTranslation();
   const [dimension, setDimension] = useState<Dimension>('activity');
@@ -88,16 +102,22 @@ export function LeaderboardDrawer({
         });
     } else {
       supabase
+        // select('*') + a client-side country filter, so this still works
+        // against a database where the phase-65 migration hasn't run yet
+        // (no `country` column -> every row reads as Estonian, which is
+        // exactly what those rows were).
         .from('v_discovery_leaderboard')
-        .select('user_id, display_name, maakonnad_completed, parishes_completed, stations_contributed, share_discovery_publicly')
-        .limit(100)
+        .select('*')
+        .limit(300)
         .then(({ data }) => {
           if (cancelled) return;
-          const mapped: DiscoveryRow[] = (data ?? []).map((r: any) => ({
-            kind: 'discovery',
-            ...r,
-            share_discovery_publicly: !!r.share_discovery_publicly,
-          }));
+          const mapped: DiscoveryRow[] = (data ?? [])
+            .filter((r: any) => toCountryCode(r.country) === activeCountry)
+            .map((r: any) => ({
+              kind: 'discovery',
+              ...r,
+              share_discovery_publicly: !!r.share_discovery_publicly,
+            }));
           // View is pre-ordered, but sort client-side defensively.
           mapped.sort((a, b) =>
             b.maakonnad_completed - a.maakonnad_completed ||
@@ -110,7 +130,7 @@ export function LeaderboardDrawer({
     }
 
     return () => { cancelled = true; };
-  }, [period, isOpen, dimension]);
+  }, [period, isOpen, dimension, activeCountry]);
 
   if (!isOpen) return null;
 
@@ -251,14 +271,14 @@ export function LeaderboardDrawer({
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: 10, marginTop: 2 }}>
-                      <span>{t('leaderboard.stats.maakonnad', { done: r.maakonnad_completed, total: 15 })}</span>
+                      <span>{t('leaderboard.stats.level1', { done: r.maakonnad_completed, total: level1Total, unit: level1Unit })}</span>
                       <span>{t('leaderboard.stats.parishes', { count: r.parishes_completed })}</span>
                       <span>{t('leaderboard.stats.stations', { count: r.stations_contributed })}</span>
                     </div>
                   )}
                 </div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                  {r.kind === 'activity' ? activityScore(r).toFixed(1) : `${r.maakonnad_completed}/15`}
+                  {r.kind === 'activity' ? activityScore(r).toFixed(1) : `${r.maakonnad_completed}/${level1Total}`}
                 </div>
                 {r.kind === 'discovery' && r.share_discovery_publicly && !isMe && onViewFootprint && (
                   <button
