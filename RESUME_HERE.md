@@ -43,13 +43,14 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Baltic expansion runbook (phase 65) — NOT YET APPLIED
+## Baltic expansion (phase 65) — ✅ LIVE since 2026-09-23
 
-Branch `baltic-expansion` adds Latvia and Lithuania as first-class countries. Everything
-is built, typechecked, built green and driven in a browser; what's left needs the
-Supabase SQL editor, which Claude can't reach. Full detail in CHANGELOG 2026-09-23.
+Latvia and Lithuania are first-class countries on kyts.ee. Prod: **482 EE + 548 LV +
+742 LT active stations**, LV's 5 planning regions / 42 novadi and LT's 10 apskritys /
+60 savivaldybės in the Avastuskaart. Full detail in CHANGELOG 2026-09-23.
 
-**Run in this order.** Each step is idempotent and safe to re-run.
+**The sequence that was run** (kept because each step is idempotent — re-run any of them
+after an OSM refresh, and follow the same order when adding a fourth country):
 
 1. **Apply the migration** — `supabase db query --linked -f migrations/schema_phase65_baltic_countries.sql`
    (or paste it into the Supabase SQL editor). Nothing else works before this; it's also

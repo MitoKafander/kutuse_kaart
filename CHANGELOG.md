@@ -2,16 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - Baltic expansion: Latvia + Lithuania as first-class countries (phase 65) - 2026-09-23
+## [Shipped] - Baltic expansion: Latvia + Lithuania as first-class countries (phase 65) - 2026-09-23
 
 Kyts covers all three Baltic states. Latvia goes from a 75-station border strip to its
 whole catalog, Lithuania arrives from nothing, and both get the same app Estonia has —
 full station map, Avastuskaart with real administrative regions, per-country Avastajad
 board, brand collector, search, statistics and market insight.
 
-**⚠️ Not yet applied to prod.** Branch `baltic-expansion`. The code is safe to deploy
-before the migration (it degrades to today's behaviour), but the data is not there until
-the sequence in `RESUME_HERE.md` → "Baltic expansion runbook" is run.
+**✅ LIVE on kyts.ee** (merged to `main` as `7ca38f1`, migration applied, seeds run,
+`scripts/verify_baltic_expansion.mjs` → all checks passed). Prod now carries
+**482 EE + 548 LV + 742 LT = 1,772 active stations**, and Estonia is untouched: still
+exactly 15 maakonnad / 78 vallad, `station_count` drift 0 at both levels.
+
+Applied in this order, which matters: migration → **deploy** → region seed → station seed.
+The deploy has to precede the region seed, because the pre-phase-65 bundle has no country
+filter and would have merged all three catalogs into one Estonian Avastuskaart.
 
 - 🟡 **`migrations/schema_phase65_baltic_countries.sql`** — `country` on `maakonnad` /
   `parishes` / `market_insights` / `market_insight_runs`, `user_profiles.hidden_countries`
