@@ -457,7 +457,12 @@ function App() {
     // the same HTTP/2 connection, and previously ran serially — PSI showed the
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
     const [stRes, prRes, vtRes, repsRes, insightRes] = await Promise.all([
-      supabase.from('stations').select('*').eq('active', true),
+      // MUST page: the Baltic expansion took the active-station count past
+      // PostgREST's 1000-row cap (1,772 as of phase 65), and a bare select
+      // silently returns the first 1000 — which dropped most of Lithuania AND
+      // 52 Estonian stations off the map. Ordered by id so the pages are a
+      // stable partition rather than whatever order the planner picks.
+      fetchAllRows('stations', q => q.eq('active', true).order('id', { ascending: true })),
       fetchAllRows('prices', q => q.order('reported_at', { ascending: false }).order('id', { ascending: false })),
       fetchAllRows('votes', q => q.order('created_at', { ascending: false }).order('id', { ascending: false })),
       supabase.from('v_reporters').select('user_id, display_name'),
