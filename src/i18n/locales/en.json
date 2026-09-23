@@ -92,7 +92,7 @@
     },
     "step1": {
       "title": "Welcome to Kyts!",
-      "body": "A community-driven map where you can see community-reported Estonian fuel prices with their update time. Find the cheapest, contribute yourself."
+      "body": "A community-driven map where you can see community-reported fuel prices in {{country}} with their update time. Find the cheapest, contribute yourself."
     },
     "step2": {
       "title": "Buttons on the right",
@@ -119,7 +119,7 @@
     },
     "step4": {
       "title": "Contribute, earn badges",
-      "body": "Your price contributions earn titles (🌱 Tourist → ♾️ Kyts Universe) and raise you on the leaderboard. Turn on Discovery map in Settings and collect all 15 Estonian county badges."
+      "body": "Your price contributions earn titles (🌱 Tourist → ♾️ Kyts Universe) and raise you on the leaderboard. Turn on Discovery map in Settings and collect all {{count}} {{unit}} badges."
     },
     "step5": {
       "title": "Create an account",
@@ -594,9 +594,9 @@
     "youSuffix": "(you)",
     "stats": {
       "prices": "{{count}} prices",
-      "parishes": "{{count}} parishes",
       "stations": "{{count}} stations",
-      "level1": "{{done}}/{{total}} {{unit}}"
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
     },
     "viewFootprint": {
       "title": "View this user's discovery map",

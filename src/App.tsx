@@ -612,7 +612,14 @@ function App() {
       localStorage.removeItem('kyts-apply-loyalty');
       localStorage.removeItem('kyts-loyalty-discounts');
       localStorage.removeItem('kyts-show-discovery-map');
-      localStorage.removeItem('kyts-celebrated-regions');
+      // Celebration stores are namespaced per country since phase 65
+      // (kyts-celebrated-regions:EE, :LV, …). Sweep every one, plus the
+      // pre-namespace key still sitting in older installs.
+      for (const k of Object.keys(localStorage)) {
+        if (k === 'kyts-celebrated-regions' || k.startsWith('kyts-celebrated-regions:')) {
+          localStorage.removeItem(k);
+        }
+      }
       localStorage.removeItem('kyts-language');
     }
   };
@@ -867,6 +874,7 @@ function App() {
     emitCelebrations: showDiscoveryMap,
     contributionsReady: !session || pricesLoaded,
     userId: session?.user?.id ?? null,
+    country: activeCountry,
   });
 
   // Parish ids where every station has been contributed by whichever user's
@@ -1856,6 +1864,8 @@ function App() {
             activeCountry={activeCountry}
             level1Total={regionProgress.maakonnad.total}
             level1Unit={t(COUNTRIES[activeCountry].level1Key)}
+            level2Unit={t(COUNTRIES[activeCountry].level2Key)}
+            availableCountries={availableCountries}
           />
         )}
 
@@ -1939,6 +1949,8 @@ function App() {
 
         {isTutorialOpen && (
           <TutorialModal
+            activeCountry={activeCountry}
+            level1Total={regionProgress.maakonnad.total}
             isOpen={isTutorialOpen}
             onComplete={(outcome, lastStep) => {
               localStorage.setItem('kyts:tutorial-seen', '1');

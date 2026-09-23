@@ -28,13 +28,20 @@ export type CelebrationEvent =
   | { kind: 'maakond';  id: number; name: string; emoji: string }
   | { kind: 'station';  stationId: string; stationName: string; done: number; total: number };
 
-const CELEBRATED_KEY = 'kyts-celebrated-regions';
+/**
+ * Per-country, because region ids only mean anything inside their own country
+ * and the progress snapshot this store is diffed against is country-scoped.
+ * With one shared store, the first switch to another country diffed that
+ * country's completions against a store seeded from the previous one and
+ * replayed every already-earned region as fresh fireworks.
+ */
+const celebratedKey = (country: string) => `kyts-celebrated-regions:${country}`;
 
 type CelebratedStore = { parishes: number[]; maakonnad: number[]; stations: string[] };
 
-function readCelebrated(): CelebratedStore {
+function readCelebrated(country: string): CelebratedStore {
   try {
-    const raw = localStorage.getItem(CELEBRATED_KEY);
+    const raw = localStorage.getItem(celebratedKey(country));
     if (!raw) return { parishes: [], maakonnad: [], stations: [] };
     const parsed = JSON.parse(raw);
     return {
@@ -47,8 +54,8 @@ function readCelebrated(): CelebratedStore {
   }
 }
 
-function writeCelebrated(store: CelebratedStore) {
-  try { localStorage.setItem(CELEBRATED_KEY, JSON.stringify(store)); } catch { /* quota */ }
+function writeCelebrated(country: string, store: CelebratedStore) {
+  try { localStorage.setItem(celebratedKey(country), JSON.stringify(store)); } catch { /* quota */ }
 }
 
 // Given a user's contributed station ids + the region catalog, compute
@@ -83,8 +90,12 @@ export function useRegionProgress(opts: {
   // re-seed so a fresh sign-in / sign-out doesn't mis-diff against the
   // previous session's snapshot.
   userId: string | null;
+  // Which country `maakonnad`/`parishes` describe. Changing it re-seeds
+  // silently against that country's own store, so switching to Latvia does
+  // not replay Latvia's already-complete novadi as new.
+  country: string;
 }): { progress: RegionProgress; events: CelebrationEvent[]; consumeEvents: () => void } {
-  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId } = opts;
+  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId, country } = opts;
 
   const progress = useMemo<RegionProgress>(() => {
     // Sort the level-1 regions alphabetically for a stable grid order. The
@@ -168,7 +179,7 @@ export function useRegionProgress(opts: {
   }, [contributedStationIds, maakonnad, parishes, stationParishMap]);
 
   const seededRef = useRef(false);
-  const seededForUserRef = useRef<string | null | undefined>(undefined);
+  const seededForRef = useRef<string | undefined>(undefined);
   const lastParishesRef = useRef<Set<number>>(new Set());
   const lastMaakonnadRef = useRef<Set<number>>(new Set());
   const lastStationsRef = useRef<Set<string>>(new Set());
@@ -178,7 +189,9 @@ export function useRegionProgress(opts: {
     // Identity change (sign-in, sign-out, account switch) invalidates the
     // previous snapshot — reset so the next effect run re-seeds against
     // the new user's contributions.
-    if (seededForUserRef.current !== userId) {
+    // Identity OR country change invalidates the snapshot.
+    const seedIdentity = `${userId ?? 'anon'}@${country}`;
+    if (seededForRef.current !== seedIdentity) {
       seededRef.current = false;
       lastParishesRef.current = new Set();
       lastMaakonnadRef.current = new Set();
@@ -192,11 +205,11 @@ export function useRegionProgress(opts: {
     if (!seededRef.current) {
       if (progress.maakonnad.total === 0) return; // wait for region catalog
       if (!contributionsReady) return; // wait for prices fetch to complete
-      const store = readCelebrated();
+      const store = readCelebrated(country);
       const seedParishes = new Set([...store.parishes, ...progress.completedParishIds]);
       const seedMaakonnad = new Set([...store.maakonnad, ...progress.completedMaakondIds]);
       const seedStations = new Set([...store.stations, ...contributedStationIds]);
-      writeCelebrated({
+      writeCelebrated(country, {
         parishes: Array.from(seedParishes),
         maakonnad: Array.from(seedMaakonnad),
         stations: Array.from(seedStations),
@@ -205,11 +218,11 @@ export function useRegionProgress(opts: {
       lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
       lastStationsRef.current = new Set(contributedStationIds);
       seededRef.current = true;
-      seededForUserRef.current = userId;
+      seededForRef.current = seedIdentity;
       return;
     }
 
-    const store = readCelebrated();
+    const store = readCelebrated(country);
     const celebratedParishes = new Set(store.parishes);
     const celebratedMaakonnad = new Set(store.maakonnad);
     const celebratedStations = new Set(store.stations);
@@ -228,7 +241,11 @@ export function useRegionProgress(opts: {
         kind: 'station',
         stationId: sid,
         stationName: name,
-        done: contributedStationIds.size,
+        // progress.stations.done, NOT contributedStationIds.size: the latter
+        // counts every station the user has ever priced in ANY country, while
+        // total is this country's catalog. A Latvian who had also priced in
+        // Estonia could see "31/14 stations collected".
+        done: progress.stations.done,
         total: progress.stations.total,
       });
     }
@@ -239,8 +256,14 @@ export function useRegionProgress(opts: {
       const entry = progress.perMaakond.find(pm => pm.parishes.some(x => x.parish.id === pid));
       if (!entry) continue;
       const parish = entry.parishes.find(x => x.parish.id === pid)!.parish;
+      // Only bank it as celebrated when we actually celebrate it. This used to
+      // run unconditionally, so a region completed while the Avastuskaart
+      // toggle was off — its default state for every new user — was marked
+      // seen and could never fire again. The reward was silently consumed by
+      // the act of earning it at the wrong moment.
+      if (!emitCelebrations) continue;
       celebratedParishes.add(pid);
-      if (emitCelebrations) newEvents.push({
+      newEvents.push({
         kind: 'parish', id: pid, name: parish.name,
         maakondName: entry.maakond.name,
         emoji: entry.maakond.emoji || '📍',
@@ -252,8 +275,9 @@ export function useRegionProgress(opts: {
       if (celebratedMaakonnad.has(mid)) continue;
       const m = maakondById.get(mid);
       if (!m) continue;
+      if (!emitCelebrations) continue; // see the parish loop above
       celebratedMaakonnad.add(mid);
-      if (emitCelebrations) newEvents.push({
+      newEvents.push({
         kind: 'maakond', id: mid, name: m.name, emoji: m.emoji || '🏆',
       });
     }
@@ -264,7 +288,7 @@ export function useRegionProgress(opts: {
       celebratedMaakonnad.size !== store.maakonnad.length ||
       celebratedStations.size !== store.stations.length;
     if (storeDirty) {
-      writeCelebrated({
+      writeCelebrated(country, {
         parishes: Array.from(celebratedParishes),
         maakonnad: Array.from(celebratedMaakonnad),
         stations: Array.from(celebratedStations),
@@ -276,7 +300,7 @@ export function useRegionProgress(opts: {
     // Celebration events are produced from progress diffs; consumeEvents() drains them, so newEvents will be [] next pass.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
-  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId]);
+  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId, country]);
 
   const consumeEvents = () => setEvents([]);
   return { progress, events, consumeEvents };

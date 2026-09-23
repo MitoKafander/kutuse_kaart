@@ -92,7 +92,7 @@
     },
     "step1": {
       "title": "Tervetuloa Kytsiin!",
-      "body": "Yhteisöpohjainen kartta, josta näet Viron huoltoasemien yhteisön ilmoittamat hinnat päivitysaikoineen. Löydä halvin, osallistu itse."
+      "body": "Yhteisöpohjainen kartta, josta näet yhteisön ilmoittamat polttoaineen hinnat ({{country}}) päivitysaikoineen. Löydä halvin, osallistu itse."
     },
     "step2": {
       "title": "Painikkeet oikealla",
@@ -119,7 +119,7 @@
     },
     "step4": {
       "title": "Osallistu, ansaitse merkkejä",
-      "body": "Hintailmoituksesi ansaitsevat titteleitä (🌱 Turisti → ♾️ Kyts-universumi) ja nostavat sinua tulostaululla. Laita Löytökartta (Discovery map) päälle Asetuksista ja kerää kaikki 15 Viron maakuntamerkkiä."
+      "body": "Hintailmoituksesi ansaitsevat arvonimiä (🌱 Turisti → ♾️ Kyts Kaikkeus) ja nostavat sinua tulostaulukossa. Ota Löytökartta käyttöön asetuksista ja kerää kaikki {{count}} {{unit}} -merkkiä."
     },
     "step5": {
       "title": "Luo tili",
@@ -594,9 +594,9 @@
     "youSuffix": "(sinä)",
     "stats": {
       "prices": "{{count}} hintaa",
-      "parishes": "{{count}} kuntaa",
       "stations": "{{count}} asemaa",
-      "level1": "{{done}}/{{total}} {{unit}}"
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Katso tämän käyttäjän löytökartta",

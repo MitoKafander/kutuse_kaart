@@ -92,7 +92,7 @@
     },
     "step1": {
       "title": "Laipni lūdzam Kyts!",
-      "body": "Kopienas virzīta karte, kurā redzamas degvielas cenas Igaunijā ar to atjaunināšanas laiku. Atrodi lētāko, piedalies arī pats."
+      "body": "Kopienas virzīta karte, kurā redzamas degvielas cenas — {{country}} — ar to atjaunināšanas laiku. Atrodi lētāko, piedalies arī pats."
     },
     "step2": {
       "title": "Pogas pa labi",
@@ -119,7 +119,7 @@
     },
     "step4": {
       "title": "Piedalies, pelni nozīmītes",
-      "body": "Tavi cenu ziņojumi pelna titulus (🌱 Tūrists → ♾️ Kyts Visums) un ceļ tevi līderu sarakstā. Iestatījumos ieslēdz Atklājumu karti (Discovery map) un savāc visas 15 Igaunijas apriņķu nozīmītes."
+      "body": "Tavi cenu ziņojumi pelna titulus (🌱 Tūrists → ♾️ Kyts Visums) un ceļ tevi līderu sarakstā. Iestatījumos ieslēdz Atklājumu karti un savāc visas {{count}} {{unit}} nozīmītes."
     },
     "step5": {
       "title": "Izveidot kontu",
@@ -594,9 +594,9 @@
     "youSuffix": "(tu)",
     "stats": {
       "prices": "{{count}} cenas",
-      "parishes": "{{count}} pagasti",
       "stations": "{{count}} stacijas",
-      "level1": "{{done}}/{{total}} {{unit}}"
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Apskatīt šī lietotāja atklājumu karti",

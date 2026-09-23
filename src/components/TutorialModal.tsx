@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { COUNTRIES, type CountryCode } from '../constants/countries';
 import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -58,7 +59,7 @@ function LanguagePickerBody({ currentLng, onPick }: { currentLng: string; onPick
   );
 }
 
-function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: SupportedLanguage) => void): Step[] {
+function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: SupportedLanguage) => void, activeCountry: CountryCode, level1Total: number): Step[] {
   const colorSpan = (color: string, text: string) => (
     <span style={{ color, fontWeight: 600 }}>{text}</span>
   );
@@ -75,7 +76,7 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
     {
       icon: <Fuel size={44} color={COLOR_BLUE} />,
       title: t('tutorial.step1.title'),
-      body: t('tutorial.step1.body'),
+      body: t('tutorial.step1.body', { country: t(COUNTRIES[activeCountry].nameKey) }),
     },
     {
       icon: (
@@ -113,7 +114,10 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
         </div>
       ),
       title: t('tutorial.step4.title'),
-      body: t('tutorial.step4.body'),
+      body: t('tutorial.step4.body', {
+        count: level1Total,
+        unit: t(COUNTRIES[activeCountry].level1Key),
+      }),
     },
     {
       icon: <UserPlus size={44} color="var(--color-primary)" />,
@@ -129,9 +133,15 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
 }
 
 export function TutorialModal({
+  activeCountry,
+  level1Total,
   isOpen,
   onComplete,
 }: {
+  /** Country the copy describes — the tutorial used to assert Estonia. */
+  activeCountry: CountryCode;
+  /** Level-1 regions with stations, for the badge-collecting line. */
+  level1Total: number;
   isOpen: boolean;
   onComplete: (outcome: Outcome, lastStep: number) => void;
 }) {
@@ -147,8 +157,9 @@ export function TutorialModal({
   };
 
   const STEPS = useMemo(
-    () => buildSteps(t, currentLng, handlePickLanguage),
-    [t, currentLng],
+    () => buildSteps(t, currentLng, handlePickLanguage, activeCountry, level1Total),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlePickLanguage is recreated each render
+    [t, currentLng, activeCountry, level1Total],
   );
 
   // Reset step counter when the tutorial closes so reopening starts at step 0.

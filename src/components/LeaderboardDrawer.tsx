@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toCountryCode, type CountryCode } from '../constants/countries';
+import { COUNTRIES, toCountryCode, type CountryCode } from '../constants/countries';
 import { useTranslation } from 'react-i18next';
 import { X, Trophy, Star, Compass, Map as MapIcon, UserCircle } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -39,6 +39,22 @@ const PERIOD_KEYS: Record<Period, string> = {
   'all': 'leaderboard.period.all',
 };
 
+/**
+ * The number on the right of a discovery row.
+ *
+ * It used to be hardcoded to `maakonnad_completed/level1Total`, which is zero
+ * for essentially everyone — completing one Estonian maakond means pricing
+ * every station in it, and in Latvia and Lithuania the level-1 regions are
+ * bigger still. A leaderboard whose headline figure is structurally 0 for all
+ * 100 rows ranks nobody and tells nobody anything. So show the deepest tier
+ * that is actually moving, and fall back to raw stations for a new user.
+ */
+function discoveryScore(r: DiscoveryRow, level1Total: number): string {
+  if (r.maakonnad_completed > 0) return `${r.maakonnad_completed}/${level1Total}`;
+  if (r.parishes_completed > 0) return String(r.parishes_completed);
+  return String(r.stations_contributed);
+}
+
 function activityScore(r: ActivityRow): number {
   return r.prices_count + 0.3 * r.upvotes_received;
 }
@@ -53,6 +69,8 @@ export function LeaderboardDrawer({
   activeCountry,
   level1Total,
   level1Unit,
+  level2Unit,
+  availableCountries,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -70,6 +88,10 @@ export function LeaderboardDrawer({
   level1Total: number;
   /** Translated name for those regions ("maakonda", "reģioni", "apskritys"). */
   level1Unit: string;
+  /** Translated name for level-2 units ("valda", "novadi", "savivaldybės"). */
+  level2Unit: string;
+  /** Countries with a seeded catalog, for the header label. */
+  availableCountries: CountryCode[];
 }) {
   const { t } = useTranslation();
   const [dimension, setDimension] = useState<Dimension>('activity');
@@ -154,6 +176,15 @@ export function LeaderboardDrawer({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Trophy size={24} color="var(--color-warning)" />
             <h2 className="heading-1">{t('leaderboard.title')}</h2>
+            {/* Which country's board this is. Without it the drawer silently
+                shows one country's players and the only switcher was behind
+                the drawer the user just closed to get here. */}
+            {availableCountries.length > 1 && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
+                {t(COUNTRIES[activeCountry].nameKey)}
+              </span>
+            )}
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
@@ -277,13 +308,13 @@ export function LeaderboardDrawer({
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', gap: 10, marginTop: 2 }}>
                       <span>{t('leaderboard.stats.level1', { done: r.maakonnad_completed, total: level1Total, unit: level1Unit })}</span>
-                      <span>{t('leaderboard.stats.parishes', { count: r.parishes_completed })}</span>
+                      <span>{t('leaderboard.stats.level2', { count: r.parishes_completed, unit: level2Unit })}</span>
                       <span>{t('leaderboard.stats.stations', { count: r.stations_contributed })}</span>
                     </div>
                   )}
                 </div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                  {r.kind === 'activity' ? activityScore(r).toFixed(1) : `${r.maakonnad_completed}/${level1Total}`}
+                  {r.kind === 'activity' ? activityScore(r).toFixed(1) : discoveryScore(r, level1Total)}
                 </div>
                 {r.kind === 'discovery' && r.share_discovery_publicly && !isMe && onViewFootprint && (
                   <button

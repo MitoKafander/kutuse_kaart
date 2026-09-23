@@ -377,9 +377,9 @@
     },
     "stats": {
       "prices": "{{count}} hinda",
-      "parishes": "{{count}} valda",
       "stations": "{{count}} jaama",
-      "level1": "{{done}}/{{total}} {{unit}}"
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Vaata selle kasutaja avastuskaarti",
@@ -690,7 +690,7 @@
     },
     "step1": {
       "title": "Tere tulemast Kytsi!",
-      "body": "Kogukonna-põhine kaart, kus näed Eesti tanklate hindu koos uuendamise ajaga. Leia soodsaim, panusta ise."
+      "body": "Kogukonna-põhine kaart, kus näed {{country}} tanklate hindu koos uuendamise ajaga. Leia soodsaim, panusta ise."
     },
     "step2": {
       "title": "Nupud paremal",
@@ -717,7 +717,7 @@
     },
     "step4": {
       "title": "Panusta, teeni märgid",
-      "body": "Su hinnapanused teenivad tiitleid (🌱 Turist → ♾️ Kyts Kõiksus) ja tõstavad sind edetabelis. Lülita Seaded-menüüst sisse Avastuskaart ja kogu kõik 15 Eesti maakonna märgid."
+      "body": "Su hinnapanused teenivad tiitleid (🌱 Turist → ♾️ Kyts Kõiksus) ja tõstavad sind edetabelis. Lülita Seaded-menüüst sisse Avastuskaart ja kogu kõik {{count}} {{unit}} märgid."
     },
     "step5": {
       "title": "Loo konto",

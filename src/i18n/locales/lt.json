@@ -92,7 +92,7 @@
     },
     "step1": {
       "title": "Sveiki atvykę į Kyts!",
-      "body": "Bendruomenės kuriamas žemėlapis, kuriame matomos bendruomenės praneštos kuro kainos Estijoje su atnaujinimo laiku. Raskite pigiausią, prisidėkite patys."
+      "body": "Bendruomenės kuriamas žemėlapis, kuriame matomos kuro kainos — {{country}} — su atnaujinimo laiku. Raskite pigiausią, prisidėkite patys."
     },
     "step2": {
       "title": "Mygtukai dešinėje",
@@ -119,7 +119,7 @@
     },
     "step4": {
       "title": "Prisidėkite, uždirbkite ženklelius",
-      "body": "Jūsų įvestos kainos uždirba titulus (🌱 Turistas → ♾️ Kyts Visata) ir perkelia jus aukštyn lyderių lentelėje. Nustatymuose įjunkite Atradimų žemėlapį (Discovery map) ir surinkite visus 15 Estijos apskričių ženklelių."
+      "body": "Jūsų įvestos kainos uždirba titulus (🌱 Turistas → ♾️ Kyts Visata) ir perkelia jus aukštyn lyderių lentelėje. Nustatymuose įjunkite Atradimų žemėlapį ir surinkite visus {{count}} {{unit}} ženklelius."
     },
     "step5": {
       "title": "Sukurti paskyrą",
@@ -594,9 +594,9 @@
     "youSuffix": "(jūs)",
     "stats": {
       "prices": "{{count}} kainos",
-      "parishes": "{{count}} valsčiai",
       "stations": "{{count}} degalinės",
-      "level1": "{{done}}/{{total}} {{unit}}"
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
     },
     "viewFootprint": {
       "title": "Žiūrėti šio vartotojo atradimų žemėlapį",

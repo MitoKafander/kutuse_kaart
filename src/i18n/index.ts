@@ -46,7 +46,11 @@ i18n
       lv: { translation: lv },
       lt: { translation: lt },
     },
-    fallbackLng: 'et',
+    // English, not Estonian. A key missing from lv/lt used to fall back to
+    // Estonian — so a Latvian hit an Estonian sentence mid-screen, which reads
+    // as a bug rather than as a gap. English is the one language a Baltic user
+    // is most likely to read if their own is missing.
+    fallbackLng: 'en',
     supportedLngs: SUPPORTED_LANGUAGES,
     nonExplicitSupportedLngs: true,
     interpolation: { escapeValue: false },
