@@ -110,15 +110,22 @@ export function LeaderboardDrawer({
     setLoading(true);
 
     if (dimension === 'activity') {
+      // Activity is the DEFAULT tab, and it was global while the discovery tab
+      // beside it was per country — so a Latvian's first look at "the
+      // leaderboard" was 100 Estonians. Phase 66 adds `country` to these three
+      // views; filtering client-side keeps this working either side of that
+      // migration, since a row with no country is Estonian by definition.
       supabase
         .from(VIEW_BY_PERIOD[period])
-        .select('user_id, display_name, prices_count, upvotes_received')
-        .limit(100)
+        .select('*')
+        .limit(300)
         .then(({ data }) => {
           if (cancelled) return;
           const sorted = (data ?? [])
+            .filter((r: any) => toCountryCode(r.country) === activeCountry)
             .map((r: any): ActivityRow => ({ kind: 'activity', ...r }))
-            .sort((a, b) => activityScore(b) - activityScore(a));
+            .sort((a, b) => activityScore(b) - activityScore(a))
+            .slice(0, 100);
           setRows(sorted);
           setLoading(false);
         });
