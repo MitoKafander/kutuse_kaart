@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
 import { supabase } from '../supabase';
-import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter, ageStopLabel, FRESH_HOURS, EXPIRY_HOURS } from '../utils';
 import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
@@ -121,8 +121,8 @@ export function ProfileDrawer({
   setSelectedFuelType,
   selectedBrands,
   setSelectedBrands,
-  showOnlyFresh,
-  setShowOnlyFresh,
+  maxPriceAgeHours,
+  onMaxPriceAgeChange,
   highlightCheapest,
   setHighlightCheapest,
   applyLoyalty,
@@ -188,8 +188,9 @@ export function ProfileDrawer({
   setSelectedFuelType: (type: string | null) => void;
   selectedBrands: string[];
   setSelectedBrands: (brands: string[]) => void;
-  showOnlyFresh: boolean;
-  setShowOnlyFresh: (v: boolean) => void;
+  /** Max age (hours) of a price that still shows on the map; Infinity = all. */
+  maxPriceAgeHours: number;
+  onMaxPriceAgeChange: (hours: number) => void;
   highlightCheapest: boolean;
   setHighlightCheapest: (v: boolean) => void;
   applyLoyalty: boolean;
@@ -243,7 +244,7 @@ export function ProfileDrawer({
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
   const [brandFilterOpen, setBrandFilterOpen] = useState(false);
-  const hasActiveFilters = showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
+  const hasActiveFilters = maxPriceAgeHours < EXPIRY_HOURS || highlightCheapest || selectedBrands.length > 0;
   const toggleBrandFilter = (brand: string) => {
     if (selectedBrands.includes(brand)) {
       setSelectedBrands(selectedBrands.filter(b => b !== brand));
@@ -253,7 +254,9 @@ export function ProfileDrawer({
   };
   const resetFilters = () => {
     setSelectedBrands([]);
-    setShowOnlyFresh(false);
+    // Back to the map's default cutoff, not to "show everything" — reset
+    // should undo the user's narrowing, not widen past where they started.
+    onMaxPriceAgeChange(EXPIRY_HOURS);
     setHighlightCheapest(false);
   };
 
@@ -1487,23 +1490,33 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
-                {/* Hide stale prices (>24h) */}
+                {/* Price age. The map's freshness slider owns this setting; the
+                    switch stays as the discoverable entry point and flips
+                    between the two stops that matter — freshest-only and the
+                    24h default. The subtitle shows where the slider currently is. */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      <EyeOff size={16} /> {t('filter.hideStale')}
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                        <EyeOff size={16} /> {t('filter.hideStale')}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
+                        {t('filter.hideStaleDesc', { current: ageStopLabel(maxPriceAgeHours, t) })}
+                      </span>
                     </span>
                     <div
-                      onClick={() => setShowOnlyFresh(!showOnlyFresh)}
+                      role="switch"
+                      aria-checked={maxPriceAgeHours <= FRESH_HOURS}
+                      onClick={() => onMaxPriceAgeChange(maxPriceAgeHours <= FRESH_HOURS ? EXPIRY_HOURS : FRESH_HOURS)}
                       style={{
-                        width: '44px', height: '24px', borderRadius: '12px',
-                        background: showOnlyFresh ? 'var(--color-fresh)' : 'var(--color-surface)',
+                        width: '44px', height: '24px', borderRadius: '12px', flexShrink: 0,
+                        background: maxPriceAgeHours <= FRESH_HOURS ? 'var(--color-fresh)' : 'var(--color-surface)',
                         position: 'relative', transition: 'background 0.2s'
                       }}
                     >
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                        position: 'absolute', top: '2px', left: showOnlyFresh ? '22px' : '2px', transition: 'left 0.2s'
+                        position: 'absolute', top: '2px', left: maxPriceAgeHours <= FRESH_HOURS ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>

@@ -89,7 +89,8 @@
     "findCheapest": "Leia odavaim kütus",
     "findCheapestHint": "*Vali esmalt kütuse tüüp",
     "brand": "Kett",
-    "clearCount": "Tühjenda ({{count}})"
+    "clearCount": "Tühjenda ({{count}})",
+    "hideStaleDesc": "Praegu: {{current}}"
   },
   "feedback": {
     "title": "Tagasiside",
@@ -798,5 +799,12 @@
     "EE": "Eesti",
     "LV": "Läti",
     "LT": "Leedu"
+  },
+  "freshness": {
+    "label": "Hinna vanus",
+    "hours": "{{n}} h",
+    "days": "{{n}} p",
+    "all": "kõik",
+    "stations": "{{count}} jaama"
   }
 }

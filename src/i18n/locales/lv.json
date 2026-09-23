@@ -663,7 +663,8 @@
     "findCheapest": "Atrast lētāko degvielu",
     "brand": "Tīkls",
     "clearCount": "Notīrīt ({{count}})",
-    "findCheapestHint": "*Vispirms izvēlies degvielas veidu"
+    "findCheapestHint": "*Vispirms izvēlies degvielas veidu",
+    "hideStaleDesc": "Pašlaik: {{current}}"
   },
   "header": {
     "aria": {
@@ -714,5 +715,12 @@
     "EE": "Igaunija",
     "LV": "Latvija",
     "LT": "Lietuva"
+  },
+  "freshness": {
+    "label": "Cenas vecums",
+    "hours": "{{n}} h",
+    "days": "{{n}} d",
+    "all": "visas",
+    "stations": "{{count}} stacijas"
   }
 }

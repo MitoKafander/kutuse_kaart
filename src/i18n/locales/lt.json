@@ -663,7 +663,8 @@
     "findCheapest": "Rasti pigiausius degalus",
     "brand": "Tinklas",
     "clearCount": "Išvalyti ({{count}})",
-    "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą"
+    "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą",
+    "hideStaleDesc": "Dabar: {{current}}"
   },
   "header": {
     "aria": {
@@ -714,5 +715,12 @@
     "EE": "Estija",
     "LV": "Latvija",
     "LT": "Lietuva"
+  },
+  "freshness": {
+    "label": "Kainos amžius",
+    "hours": "{{n}} val.",
+    "days": "{{n}} d.",
+    "all": "visos",
+    "stations": "{{count}} degalinės"
   }
 }

@@ -6,7 +6,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
-import { isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
+import { getPriceAgeHours, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName } from '../utils';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -900,7 +900,7 @@ export function Map({
   allVotes,
   onStationSelect,
   focusedFuelType,
-  showOnlyFresh,
+  maxPriceAgeHours,
   highlightCheapest,
   showStaleDemo = false,
   selectedStation,
@@ -928,7 +928,8 @@ export function Map({
   allVotes: any[],
   onStationSelect: (s: any) => void,
   focusedFuelType: string | null,
-  showOnlyFresh: boolean,
+  /** Hide any price older than this many hours. Infinity = show every price. */
+  maxPriceAgeHours: number,
   highlightCheapest: boolean,
   showStaleDemo?: boolean,
   selectedStation: any | null,
@@ -1062,15 +1063,17 @@ export function Map({
           .sort((a, b) => new Date(b.reported_at).getTime() - new Date(a.reported_at).getTime())[0];
         if (!recent) return;
         if (calculateVoteScore(recent.id, allVotes) <= DOWNVOTE_THRESHOLD) return;
-        const expired = isPriceExpired(recent, allVotes);
-        if (expired && !showStaleDemo) return;
-        if (showOnlyFresh && !isPriceFresh(recent, allVotes)) return;
+        // The user's freshness slider owns the cutoff. It defaults to
+        // EXPIRY_HOURS, which is the fixed limit this used to hardcode, so
+        // nothing changes until they drag it. showStaleDemo still overrides
+        // everything for the stale-styling demo.
+        if (!showStaleDemo && getPriceAgeHours(recent, allVotes) > maxPriceAgeHours) return;
         inner.set(ft, { price: recent.price, isFresh: isPriceFresh(recent, allVotes) });
       });
       if (inner.size > 0) map.set(station.id, inner);
     });
     return map;
-  }, [workingStations, prices, allVotes, showOnlyFresh, showStaleDemo]);
+  }, [workingStations, prices, allVotes, maxPriceAgeHours, showStaleDemo]);
 
   // Top-N cheapest stations per fuel type within the current viewport bounds.
   // Zoom-gated: when no fuel filter and zoomed out (<12), collapse each station's

@@ -8,6 +8,7 @@ import { BrandPickerPill } from './components/BrandPickerPill';
 import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { PointsToast, type PointsEvent } from './components/PointsToast';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
+import { FreshnessSlider } from './components/FreshnessSlider';
 import { UpdateBanner } from './components/UpdateBanner';
 import { FeedbackReplyToast } from './components/FeedbackReplyToast';
 import { type MarketInsight } from './components/MarketInsightDrawer';
@@ -62,7 +63,7 @@ const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal'
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 const AdminPriceModal = lazyWithReload(() => import('./components/AdminPriceModal').then(m => ({ default: m.AdminPriceModal })));
 import { supabase } from './supabase';
-import { getStationDisplayName, getBrand } from './utils';
+import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS } from './utils';
 import type { LoyaltyDiscounts, BrandProgress } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
 import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, type CountryCode } from './constants/countries';
@@ -219,10 +220,25 @@ function App() {
   // Filter state
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedFuelType, setSelectedFuelType] = useState<string | null>(null);
-  const [showOnlyFresh, setShowOnlyFresh] = useState(false);
+  // Max age of a price that still shows on the map, driven by the freshness
+  // slider. Defaults to EXPIRY_HOURS — the fixed cutoff the map used to
+  // hardcode — so the map opens exactly as it always did. Device-level like
+  // theme: remembered locally, not synced to the profile.
+  const [maxPriceAgeHours, setMaxPriceAgeHours] = useState<number>(() => {
+    const raw = localStorage.getItem('kyts-max-price-age');
+    if (raw === 'all') return Infinity;
+    const n = Number(raw);
+    return (AGE_STOPS as readonly number[]).includes(n) ? n : EXPIRY_HOURS;
+  });
+  const handleMaxPriceAgeChange = (hours: number) => {
+    setMaxPriceAgeHours(hours);
+    try { localStorage.setItem('kyts-max-price-age', Number.isFinite(hours) ? String(hours) : 'all'); }
+    catch { /* private mode */ }
+    capture('freshness_slider_changed', { hours: Number.isFinite(hours) ? hours : -1 });
+  };
   const [highlightCheapest, setHighlightCheapest] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const hasActiveFilters = showOnlyFresh || highlightCheapest || selectedBrands.length > 0;
+  const hasActiveFilters = maxPriceAgeHours < EXPIRY_HOURS || highlightCheapest || selectedBrands.length > 0;
 
   // Theme + display preferences
   const [mapStyle, setMapStyle] = useState<'dark' | 'light'>(() => {
@@ -1052,6 +1068,27 @@ function App() {
     [stations, hiddenCountries],
   );
 
+  // How many stations would show a price at each slider stop. Drives the
+  // read-out, and is what makes the control legible before you touch it: the
+  // jump from "24 h" to "30 d" is the difference between 13 and 87 stations
+  // in Estonia today.
+  const freshnessCountsByStop = useMemo(() => {
+    const newestAgeByStation = new globalThis.Map<string, number>();
+    for (const p of prices) {
+      if (!p.station_id) continue;
+      const age = getPriceAgeHours(p, votes);
+      const sid = String(p.station_id);
+      const prev = newestAgeByStation.get(sid);
+      if (prev === undefined || age < prev) newestAgeByStation.set(sid, age);
+    }
+    const visibleIds = new Set(countryVisibleStations.map(s => String(s.id)));
+    return AGE_STOPS.map(stop => {
+      let n = 0;
+      for (const [sid, age] of newestAgeByStation) if (visibleIds.has(sid) && age <= stop) n++;
+      return n;
+    });
+  }, [prices, votes, countryVisibleStations]);
+
   const filteredStations = useMemo(() => {
     return countryVisibleStations.filter(station => {
       // Filter by Brand Menu (canonical chain)
@@ -1161,7 +1198,7 @@ function App() {
         allVotes={votes}
         onStationSelect={setSelectedStation}
         focusedFuelType={selectedFuelType}
-        showOnlyFresh={showOnlyFresh}
+        maxPriceAgeHours={maxPriceAgeHours}
         highlightCheapest={highlightCheapest}
         selectedStation={selectedStation}
         mapStyle={mapStyle}
@@ -1440,6 +1477,16 @@ function App() {
         <Fuel size={22} />
       </button>
 
+      {/* Freshness slider — left edge, opposite the action FABs. Hidden in
+          discovery mode, where the map is about coverage rather than prices. */}
+      {!showDiscoveryMap && (
+        <FreshnessSlider
+          maxAgeHours={maxPriceAgeHours}
+          onChange={handleMaxPriceAgeChange}
+          countsByStop={freshnessCountsByStop}
+        />
+      )}
+
       <button
         className="flex-center"
         onClick={() => setIsCheapestNearbyOpen(true)}
@@ -1715,8 +1762,8 @@ function App() {
         setSelectedFuelType={setSelectedFuelType}
         selectedBrands={selectedBrands}
         setSelectedBrands={setSelectedBrands}
-        showOnlyFresh={showOnlyFresh}
-        setShowOnlyFresh={setShowOnlyFresh}
+        maxPriceAgeHours={maxPriceAgeHours}
+        onMaxPriceAgeChange={handleMaxPriceAgeChange}
         highlightCheapest={highlightCheapest}
         setHighlightCheapest={setHighlightCheapest}
         applyLoyalty={applyLoyalty}

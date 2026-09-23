@@ -115,6 +115,26 @@ export const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: numb
 export const FRESH_HOURS = 5;
 export const EXPIRY_HOURS = 24;
 
+/**
+ * Stops for the freshness slider, in hours; Infinity means "no cutoff".
+ *
+ * Log-spaced rather than linear because that is how the data is actually
+ * shaped: of the ~320 Estonian stations carrying any price, ~13 are under a
+ * day old and ~233 are older than a month. Linear hour steps would spend most
+ * of the travel on an empty range.
+ *
+ * EXPIRY_HOURS (24) is one of the stops AND the default, so the map behaves
+ * exactly as it did before the slider existed until someone drags it.
+ */
+export const AGE_STOPS = [FRESH_HOURS, 12, EXPIRY_HOURS, 72, 168, 720, Infinity] as const;
+
+/** "5 h" / "3 d" / "all" for a stop, localised. */
+export function ageStopLabel(hours: number, t: (key: string, opts?: any) => string): string {
+  if (!Number.isFinite(hours)) return t('freshness.all');
+  if (hours <= 24) return t('freshness.hours', { n: hours });
+  return t('freshness.days', { n: Math.round(hours / 24) });
+}
+
 import type { Price, Vote } from './types';
 
 export function getEffectiveTimestamp(price: Pick<Price, 'id' | 'reported_at'>, allVotes: Vote[]): Date {

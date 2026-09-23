@@ -663,7 +663,8 @@
     "findCheapest": "Etsi halvin polttoaine",
     "brand": "Ketju",
     "clearCount": "Tyhjennä ({{count}})",
-    "findCheapestHint": "*Valitse ensin polttoainetyyppi"
+    "findCheapestHint": "*Valitse ensin polttoainetyyppi",
+    "hideStaleDesc": "Nyt: {{current}}"
   },
   "header": {
     "aria": {
@@ -714,5 +715,12 @@
     "EE": "Viro",
     "LV": "Latvia",
     "LT": "Liettua"
+  },
+  "freshness": {
+    "label": "Hinnan ikä",
+    "hours": "{{n}} h",
+    "days": "{{n}} pv",
+    "all": "kaikki",
+    "stations": "{{count}} asemaa"
   }
 }

@@ -663,7 +663,8 @@
     "findCheapest": "Найти самое дешевое топливо",
     "brand": "Сеть",
     "clearCount": "Очистить ({{count}})",
-    "findCheapestHint": "*Сначала выберите тип топлива"
+    "findCheapestHint": "*Сначала выберите тип топлива",
+    "hideStaleDesc": "Сейчас: {{current}}"
   },
   "header": {
     "aria": {
@@ -714,5 +715,12 @@
     "EE": "Эстония",
     "LV": "Латвия",
     "LT": "Литва"
+  },
+  "freshness": {
+    "label": "Возраст цены",
+    "hours": "{{n}} ч",
+    "days": "{{n}} д",
+    "all": "все",
+    "stations": "{{count}} станций"
   }
 }

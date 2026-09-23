@@ -665,7 +665,8 @@
     "findCheapest": "Find cheapest fuel",
     "brand": "Brand",
     "clearCount": "Clear ({{count}})",
-    "findCheapestHint": "*Pick a fuel type first"
+    "findCheapestHint": "*Pick a fuel type first",
+    "hideStaleDesc": "Currently: {{current}}"
   },
   "legal": {
     "notice": {
@@ -796,5 +797,12 @@
     "EE": "Estonia",
     "LV": "Latvia",
     "LT": "Lithuania"
+  },
+  "freshness": {
+    "label": "Price age",
+    "hours": "{{n}} h",
+    "days": "{{n}} d",
+    "all": "all",
+    "stations": "{{count}} stations"
   }
 }
