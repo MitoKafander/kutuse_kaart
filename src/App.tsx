@@ -494,8 +494,20 @@ function App() {
       try { localStorage.setItem('kyts:cache:stations', JSON.stringify(stRes.data)); }
       catch { /* quota exceeded — non-fatal, next load will retry */ }
     }
-    if (prRes.data) setPrices(prRes.data);
-    setPricesLoaded(true);
+    // Only claim the prices are loaded when they actually arrived. This used
+    // to flip unconditionally, so a failed fetch (fetchAllRows returns
+    // {data: null} if ANY of its ~9 pages fails) told useRegionProgress the
+    // user has zero contributions — which seeded an EMPTY celebration store
+    // and made the next successful load fire every win at once. Survivable
+    // for the older event kinds, which have years of banked ids to fall back
+    // on; fatal for brands and milestones, whose arrays are empty on every
+    // install the day they ship.
+    if (prRes.data) {
+      setPrices(prRes.data);
+      setPricesLoaded(true);
+    } else if (prRes.error) {
+      console.error('[loadData] prices fetch failed, not marking loaded:', prRes.error.message);
+    }
     if (vtRes.data) setVotes(vtRes.data);
     if (insightRes?.data) setActiveInsights(insightRes.data as MarketInsight[]);
     lastLoadedAtRef.current = Date.now();

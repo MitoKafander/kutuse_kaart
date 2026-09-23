@@ -219,9 +219,15 @@ export function useRegionProgress(opts: {
 
   const seededRef = useRef(false);
   const seededForRef = useRef<string | undefined>(undefined);
+  // In-memory mirrors of the celebrated store, checked BEFORE the store in
+  // every diff loop. They are what makes a failed localStorage write cost at
+  // most the current session instead of replaying every earned win on every
+  // refresh, forever — writeCelebrated swallows quota errors by design.
   const lastParishesRef = useRef<Set<number>>(new Set());
   const lastMaakonnadRef = useRef<Set<number>>(new Set());
   const lastStationsRef = useRef<Set<string>>(new Set());
+  const lastBrandsRef = useRef<Set<string>>(new Set());
+  const lastMilestonesRef = useRef<Set<string>>(new Set());
   const [events, setEvents] = useState<CelebrationEvent[]>([]);
 
   useEffect(() => {
@@ -235,6 +241,8 @@ export function useRegionProgress(opts: {
       lastParishesRef.current = new Set();
       lastMaakonnadRef.current = new Set();
       lastStationsRef.current = new Set();
+      lastBrandsRef.current = new Set();
+      lastMilestonesRef.current = new Set();
     }
 
     // First run after we have real data: seed the "already celebrated" store
@@ -266,6 +274,8 @@ export function useRegionProgress(opts: {
       lastParishesRef.current = new Set(progress.completedParishIds);
       lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
       lastStationsRef.current = new Set(contributedStationIds);
+      lastBrandsRef.current = new Set(seedBrands);
+      lastMilestonesRef.current = new Set(seedMilestones);
       seededRef.current = true;
       seededForRef.current = seedIdentity;
       return;
@@ -339,6 +349,7 @@ export function useRegionProgress(opts: {
     // toggle is off by default and the region loop is the slow one.
     for (const b of brandProgress) {
       if (b.total <= 0 || b.done < b.total) continue;
+      if (lastBrandsRef.current.has(b.brand)) continue;
       if (celebratedBrands.has(b.brand)) continue;
       celebratedBrands.add(b.brand);
       newEvents.push({ kind: 'brand', brand: b.brand, total: b.total });
@@ -349,6 +360,7 @@ export function useRegionProgress(opts: {
     // Ogres novads".
     if (emitCelebrations) {
       for (const key of passedMilestones(progress)) {
+        if (lastMilestonesRef.current.has(key)) continue;
         if (celebratedMilestones.has(key)) continue;
         celebratedMilestones.add(key);
         const [idStr, pctStr] = key.split(':');
@@ -387,6 +399,17 @@ export function useRegionProgress(opts: {
     lastParishesRef.current = new Set(progress.completedParishIds);
     lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
     lastStationsRef.current = new Set(contributedStationIds);
+    // Re-set from CURRENT TRUTH, not from `celebratedBrands`/`celebratedMilestones`.
+    // Those are rebuilt from the store on every pass, so when a write has failed
+    // they come back empty — and since the refs above correctly suppressed the
+    // emission, nothing would have been added to them either. Assigning them
+    // back would wipe the very shield that just worked, and the next pass would
+    // replay everything. The three older kinds re-set from progress/
+    // contributedStationIds for exactly this reason.
+    lastBrandsRef.current = new Set(
+      brandProgress.filter(b => b.total > 0 && b.done >= b.total).map(b => b.brand),
+    );
+    lastMilestonesRef.current = new Set(passedMilestones(progress));
     // Celebration events are produced from progress diffs; consumeEvents() drains them, so newEvents will be [] next pass.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
