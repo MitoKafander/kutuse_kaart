@@ -84,13 +84,11 @@
     "resetAll": "Lähtesta kõik",
     "fuelType": "Kütuse Tüüp",
     "advanced": "Täpsemad Filtrid",
-    "hideStale": "Peida aegunud hinnad (>24h)",
     "loyaltyPrices": "Näita hindu sooduskaardiga",
     "findCheapest": "Leia odavaim kütus",
     "findCheapestHint": "*Vali esmalt kütuse tüüp",
     "brand": "Kett",
-    "clearCount": "Tühjenda ({{count}})",
-    "hideStaleDesc": "Praegu: {{current}}"
+    "clearCount": "Tühjenda ({{count}})"
   },
   "feedback": {
     "title": "Tagasiside",

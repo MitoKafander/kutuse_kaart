@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
 import { supabase } from '../supabase';
-import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter, ageStopLabel, FRESH_HOURS, EXPIRY_HOURS } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter, EXPIRY_HOURS } from '../utils';
 import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
@@ -1485,38 +1485,6 @@ export function ProfileDrawer({
                       <div style={{
                         width: '20px', height: '20px', borderRadius: '50%', background: 'white',
                         position: 'absolute', top: '2px', left: hideEmptyDots ? '22px' : '2px', transition: 'left 0.2s'
-                      }}/>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Price age. The map's freshness slider owns this setting; the
-                    switch stays as the discoverable entry point and flips
-                    between the two stops that matter — freshest-only and the
-                    24h default. The subtitle shows where the slider currently is. */}
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                    <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                        <EyeOff size={16} /> {t('filter.hideStale')}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px' }}>
-                        {t('filter.hideStaleDesc', { current: ageStopLabel(maxPriceAgeHours, t) })}
-                      </span>
-                    </span>
-                    <div
-                      role="switch"
-                      aria-checked={maxPriceAgeHours <= FRESH_HOURS}
-                      onClick={() => onMaxPriceAgeChange(maxPriceAgeHours <= FRESH_HOURS ? EXPIRY_HOURS : FRESH_HOURS)}
-                      style={{
-                        width: '44px', height: '24px', borderRadius: '12px', flexShrink: 0,
-                        background: maxPriceAgeHours <= FRESH_HOURS ? 'var(--color-fresh)' : 'var(--color-surface)',
-                        position: 'relative', transition: 'background 0.2s'
-                      }}
-                    >
-                      <div style={{
-                        width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                        position: 'absolute', top: '2px', left: maxPriceAgeHours <= FRESH_HOURS ? '22px' : '2px', transition: 'left 0.2s'
                       }}/>
                     </div>
                   </label>

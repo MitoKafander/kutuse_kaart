@@ -664,13 +664,11 @@
     "resetAll": "Reset all",
     "fuelType": "Fuel Type",
     "advanced": "Advanced Filters",
-    "hideStale": "Hide stale prices (>24h)",
     "loyaltyPrices": "Show prices with loyalty card",
     "findCheapest": "Find cheapest fuel",
     "brand": "Brand",
     "clearCount": "Clear ({{count}})",
-    "findCheapestHint": "*Pick a fuel type first",
-    "hideStaleDesc": "Currently: {{current}}"
+    "findCheapestHint": "*Pick a fuel type first"
   },
   "legal": {
     "notice": {

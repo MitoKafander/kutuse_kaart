@@ -662,13 +662,11 @@
     "resetAll": "Nollaa kaikki",
     "fuelType": "Polttoaineen Tyyppi",
     "advanced": "Lisäsuodattimet",
-    "hideStale": "Piilota vanhentuneet hinnat (>24h)",
     "loyaltyPrices": "Näytä hinta kanta-asiakaskortilla",
     "findCheapest": "Etsi halvin polttoaine",
     "brand": "Ketju",
     "clearCount": "Tyhjennä ({{count}})",
-    "findCheapestHint": "*Valitse ensin polttoainetyyppi",
-    "hideStaleDesc": "Nyt: {{current}}"
+    "findCheapestHint": "*Valitse ensin polttoainetyyppi"
   },
   "header": {
     "aria": {

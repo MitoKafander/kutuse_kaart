@@ -662,13 +662,11 @@
     "resetAll": "Atiestatīt visu",
     "fuelType": "Degvielas Veids",
     "advanced": "Papildu Filtri",
-    "hideStale": "Slēpt novecojušas cenas (>24h)",
     "loyaltyPrices": "Rādīt cenas ar klienta karti",
     "findCheapest": "Atrast lētāko degvielu",
     "brand": "Tīkls",
     "clearCount": "Notīrīt ({{count}})",
-    "findCheapestHint": "*Vispirms izvēlies degvielas veidu",
-    "hideStaleDesc": "Pašlaik: {{current}}"
+    "findCheapestHint": "*Vispirms izvēlies degvielas veidu"
   },
   "header": {
     "aria": {

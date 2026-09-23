@@ -662,13 +662,11 @@
     "resetAll": "Atkurti viską",
     "fuelType": "Degalų Tipas",
     "advanced": "Papildomi Filtrai",
-    "hideStale": "Slėpti pasenusias kainas (>24h)",
     "loyaltyPrices": "Rodyti kainas su kliento kortele",
     "findCheapest": "Rasti pigiausius degalus",
     "brand": "Tinklas",
     "clearCount": "Išvalyti ({{count}})",
-    "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą",
-    "hideStaleDesc": "Dabar: {{current}}"
+    "findCheapestHint": "*Pirmiausia pasirinkite degalų tipą"
   },
   "header": {
     "aria": {

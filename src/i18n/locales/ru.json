@@ -662,13 +662,11 @@
     "resetAll": "Сбросить все",
     "fuelType": "Тип Топлива",
     "advanced": "Расширенные Фильтры",
-    "hideStale": "Скрыть устаревшие цены (>24ч)",
     "loyaltyPrices": "Показать цены со скидочной картой",
     "findCheapest": "Найти самое дешевое топливо",
     "brand": "Сеть",
     "clearCount": "Очистить ({{count}})",
-    "findCheapestHint": "*Сначала выберите тип топлива",
-    "hideStaleDesc": "Сейчас: {{current}}"
+    "findCheapestHint": "*Сначала выберите тип топлива"
   },
   "header": {
     "aria": {
