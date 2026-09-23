@@ -79,6 +79,12 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
       >
       {activeStation && activeStation.kind === 'brand' && (
         <div
+          // key forces a remount per event. slideInFade ends at opacity 0 with
+          // animation-fill-mode: forwards, so when React reuses this node for
+          // the NEXT toast in a run the animation does not restart and the
+          // toast is simply invisible. Pre-existing, but brand wins and
+          // milestone rungs make same-kind runs routine.
+          key={'brand:' + activeStation.brand}
           className="discovery-toast"
           onClick={dismissStation}
           style={{
@@ -111,6 +117,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 
       {activeStation && activeStation.kind === 'station' && (
         <div
+          key={'station:' + activeStation.stationId}
           className="discovery-toast"
           onClick={dismissStation}
           style={{
@@ -174,6 +181,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 
       {activeToast && activeToast.kind === 'milestone' && (
         <div
+          key={'milestone:' + activeToast.id + ':' + activeToast.pct}
           className="discovery-toast"
           onClick={dismissParish}
           style={{
@@ -188,6 +196,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
             border: '1px solid var(--color-surface-border)',
             backdropFilter: 'blur(12px)',
             maxWidth: 'calc(100vw - 40px)',
+            minWidth: 200,
             pointerEvents: 'auto',
             cursor: 'pointer',
           }}
@@ -206,6 +215,7 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
 
       {activeToast && activeToast.kind === 'parish' && (
         <div
+          key={'parish:' + activeToast.id}
           className="discovery-toast"
           onClick={dismissParish}
           style={{
