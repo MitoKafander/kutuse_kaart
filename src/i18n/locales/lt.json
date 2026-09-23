@@ -633,7 +633,11 @@
     "stationProgress": "Surinkta {{done}} / {{total}} degalinių",
     "parishCovered": "{{name}} įveikta!",
     "maakondDiscovered": "{{name}} atrasta!",
-    "allStationsCovered": "Visos degalinės įveiktos"
+    "allStationsCovered": "Visos degalinės įveiktos",
+    "brandCollected": "{{brand}} surinkta!",
+    "brandProgress": "Visos {{count}} degalinės",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} degalinių surinkta"
   },
   "feedback": {
     "title": "Atsiliepimai",

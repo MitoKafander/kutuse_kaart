@@ -26,7 +26,17 @@ export type RegionProgress = {
 export type CelebrationEvent =
   | { kind: 'parish';   id: number; name: string; maakondName: string; emoji: string }
   | { kind: 'maakond';  id: number; name: string; emoji: string }
-  | { kind: 'station';  stationId: string; stationName: string; done: number; total: number };
+  | { kind: 'station';  stationId: string; stationName: string; done: number; total: number }
+  // Completing every station of one chain. The audit found this is the
+  // strongest collecting loop Kyts has and the only one with no celebration —
+  // and it is the loop LV/LT users are left with, since their regions hold
+  // roughly twice as many stations as Estonia's.
+  | { kind: 'brand';    brand: string; total: number }
+  // Crossing 25/50/75% of a region. Region completion almost never fires (only
+  // 22% of Estonian contributors have ever finished a vald in five years), so
+  // a 13-station Latvian novads gave no feedback at all until the thirteenth
+  // visit. These are the rungs on the way up.
+  | { kind: 'milestone'; id: number; name: string; pct: 25 | 50 | 75; done: number; total: number };
 
 /**
  * Per-country, because region ids only mean anything inside their own country
@@ -37,25 +47,51 @@ export type CelebrationEvent =
  */
 const celebratedKey = (country: string) => `kyts-celebrated-regions:${country}`;
 
-type CelebratedStore = { parishes: number[]; maakonnad: number[]; stations: string[] };
+type CelebratedStore = { parishes: number[]; maakonnad: number[]; stations: string[]; brands: string[]; milestones: string[] };
 
 function readCelebrated(country: string): CelebratedStore {
   try {
     const raw = localStorage.getItem(celebratedKey(country));
-    if (!raw) return { parishes: [], maakonnad: [], stations: [] };
+    if (!raw) return { parishes: [], maakonnad: [], stations: [], brands: [], milestones: [] };
     const parsed = JSON.parse(raw);
     return {
       parishes: Array.isArray(parsed?.parishes) ? parsed.parishes : [],
       maakonnad: Array.isArray(parsed?.maakonnad) ? parsed.maakonnad : [],
       stations: Array.isArray(parsed?.stations) ? parsed.stations : [],
+      // Absent in stores written before brand/milestone events existed.
+      brands: Array.isArray(parsed?.brands) ? parsed.brands : [],
+      milestones: Array.isArray(parsed?.milestones) ? parsed.milestones : [],
     };
   } catch {
-    return { parishes: [], maakonnad: [], stations: [] };
+    return { parishes: [], maakonnad: [], stations: [], brands: [], milestones: [] };
   }
 }
 
 function writeCelebrated(country: string, store: CelebratedStore) {
   try { localStorage.setItem(celebratedKey(country), JSON.stringify(store)); } catch { /* quota */ }
+}
+
+/**
+ * Every "<parishId>:<pct>" rung a region has already passed.
+ *
+ * Thresholds are crossed, never un-crossed: a region at 60% has passed both 25
+ * and 50, so a user who jumps straight from 0 to 60% gets both rungs rather
+ * than silently skipping one. 100% is deliberately absent — that is the parish
+ * completion event, which already exists.
+ */
+const MILESTONE_RUNGS = [25, 50, 75] as const;
+
+function passedMilestones(progress: RegionProgress): string[] {
+  const out: string[] = [];
+  for (const pm of progress.perMaakond) {
+    for (const p of pm.parishes) {
+      if (p.stationsTotal <= 0 || p.stationsDone <= 0) continue;
+      if (p.stationsDone >= p.stationsTotal) continue; // completion owns 100%
+      const pct = (p.stationsDone / p.stationsTotal) * 100;
+      for (const rung of MILESTONE_RUNGS) if (pct >= rung) out.push(`${p.parish.id}:${rung}`);
+    }
+  }
+  return out;
 }
 
 // Given a user's contributed station ids + the region catalog, compute
@@ -90,12 +126,15 @@ export function useRegionProgress(opts: {
   // re-seed so a fresh sign-in / sign-out doesn't mis-diff against the
   // previous session's snapshot.
   userId: string | null;
+  // Per-brand collecting progress for the active country, so a completed
+  // chain can fire its own celebration. Same shape ProfileDrawer renders.
+  brandProgress: Array<{ brand: string; done: number; total: number }>;
   // Which country `maakonnad`/`parishes` describe. Changing it re-seeds
   // silently against that country's own store, so switching to Latvia does
   // not replay Latvia's already-complete novadi as new.
   country: string;
 }): { progress: RegionProgress; events: CelebrationEvent[]; consumeEvents: () => void } {
-  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId, country } = opts;
+  const { contributedStationIds, maakonnad, parishes, stationParishMap, stationNamesMap, emitCelebrations, contributionsReady, userId, country, brandProgress } = opts;
 
   const progress = useMemo<RegionProgress>(() => {
     // Sort the level-1 regions alphabetically for a stable grid order. The
@@ -209,10 +248,20 @@ export function useRegionProgress(opts: {
       const seedParishes = new Set([...store.parishes, ...progress.completedParishIds]);
       const seedMaakonnad = new Set([...store.maakonnad, ...progress.completedMaakondIds]);
       const seedStations = new Set([...store.stations, ...contributedStationIds]);
+      // Same anti-retroactive rule as regions: a chain already finished, or a
+      // milestone already passed, is banked silently on first observation so a
+      // long-time contributor doesn't get a burst of fireworks for old work.
+      const seedBrands = new Set([
+        ...store.brands,
+        ...brandProgress.filter(b => b.total > 0 && b.done >= b.total).map(b => b.brand),
+      ]);
+      const seedMilestones = new Set([...store.milestones, ...passedMilestones(progress)]);
       writeCelebrated(country, {
         parishes: Array.from(seedParishes),
         maakonnad: Array.from(seedMaakonnad),
         stations: Array.from(seedStations),
+        brands: Array.from(seedBrands),
+        milestones: Array.from(seedMilestones),
       });
       lastParishesRef.current = new Set(progress.completedParishIds);
       lastMaakonnadRef.current = new Set(progress.completedMaakondIds);
@@ -226,6 +275,8 @@ export function useRegionProgress(opts: {
     const celebratedParishes = new Set(store.parishes);
     const celebratedMaakonnad = new Set(store.maakonnad);
     const celebratedStations = new Set(store.stations);
+    const celebratedBrands = new Set(store.brands);
+    const celebratedMilestones = new Set(store.milestones);
 
     const newEvents: CelebrationEvent[] = [];
     const maakondById = new Map(maakonnad.map(m => [m.id, m]));
@@ -282,16 +333,55 @@ export function useRegionProgress(opts: {
       });
     }
 
+    // Brand completions fire regardless of the Avastuskaart toggle, like
+    // station discoveries: they are tied to the act of submitting a price,
+    // not to the map-view mode. That matters most for LV/LT, where the map
+    // toggle is off by default and the region loop is the slow one.
+    for (const b of brandProgress) {
+      if (b.total <= 0 || b.done < b.total) continue;
+      if (celebratedBrands.has(b.brand)) continue;
+      celebratedBrands.add(b.brand);
+      newEvents.push({ kind: 'brand', brand: b.brand, total: b.total });
+    }
+
+    // Region milestones follow the region rules: gated on the toggle, since a
+    // user who hasn't opened the Avastuskaart has no context for "half of
+    // Ogres novads".
+    if (emitCelebrations) {
+      for (const key of passedMilestones(progress)) {
+        if (celebratedMilestones.has(key)) continue;
+        celebratedMilestones.add(key);
+        const [idStr, pctStr] = key.split(':');
+        const id = Number(idStr);
+        const entry = progress.perMaakond
+          .flatMap(pm => pm.parishes)
+          .find(x => x.parish.id === id);
+        if (!entry) continue;
+        newEvents.push({
+          kind: 'milestone',
+          id,
+          name: entry.parish.name,
+          pct: Number(pctStr) as 25 | 50 | 75,
+          done: entry.stationsDone,
+          total: entry.stationsTotal,
+        });
+      }
+    }
+
     const storeDirty =
       newEvents.length ||
       celebratedParishes.size !== store.parishes.length ||
       celebratedMaakonnad.size !== store.maakonnad.length ||
-      celebratedStations.size !== store.stations.length;
+      celebratedStations.size !== store.stations.length ||
+      celebratedBrands.size !== store.brands.length ||
+      celebratedMilestones.size !== store.milestones.length;
     if (storeDirty) {
       writeCelebrated(country, {
         parishes: Array.from(celebratedParishes),
         maakonnad: Array.from(celebratedMaakonnad),
         stations: Array.from(celebratedStations),
+        brands: Array.from(celebratedBrands),
+        milestones: Array.from(celebratedMilestones),
       });
     }
     lastParishesRef.current = new Set(progress.completedParishIds);
@@ -300,7 +390,7 @@ export function useRegionProgress(opts: {
     // Celebration events are produced from progress diffs; consumeEvents() drains them, so newEvents will be [] next pass.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (newEvents.length) setEvents(prev => [...prev, ...newEvents]);
-  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId, country]);
+  }, [progress, maakonnad, contributedStationIds, stationNamesMap, emitCelebrations, contributionsReady, userId, country, brandProgress]);
 
   const consumeEvents = () => setEvents([]);
   return { progress, events, consumeEvents };

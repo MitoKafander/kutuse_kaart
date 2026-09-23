@@ -418,7 +418,11 @@
     "stationProgress": "{{done}} / {{total}} jaama kogutud",
     "parishCovered": "{{name}} kaetud!",
     "maakondDiscovered": "{{name}} avastatud!",
-    "allStationsCovered": "Kõik jaamad kaetud"
+    "allStationsCovered": "Kõik jaamad kaetud",
+    "brandCollected": "{{brand}} kogutud!",
+    "brandProgress": "Kõik {{count}} jaama",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} jaama kogutud"
   },
   "discoveryGrid": {
     "loading": "Regioone pole veel laetud…",

@@ -875,6 +875,7 @@ function App() {
     contributionsReady: !session || pricesLoaded,
     userId: session?.user?.id ?? null,
     country: activeCountry,
+    brandProgress: userBrandProgress,
   });
 
   // Parish ids where every station has been contributed by whichever user's

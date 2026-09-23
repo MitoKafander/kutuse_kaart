@@ -18,8 +18,11 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!events.length) return;
-    const stations = events.filter(e => e.kind === 'station');
-    const toasts = events.filter(e => e.kind === 'parish');
+    // Brand wins queue with station discoveries — both fire on the act of
+    // submitting a price. Milestones queue with parish completions — both are
+    // region progress and both are gated on the Avastuskaart toggle.
+    const stations = events.filter(e => e.kind === 'station' || e.kind === 'brand');
+    const toasts = events.filter(e => e.kind === 'parish' || e.kind === 'milestone');
     const maakonnad = events.filter(e => e.kind === 'maakond');
     if (stations.length)  setStationQueue(q => [...q, ...stations]);
     if (toasts.length)    setToastQueue(q => [...q, ...toasts]);
@@ -74,6 +77,38 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
           width: 'max-content',
         }}
       >
+      {activeStation && activeStation.kind === 'brand' && (
+        <div
+          className="discovery-toast"
+          onClick={dismissStation}
+          style={{
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
+            border: '1px solid var(--color-primary)',
+            backdropFilter: 'blur(12px)',
+            maxWidth: 'calc(100vw - 40px)',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: 24 }}>🏆</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+              {t('celebration.brandCollected', { brand: activeStation.brand })}
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+              {t('celebration.brandProgress', { count: activeStation.total })}
+            </span>
+          </div>
+        </div>
+      )}
+
       {activeStation && activeStation.kind === 'station' && (
         <div
           className="discovery-toast"
@@ -134,6 +169,38 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
               </span>
             </div>
           )}
+        </div>
+      )}
+
+      {activeToast && activeToast.kind === 'milestone' && (
+        <div
+          className="discovery-toast"
+          onClick={dismissParish}
+          style={{
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
+            border: '1px solid var(--color-surface-border)',
+            backdropFilter: 'blur(12px)',
+            maxWidth: 'calc(100vw - 40px)',
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: 22 }}>{activeToast.pct >= 75 ? '🔥' : activeToast.pct >= 50 ? '⚡' : '🌱'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+              {t('celebration.milestone', { pct: activeToast.pct, name: localizeRegionName(activeToast.name, t) })}
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+              {t('celebration.milestoneProgress', { done: activeToast.done, total: activeToast.total })}
+            </span>
+          </div>
         </div>
       )}
 

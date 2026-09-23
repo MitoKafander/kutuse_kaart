@@ -633,7 +633,11 @@
     "stationProgress": "{{done}} / {{total}} asemaa kerätty",
     "parishCovered": "{{name}} katettu!",
     "maakondDiscovered": "{{name}} löydetty!",
-    "allStationsCovered": "Kaikki asemat katettu"
+    "allStationsCovered": "Kaikki asemat katettu",
+    "brandCollected": "{{brand}} kerätty!",
+    "brandProgress": "Kaikki {{count}} asemaa",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} asemaa kerätty"
   },
   "feedback": {
     "title": "Palaute",

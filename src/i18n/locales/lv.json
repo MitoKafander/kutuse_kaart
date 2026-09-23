@@ -633,7 +633,11 @@
     "stationProgress": "Savāktas {{done}} / {{total}} stacijas",
     "parishCovered": "{{name}} pabeigts!",
     "maakondDiscovered": "{{name}} atklāts!",
-    "allStationsCovered": "Visas stacijas pabeigtas"
+    "allStationsCovered": "Visas stacijas pabeigtas",
+    "brandCollected": "{{brand}} savākts!",
+    "brandProgress": "Visas {{count}} stacijas",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} stacijas savāktas"
   },
   "feedback": {
     "title": "Atsauksmes",

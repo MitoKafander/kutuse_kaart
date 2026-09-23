@@ -635,7 +635,11 @@
     "stationProgress": "{{done}} / {{total}} stations collected",
     "parishCovered": "{{name}} covered!",
     "maakondDiscovered": "{{name}} discovered!",
-    "allStationsCovered": "All stations covered"
+    "allStationsCovered": "All stations covered",
+    "brandCollected": "{{brand}} collected!",
+    "brandProgress": "All {{count}} stations",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} stations collected"
   },
   "feedback": {
     "title": "Feedback",

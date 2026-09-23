@@ -633,7 +633,11 @@
     "stationProgress": "Собрано {{done}} / {{total}} станций",
     "parishCovered": "{{name}} покрыта!",
     "maakondDiscovered": "{{name}} открыта!",
-    "allStationsCovered": "Все станции покрыты"
+    "allStationsCovered": "Все станции покрыты",
+    "brandCollected": "{{brand}} собран!",
+    "brandProgress": "Все {{count}} станций",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "{{done}}/{{total}} станций собрано"
   },
   "feedback": {
     "title": "Обратная связь",
