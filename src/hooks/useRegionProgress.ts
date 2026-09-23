@@ -133,9 +133,10 @@ export function useRegionProgress(opts: {
   stationParishMap: Map<string, number>;
   // station -> display name, used for station-discovery toast copy.
   stationNamesMap: Map<string, string>;
-  // Gate parish/maakond celebrations on the Avastuskaart toggle being live.
-  // Station-discovery toasts fire independently — they're tied to the act of
-  // submitting a price, not to the map-view mode.
+  // Gates MILESTONES only. Completions, station discoveries and brand wins all
+  // fire independently — they're tied to the act of submitting a price, not to
+  // the map-view mode. Milestones are the one kind that only makes sense once
+  // you've opened the map ("31% of Ogres novads" means nothing otherwise).
   emitCelebrations: boolean;
   // True once `contributedStationIds` reflects the actual current-user
   // contributions. For anonymous users this is always true (empty set is
@@ -339,12 +340,14 @@ export function useRegionProgress(opts: {
       const entry = progress.perMaakond.find(pm => pm.parishes.some(x => x.parish.id === pid));
       if (!entry) continue;
       const parish = entry.parishes.find(x => x.parish.id === pid)!.parish;
-      // Only bank it as celebrated when we actually celebrate it. This used to
-      // run unconditionally, so a region completed while the Avastuskaart
-      // toggle was off — its default state for every new user — was marked
-      // seen and could never fire again. The reward was silently consumed by
-      // the act of earning it at the wrong moment.
-      if (!emitCelebrations) continue;
+      // NOT gated on the Avastuskaart toggle. Completing a region is an
+      // achievement earned by submitting prices, not by looking at a map, and
+      // the toggle is off by default for every new user — so gating it meant
+      // the rarest reward in the app was destroyed for most of the people who
+      // earned it (only 22% of Estonian contributors have ever completed a
+      // vald at all). It is also rare enough to never be spam. Milestones
+      // below stay gated: those are progress pings, and the progress itself
+      // is still there in the badge grid whenever the user opens it.
       celebratedParishes.add(pid);
       newEvents.push({
         kind: 'parish', id: pid, name: parish.name,
@@ -358,8 +361,7 @@ export function useRegionProgress(opts: {
       if (celebratedMaakonnad.has(mid)) continue;
       const m = maakondById.get(mid);
       if (!m) continue;
-      if (!emitCelebrations) continue; // see the parish loop above
-      celebratedMaakonnad.add(mid);
+      celebratedMaakonnad.add(mid); // ungated, see the parish loop above
       newEvents.push({
         kind: 'maakond', id: mid, name: m.name, emoji: m.emoji || '🏆',
       });

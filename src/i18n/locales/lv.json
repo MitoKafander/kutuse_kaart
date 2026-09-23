@@ -637,7 +637,8 @@
     "brandCollected": "{{brand}} savākts!",
     "brandProgress": "Visas stacijas: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} stacijas savāktas"
+    "milestoneProgress": "{{done}}/{{total}} stacijas savāktas",
+    "discoverHint": "Atver Atklājumu karti, lai redzētu savu progresu"
   },
   "feedback": {
     "title": "Atsauksmes",

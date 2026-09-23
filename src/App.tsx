@@ -1271,7 +1271,7 @@ function App() {
         />
       )}
 
-      <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} />
+      <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} discoveryMapOn={showDiscoveryMap} />
 
       <PointsToast events={pointsEvents} onDrain={() => setPointsEvents([])} />
 

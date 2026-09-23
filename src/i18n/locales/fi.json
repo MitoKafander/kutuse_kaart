@@ -637,7 +637,8 @@
     "brandCollected": "{{brand}} kerätty!",
     "brandProgress": "Kaikki {{n}} asemaa",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} asemaa kerätty"
+    "milestoneProgress": "{{done}}/{{total}} asemaa kerätty",
+    "discoverHint": "Avaa Löytökartta nähdäksesi edistymisesi"
   },
   "feedback": {
     "title": "Palaute",

@@ -639,7 +639,8 @@
     "brandCollected": "{{brand}} collected!",
     "brandProgress": "All {{n}} stations",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} stations collected"
+    "milestoneProgress": "{{done}}/{{total}} stations collected",
+    "discoverHint": "Open the Discovery map to see your progress"
   },
   "feedback": {
     "title": "Feedback",

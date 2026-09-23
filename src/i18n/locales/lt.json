@@ -637,7 +637,8 @@
     "brandCollected": "{{brand}} surinkta!",
     "brandProgress": "Visos degalinės: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} degalinių surinkta"
+    "milestoneProgress": "{{done}}/{{total}} degalinių surinkta",
+    "discoverHint": "Atidarykite Atradimų žemėlapį, kad pamatytumėte pažangą"
   },
   "feedback": {
     "title": "Atsiliepimai",

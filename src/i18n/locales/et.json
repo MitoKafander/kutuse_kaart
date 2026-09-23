@@ -422,7 +422,8 @@
     "brandCollected": "{{brand}} kogutud!",
     "brandProgress": "Kõik {{n}} jaama",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} jaama kogutud"
+    "milestoneProgress": "{{done}}/{{total}} jaama kogutud",
+    "discoverHint": "Ava Avastuskaart, et näha oma edenemist"
   },
   "discoveryGrid": {
     "loading": "Regioone pole veel laetud…",

@@ -637,7 +637,8 @@
     "brandCollected": "{{brand}} собран!",
     "brandProgress": "Все станции: {{n}}",
     "milestone": "{{name}} — {{pct}}%",
-    "milestoneProgress": "{{done}}/{{total}} станций собрано"
+    "milestoneProgress": "{{done}}/{{total}} станций собрано",
+    "discoverHint": "Откройте Карту открытий, чтобы увидеть прогресс"
   },
   "feedback": {
     "title": "Обратная связь",

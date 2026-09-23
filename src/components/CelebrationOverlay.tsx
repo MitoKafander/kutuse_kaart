@@ -7,7 +7,16 @@ import { localizeRegionName } from '../utils';
 // maakond overlay queue (shown one at a time, coalesced if several fire at
 // once). Pure CSS animations — the keyframes live in src/index.css.
 
-export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEvent[]; onDrain: () => void }) {
+export function CelebrationOverlay({ events, onDrain, discoveryMapOn = false }: {
+  events: CelebrationEvent[];
+  onDrain: () => void;
+  /**
+   * Whether the Avastuskaart is switched on. Completions fire either way, so
+   * when it is OFF the toast doubles as the moment the user discovers the game
+   * exists — rather than showing them a place name with no context.
+   */
+  discoveryMapOn?: boolean;
+}) {
   const { t } = useTranslation();
   const [stationQueue, setStationQueue] = useState<CelebrationEvent[]>([]);
   const [toastQueue, setToastQueue] = useState<CelebrationEvent[]>([]);
@@ -240,7 +249,9 @@ export function CelebrationOverlay({ events, onDrain }: { events: CelebrationEve
               {t('celebration.parishCovered', { name: localizeRegionName(activeToast.name, t) })}
             </span>
             <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
-              {localizeRegionName(activeToast.maakondName, t)}
+              {discoveryMapOn
+                ? localizeRegionName(activeToast.maakondName, t)
+                : t('celebration.discoverHint')}
             </span>
           </div>
         </div>
