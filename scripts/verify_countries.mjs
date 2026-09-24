@@ -127,5 +127,34 @@ for (const [cc, l1File, l2File] of [
     missing.length ? `${missing.length} municipality(ies) have no geometry` : '');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Boundary files as the BROWSER gets them, not as they sit on disk
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// vercel.json rewrites /((?!api/|assets/).*) to index.html, so a boundary file
+// that was generated but never committed still answers 200 — with
+// content-type text/html and an HTML body. The client's fetch helper catches
+// the parse failure and caches the null, so the layer is simply absent and
+// nothing anywhere says why. Finland shipped in exactly that state for one
+// commit. Checking the served content-type is the only honest test.
+if (process.env.SKIP_LIVE_CHECK !== '1') {
+  console.log('\n── boundary files as served by kyts.ee ──');
+  for (const file of [
+    'maakonnad.geojson', 'parishes.geojson',
+    'regions_lv.geojson', 'municipalities_lv.geojson',
+    'regions_lt.geojson', 'municipalities_lt.geojson',
+    'regions_fi.geojson', 'municipalities_fi.geojson',
+  ]) {
+    try {
+      const res = await fetch(`https://kyts.ee/${file}`);
+      const type = res.headers.get('content-type') ?? '';
+      const ok = res.ok && !type.includes('text/html');
+      check(ok, file, ok ? type.split(';')[0] : `${res.status} ${type} — served the SPA fallback, file is not deployed`);
+    } catch (e) {
+      check(false, file, e.message);
+    }
+  }
+}
+
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) FAILED.`}`);
 process.exit(failures === 0 ? 0 : 1);
