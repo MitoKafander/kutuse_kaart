@@ -79,6 +79,48 @@ import './index.css';
 // the background refresh landed.
 const REGION_CACHE_KEY = 'kyts-regions-v2';
 
+/**
+ * The amenity keys the client actually reads. Verified by grepping every
+ * `amenities.*` access in src/ — all ten are literal keys, nothing iterates
+ * the object, and nothing writes amenities back to the DB.
+ */
+const CACHED_AMENITY_KEYS = [
+  'addr:city', 'addr:district', 'addr:municipality', 'addr:place',
+  'addr:street', 'addr:subdistrict', 'addr:village',
+  'alt_name', 'name', 'operator',
+] as const;
+
+/**
+ * Trim a station row down to what the first paint needs before caching it.
+ *
+ * The cache exists to get dots on the map before the network answers, but it
+ * stored whole rows: `amenities` alone was 59% of the blob and the client reads
+ * about a third of it, while `created_at` (7%) is never read for a station at
+ * all. At 1,772 stations that is 1.8 MiB in the accounting Safari and Firefox
+ * use (2 bytes per character) against a 5 MiB per-origin quota — and a quota
+ * failure is silent, taking the celebration store and country preferences down
+ * with it.
+ *
+ * Trimming roughly halves it, which is what keeps a fourth country from putting
+ * a large slice of iOS users into that state. The full rows still live in
+ * memory from the network fetch; only the cached copy is slimmed.
+ */
+function cacheableStation(s: any) {
+  const amenities: Record<string, unknown> = {};
+  const src = s?.amenities;
+  if (src) for (const k of CACHED_AMENITY_KEYS) if (src[k] != null) amenities[k] = src[k];
+  return {
+    id: s.id,
+    name: s.name,
+    latitude: s.latitude,
+    longitude: s.longitude,
+    country: s.country,
+    parish_id: s.parish_id,
+    active: s.active,
+    amenities,
+  };
+}
+
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 
 // Owner-only price entry (phase62). Long-pressing the camera FAB opens an admin
@@ -491,7 +533,7 @@ function App() {
 
     if (stRes.data) {
       setStations(stRes.data);
-      try { localStorage.setItem('kyts:cache:stations', JSON.stringify(stRes.data)); }
+      try { localStorage.setItem('kyts:cache:stations', JSON.stringify(stRes.data.map(cacheableStation))); }
       catch { /* quota exceeded — non-fatal, next load will retry */ }
     }
     // Only claim the prices are loaded when they actually arrived. This used
