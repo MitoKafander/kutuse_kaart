@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -70,6 +70,20 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level2Key: 'region.level2.LV',
     translatableRegionSuffix: false,
     preferredLocale: 'lv',
+  },
+  FI: {
+    code: 'FI',
+    flag: '🇫🇮',
+    nameKey: 'country.FI',
+    center: [64.5, 26.0],
+    // Finland is long: 60°N to 70°N. Zoom 5 fits it; 7 would show only the south.
+    zoom: 5,
+    bbox: [19.0, 59.7, 31.6, 70.1],
+    boundaries: { level1: '/regions_fi.geojson', level2: '/municipalities_fi.geojson' },
+    level1Key: 'region.level1.FI',
+    level2Key: 'region.level2.FI',
+    translatableRegionSuffix: false,
+    preferredLocale: 'fi',
   },
   LT: {
     code: 'LT',

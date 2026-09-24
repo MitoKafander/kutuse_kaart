@@ -26,7 +26,7 @@ import { overpass } from './_lib/overpass.mjs';
 const args = process.argv.slice(2);
 const force = args.includes('--force');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
-const COUNTRIES = (wanted.length ? wanted : ['LV', 'LT']);
+const COUNTRIES = (wanted.length ? wanted : ['LV', 'LT', 'FI']);
 
 // admin_level per country for the two Avastuskaart tiers. `level1: null` means
 // the country has no OSM-mapped level-1 boundary and the seed groups its
@@ -34,6 +34,10 @@ const COUNTRIES = (wanted.length ? wanted : ['LV', 'LT']);
 const ADMIN = {
   LV: { level1: null, level2: 5, minL2: 40, maxL2: 45, minFuel: 350 },
   LT: { level1: 4, level2: 5, minL1: 10, maxL1: 10, minL2: 58, maxL2: 62, minFuel: 500 },
+  // Finland: 19 maakunnat (admin_level=4) over 308 kunnat (admin_level=8).
+  // Note level 8, not 5 — Finland has no level-5 tier, and its level 7 (69
+  // relations) is a partial cover, the same trap Latvia's pilsētas were.
+  FI: { level1: 4, level2: 8, minL1: 18, maxL1: 20, minL2: 290, maxL2: 320, minFuel: 1500 },
 };
 
 for (const cc of COUNTRIES) {

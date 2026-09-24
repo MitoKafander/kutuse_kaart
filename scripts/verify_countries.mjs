@@ -46,7 +46,7 @@ const hasCountryCol = parishes.length > 0 && 'country' in parishes[0];
 check(hasCountryCol, 'parishes.country exists', hasCountryCol ? '' : 'migration schema_phase65 not applied yet');
 const countryOf = (r) => r.country ?? 'EE';
 
-for (const cc of ['EE', 'LV', 'LT']) {
+for (const cc of ['EE', 'LV', 'LT', 'FI']) {
   const st = stations.filter((s) => s.country === cc);
   const pa = parishes.filter((p) => countryOf(p) === cc);
   const mk = maakonnad.filter((m) => countryOf(m) === cc);
@@ -87,13 +87,13 @@ check(crossed.length === 0, 'no station points at another country\'s municipalit
   crossed.length ? `${crossed.length} station(s)` : '');
 
 console.log('\n── region ids stay in their allocated bands ──');
-const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299] };
+const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299], FI: [301, 399] };
 const strayId = maakonnad.filter((m) => {
   const b = band[countryOf(m)];
   return !b || m.id < b[0] || m.id > b[1];
 });
 check(strayId.length === 0, 'every level-1 region id sits in its country\'s band',
-  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299');
+  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299, FI 301-399');
 
 console.log('\n── prices ──');
 const prices = await fetchAll('prices', 'id, station_id, fuel_type, price');
@@ -113,6 +113,7 @@ for (const [cc, l1File, l2File] of [
   ['EE', 'public/maakonnad.geojson', 'public/parishes.geojson'],
   ['LV', 'public/regions_lv.geojson', 'public/municipalities_lv.geojson'],
   ['LT', 'public/regions_lt.geojson', 'public/municipalities_lt.geojson'],
+  ['FI', 'public/regions_fi.geojson', 'public/municipalities_fi.geojson'],
 ]) {
   if (!existsSync(l2File)) { check(false, `${cc} boundary files exist`, `${l2File} missing`); continue; }
   const l1 = JSON.parse(readFileSync(l1File, 'utf8')).features;

@@ -19,12 +19,14 @@
     "level1": {
       "EE": "maakuntaa",
       "LV": "aluetta",
-      "LT": "maakuntaa"
+      "LT": "maakuntaa",
+      "FI": "maakuntaa"
     },
     "level2": {
       "EE": "kuntaa",
       "LV": "kuntaa",
-      "LT": "kuntaa"
+      "LT": "kuntaa",
+      "FI": "kuntaa"
     }
   },
   "price": {
@@ -719,7 +721,8 @@
   "country": {
     "EE": "Viro",
     "LV": "Latvia",
-    "LT": "Liettua"
+    "LT": "Liettua",
+    "FI": "Suomi"
   },
   "freshness": {
     "label": "Hinnan ikä",

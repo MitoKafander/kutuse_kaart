@@ -295,6 +295,19 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'apsaga',         canonical: 'Apsaga' },
   { match: 'skulas',         canonical: 'Skulas' },
   { match: 'milda',          canonical: 'Milda' },
+
+  // Finnish chains. OSM tags most Finnish forecourts as "<CHAIN> <place>"
+  // rather than setting brand=, so without these every one of the ~100 "SEO
+  // Kauhava"-style names becomes its own single-station brand — the same
+  // fragmentation that makes the Latvian and Lithuanian brand collector weak.
+  // Verified inert against every active EE/LV/LT station name before adding.
+  { match: 'neste',          canonical: 'Neste' },        // already above; Finland's largest
+  { match: 'abc',            canonical: 'ABC' },          // 443+ incl. "ABC Prisma …"
+  { match: 'st1',            canonical: 'St1' },
+  { match: 'teboil',         canonical: 'Teboil' },       // incl. Express / Truck / D
+  { match: 'seo',            canonical: 'SEO' },          // "SEO", "Seo", "Hamarin Seo"
+  { match: 'shell',          canonical: 'Shell' },        // incl. Shell Express
+  { match: 'gulf',           canonical: 'Gulf' },
 ];
 
 // Diacritics are folded on BOTH sides (pattern and station name) so one

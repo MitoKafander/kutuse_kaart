@@ -4,7 +4,7 @@
 // Level-1 ids are hand-allocated and must never be reused or renumbered —
 // they're `maakonnad.id` (smallint) and `parishes.maakond_id` in prod, and
 // `properties.maakond_id` inside the shipped boundary geojson:
-//     EE 1-15   ·   LV 101-105   ·   LT 201-210
+//     EE 1-15   ·   LV 101-105   ·   LT 201-210   ·   FI 301-319
 // Level-2 ids are OSM relation ids, exactly as Estonia's 78 parishes already
 // are, so they survive a reseed and can be cross-referenced against OSM.
 
@@ -73,6 +73,44 @@ export const LT_COUNTY_EMOJI = {
   206: '🚲', 207: '🌿', 208: '🐻', 209: '🏞️', 210: '🏙️',
 };
 
+// ── Finland ──────────────────────────────────────────────────────────────────
+//
+// Like Lithuania, Finland maps its level-1 tier in OSM (19 maakunnat at
+// admin_level=4), so only the id allocation lives here. Its level-2 tier is
+// admin_level=8 (308 kunnat) — NOT 5, which Finland does not have, and not 7,
+// which is a partial cover of only 69 units.
+export const FI_REGION_IDS = {
+  // Names exactly as OSM carries them — Finnish without the "maakunta" suffix,
+  // and Swedish for the two Swedish-speaking regions (Åland and Ostrobothnia),
+  // which is how OSM tags them. Read from the cache rather than guessed; my
+  // first attempt used the genitive forms and failed on "Uusimaa".
+  'Etelä-Karjala': 301,
+  'Etelä-Pohjanmaa': 302,
+  'Etelä-Savo': 303,
+  'Kainuu': 304,
+  'Kanta-Häme': 305,
+  'Keski-Pohjanmaa': 306,
+  'Keski-Suomi': 307,
+  'Kymenlaakso': 308,
+  'Landskapet Åland': 309,
+  'Lappi': 310,
+  'Pirkanmaa': 311,
+  'Pohjois-Karjala': 312,
+  'Pohjois-Pohjanmaa': 313,
+  'Pohjois-Savo': 314,
+  'Päijät-Häme': 315,
+  'Satakunta': 316,
+  'Uusimaa': 317,
+  'Varsinais-Suomi': 318,
+  'Österbotten': 319,
+};
+
+export const FI_REGION_EMOJI = {
+  301: '🏞️', 302: '🌾', 303: '🛶', 304: '🐻', 305: '🏰', 306: '🌊', 307: '🏑',
+  308: '⚓', 309: '⛵', 310: '🦌', 311: '🏭', 312: '🎻', 313: '❄️', 314: '🥔',
+  315: '🎿', 316: '🚢', 317: '🏙️', 318: '🗼', 319: '🐟',
+};
+
 function loadCache(name) {
   return JSON.parse(readFileSync(join(CACHE_DIR, name), 'utf8'));
 }
@@ -125,23 +163,23 @@ export function assignLatvianRegions(municipalities) {
  * still loaded as a cross-check: a centroid result the membership doesn't
  * corroborate at all means something is wrong with the geometry and we stop.
  */
-export function assignLithuanianCounties(municipalities) {
-  const countiesRaw = loadCache('LT_counties_geom.json');
+export function assignOsmLevel1(cc, municipalities, idTable) {
+  const countiesRaw = loadCache(`${cc}_counties_geom.json`);
   const counties = countiesRaw.elements
     .filter((e) => e.type === 'relation' && e.tags?.name)
     .map((rel) => {
-      const id = LT_COUNTY_IDS[rel.tags.name];
-      if (!id) throw new Error(`LT: unknown county in OSM: ${rel.tags.name}`);
+      const id = idTable[rel.tags.name];
+      if (!id) throw new Error(`${cc}: unknown level-1 region in OSM: ${rel.tags.name}`);
       return { id, name: rel.tags.name, rings: ringsFromRelation(rel) };
     });
-  if (counties.length !== Object.keys(LT_COUNTY_IDS).length) {
-    throw new Error(`LT: expected ${Object.keys(LT_COUNTY_IDS).length} counties, got ${counties.length}`);
+  if (counties.length !== Object.keys(idTable).length) {
+    throw new Error(`${cc}: expected ${Object.keys(idTable).length} level-1 regions, got ${counties.length}`);
   }
 
   // Cross-check source: {municipality osm id -> Set(county name)}.
   const membership = new Map();
   let currentCounty = null;
-  for (const e of loadCache('LT_county_members.json').elements) {
+  for (const e of loadCache(`${cc}_county_members.json`).elements) {
     const lvl = e.tags?.admin_level;
     if (lvl === '4') { currentCounty = e.tags?.name ?? null; continue; }
     if (lvl === '5' && currentCounty) {
@@ -166,12 +204,12 @@ export function assignLithuanianCounties(municipalities) {
       const best = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
       hit = best ? counties.find((c) => c.id === best[0]) : undefined;
     }
-    if (!hit) throw new Error(`LT: could not place ${m.name} (${m.id}) in any county`);
+    if (!hit) throw new Error(`${cc}: could not place ${m.name} (${m.id}) in any level-1 region`);
 
     const touching = membership.get(m.id);
     if (touching && !touching.has(hit.name)) {
       throw new Error(
-        `LT: ${m.name} placed in ${hit.name} by geometry, but Overpass membership says ${[...touching].join('/')}`,
+        `${cc}: ${m.name} placed in ${hit.name} by geometry, but Overpass membership says ${[...touching].join('/')}`,
       );
     }
     return { ...m, regionId: hit.id };
@@ -179,20 +217,27 @@ export function assignLithuanianCounties(municipalities) {
 }
 
 /** Level-1 catalog rows for a country, ready to upsert into `maakonnad`. */
+/** Countries whose level-1 tier OSM maps, with their id and emoji tables. */
+const OSM_LEVEL1 = {
+  LT: { ids: LT_COUNTY_IDS, emoji: LT_COUNTY_EMOJI },
+  FI: { ids: FI_REGION_IDS, emoji: FI_REGION_EMOJI },
+};
+
 export function level1Rows(cc, municipalities) {
   if (cc === 'LV') return LV_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'LV' }));
-  if (cc === 'LT') {
-    const used = new Set(municipalities.map((m) => m.regionId));
-    return Object.entries(LT_COUNTY_IDS)
-      .filter(([, id]) => used.has(id))
-      .map(([name, id]) => ({ id, name, emoji: LT_COUNTY_EMOJI[id] ?? '📍', country: 'LT' }));
-  }
-  throw new Error(`No level-1 catalog for ${cc}`);
+  const spec = OSM_LEVEL1[cc];
+  if (!spec) throw new Error(`No level-1 catalog for ${cc}`);
+  const used = new Set(municipalities.map((m) => m.regionId));
+  return Object.entries(spec.ids)
+    .filter(([, id]) => used.has(id))
+    .map(([name, id]) => ({ id, name, emoji: spec.emoji[id] ?? '📍', country: cc }));
 }
 
 /** Full pipeline: cache -> municipalities with a regionId attached. */
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);
-  const withRegion = cc === 'LV' ? assignLatvianRegions(municipalities) : assignLithuanianCounties(municipalities);
+  const withRegion = cc === 'LV'
+    ? assignLatvianRegions(municipalities)                       // statutory table, no OSM level 1
+    : assignOsmLevel1(cc, municipalities, OSM_LEVEL1[cc].ids);   // LT, FI: geometry decides
   return { municipalities: withRegion, level1: level1Rows(cc, withRegion) };
 }

@@ -19,12 +19,14 @@
     "level1": {
       "EE": "apriņķi",
       "LV": "reģioni",
-      "LT": "apriņķi"
+      "LT": "apriņķi",
+      "FI": "reģioni"
     },
     "level2": {
       "EE": "pagasti",
       "LV": "novadi",
-      "LT": "pašvaldības"
+      "LT": "pašvaldības",
+      "FI": "pašvaldības"
     }
   },
   "price": {
@@ -719,7 +721,8 @@
   "country": {
     "EE": "Igaunija",
     "LV": "Latvija",
-    "LT": "Lietuva"
+    "LT": "Lietuva",
+    "FI": "Somija"
   },
   "freshness": {
     "label": "Cenas vecums",
