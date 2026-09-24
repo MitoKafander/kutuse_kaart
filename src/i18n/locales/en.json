@@ -224,12 +224,10 @@
         "error": "Account deletion failed: {{message}}"
       },
       "countries": {
-        "label": "Countries on the map",
-        "desc": "Choose which countries' stations appear on the map"
-      },
-      "activeCountry": {
-        "label": "Your country",
-        "desc": "Sets the map view, statistics and discovery map"
+        "label": "Countries",
+        "desc": "Tap a country to make it yours — it sets the map view, statistics and discovery map. You can hide the others from the map.",
+        "yours": "YOURS",
+        "alwaysShown": "Your own country is always shown"
       }
     },
     "header": {
@@ -311,7 +309,7 @@
         "emptyBrand": "No stations collected yet. {{count}} left to discover.",
         "remaining": "{{count}} more to discover."
       },
-      "countryPicker": "Choose country"
+      "countryPicker": "Your country"
     },
     "activity": {
       "title": "Recent activity"

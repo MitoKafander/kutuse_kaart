@@ -959,7 +959,11 @@ function App() {
   // write is rejected because the column doesn't exist yet (migration not
   // applied), fall back to writing the legacy boolean alone so the toggle
   // still persists instead of silently doing nothing.
-  const handleHiddenCountriesChange = (next: CountryCode[]) => {
+  const handleHiddenCountriesChange = (requested: CountryCode[]) => {
+    // Defensive half of the same invariant: whatever the caller asks for, the
+    // active country is never hidden. The UI disables that switch, but this is
+    // the guarantee the rest of the app relies on.
+    const next = requested.filter(c => c !== activeCountry);
     setHiddenCountries(next);
     writeHiddenCountries(next);
     if (session?.user?.id) {
@@ -995,6 +999,12 @@ function App() {
   const handleActiveCountryChange = (next: CountryCode) => {
     setActiveCountry(next);
     writeActiveCountry(next);
+    // You cannot be "in" a country and also hide its stations. Without this,
+    // picking Latvia while Latvia was hidden drew Latvia's regions over an
+    // empty map — which reads as a broken app, not as a setting you chose.
+    if (hiddenCountries.includes(next)) {
+      handleHiddenCountriesChange(hiddenCountries.filter(c => c !== next));
+    }
     // Region focus belongs to the country we're leaving.
     setFocusedMaakondId(null);
   };

@@ -224,12 +224,10 @@
         "error": "Paskyros ištrinti nepavyko: {{message}}"
       },
       "countries": {
-        "label": "Šalys žemėlapyje",
-        "desc": "Pasirinkite, kurių šalių degalinės rodomos žemėlapyje"
-      },
-      "activeCountry": {
-        "label": "Jūsų šalis",
-        "desc": "Nustato žemėlapio vaizdą, statistiką ir atradimų žemėlapį"
+        "label": "Šalys",
+        "desc": "Palieskite šalį, kad ji taptų jūsų — ji nustato žemėlapio vaizdą, statistiką ir atradimų žemėlapį. Kitas galite paslėpti.",
+        "yours": "JŪSŲ",
+        "alwaysShown": "Jūsų šalis visada rodoma"
       }
     },
     "header": {
@@ -311,7 +309,7 @@
         "emptyBrand": "Dar neatrasta nei viena degalinė. Liko atrasti {{count}}.",
         "remaining": "Dar liko atrasti {{count}}."
       },
-      "countryPicker": "Pasirinkite šalį"
+      "countryPicker": "Jūsų šalis"
     },
     "activity": {
       "title": "Paskutinė veikla"

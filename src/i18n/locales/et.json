@@ -519,7 +519,7 @@
         "remaining_one": "Avastada jääb veel {{count}} jaam.",
         "remaining_other": "Avastada jääb veel {{count}} jaama."
       },
-      "countryPicker": "Vali riik"
+      "countryPicker": "Sinu riik"
     },
     "activity": {
       "title": "Viimased tegevused"
@@ -590,12 +590,10 @@
         "error": "Konto kustutamine ebaõnnestus: {{message}}"
       },
       "countries": {
-        "label": "Riigid kaardil",
-        "desc": "Vali, milliste riikide tanklad kaardil näidatakse"
-      },
-      "activeCountry": {
-        "label": "Sinu riik",
-        "desc": "Määrab kaardi vaate, statistika ja avastuskaardi"
+        "label": "Riigid",
+        "desc": "Puuduta riiki, et see enda omaks määrata — see seab kaardivaate, statistika ja avastuskaardi. Teised saad kaardilt peita.",
+        "yours": "SINU",
+        "alwaysShown": "Sinu riiki näidatakse alati"
       }
     }
   },

@@ -224,12 +224,10 @@
         "error": "Konta dzēšana neizdevās: {{message}}"
       },
       "countries": {
-        "label": "Valstis kartē",
-        "desc": "Izvēlieties, kuru valstu degvielas uzpildes stacijas rādīt kartē"
-      },
-      "activeCountry": {
-        "label": "Jūsu valsts",
-        "desc": "Nosaka kartes skatu, statistiku un atklājumu karti"
+        "label": "Valstis",
+        "desc": "Pieskaries valstij, lai padarītu to par savu — tā nosaka kartes skatu, statistiku un atklājumu karti. Pārējās var paslēpt.",
+        "yours": "JŪSU",
+        "alwaysShown": "Jūsu valsts vienmēr ir redzama"
       }
     },
     "header": {
@@ -311,7 +309,7 @@
         "emptyBrand": "Vēl nav atklāta neviena stacija. Atklājamas {{count}} stacijas.",
         "remaining": "Vēl atklājamas {{count}} stacijas."
       },
-      "countryPicker": "Izvēlieties valsti"
+      "countryPicker": "Jūsu valsts"
     },
     "activity": {
       "title": "Pēdējās aktivitātes"

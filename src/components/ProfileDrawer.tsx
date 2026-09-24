@@ -1490,48 +1490,13 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
-                {/* Which country the app is "in" — drives the map's home view,
-                    Statistics, the market insight and the Avastuskaart. It also
-                    lives above the badge grid in the Profile tab, but that tab
-                    only exists when signed in, and everything it drives is
-                    visible to anonymous users too. So it belongs here as well. */}
-                {availableCountries.length > 1 && (
-                  <div>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                      <Compass size={16} /> {t('profile.settings.activeCountry.label')}
-                    </span>
-                    <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px', marginTop: 2 }}>
-                      {t('profile.settings.activeCountry.desc')}
-                    </span>
-                    <div role="tablist" aria-label={t('profile.settings.activeCountry.label')} style={{ display: 'flex', gap: 6, paddingLeft: '24px', marginTop: 8 }}>
-                      {availableCountries.map(code => {
-                        const meta = COUNTRIES[code];
-                        const active = code === activeCountry;
-                        return (
-                          <button
-                            key={code}
-                            role="tab"
-                            aria-selected={active}
-                            onClick={() => onActiveCountryChange(code)}
-                            style={{
-                              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                              padding: '6px 8px', borderRadius: 8, cursor: 'pointer', fontSize: '0.78rem',
-                              background: active ? 'var(--color-primary)' : 'var(--color-surface)',
-                              color: active ? 'white' : 'var(--color-text-muted)',
-                              border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
-                            }}
-                          >
-                            <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Which countries' stations appear on the map (phase 65).
-                    Replaces the single Latvia switch: one row per country Kyts
-                    covers, so adding a country never needs new settings UI. */}
+                {/* ONE country section, because these two settings are not
+                    independent and used to be able to contradict each other:
+                    picking Latvia as your country while Latvia's stations were
+                    hidden drew Latvia's regions on an empty map, which reads as
+                    "the Latvian map is broken" rather than "you hid these".
+                    Your country is therefore always shown — its switch is on
+                    and locked, and choosing a new country reveals it. */}
                 <div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                     <MapPin size={16} /> {t('profile.settings.countries.label')}
@@ -1539,35 +1504,73 @@ export function ProfileDrawer({
                   <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px', marginTop: 2 }}>
                     {t('profile.settings.countries.desc')}
                   </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: '24px', marginTop: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: '24px', marginTop: 10 }}>
                     {COUNTRY_LIST.map(meta => {
-                      const visible = !hiddenCountries.includes(meta.code);
+                      const isHome = meta.code === activeCountry;
+                      const visible = isHome || !hiddenCountries.includes(meta.code);
                       return (
-                        <label key={meta.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--color-text)' }}>
-                            <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
-                          </span>
+                        <div
+                          key={meta.code}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '8px 10px', borderRadius: 10,
+                            background: isHome ? 'var(--color-primary-alpha-10, var(--color-surface))' : 'transparent',
+                            border: `1px solid ${isHome ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                          }}
+                        >
+                          {/* Tapping the name makes this your country. */}
+                          <button
+                            onClick={() => onActiveCountryChange(meta.code)}
+                            disabled={isHome}
+                            style={{
+                              flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+                              background: 'transparent', border: 'none', padding: 0,
+                              cursor: isHome ? 'default' : 'pointer',
+                              color: 'var(--color-text)', fontSize: '0.85rem', textAlign: 'left',
+                            }}
+                          >
+                            <span aria-hidden>{meta.flag}</span>
+                            <span>{t(meta.nameKey)}</span>
+                            {isHome && (
+                              <span style={{
+                                fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.3px',
+                                color: 'var(--color-primary)', border: '1px solid var(--color-primary)',
+                                borderRadius: 6, padding: '1px 5px', whiteSpace: 'nowrap',
+                              }}>
+                                {t('profile.settings.countries.yours')}
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Visibility. Locked on for your own country — you
+                              cannot be "in" a country and hide it. */}
                           <div
                             role="switch"
                             aria-checked={visible}
+                            aria-disabled={isHome}
                             aria-label={t(meta.nameKey)}
-                            onClick={() => handleCountryVisibilityToggle(meta.code)}
+                            title={isHome ? t('profile.settings.countries.alwaysShown') : undefined}
+                            onClick={() => { if (!isHome) handleCountryVisibilityToggle(meta.code); }}
                             style={{
-                              width: '44px', height: '24px', borderRadius: '12px',
+                              width: '44px', height: '24px', borderRadius: '12px', flexShrink: 0,
                               background: visible ? 'var(--color-primary)' : 'var(--color-surface)',
-                              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                              border: '1px solid var(--color-surface-border)',
+                              position: 'relative', transition: 'background 0.2s',
+                              cursor: isHome ? 'not-allowed' : 'pointer',
+                              opacity: isHome ? 0.55 : 1,
                             }}
                           >
                             <div style={{
                               width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                              position: 'absolute', top: '2px', left: visible ? '22px' : '2px', transition: 'left 0.2s'
+                              position: 'absolute', top: '1px', left: visible ? '22px' : '2px', transition: 'left 0.2s'
                             }}/>
                           </div>
-                        </label>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
+
 
                 {/* Find cheapest fuel (needs a fuel type selected) */}
                 <div>

@@ -224,12 +224,10 @@
         "error": "Tilin poisto epäonnistui: {{message}}"
       },
       "countries": {
-        "label": "Maat kartalla",
-        "desc": "Valitse, minkä maiden asemat näkyvät kartalla"
-      },
-      "activeCountry": {
-        "label": "Maasi",
-        "desc": "Määrittää karttanäkymän, tilastot ja löytökartan"
+        "label": "Maat",
+        "desc": "Napauta maata tehdäksesi siitä omasi — se määrittää karttanäkymän, tilastot ja löytökartan. Muut voit piilottaa.",
+        "yours": "SINUN",
+        "alwaysShown": "Oma maasi näkyy aina"
       }
     },
     "header": {
@@ -311,7 +309,7 @@
         "emptyBrand": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
         "remaining": "Löydettävänä vielä {{count}} asemaa."
       },
-      "countryPicker": "Valitse maa"
+      "countryPicker": "Maasi"
     },
     "activity": {
       "title": "Viimeisin toiminta"
