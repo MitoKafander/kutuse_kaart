@@ -796,7 +796,7 @@
         "aligned": "Pump and wholesale moving together — no timing edge.",
         "insufficient_data": "Not enough data to produce a signal.",
         "low_sample_count": "Too few Kyts reports for confidence.",
-        "proxy_unreliable": "The diesel wholesale benchmark doesn't reliably predict Estonian pump prices — no timing edge offered."
+        "proxy_unreliable": "The diesel wholesale benchmark doesn't reliably predict pump prices in {{country}} — no timing edge offered."
       }
     }
   },

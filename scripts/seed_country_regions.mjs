@@ -16,13 +16,13 @@
 // Estonia is deliberately NOT touched by this script.
 
 import { sb, fetchAll, chunk } from './_lib/db.mjs';
-import { loadRegionTree } from './_lib/regions.mjs';
+import { loadRegionTree, SEEDABLE_COUNTRIES } from './_lib/regions.mjs';
 import { pointInRings } from './_lib/overpass.mjs';
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
-const COUNTRIES = wanted.length ? wanted : ['LV', 'LT'];
+const COUNTRIES = wanted.length ? wanted : SEEDABLE_COUNTRIES;
 
 // sb / fetchAll / chunk come from _lib/db.mjs — one definition of the
 // 1000-row paging every script needs.

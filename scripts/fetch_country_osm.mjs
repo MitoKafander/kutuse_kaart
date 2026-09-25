@@ -22,11 +22,12 @@
 //   LV ~600 fuel features   · LT ~900 fuel features
 
 import { overpass } from './_lib/overpass.mjs';
+import { SEEDABLE_COUNTRIES } from './_lib/regions.mjs';
 
 const args = process.argv.slice(2);
 const force = args.includes('--force');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
-const COUNTRIES = (wanted.length ? wanted : ['LV', 'LT', 'FI']);
+const COUNTRIES = (wanted.length ? wanted : SEEDABLE_COUNTRIES);
 
 // admin_level per country for the two Avastuskaart tiers. `level1: null` means
 // the country has no OSM-mapped level-1 boundary and the seed groups its

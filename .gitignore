@@ -37,3 +37,9 @@ Images/
 
 # Personal Claude Code permissions — this repo is public, keep them out of it
 .claude/settings.local.json
+
+# Supabase CLI local state (holds the linked project ref and pooler URL)
+supabase/.temp/
+
+# Search Console CSV exports dropped in for analysis
+Google search console export/

@@ -23,12 +23,12 @@ import { sb, fetchAll, chunk } from './_lib/db.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CACHE_DIR, pointInRings } from './_lib/overpass.mjs';
-import { loadRegionTree } from './_lib/regions.mjs';
+import { loadRegionTree, SEEDABLE_COUNTRIES } from './_lib/regions.mjs';
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
-const COUNTRIES = wanted.length ? wanted : ['LV', 'LT'];
+const COUNTRIES = wanted.length ? wanted : SEEDABLE_COUNTRIES;
 
 /** Two OSM points closer than this are the same forecourt. */
 const MATCH_METRES = 120;
@@ -73,7 +73,11 @@ for (const cc of COUNTRIES) {
     if (reason) { excluded[reason] = (excluded[reason] || 0) + 1; continue; }
     candidates.push({
       // Same precedence as seed_latvia_border.js — getBrand() reads this field.
-      name: tags.brand || tags.name || tags.operator || 'Tundmatu',
+      // Empty, not the Estonian 'Tundmatu' sentinel: `stations.name` is NOT
+      // NULL, and writing a display word into data gave 146 Latvian, Lithuanian
+      // and Finnish rows an Estonian name that no locale could translate. The
+      // client already treats a falsy name as "unknown" (getBrand, getStationDisplayName).
+      name: tags.brand || tags.name || tags.operator || '',
       latitude: lat,
       longitude: lon,
       amenities: tags,

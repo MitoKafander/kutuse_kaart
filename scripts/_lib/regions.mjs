@@ -234,6 +234,18 @@ export function level1Rows(cc, municipalities) {
 }
 
 /** Full pipeline: cache -> municipalities with a regionId attached. */
+/**
+ * Every country these seeders know how to build, and the default set when a
+ * script is run with no positional argument.
+ *
+ * Estonia is deliberately absent: its catalog predates this pipeline and is
+ * maintained by `rebuild_boundaries.mjs`. Add a country here the moment its
+ * region tree exists — the four scripts each kept their own literal list until
+ * Finland, and three of them were still defaulting to ['LV','LT'] after it
+ * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
+ */
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI'];
+
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);
   const withRegion = cc === 'LV'

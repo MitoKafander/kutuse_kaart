@@ -301,7 +301,7 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   // Kauhava"-style names becomes its own single-station brand — the same
   // fragmentation that makes the Latvian and Lithuanian brand collector weak.
   // Verified inert against every active EE/LV/LT station name before adding.
-  { match: 'neste',          canonical: 'Neste' },        // already above; Finland's largest
+  // (Neste is already listed with the Estonian chains and is Finland's largest.)
   { match: 'abc',            canonical: 'ABC' },          // 443+ incl. "ABC Prisma …"
   { match: 'st1',            canonical: 'St1' },
   { match: 'teboil',         canonical: 'Teboil' },       // incl. Express / Truck / D

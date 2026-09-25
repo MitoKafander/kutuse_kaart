@@ -798,7 +798,7 @@
         "aligned": "Pump ja hulgi liiguvad koos — ajaline edumaa puudub.",
         "insufficient_data": "Andmeid pole piisavalt signaaliks.",
         "low_sample_count": "Liiga vähe Kyts raporteid kindluseks.",
-        "proxy_unreliable": "Diisli hulgihinna näitaja ei ennusta Eesti pumbahinda usaldusväärselt — ajastust ei paku."
+        "proxy_unreliable": "Diisli hulgihinna näitaja ei ennusta {{country}} pumbahinda usaldusväärselt — ajastust ei paku."
       }
     }
   },

@@ -858,7 +858,7 @@ function App() {
   // done-desc then brand-alpha so the user's trophy row grows top-down.
   // The active country's stations. Everything that asks "how am I doing HERE"
   // runs off this: the Avastuskaart badge grid, the brand collector, and
-  // Statistics (medians pooled across three countries would describe nowhere).
+  // Statistics (medians pooled across four countries would describe nowhere).
   // Cheapest-nearby and the route planner deliberately stay cross-border —
   // that's the whole point of a border station — and only drop countries the
   // user switched off.
@@ -873,7 +873,7 @@ function App() {
 
   // Brand collector, scoped to the active country (phase 65 follow-up). It used
   // catalog-wide totals on purpose while Latvia was a 75-station border strip —
-  // but across three countries "Circle K 37/246" counts forecourts in Vilnius
+  // but across four countries "Circle K 37/246" counts forecourts in Vilnius
   // against an Estonian driver, which is unreachable rather than aspirational.
   // Same country as the badge grid above it: both live in the Avastuskaart panel.
   const userBrandProgress = useMemo<BrandProgress[]>(() => {
@@ -1186,8 +1186,9 @@ function App() {
     const fold = (s: string) =>
       s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
     return countryVisibleStations.map((station) => {
-      // getBrand returns the 'Tundmatu' sentinel only when name is null — keep
-      // that out of the searchable text so unnamed stations don't all match it.
+      // getBrand returns the 'Tundmatu' sentinel only when the name is empty
+      // (146 LV/LT/FI stations have no OSM name) — keep that out of the
+      // searchable text so unnamed stations don't all match on an Estonian word.
       const canonical = getBrand(station.name);
       const brand = [station.name, canonical !== 'Tundmatu' ? canonical : null]
         .filter(Boolean)
@@ -1975,6 +1976,7 @@ function App() {
             session={session}
             onStationSelect={setSelectedStation}
             insight={activeInsight}
+            activeCountryName={t(COUNTRIES[activeCountry].nameKey)}
           />
         )}
 

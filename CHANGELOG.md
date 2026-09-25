@@ -2,6 +2,146 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Finland as the fourth country (phase 67) - 2026-09-24
+
+Kyts now covers Estonia, Latvia, Lithuania and Finland — **482 + 548 + 742 + 1,890 =
+3,662 active stations**. Finland is the largest catalog in the app, bigger than the three
+Baltic states combined.
+
+**✅ LIVE on kyts.ee**, `scripts/verify_countries.mjs` → all checks passed, Estonia still
+exactly 15 maakonnad / 78 vallad with `station_count` drift 0.
+
+Deployed in the order phase 65 established, which is not optional: **client → region seed
+→ station seed**. The live bundle's `toCountryCode('FI')` falls back to `'EE'`, so seeding
+first would have dropped Finland's 19 maakunnat into Estonia's badge grid.
+
+- 🟢 **19 maakunnat over 308 kunnat**, OSM admin_level 4 and 8. Not level 5 (Finland has
+  none) and not level 7, which covers only 69 units — the same partial-cover trap Latvia's
+  pilsētas were. All 308 kunnat place inside a maakunta, none orphaned. Region ids 301-319.
+- 🟢 **Level-1 assignment generalised.** Lithuania and Finland both have their level-1 tier
+  in OSM and now share one centroid-in-polygon path instead of being special cases. Latvia
+  keeps its statutory table, because OSM has no admin_level=4 for Latvia.
+- 🟢 **Six Finnish chain patterns** (abc, st1, teboil, seo, shell, gulf). OSM tags most
+  Finnish forecourts as `<CHAIN> <place>` rather than setting `brand=`, so without
+  patterns each of ~100 "SEO Kauhava"-style names became its own single-station brand,
+  cluttering the collector with entries that can never be completed. 343 raw names → 138
+  brands: Neste 564, ABC 460, St1 380, Teboil 307, SEO 190, Shell 48. All six patterns
+  verified inert against every active EE/LV/LT station; zero existing brands changed.
+- 🟡 **Finland shipped broken for one commit.** `f53b2e9` staged `src/` and `scripts/` but
+  not `public/`, so the two Finnish boundary files were never deployed and the Avastuskaart
+  drew nothing while the station dots rendered fine. `vercel.json` rewrites
+  `/((?!api/|assets/).*)` to index.html, so a missing static file answers **200 with
+  content-type text/html**; the fetch helper catches the parse error, caches the null, and
+  the layer is silently absent for the session. My deploy check grepped the *bundle* for
+  "regions_fi", which passes on the string in `countries.ts` whether or not the file
+  exists. The verifier now fetches all eight boundary files from kyts.ee and fails on an
+  HTML content-type (`SKIP_LIVE_CHECK=1` opts out offline).
+- 🟢 **Station cache halved first** (`33ca943`). The cache stored whole DB rows: 1.8 MiB for
+  1,772 stations in the 2-bytes-per-character accounting Safari and Firefox use, against a
+  5 MiB per-origin quota. Finland was projected to take it to 4.1 MiB — 82% of the quota
+  from a single key — and a silent `setItem` failure stops the station cache updating, the
+  celebration store persisting, and country preferences saving. `amenities` was 59% of the
+  blob and the client reads ten literal keys out of it; `created_at` was another 7% and is
+  never read for a station. Caching only what first paint needs cuts **53%**, measured
+  live: 1.8 → 0.85 MiB, and the Finland projection 4.1 → 1.9. Proved safe by running the client's own
+  `getStationDisplayName` and search-index derivations over all 1,772 rows and diffing
+  trimmed against full — byte-identical. Existing fat caches self-heal on next load.
+- 🟡 **146 stations were literally named "Tundmatu".** Found while checking a number before
+  writing it down. `seed_country_stations.mjs` wrote the Estonian sentinel for
+  "unknown" into `stations.name` when OSM had no brand, name or operator — `name` is
+  NOT NULL, so it needed *something* — giving **81 Finnish, 33 Latvian and 32 Lithuanian**
+  stations an Estonian name that no locale could translate. Estonia has none; every
+  Estonian station is named. It reached users through the map dot's `aria-label` (a screen
+  reader heard "Tundmatu" whatever the interface language) and sat in the search index, so
+  "tundmatu" returned 146 foreign stations. Everywhere else it was invisible only by
+  coincidence: the string happens to equal the client's own sentinel, so `getBrand` and
+  `getStationDisplayName` filtered it out. The seeder now writes `''`, which the client
+  already treats as unknown, `scripts/clear_tundmatu_station_names.mjs` cleared the 146
+  existing rows (idempotent, re-run reports nothing to do), and the four `aria-label`
+  call sites in `Map.tsx` pass `station.name || undefined` so `createDotIcon`'s own
+  default applies instead of labelling the dot with an empty string.
+- 🟢 **One seedable-country list.** The four country scripts each kept their own literal
+  default, and three were still on `['LV','LT']` after Finland shipped — so a bare re-run
+  fetched Finland's OSM and then seeded nothing. They now share `SEEDABLE_COUNTRIES` from
+  `scripts/_lib/regions.mjs`. Verified: both seed dry-runs walk LV, LT and FI and report
+  0 changes against prod.
+- 🟢 **Measured the brand collector instead of asserting it.** Chain-match coverage is
+  **EE 95% · FI 90% · LV 82% · LT 80%**; the single-station "brands" that clutter the
+  collector number **EE 26 · FI 88 · LT 68 · LV 54**. They can never be completed (a win
+  needs `total >= 2`), so collectible brands are EE 13 · FI 12 · LT 33 · LV 19 — Lithuania
+  has more than Estonia. An earlier reading of this as "EE 78% vs LV/LT 25%" was wrong and
+  is corrected in RESUME_HERE.
+- 🟢 **Market-insight copy stopped being Estonian.** `marketInsight.why.reason.proxy_unreliable`
+  hardcoded "Estonian pump prices" — and that branch fires for diesel in *every* country,
+  because the unreliable proxy is a US series. Now takes `{{country}}`. Also added the
+  three UI strings that were missing outside et/en (`stats.cheapestNow.stale`,
+  `stats.drops.belowMarket`, the reason above) and fixed Finnish and Latvian plurals in the
+  brand collector, which printed "1 asemaa" / "1 stacijas". The 55 remaining gaps in
+  ru/fi/lv/lt are all privacy/terms legal text, deliberately EN-only pending native review.
+
+## [Shipped] - Freshness slider, discovery wins, and one Countries section - 2026-09-23
+
+Everything between the Baltic seed and Finland. Three user-facing features and an
+adversarial review that found more defects in them than the features had days of life.
+
+- 🟢 **Freshness slider** (`3a060d1`). A vertical control on the left edge of the map:
+  drag to choose how old a price may be, 2h / 5h / 12h / 24h / 48h. It replaces the boolean
+  "hide stale prices" switch, which cut at 5h and so left about ten visible stations in the
+  whole country — a control nobody could use. Default sits on 24h, exactly what the map did
+  before, so it changes nothing until dragged. **Commits on release**, and each stop shows
+  its station count *before* you get there, so the slider tells you where the data is.
+- 🟡 **295 ms → instant** (`ac87f40`). The slider re-scanned the whole price array per
+  station per step, O(n²) over 3,662 stations. Indexed once into a map; the cap came down
+  from 72h to 48h at the same time, since nothing beyond two days was worth a stop.
+- 🟢 **The stale-prices toggle is gone** (`805e53d`), superseded — two controls for one
+  question is one too many.
+- 🟢 **Brand-completion wins and 25/50/75% region milestones** (`b4b8b37`), then five
+  defects found by adversarial review and fixed in `51b6b26`, `389bf62`, `46c60a5`,
+  `0d9943e`:
+  - Wins **replayed forever** if a `localStorage` write failed — no in-memory dedupe behind
+    the store.
+  - A **one-station "chain" is not a chain**: `getBrand()` returns the raw name for anything
+    `CHAIN_PATTERNS` misses, so 120 of 122 single-member brands were independent forecourts.
+    Pricing one fired "station discovered" *and* "chain completed" for the same act. Brand
+    wins now need `total >= 2`.
+  - **One reward per action.** A 2-station vald crosses 25% and 50% on the same price (12 of
+    Estonia's 78 do), and a 0→77% jump crosses all three rungs. Every rung is banked; only
+    the highest new one per region toasts.
+  - A **completed region now banks its rungs** — `passedMilestones()` skipped them, so
+    seeding one station into a finished vald replayed 25/50/75 as freshly earned.
+  - **Consecutive toasts rendered invisible**: `slideInFade` ends at opacity 0 with
+    `animation-fill-mode: forwards` and no toast div carried a `key`, so React reused the
+    node and never restarted the animation. Pre-existing; these features made same-kind
+    runs routine rather than rare.
+  - **A completion is an achievement, not a view setting.** Parish and maakond completions
+    were gated behind the Avastuskaart toggle — off by default — so the rarest reward in the
+    app (only **22%** of Estonian contributors have ever finished a vald in five years) was
+    silently destroyed for most people who earned it. Completions now fire regardless, and
+    the toast invites the user to open the map. Milestones stay gated: "31% of Ogres novads"
+    means nothing to someone who has never seen the discovery map, and the progress is still
+    in the badge grid when they do.
+- 🟢 **One Countries section** (`fe03630`), from Mikk noticing the Avastuskaart country
+  selector lived in Profile while station visibility lived in Settings. Reproduced: pick
+  Latvia, hide Latvia, open discovery — Latvia's regions outlined and labelled, banner says
+  "Discovery mode", map centred there, and it is the only country on screen with no
+  stations while Estonia and Lithuania are covered in dots. That reads as a broken map, not
+  as a setting chosen two screens earlier. **Invariant: you cannot be "in" a country and
+  hide it** — adopting reveals it, the active country's switch is on, locked and explained,
+  enforced in the handler and not just the UI, proved unreachable across all 63 orderings.
+  The two controls are now one block, a row per country showing both dimensions at once.
+- 🟢 **Country-scoped activity leaderboard** (`2186a11`, phase 66). Phase 65 scoped the
+  *discovery* board but left the three activity boards global — and activity is the default
+  tab, so a Latvian opening the leaderboard saw 100 Estonians on the one screen meant to
+  show them their own community. Also stopped `get_display_name` returning the Estonian
+  literal 'Anonüümne' to every locale; it returns NULL and each client uses its own string.
+- 🟢 **The brand collector is per country** (`0422b5b`) — "Margid: 17/203" counted all four
+  catalogs at once.
+- 🟡 **LV/LT map labels never rendered** (`21da267`): the region label fell back to nothing
+  when the full name didn't fit, instead of the stripped suffix. Collected dots were gated
+  to Estonia, the country switcher was unreachable, and the map never moved when you changed
+  country. Browser language now picks the initial country, so a Latvian doesn't get a
+  Latvian interface over an Estonian map.
+
 ## [Fix] - Stations fetch was truncated at 1000 rows - 2026-09-23
 
 Follow-up to phase 65, caught by Mikk within minutes of the seed: *"lithuania shows

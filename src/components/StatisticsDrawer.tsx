@@ -51,12 +51,14 @@ function fmtPpSigned(n: number | null | undefined): string {
 // 7-day deltas, the divergence between them, and the rule that matched. All
 // derived from the deterministic signal in `data.signals`; no LLM involved.
 function WhyBlock({
-  diesel, gasoline, dieselSamples, gasolineSamples,
+  diesel, gasoline, dieselSamples, gasolineSamples, activeCountryName,
 }: {
   diesel?: SignalBreakdown;
   gasoline?: SignalBreakdown;
   dieselSamples: number;
   gasolineSamples: number;
+  /** Localised country name — the reason text is about the user's own market. */
+  activeCountryName: string;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -115,7 +117,7 @@ function WhyBlock({
                 <span>{samples} {t('marketInsight.why.samples', 'raportit')}</span>
               </div>
               <div style={{ marginTop: 4, fontSize: '0.85rem', lineHeight: 1.4 }}>
-                {t(`marketInsight.why.reason.${s.reasonCode}`, s.reasonCode)}
+                {t(`marketInsight.why.reason.${s.reasonCode}`, { defaultValue: s.reasonCode, country: activeCountryName })}
               </div>
             </div>
           ))}
@@ -126,7 +128,7 @@ function WhyBlock({
 }
 
 export function StatisticsDrawer({
-  isOpen, onClose, stations, prices, session, onStationSelect, insight,
+  isOpen, onClose, stations, prices, session, onStationSelect, insight, activeCountryName,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -135,6 +137,8 @@ export function StatisticsDrawer({
   session: any;
   onStationSelect?: (station: any) => void;
   insight?: MarketInsight | null;
+  /** Localised name of the country this drawer is reporting on. */
+  activeCountryName: string;
 }) {
   const { t, i18n } = useTranslation();
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
@@ -390,6 +394,7 @@ export function StatisticsDrawer({
                     gasoline={insight.data.signals.gasoline}
                     dieselSamples={insight.data.kyts?.diesel?.samples7d ?? 0}
                     gasolineSamples={insight.data.kyts?.gasoline95?.samples7d ?? 0}
+                    activeCountryName={activeCountryName}
                   />
                 )}
                 {typeof insight.confidence === 'number' && <ConfidenceBar value={insight.confidence} />}
@@ -481,7 +486,7 @@ export function StatisticsDrawer({
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                 <span>{t('stats.cheapestNow.heading')}</span>
                 {cheapestNowStale && (
-                  <span style={{ color: 'var(--color-warning)' }}>{t('stats.cheapestNow.stale', 'pole värske')}</span>
+                  <span style={{ color: 'var(--color-warning)' }}>{t('stats.cheapestNow.stale', 'not fresh')}</span>
                 )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
@@ -577,7 +582,7 @@ export function StatisticsDrawer({
                     {FUEL_LABEL[d.fuel] ?? d.fuel} · €{d.oldPrice.toFixed(3)} → €{d.newPrice.toFixed(3)}
                     {' · '}
                     <span style={{ color: 'var(--color-fresh)' }}>
-                      {Math.abs(d.excess * 100).toFixed(1)}¢ {t('stats.drops.belowMarket', 'alla turu')}
+                      {Math.abs(d.excess * 100).toFixed(1)}¢ {t('stats.drops.belowMarket', 'below market')}
                     </span>
                   </div>
                 </div>

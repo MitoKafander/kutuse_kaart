@@ -60,6 +60,9 @@ function createDotIcon({
   strokeColor,
   strokeWidth = 0,
   stationId,
+  // Stations OSM has no name for are stored with an empty name, so callers
+  // pass `station.name || undefined` to let this default apply — a default
+  // parameter only fires on undefined, and '' would leave the dot unlabelled.
   ariaLabel = 'Tankla',
 }: {
   fillColor: string;
@@ -1303,7 +1306,7 @@ export function Map({
         strokeColor: ringColor,
         strokeWidth: isSelected ? 2 : 1.5,
         stationId: station.id,
-        ariaLabel: station.name,
+        ariaLabel: station.name || undefined,
       });
       fadedIconCache.set(key, icon);
     }
@@ -1347,7 +1350,7 @@ export function Map({
         strokeWidth = 3;
       }
 
-      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth, stationId: station.id, ariaLabel: station.name });
+      icon = createDotIcon({ fillColor, fillOpacity, visibleDiameter, strokeColor, strokeWidth, stationId: station.id, ariaLabel: station.name || undefined });
       freshIconCache.set(key, icon);
     }
     return icon;
@@ -1397,7 +1400,7 @@ export function Map({
           strokeColor,
           strokeWidth: isSelected ? 3 : 0,
           stationId: station.id,
-          ariaLabel: station.name,
+          ariaLabel: station.name || undefined,
         });
         discoveryFreshCache.set(key, icon);
       }
@@ -1418,7 +1421,7 @@ export function Map({
         strokeColor: ringColor,
         strokeWidth: isSelected ? 2 : 1.5,
         stationId: station.id,
-        ariaLabel: station.name,
+        ariaLabel: station.name || undefined,
       });
       discoveryFadedCache.set(key, icon);
     }

@@ -22,7 +22,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadRegionTree } from './_lib/regions.mjs';
+import { loadRegionTree, SEEDABLE_COUNTRIES } from './_lib/regions.mjs';
 import { cleanGeom, bboxOf, geometryFromRings } from './_lib/geojson.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +31,7 @@ const pub = join(repo, 'public');
 mkdirSync(pub, { recursive: true });
 
 const args = process.argv.slice(2).map((s) => s.toUpperCase());
-const COUNTRIES = args.length ? args : ['LV', 'LT'];
+const COUNTRIES = args.length ? args : SEEDABLE_COUNTRIES;
 
 for (const cc of COUNTRIES) {
   console.log(`\n=== ${cc} ===`);

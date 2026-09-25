@@ -9,8 +9,8 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
-- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~151 `no-explicit-any` warnings (deliberate).
-- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 64** (active-aware recount trigger, 2026-07-16). Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
+- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
+- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 66** (country-scoped activity leaderboards + `get_display_name`, 2026-09-23). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
 ## Verified state (2026-09-18)
@@ -43,42 +43,67 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Baltic expansion (phase 65) — ✅ LIVE since 2026-09-23
+## Four countries — ✅ LIVE (phase 65 Baltics 2026-09-23, phase 67 Finland 2026-09-24)
 
-Latvia and Lithuania are first-class countries on kyts.ee. Prod: **482 EE + 548 LV +
-742 LT active stations**, LV's 5 planning regions / 42 novadi and LT's 10 apskritys /
-60 savivaldybės in the Avastuskaart. Full detail in CHANGELOG 2026-09-23.
+Estonia, Latvia, Lithuania and Finland are all first-class countries on kyts.ee. Prod:
+**482 EE + 548 LV + 742 LT + 1,890 FI = 3,662 active stations**. Avastuskaart tiers:
+EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi, LT 10 apskritys /
+60 savivaldybės, FI 19 maakuntaa / 308 kuntaa. Full detail in CHANGELOG 2026-09-23 and
+2026-09-24.
 
-**The sequence that was run** (kept because each step is idempotent — re-run any of them
-after an OSM refresh, and follow the same order when adding a fourth country):
+### Adding country five
 
-1. **Apply the migration** — `supabase db query --linked -f migrations/schema_phase65_baltic_countries.sql`
-   (or paste it into the Supabase SQL editor). Nothing else works before this; it's also
-   what keeps Estonia's catalog separate from the new ones. Rollback block is at the bottom
-   of the file. **Rehearsed** against a container restored from `supabase db dump --linked`,
-   where it applies clean and its triggers/views behave (see "SQL access" below).
-2. `node scripts/fetch_country_osm.mjs` — caches OSM into `.osm-cache/` (gitignored,
+Finland needed **no new code paths** — it went in as data plus one entry in each registry,
+which is what makes this a repeatable recipe rather than a one-off. Every script takes
+**positional country codes** (`node scripts/seed_country_stations.mjs FI`) and defaults to
+`SEEDABLE_COUNTRIES` in `scripts/_lib/regions.mjs` when given none. Every step is
+idempotent, so a bare re-run after an OSM refresh is safe and re-checks the lot.
+
+**Register the country first** (the seeds read all of these):
+- `src/constants/countries.ts` — flag, name key, center/zoom/bbox, boundary paths, the two
+  tier names, preferred locale.
+- `scripts/_lib/regions.mjs` — its region-id table (next free 100-band), region emoji, and
+  add the code to `SEEDABLE_COUNTRIES`.
+- `scripts/fetch_country_osm.mjs` `ADMIN` — the two admin_levels **and the sanity bounds**.
+  Check the levels against OSM by hand: Finland's level-2 tier is 8, not 5 (it has no 5),
+  and its level 7 covers only 69 of 308 units — a partial cover that looks like a working
+  answer. Latvia's pilsētas were the same trap.
+- `src/i18n/locales/*.json` — country name + both tier names in all six locales.
+- `src/utils.ts` `CHAIN_PATTERNS` if the country's OSM data names chains inside `name`
+  rather than tagging `brand=` (Finland needed six). **Verify each new pattern is inert
+  against every existing active station before seeding** — a loose pattern silently
+  rebrands another country's rows.
+
+**Then, in this order:**
+
+1. **Apply the migration** — only if the schema needs changing. Phases 65 and 66 made the
+   schema country-generic, so a fifth country needs no DDL at all. If one is needed:
+   `supabase db query --linked -f migrations/<file>.sql`, rehearsed in Docker first (below).
+2. `node scripts/fetch_country_osm.mjs XX` — caches OSM into `.osm-cache/` (gitignored,
    ~18 MB, reused for 72 h). Read-only. Expect mirror 504s; it rotates and retries.
-3. `node scripts/seed_country_regions.mjs --dry-run` then without the flag — writes 5+10
-   level-1 regions and 42+60 municipalities, then points existing LV stations at theirs.
-4. `node scripts/seed_country_stations.mjs --dry-run` then without the flag — inserts
-   **1,215** new stations (LV +473, LT +742). The dry run prints exactly what it would do.
-5. `node scripts/verify_countries.mjs` — must end "All checks passed". The checks
-   that matter are the Estonian invariants (15 maakonnad / 78 parishes / 0 count drift).
-6. Merge + push. Vercel redeploys; **disable the build cache** only if a `VITE_*` changed
-   (none did here).
-7. Optional, after the first Latvian or Lithuanian prices land:
-   `curl -H "Authorization: Bearer $CRON_SECRET" .../api/generate-market-insight?country=LV`
-   — under 20 local samples it deliberately skips rather than inventing an insight.
+3. `node scripts/rebuild_boundaries_country.mjs XX` — writes
+   `public/{regions,municipalities}_xx.geojson`. **Commit these.** They are the step that
+   got forgotten for Finland, and a missing one fails silently (see the `vercel.json`
+   gotcha).
+4. **Deploy the client** — merge + push, wait for Vercel. This must happen before step 5.
+5. `node scripts/seed_country_regions.mjs XX --dry-run`, then without the flag.
+6. `node scripts/seed_country_stations.mjs XX --dry-run`, then without the flag. The dry
+   run prints exactly what it would insert, and re-runs report `new: 0`.
+7. `node scripts/verify_countries.mjs` — must end "All checks passed". The checks that
+   matter are the Estonian invariants (15 maakonnad / 78 parishes / 0 count drift) and the
+   **live boundary-file fetch**, which is what catches an undeployed geojson.
+   `SKIP_LIVE_CHECK=1` skips the live half for offline runs.
+8. Optional, once ~20 local prices exist:
+   `curl -H "Authorization: Bearer $CRON_SECRET" .../api/generate-market-insight?country=XX`
+   — under 20 samples it deliberately skips rather than inventing an insight.
 
-**Order matters** in two places:
-- **Regions before stations**, because a station's `parish_id` is an FK.
-- **Deploy the new bundle BEFORE the region seed** (step 3). The migration alone is safe
-  against the live old bundle — it reads explicit column lists that adding a column can't
-  break — but the moment LV/LT rows land in `maakonnad`/`parishes`, an old bundle with no
-  country filter would merge all three countries into one Estonian Avastuskaart (30
-  regions, inflated denominators). The new bundle scopes by country, so once it's out the
-  seeds are invisible until you switch countries.
+**Why step 4 sits where it does.** The migration is safe against the live old bundle (it
+reads explicit column lists that adding a column can't break), but the moment new rows land
+in `maakonnad`/`parishes`, an old bundle whose `toCountryCode()` doesn't know the code
+falls back to `'EE'` and merges the new regions into Estonia's Avastuskaart — inflated
+denominators, foreign badges in the Estonian grid. Deploy first and the seeds are invisible
+until a user switches country. **Regions before stations** is the other fixed order:
+`stations.parish_id` is an FK.
 
 ### SQL access (Claude CAN run DDL here)
 `supabase db query --linked "<sql>"` and `-f <file>` work: the **CLI is authenticated**
@@ -107,7 +132,23 @@ explicit `drop view` of the dependent + the view first.
 0b. **Disable Supabase legacy anon/service_role keys** once Mikk is logged in to supabase.com in the Playwright browser: 24h `edge_logs` check for legacy use (query in Point `RESUME_HERE.md` 🔖), then Dashboard → Settings → API Keys (reversible). Detail: CHANGELOG 2026-09-18.
 1. **Check feedback** when asked — **TWO channels:** general `feedback` → `v_open_feedback`, AND per-station complaints → `station_reports` / `v_station_report_counts` (no `resolved_at` — closing = taking the action). Never seed prices from feedback; anonymous feedback can't receive replies. Detail in memory `project_kyts_feedback_triage`. Fast path: `node scripts/check_feedback.mjs`. **Both queues empty as of 2026-07-25.** Standing scope call: Jetoil Betooni/Laekvere DP. _(Vald-boundary "double line" FULLY FIXED 2026-07-21 — both layers re-sourced from OSM; see gotcha.)_
 2. **Diesel timing stays OFF** unless Mikk subscribes to a gasoil feed (~$20-30/mo Twelve Data Grow / EODHD — he declined for now). If he does: wire the feed in `api/_lib/marketInsight/fetchMarketData.ts`, flip `proxyReliable: true` in `api/generate-market-insight.ts`, then **validate it correlates** with EE diesel before trusting it.
-3. Progressive TS typing pass (the 151 `any`s) — only worth doing alongside `supabase gen types typescript`.
+3. **Brand-collector noise outside Estonia.** Measured 2026-09-25 against prod, so use
+   these numbers rather than re-guessing: chain-match coverage is **EE 95% · FI 90% ·
+   LV 82% · LT 80%** of active stations, and the *collector list* carries **EE 26 · FI 88 ·
+   LT 68 · LV 54** single-station "brands" — `getBrand()` falls back to the raw OSM name, so
+   every unmatched local forecourt becomes its own entry. Those entries can never be
+   completed (a brand win needs `total >= 2`), so they are list clutter, not a broken
+   feature: collectible brands are EE 13 · FI 12 · LT 33 · LV 19, and Lithuania actually has
+   more than Estonia. ⚠️ An earlier read of this said "EE 78% vs LV/LT 25%" — that was
+   wrong, don't propagate it. The work, if it's worth doing, is chain patterns against the
+   LV/LT/FI name distributions (Finland's six took it from 343 raw names to 138 brands),
+   each verified inert against every other country's stations first.
+4. **Latvia's level-1 tier is too coarse** (5 planning regions, ~110 stations each, vs
+   Estonia's 15 maakonda at ~32). Measured effect: LV has **zero** single-station tiles
+   where Estonia has 12, so the Avastuskaart's easy early wins don't exist there. Splitting
+   Rīga out is the smallest change that moves the distribution. Level-2 re-tiering is
+   PARKED — the hybrids were measured and none beat the statutory novadi.
+5. Progressive TS typing pass (the ~185 `any`s) — only worth doing alongside `supabase gen types typescript`.
 
 ## Gotchas (the time-costing ones)
 - **Map shows "API KEY REQUIRED" watermark?** CARTO basemaps need a key since 2026 (fixed 2026-09-18, `930110e`). Key = `VITE_CARTO_KEY`, Vercel **Production, type Config** (public by design; Vercel warns about the `VITE_` prefix — ignore). Key is **referer-restricted to kyts.ee + www.kyts.ee** (CARTO rejects `localhost`), so it's NOT in local `.env` → local dev shows the watermark, harmless. Free tier = 5M tiles/mo, non-commercial; manage at carto.com/basemaps/apikey (sign in with info@mikkrosin.ee). CARTO attribution must stay visible (terms).
@@ -116,15 +157,25 @@ explicit `drop view` of the dependent + the view first.
   throttled mirror. `scripts/_lib/overpass.mjs` rotates mirrors until a response passes a
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
-- **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210
-  (`scripts/_lib/regions.mjs`). They're `maakonnad.id` in prod AND `maakond_id`
+- **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210,
+  FI 301-319 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
+  `verify_countries.mjs` asserts nothing strays out of its band. They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.
 - **Latvia has no admin_level=4 in OSM.** Its 5 planning regions are a statutory grouping
   in `LV_MUNICIPALITY_REGION`, not geometry. The loader throws if OSM's municipality list
   and that table ever disagree in either direction — if a Latvian reform lands, that's the
   error you'll see, and the table is what needs editing.
-- **PostgREST 1000-row cap — `stations` is now OVER it** (1,825 rows since the Baltic seed; it was 610). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- **PostgREST 1000-row cap — `stations` is way OVER it** (3,715 rows after Finland; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- **A missing file under `public/` returns 200, not 404.** `vercel.json` rewrites
+  `/((?!api/|assets/).*)` to index.html, so an undeployed static asset answers **200 with
+  content-type text/html**; the boundary loader in `App.tsx` (`.catch(() => null)` around
+  `fetch(url).then(r => r.ok ? r.json() : null)`) swallows the parse error and caches the
+  null *per country*, so the layer is silently absent for the rest of the session. Network tab shows 200, the file
+  exists locally, the DB catalog matches — every upstream signal looks healthy. This is how
+  Finland's Avastuskaart shipped empty. Grepping the *bundle* for the filename does not
+  test it (the string is in `countries.ts` regardless); **check the served content-type**,
+  which `verify_countries.mjs` now does for all eight boundary files.
 - **Yahoo & Stooq are dead for serverless fetches:** Yahoo 429s (needs cookie+crumb), Stooq returns a JS bot-challenge page. Use proper APIs (EIA, Frankfurter) only — don't re-attempt scraping them.
 - **Price inserts have DB guards** (phases 31/43/50/51): proximity (1 km), velocity (130 km/h), static band (€0.30–4.00), per-fuel ±35% median band. Rejections surface as SQLSTATE 23514 → friendly Estonian copy. Don't "fix" a rejected insert by loosening these without checking the data first.
 - **Overlapping-window stats lie:** the diesel "mean-reversion" that looked real (r=−0.53) was a measurement artifact; a bias-free split-half test put it at −0.05. Validate any autocorrelation with disjoint windows.

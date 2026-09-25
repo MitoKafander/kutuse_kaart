@@ -612,6 +612,7 @@
     "fuelLabel": "Degalai:",
     "cheapestNow": {
       "heading": "Pigiausia šiuo metu",
+      "stale": "nešviežia",
       "noFresh": "Per paskutines {{hours}} valandas nėra naujų kainų."
     },
     "brandMedians": {
@@ -620,6 +621,7 @@
     },
     "drops": {
       "heading": "Didžiausi kainų kritimai (7 dienos)",
+      "belowMarket": "žemiau rinkos",
       "empty": "Kainų kritimų neaptikta."
     },
     "contribution": {
@@ -714,7 +716,8 @@
         "flat_market": "Rinka rami, reikšmingų judėjimų nėra.",
         "aligned": "Kolonėlė ir didmena juda kartu — nėra laiko pranašumo.",
         "insufficient_data": "Neužtenka duomenų signalui.",
-        "low_sample_count": "Per mažai Kyts ataskaitų tikrumui."
+        "low_sample_count": "Per mažai Kyts ataskaitų tikrumui.",
+        "proxy_unreliable": "Dyzelino didmeninės kainos rodiklis patikimai neprognozuoja kolonėlių kainų ({{country}}) — nėra laiko pranašumo."
       }
     }
   },

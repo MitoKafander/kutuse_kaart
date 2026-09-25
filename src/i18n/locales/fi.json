@@ -308,8 +308,10 @@
       "brands": {
         "summary": "Merkit: {{done}}/{{total}}",
         "noBrands": "Merkkejä ei ole vielä saatavilla.",
-        "emptyBrand": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
-        "remaining": "Löydettävänä vielä {{count}} asemaa."
+        "emptyBrand_one": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asema.",
+        "emptyBrand_other": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
+        "remaining_one": "Löydettävänä vielä {{count}} asema.",
+        "remaining_other": "Löydettävänä vielä {{count}} asemaa."
       },
       "countryPicker": "Maasi"
     },
@@ -612,6 +614,7 @@
     "fuelLabel": "Polttoaine:",
     "cheapestNow": {
       "heading": "Halvin tällä hetkellä",
+      "stale": "ei tuore",
       "noFresh": "Ei tuoretta hintaa viimeisen {{hours}} tunnin aikana."
     },
     "brandMedians": {
@@ -620,6 +623,7 @@
     },
     "drops": {
       "heading": "Suurimmat hinnanlaskut (7 päivää)",
+      "belowMarket": "alle markkinahinnan",
       "empty": "Hinnanlaskuja ei havaittu."
     },
     "contribution": {
@@ -714,7 +718,8 @@
         "flat_market": "Markkinat rauhalliset, ei merkittäviä liikkeitä.",
         "aligned": "Pumppu ja tukku liikkuvat yhdessä — ei ajallista etua.",
         "insufficient_data": "Ei tarpeeksi dataa signaalille.",
-        "low_sample_count": "Liian vähän Kyts-raportteja varmuudelle."
+        "low_sample_count": "Liian vähän Kyts-raportteja varmuudelle.",
+        "proxy_unreliable": "Dieselin tukkuindikaattori ei ennusta luotettavasti pumppuhintoja ({{country}}) — ei ajallista etua."
       }
     }
   },

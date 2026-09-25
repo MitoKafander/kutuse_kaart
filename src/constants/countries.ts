@@ -114,7 +114,7 @@ export function toCountryCode(v: unknown): CountryCode {
 }
 
 /**
- * Which country a coordinate falls in. The three bboxes overlap along the
+ * Which country a coordinate falls in. The bboxes overlap along the shared
  * borders (a rectangle can't follow the Valga/Valka line), so a point inside
  * more than one resolves to the nearest country centre — good enough for
  * picking someone's default Avastuskaart, and never used for anything the DB

@@ -308,8 +308,10 @@
       "brands": {
         "summary": "Zīmoli: {{done}}/{{total}}",
         "noBrands": "Zīmolu pagaidām nav.",
-        "emptyBrand": "Vēl nav atklāta neviena stacija. Atklājamas {{count}} stacijas.",
-        "remaining": "Vēl atklājamas {{count}} stacijas."
+        "emptyBrand_one": "Vēl nav atklāta neviena stacija. Atklājama {{count}} stacija.",
+        "emptyBrand_other": "Vēl nav atklāta neviena stacija. Atklājamas {{count}} stacijas.",
+        "remaining_one": "Vēl atklājama {{count}} stacija.",
+        "remaining_other": "Vēl atklājamas {{count}} stacijas."
       },
       "countryPicker": "Jūsu valsts"
     },
@@ -612,6 +614,7 @@
     "fuelLabel": "Degviela:",
     "cheapestNow": {
       "heading": "Lētākais šobrīd",
+      "stale": "nav svaiga",
       "noFresh": "Pēdējo {{hours}} stundu laikā nav jaunu cenu."
     },
     "brandMedians": {
@@ -620,6 +623,7 @@
     },
     "drops": {
       "heading": "Lielākie cenu kritumi (7 dienas)",
+      "belowMarket": "zem tirgus",
       "empty": "Cenu kritumi nav atklāti."
     },
     "contribution": {
@@ -714,7 +718,8 @@
         "flat_market": "Tirgus ir mierīgs, nozīmīgu kustību nav.",
         "aligned": "Kolonna un vairums kustas kopā — nav laika priekšrocības.",
         "insufficient_data": "Nepietiek datu signālam.",
-        "low_sample_count": "Pārāk maz Kyts atskaišu pārliecībai."
+        "low_sample_count": "Pārāk maz Kyts atskaišu pārliecībai.",
+        "proxy_unreliable": "Dīzeļdegvielas vairumtirdzniecības rādītājs ticami neprognozē kolonnu cenas ({{country}}) — nav laika priekšrocības."
       }
     }
   },
