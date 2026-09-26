@@ -9,8 +9,8 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
-- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (phase-A currency gate) · `node scripts/verify_countries.mjs` (4-country catalog + live boundary fetch) · `node scripts/cache_headroom.mjs` (localStorage budget — run before adding a country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
-- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 68** (currency as a first-class fact: `price_bounds`, `prices.currency`, `enforce_price_bounds`, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
+- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (4-country catalog + live boundary fetch) · `node scripts/cache_headroom.mjs` (localStorage budget — run before adding a country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
+- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 69** (`fx_rates` — ECB reference rates for cross-currency comparison, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
 ## Verified state (2026-09-18)
@@ -53,14 +53,13 @@ EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi, LT 10 apskritys /
 
 ### Adding country five — Sweden, and it is NOT a data-only job
 
-⚠️ **Sweden is blocked on currency work, not on the recipe below.** It is the first non-euro
-country (SEK), and every remaining neighbour is too — NOK, DKK, PLN. Phase A of
-`Notes/Plan_Local_Currency.md` is **done and live** (prices carry a currency, every price
-renders in its own). Still owed before Swedish data lands:
-**B** FX for cross-border comparison, and **C** the camera scanner — `FUEL_RANGES` in
-`api/parse-prices.ts` are EUR and out-of-range reads are *dropped*, so until C ships every
-Swedish pump photo scans as empty. C before D is strongly recommended: the camera is the
-feature most likely to bring a new user back.
+✅ **Sweden's currency blockers are cleared.** Phases A, B and C of
+`Notes/Plan_Local_Currency.md` are done and live: prices carry a currency and render in
+their own, `fx_rates` powers cross-border ranking, and the scanner reads kronor (verified
+end-to-end on the deployed function — the same totem yields three prices as SEK and *zero*
+as EUR). **Phase D, the data seed below, is the remaining step**, plus Swedish chain
+patterns. Phase E (market insight for a non-euro country) self-gates until Sweden has 20+
+local samples.
 
 Sweden's measured facts, so nobody re-derives them: OSM **admin_level 4 = 21 län** and
 **7 = 290 kommuner**, both full covers — **not level 8**, which has only 83 relations and is
@@ -189,6 +188,22 @@ explicit `drop view` of the dependent + the view first.
   key must `grep -rn onConflict src/ scripts/` and fix every match.**
   `migrations/verify_phase68_currency.sql` now asserts each client `onConflict` list resolves
   to a real constraint, so the harness fails instead of production.
+- 🔴 **The scanner DROPS prices outside its per-currency range — a gap there returns an
+  empty scan, not a degraded one.** `CURRENCY_SCAN` in `api/parse-prices.ts` feeds both the
+  prompt hint and the server filter; a currency the client can send but that table lacks
+  means every scan in that country silently yields nothing. `npm run verify:scanner` asserts
+  it. ⚠️ **`ALLOWED_BRANDS` is GENERATED** from `CHAIN_PATTERNS` — add a chain and run
+  `node scripts/sync_scanner_brands.mjs --write`, never edit it by hand. It drifted once and
+  cost brand detection on 43% of stations. ⚠️ Adding a country means adding its fuel row
+  labels to the prompt too, or its totems read as unknown fuels.
+- 🔑 **`fx_rates` is for comparison ONLY (phase 69).** A price is displayed in its own
+  currency, always; a converted figure is a footnote (`≈`) and a sort key for CheapestNearby
+  and the route planner. **Never write a converted value into `prices`.** `convertPrice`
+  returns null rather than guessing when a rate is missing, and an unconvertible candidate
+  must never sort as cheapest. `as_of` is the ECB's publication date, not our fetch time —
+  rates are legitimately 1-3 days old over a weekend. Refreshed by the market-insight cron,
+  non-fatally. ⚠️ That cron's dry-run flag is **`dryRun=1`**, not `dry=1`; the wrong one runs
+  it for real and spends a Gemini call.
 - 🔑 **Prices carry a currency (phase 68), and the local one is what users see.** `price_bounds`
   (EUR 0.30–4.00 @3dp, SEK 5.00–40.00 @2dp) is the server authority, enforced by
   `enforce_price_bounds()` / `trg_price_bounds`; `src/constants/countries.ts` `CURRENCIES`

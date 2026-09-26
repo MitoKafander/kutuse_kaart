@@ -2,6 +2,114 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Local currency, phases B and C: FX for comparison, and a scanner that reads kronor (phases 69 + C) - 2026-09-26
+
+The two things that had to land before Swedish data. Phase A made the local
+currency the number Kyts shows; B makes cross-currency *comparison* possible
+without touching that, and C stops the camera silently discarding every Swedish
+price. Plan and remaining work in `Notes/Plan_Local_Currency.md`.
+
+**✅ LIVE on kyts.ee**, migration applied, both verified against the deployed
+functions rather than only locally. Still inert: every price is EUR.
+
+### Phase B — FX, for comparison only
+
+The rule, stated in the migration so it outlives whoever reads it next: a price
+is displayed in its own currency, always. A converted figure is a footnote
+(`17,49 kr ≈ 1,55 €`) and a sort key for the two deliberately cross-border
+screens. It is never written to `prices` and never the number read first.
+
+- 🔴 **The bug this exists to prevent.** `CheapestNearbyPanel` picked per-fuel
+  winners with `candidate.price < best.price` and `RoutePlanModal` sorted on
+  `a.price - b.price` — raw numbers. For a Finn at Tornio looking across to
+  Haparanda, a Swedish station at 17.49 could never beat a Finnish one at 1.55
+  however cheap it actually was. The gate pins both directions: raw sort ranks
+  EUR first (wrong), FX sort finds SEK cheaper (right — 17.49 SEK = 1.549 EUR).
+- 🟡 **`migrations/schema_phase69_fx_rates.sql`** — `fx_rates(base, quote, rate,
+  as_of)`. EUR base enforced by CHECK, because every conversion triangulates
+  through it and the client's converter divides by the quote rate to reach EUR.
+  One row per pair, current value only; the market signal keeps its own series
+  for trend maths. Seeded with the real published SEK rate so the feature works
+  before the first cron run.
+- 🔑 **`as_of` is the ECB feed's own publication date, not our fetch time.** The
+  ECB publishes on TARGET business days only, so a rate is legitimately 1–3 days
+  old over a weekend or holiday, and the UI has to be able to say so rather than
+  implying it is live.
+- 🟢 **`fetchMarketData` parses the whole ECB document** instead of grepping one
+  currency. It was USD-only and only as a Frankfurter fallback; SEK needs it
+  every run, so one request serves both. `refreshFxRates` runs in the cron before
+  the country loop and is **deliberately non-fatal** — these rates drive a
+  footnote and a sort order while the market insight is the cron's actual job, so
+  an FX failure reports itself in the response body rather than costing a country
+  its insight.
+- 🔑 **`convertPrice` returns null when a rate is missing rather than guessing.**
+  A wrong conversion on a fuel price is worse than none. Every caller degrades to
+  "local only, no cross-currency ranking", and an unconvertible candidate can
+  never win a comparison — that would be the original bug in a new costume.
+- 🟢 The `≈` is load-bearing: it marks the figure as derived from a daily
+  reference rate, not a price anyone quoted. Shown in CheapestNearby, the route
+  planner and StationDrawer (where a driver actually decides), and deliberately
+  **not** on the map pills, which are too dense to carry it.
+- 🟡 Phase 68 was not re-runnable — `add constraint` has no `IF NOT EXISTS` and
+  these migrations get re-applied against a restored dump on every rehearsal. Now
+  guarded, and 68 + 69 compose cleanly on a fresh database.
+
+### Phase C — the camera scanner
+
+- 🔴 **Why this blocked Sweden.** The scanner does not merely *hint* its price
+  ranges to Gemini — it **drops** any returned price outside them. Measured
+  before/after on the deployed function with the same synthetic Swedish totem:
+
+  | request | result |
+  |---|---|
+  | `currency: "SEK"` | `extractedAny: true` — 17.49 / 18.29 / 18.99 |
+  | `currency: "EUR"` | `extractedAny: false` — **no prices at all** |
+
+  An empty scan on a perfectly good photo, with nothing to tell the user why.
+  AdBlue at 9,50 kr was correctly not mapped to LPG, so the rule survives the
+  currency change.
+- 🟢 **One `CURRENCY_SCAN` table now feeds both the prompt hint and the
+  server-side filter**, which were previously two copies of the same euro
+  numbers. SEK is the euro band times the reference rate, widened generously and
+  labelled a deliberate over-estimate — nobody here has read a real Swedish
+  totem, and the job of these bounds is to kill obvious mis-bucketing, not to
+  duplicate the DB's sliding band. Tighten on real reads.
+- 🔑 **The prompt states the currency and forbids conversion.** Asked for
+  "prices", a helpful model converts a Swedish sign into euros, because nearly
+  everything it has seen about this region is priced in euros. We want the
+  painted number. The AdBlue-vs-LPG rule also quoted `~€0.50–0.90/L`, which says
+  nothing on a Swedish forecourt, and is now stated in local currency.
+- 🟢 **The client resolves the currency station → GPS → home country.** GPS
+  matters because FAB-mode scans have no station yet — that is exactly why they
+  send no hint — and the user is standing at the forecourt.
+- 🔴 **`ALLOWED_BRANDS` had drifted badly.** Hand-maintained beside
+  `CHAIN_PATTERNS`, it still held only Estonian and Latvian chains: **24 brands
+  missing, covering 1,568 of 3,662 active stations (43%)** — every Finnish and
+  Lithuanian chain, including ABC at 423 stations, St1 at 332 and Teboil at 264.
+  Those scans still returned prices (a null brand counts as a match), so brand
+  confirmation was silently dead rather than visibly broken. Fixed at the class
+  level: `scripts/sync_scanner_brands.mjs` generates the list from
+  `CHAIN_PATTERNS` (23 → 48 brands) and the gate fails on drift. `api/` cannot
+  import from `src/` — Vercel builds it alone — so the copy stays, but it is now
+  generated and asserted rather than remembered.
+- 🟡 **Finnish row labels were never added when Finland shipped.** `Bensiini 95`,
+  `Dieselöljy`, `Nestekaasu` and Swedish `Bensin 95` / `Gasol` are in now. E85,
+  HVO100, Moottoripolttoöljy, Eldningsolja and CNG are explicitly listed as
+  ignore — real fuels on Nordic forecourts that map to no slot Kyts tracks, and
+  saying so beats letting the model guess. The no-hint prompt also still called
+  this an app for "an unknown Estonian or Latvian fuel station".
+- 🟢 **`npm run verify:scanner`** asserts the contract: every currency the client
+  can send has ranges, every live country maps to one, ranges are ordered, LPG's
+  band sits below petrol's so it cannot contradict the prompt's own "LPG is
+  always cheaper" rule, every `CHAIN_PATTERNS` brand is whitelisted, the prompt
+  names the currency and forbids conversion, the filter shares the prompt's
+  table, and each live country's row labels are present.
+
+_(One self-inflicted note: the cron's dry-run flag is `dryRun=1`, not `dry=1`. I
+used the latter while testing, which ran it for real — generating an EE insight
+~2.5h off schedule and spending one Gemini call. The insight was well-formed
+and the next scheduled run superseded it.)_
+
 ## [Shipped] - Local currency, phase A: currency exists and nothing moved (phase 68) - 2026-09-26
 
 Groundwork for Sweden. Every remaining neighbour is non-euro — SEK, NOK, DKK, PLN — so
