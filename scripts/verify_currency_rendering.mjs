@@ -16,7 +16,8 @@
 //      screen, which no typecheck catches.
 
 import { readFileSync } from 'node:fs';
-import { formatPrice, formatSubunitDelta, priceUnit, subunitUnit, pricePlaceholder } from '../src/utils.ts';
+import { formatPrice, formatSubunitDelta, priceUnit, subunitUnit, pricePlaceholder,
+         convertPrice, comparablePrice, formatConverted } from '../src/utils.ts';
 import { CURRENCIES, COUNTRY_CODES, currencyForCountry } from '../src/constants/countries.ts';
 
 let fail = 0;
@@ -54,6 +55,37 @@ for (const [label, v] of [['null', null], ['undefined', undefined], ['NaN', NaN]
   check(`price ${label}`, formatPrice(v, 'EUR'), '—');
   check(`subunit ${label}`, formatSubunitDelta(v, 'EUR'), '—');
 }
+
+console.log('\n── FX conversion (phase 69): comparison only, never the headline ──');
+// The published ECB rate at the time these expectations were written.
+const FX = { SEK: { rate: 11.29, asOf: '2026-09-25' } };
+check('same currency is an identity',      convertPrice(1.789, 'EUR', 'EUR', FX), 1.789);
+check('SEK -> EUR',                        Number(convertPrice(17.49, 'SEK', 'EUR', FX).toFixed(4)), 1.5492);
+check('EUR -> SEK',                        Number(convertPrice(1.55, 'EUR', 'SEK', FX).toFixed(2)), 17.50);
+check('round trip is lossless to 2dp',     Number(convertPrice(convertPrice(17.49, 'SEK', 'EUR', FX), 'EUR', 'SEK', FX).toFixed(2)), 17.49);
+// Failing closed matters more than converting: a wrong figure on a fuel price is
+// worse than none, and every caller degrades to local-only.
+check('missing rate -> null, not a guess', convertPrice(17.49, 'SEK', 'EUR', {}), null);
+check('null input -> null',                convertPrice(null, 'SEK', 'EUR', FX), null);
+check('annotation for a foreign price',    formatConverted(17.49, 'SEK', 'EUR', FX), '≈ €1.549');
+check('no annotation, same currency',      formatConverted(1.789, 'EUR', 'EUR', FX), null);
+check('no annotation without a rate',      formatConverted(17.49, 'SEK', 'EUR', {}), null);
+
+console.log('\n── the bug phase 69 exists to prevent ──');
+// A Finn at Tornio looking across the border to Haparanda. Ranking on the raw
+// number always puts the euro station first, whatever either actually costs.
+{
+  const stations = [{ p: 17.49, cur: 'SEK' }, { p: 1.55, cur: 'EUR' }];
+  const raw = [...stations].sort((a, b) => a.p - b.p).map(s => s.cur);
+  const fx  = [...stations].sort((a, b) =>
+    comparablePrice(a.p, a.cur, 'EUR', FX) - comparablePrice(b.p, b.cur, 'EUR', FX)).map(s => s.cur);
+  check('raw sort ranks EUR first (wrong)',  raw.join(','), 'EUR,SEK');
+  check('fx sort finds SEK cheaper (right)', fx.join(','),  'SEK,EUR');
+  check('  17.49 SEK in EUR',                Number(convertPrice(17.49, 'SEK', 'EUR', FX).toFixed(3)), 1.549);
+}
+// An unconvertible price must never sort as cheapest — that would be the same
+// bug wearing a different hat.
+check('no rate -> not comparable',         comparablePrice(17.49, 'SEK', 'EUR', {}), null);
 
 console.log('\n── currency-bound locale keys interpolate fully ──');
 // Mirrors what the components pass; a key gaining a variable without every

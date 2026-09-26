@@ -104,6 +104,70 @@ export function formatStationPrice(
   return formatPrice(value, currencyForCountry(station?.country), decimals);
 }
 
+/**
+ * ECB reference rates as the client holds them: EUR base, one entry per quote
+ * currency, carrying the feed's own publication date (phase 69).
+ */
+export type FxRates = Partial<Record<CurrencyCode, { rate: number; asOf: string }>>;
+
+/**
+ * Convert between currencies, triangulating through EUR because that is what the
+ * ECB publishes.
+ *
+ * Returns null when the rate is missing rather than guessing — a wrong
+ * conversion on a fuel price is worse than no conversion, and every caller is
+ * written to degrade to "show local only, don't rank across the boundary".
+ */
+export function convertPrice(
+  value: number | null | undefined,
+  from: CurrencyCode,
+  to: CurrencyCode,
+  rates: FxRates,
+): number | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  if (from === to) return value;
+  const eur = from === 'EUR' ? value : (rates[from]?.rate ? value / rates[from]!.rate : null);
+  if (eur == null) return null;
+  if (to === 'EUR') return eur;
+  const r = rates[to]?.rate;
+  return r ? eur * r : null;
+}
+
+/**
+ * A price expressed in the viewer's own currency, purely so cross-border lists
+ * can be ordered. Never rendered: the pump figure is what users read.
+ *
+ * Null means "not comparable", and callers must sort those last rather than
+ * letting a missing rate masquerade as the cheapest option.
+ */
+export function comparablePrice(
+  value: number | null | undefined,
+  stationCurrency: CurrencyCode,
+  homeCurrency: CurrencyCode,
+  rates: FxRates,
+): number | null {
+  return convertPrice(value, stationCurrency, homeCurrency, rates);
+}
+
+/**
+ * The secondary annotation for a price in a foreign currency: '≈ 1,55 €'.
+ *
+ * Returns null when the currencies match (nothing to say) or no rate is known
+ * (nothing honest to say). The '≈' is load-bearing — it marks the figure as
+ * derived from a daily reference rate, not a price anyone quoted.
+ */
+export function formatConverted(
+  value: number | null | undefined,
+  from: CurrencyCode,
+  to: CurrencyCode,
+  rates: FxRates,
+): string | null {
+  if (from === to) return null;
+  const converted = convertPrice(value, from, to, rates);
+  if (converted == null) return null;
+  return `≈ ${formatPrice(converted, to)}`;
+}
+
 /** The unit shown next to a price input or axis, e.g. '€/l' or 'kr/l'. */
 export function priceUnit(currency: CurrencyCode = 'EUR'): string {
   return `${(CURRENCIES[currency] ?? CURRENCIES.EUR).symbol}/l`;

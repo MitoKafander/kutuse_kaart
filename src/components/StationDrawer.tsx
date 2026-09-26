@@ -4,8 +4,8 @@ import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Fl
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
-import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, formatPrice, type ReporterMap } from '../utils';
-import { currencyForCountry } from '../constants/countries';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, formatPrice, formatConverted, type ReporterMap, type FxRates } from '../utils';
+import { currencyForCountry, type CurrencyCode } from '../constants/countries';
 
 // Logged-in users can re-confirm an already-up vote after this window. Each
 // re-confirm UPDATEs the existing vote row's created_at so the freshness math
@@ -29,9 +29,14 @@ export function StationDrawer({
   onOpenReport,
   onVoteSubmitted,
   isFavorite,
-  onToggleFavorite
+  onToggleFavorite,
+  homeCurrency = 'EUR',
+  fxRates = {},
 }: {
   station: any,
+  /** The viewer's own currency. A cross-border station gets an '≈' footnote. */
+  homeCurrency?: CurrencyCode,
+  fxRates?: FxRates,
   prices: any[],
   allVotes: any[],
   reporterMap?: ReporterMap,
@@ -238,6 +243,17 @@ export function StationDrawer({
               <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
                 {!recentPrice || isDisputed ? '---' : formatPrice(recentPrice.price, currency)}
               </div>
+              {/* A footnote, never the headline: the pump figure above is what
+                  the driver pays. Absent when the currencies match or no rate is
+                  known — an unmarked guess would be worse than silence. */}
+              {recentPrice && !isDisputed && (() => {
+                const approx = formatConverted(recentPrice.price, currency, homeCurrency, fxRates);
+                return approx && (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                    {approx}
+                  </div>
+                );
+              })()}
 
               {/* Disputed label */}
               {recentPrice && isDisputed && (

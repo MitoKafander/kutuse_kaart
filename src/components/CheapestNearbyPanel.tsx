@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand, getReporter, formatStationPrice } from '../utils';
-import type { LoyaltyDiscounts, GeolocationErrorKind, ReporterMap } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand, getReporter, formatStationPrice, comparablePrice, formatConverted } from '../utils';
+import { currencyForCountry, type CurrencyCode } from '../constants/countries';
+import type { LoyaltyDiscounts, GeolocationErrorKind, ReporterMap, FxRates } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const RADIUS_OPTIONS = [5, 10, 20];
@@ -18,6 +19,8 @@ interface NearbyResult {
   discounted: boolean;
   reportedAt: string;
   reporterId: string | null;
+  /** Price in the viewer's currency, for ordering only. Null = not comparable. */
+  comparable: number | null;
 }
 
 function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
@@ -25,6 +28,23 @@ function getTimeAgo(dateStr: string, t: (key: string, opts?: Record<string, unkn
   if (h < 1) return t('time.justNow');
   if (h < 24) return t('time.hoursAgo', { count: Math.floor(h) });
   return t('time.daysAgo', { count: Math.floor(h / 24) });
+}
+
+/**
+ * Is `a` cheaper than `b`, across currencies?
+ *
+ * A candidate with no usable rate is not comparable, and the one thing it must
+ * never do is win by default — an unconvertible 17.49 outranking a real 1.55
+ * would be the same bug in a new costume. So a comparable candidate always beats
+ * an incomparable one, and two incomparable ones fall back to their raw figures
+ * (which is correct when they share a currency, the only case that reaches here
+ * in practice).
+ */
+function cheaper(a: NearbyResult, b: NearbyResult): boolean {
+  if (a.comparable != null && b.comparable != null) return a.comparable < b.comparable;
+  if (a.comparable != null) return true;
+  if (b.comparable != null) return false;
+  return a.price < b.price;
 }
 
 function findCheapestNearby(
@@ -37,6 +57,12 @@ function findCheapestNearby(
   preferredBrands: string[] = [],
   loyaltyDiscounts: LoyaltyDiscounts = {},
   applyLoyalty: boolean = false,
+  // Phase 69. This panel is deliberately cross-border — a station just over the
+  // line is the whole point — so "cheapest" has to be decided on a common
+  // currency. Comparing raw numbers would mean a Swedish station at 17.49 could
+  // never beat a Finnish one at 1.55 whatever it actually costs.
+  homeCurrency: CurrencyCode = 'EUR',
+  fxRates: FxRates = {},
 ): NearbyResult[] {
   const results: NearbyResult[] = [];
 
@@ -68,14 +94,18 @@ function findCheapestNearby(
         discounted: hasDiscount(brand, loyaltyDiscounts, applyLoyalty),
         reportedAt: recentPrice.reported_at,
         reporterId: recentPrice.user_id ?? null,
+        // Never rendered — the pump figure is what the user reads. This exists
+        // only so the comparison below is apples-to-apples. Null when no rate is
+        // known, which must not read as "cheapest".
+        comparable: comparablePrice(net, currencyForCountry(station.country), homeCurrency, fxRates),
       };
 
       if (dist <= radiusKm) {
-        if (!best || candidate.price < best.price) best = candidate;
+        if (!best || cheaper(candidate, best)) best = candidate;
       } else {
         // Fallback: closest-outside-radius cheapest, only used if nothing within
         if (!bestOutside || candidate.distanceKm < bestOutside.distanceKm ||
-            (candidate.distanceKm === bestOutside.distanceKm && candidate.price < bestOutside.price)) {
+            (candidate.distanceKm === bestOutside.distanceKm && cheaper(candidate, bestOutside))) {
           bestOutside = candidate;
         }
       }
@@ -102,6 +132,8 @@ export function CheapestNearbyPanel({
   applyLoyalty = false,
   onStationSelect,
   fallbackLocation = null,
+  homeCurrency = 'EUR',
+  fxRates = {},
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -116,6 +148,9 @@ export function CheapestNearbyPanel({
   applyLoyalty?: boolean;
   onStationSelect?: (station: any) => void;
   fallbackLocation?: { lat: number; lon: number } | null;
+  /** The viewer's own currency — the common ground results are ranked on. */
+  homeCurrency?: CurrencyCode;
+  fxRates?: FxRates;
 }) {
   const { t } = useTranslation();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -163,7 +198,7 @@ export function CheapestNearbyPanel({
   if (!isOpen) return null;
 
   const results = userLocation
-    ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands, loyaltyDiscounts, applyLoyalty)
+    ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands, loyaltyDiscounts, applyLoyalty, homeCurrency, fxRates)
     : [];
 
   const fuelLabel: Record<string, string> = {
@@ -314,6 +349,14 @@ export function CheapestNearbyPanel({
                 <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                   {formatStationPrice(result.price, result.station)}
                 </span>
+                {/* Only shown when the station prices in another currency, and
+                    only ever as a footnote to the pump figure above. */}
+                {(() => {
+                  const approx = formatConverted(result.price, currencyForCountry(result.station?.country), homeCurrency, fxRates);
+                  return approx && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{approx}</span>
+                  );
+                })()}
                 {result.discounted && (
                   <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>
                     {formatStationPrice(result.grossPrice, result.station)}

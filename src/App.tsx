@@ -64,9 +64,9 @@ const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDra
 const AdminPriceModal = lazyWithReload(() => import('./components/AdminPriceModal').then(m => ({ default: m.AdminPriceModal })));
 import { supabase } from './supabase';
 import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS } from './utils';
-import type { LoyaltyDiscounts, BrandProgress } from './utils';
+import type { LoyaltyDiscounts, BrandProgress, FxRates } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
-import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, type CountryCode } from './constants/countries';
+import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, isCurrencyCode, type CountryCode } from './constants/countries';
 import {
   readHiddenCountries, writeHiddenCountries, clearCountryPrefs,
   sanitizeHiddenCountries, readActiveCountry, writeActiveCountry,
@@ -311,10 +311,16 @@ function App() {
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
   });
-  // A loyalty discount is an absolute subunit amount (cents, öre), so it only
-  // means anything paired with a currency — and the one that matters is where
-  // the user actually buys fuel, i.e. their own country.
-  const loyaltyCurrency = COUNTRIES[activeCountry].currency;
+  // ECB rates, EUR base (phase 69). Empty until the first fetch lands, and every
+  // consumer is written to degrade to "local currency only, no cross-currency
+  // ranking" rather than guessing at a conversion.
+  const [fxRates, setFxRates] = useState<FxRates>({});
+
+  // The viewer's own currency, from their active country — where they actually
+  // buy fuel. Two things need it: loyalty discounts, which are absolute subunit
+  // amounts and so mean nothing without one (phase 68), and cross-border price
+  // comparison, which needs common ground to rank on (phase 69).
+  const homeCurrency = COUNTRIES[activeCountry].currency;
   const [loyaltyDiscounts, setLoyaltyDiscounts] = useState<LoyaltyDiscounts>(() => {
     try { return JSON.parse(localStorage.getItem('kyts-loyalty-discounts') || '{}'); }
     catch { return {}; }
@@ -519,7 +525,7 @@ function App() {
     // Fan out the public queries in parallel. They're independent, land on
     // the same HTTP/2 connection, and previously ran serially — PSI showed the
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
-    const [stRes, prRes, vtRes, repsRes, insightRes] = await Promise.all([
+    const [stRes, prRes, vtRes, repsRes, insightRes, fxRes] = await Promise.all([
       // MUST page: the Baltic expansion took the active-station count past
       // PostgREST's 1000-row cap (1,772 as of phase 65), and a bare select
       // silently returns the first 1000 — which dropped most of Lithuania AND
@@ -533,7 +539,19 @@ function App() {
       // are at most a handful) and pick the user's below, rather than letting
       // whichever country generated most recently win.
       supabase.from('market_insights').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(20),
+      // ECB reference rates (phase 69). A handful of rows, public. Used ONLY to
+      // annotate a foreign-currency price and to order the two cross-border
+      // screens — never to replace the pump figure.
+      supabase.from('fx_rates').select('quote, rate, as_of'),
     ]);
+
+    if (fxRes.data) {
+      const rates: FxRates = {};
+      for (const r of fxRes.data as Array<{ quote: string; rate: number | string; as_of: string }>) {
+        if (isCurrencyCode(r.quote)) rates[r.quote] = { rate: Number(r.rate), asOf: r.as_of };
+      }
+      setFxRates(rates);
+    }
 
     if (stRes.data) {
       setStations(stRes.data);
@@ -587,7 +605,7 @@ function App() {
         // the column existed default to EUR.
         const map: LoyaltyDiscounts = {};
         loyaltyRes.data
-          .filter((r: any) => (r.currency ?? 'EUR') === loyaltyCurrency)
+          .filter((r: any) => (r.currency ?? 'EUR') === homeCurrency)
           .forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
         setLoyaltyDiscounts(map);
         localStorage.setItem('kyts-loyalty-discounts', JSON.stringify(map));
@@ -1741,6 +1759,8 @@ function App() {
         {!!selectedStation && !isPriceModalOpen && (
           <StationDrawer
             station={selectedStation}
+            homeCurrency={homeCurrency}
+            fxRates={fxRates}
             prices={prices.filter(p => p.station_id === selectedStation?.id)}
             allVotes={votes}
             reporterMap={reporterMap}
@@ -1915,7 +1935,7 @@ function App() {
           if (session?.user?.id) {
             if (cents > 0) {
               await supabase.from('user_loyalty_discounts').upsert(
-                { user_id: session.user.id, brand, discount_cents: cents, currency: loyaltyCurrency },
+                { user_id: session.user.id, brand, discount_cents: cents, currency: homeCurrency },
                 // Must name every column of the unique key — phase 68 widened it
                 // to (user_id, brand, currency), and a stale onConflict list
                 // raises 42P10 rather than falling back to an insert.
@@ -1924,7 +1944,7 @@ function App() {
             } else {
               await supabase.from('user_loyalty_discounts').delete()
                 .eq('user_id', session.user.id).eq('brand', brand)
-                .eq('currency', loyaltyCurrency);
+                .eq('currency', homeCurrency);
             }
           }
         }}
@@ -1964,6 +1984,8 @@ function App() {
             applyLoyalty={applyLoyalty}
             onStationSelect={setSelectedStation}
             fallbackLocation={liveUserLocation}
+            homeCurrency={homeCurrency}
+            fxRates={fxRates}
           />
         )}
 
@@ -1979,6 +2001,8 @@ function App() {
           selectedFuelType={selectedFuelType}
           onRouteChange={setRoutePolyline}
           onStationSelect={setSelectedStation}
+          homeCurrency={homeCurrency}
+          fxRates={fxRates}
         />}
 
         {isStatsOpen && (

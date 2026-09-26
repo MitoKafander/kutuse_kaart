@@ -5,9 +5,10 @@ import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
   getCurrentPositionAsync, getBrand, getReporter, formatStationPrice,
+  comparablePrice, formatConverted,
 } from '../utils';
-import type { LoyaltyDiscounts, ReporterMap } from '../utils';
-import { COUNTRY_CODES } from '../constants/countries';
+import type { LoyaltyDiscounts, ReporterMap, FxRates } from '../utils';
+import { COUNTRY_CODES, currencyForCountry, type CurrencyCode } from '../constants/countries';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const CORRIDOR_OPTIONS = [1, 2, 5];
@@ -22,6 +23,8 @@ interface RouteResult {
   corridorKm: number;
   progressKm: number; // distance from origin along straight-line
   reporterId: string | null;
+  /** Price in the viewer's currency, for ordering only. Null = not comparable. */
+  comparable: number | null;
 }
 
 type SearchHit = { displayName: string; lat: number; lon: number };
@@ -75,6 +78,8 @@ export function RoutePlanModal({
   selectedFuelType,
   onRouteChange,
   onStationSelect,
+  homeCurrency = 'EUR',
+  fxRates = {},
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -87,6 +92,10 @@ export function RoutePlanModal({
   selectedFuelType: string | null;
   onRouteChange: (route: [number, number][] | null) => void;
   onStationSelect?: (station: any) => void;
+  /** The viewer's own currency. A route can cross a currency border, so the
+   *  ranking has to happen on common ground (phase 69). */
+  homeCurrency?: CurrencyCode;
+  fxRates?: FxRates;
 }) {
   const { t, i18n } = useTranslation();
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
@@ -201,9 +210,20 @@ export function RoutePlanModal({
         corridorKm: corridor,
         progressKm: haversineKm(origin.lat, origin.lon, station.latitude, station.longitude),
         reporterId: recent.user_id ?? null,
+        // Ordering key only, never rendered. Null = no rate for this currency.
+        comparable: comparablePrice(net, currencyForCountry(station.country), homeCurrency, fxRates),
       });
     }
-    out.sort((a, b) => a.price - b.price);
+    // Rank on the converted figure: a route from Tornio to Haparanda crosses a
+    // currency border, and raw numbers would put every Finnish station ahead of
+    // every Swedish one regardless of what they cost. Stations with no usable
+    // rate sort LAST rather than appearing cheapest.
+    out.sort((a, b) => {
+      if (a.comparable != null && b.comparable != null) return a.comparable - b.comparable;
+      if (a.comparable != null) return -1;
+      if (b.comparable != null) return 1;
+      return a.price - b.price;
+    });
     return out.slice(0, 20);
   })();
 
@@ -372,6 +392,12 @@ export function RoutePlanModal({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>{formatStationPrice(r.price, r.station)}</span>
+                {(() => {
+                  const approx = formatConverted(r.price, currencyForCountry(r.station?.country), homeCurrency, fxRates);
+                  return approx && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{approx}</span>
+                  );
+                })()}
                 {r.discounted && (
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>{formatStationPrice(r.grossPrice, r.station)}</span>
                 )}

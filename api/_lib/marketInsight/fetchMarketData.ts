@@ -150,16 +150,34 @@ async function fetchFrankfurter(): Promise<Series | null> {
   return toSeries(rows);
 }
 
-async function fetchEcbEurUsd(): Promise<number | null> {
+/**
+ * The ECB's daily reference rates — every currency in one ~30 KB document.
+ *
+ * Was USD-only (a fallback when Frankfurter fails). Phase 69 also needs SEK, so
+ * it parses the whole feed instead of fetching twice: the pump-price currencies
+ * and the signal's USD leg come out of a single request.
+ *
+ * `asOf` is the feed's own `time` attribute, NOT the time we fetched it. The ECB
+ * publishes on TARGET business days only, so a rate is legitimately 1-3 days old
+ * over a weekend or holiday and the UI has to be able to say so rather than
+ * implying it is live.
+ */
+export async function fetchEcbDaily(): Promise<{ asOf: string; rates: Record<string, number> } | null> {
   const xml = await fetchWithTimeout(
     'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',
     4000,
   );
   if (!xml) return null;
-  const m = xml.match(/currency='USD'\s+rate='([0-9.]+)'/);
-  if (!m) return null;
-  const rate = parseFloat(m[1]);
-  return isFinite(rate) && rate > 0 ? rate : null;
+  const rates: Record<string, number> = {};
+  for (const m of xml.matchAll(/currency='([A-Z]{3})'\s+rate='([0-9.]+)'/g)) {
+    const rate = parseFloat(m[2]);
+    if (isFinite(rate) && rate > 0) rates[m[1]] = rate;
+  }
+  if (!Object.keys(rates).length) return null;
+  // Fall back to today only if the feed somehow lacks its own date — better a
+  // slightly optimistic date than no rate at all, and the cron logs the fetch.
+  const asOf = xml.match(/time='(\d{4}-\d{2}-\d{2})'/)?.[1] ?? new Date().toISOString().slice(0, 10);
+  return { asOf, rates };
 }
 
 // --- Public API -----------------------------------------------------------
@@ -168,6 +186,8 @@ export type MarketData = {
   brent: Series | null;       // USD/barrel (EIA PET.RBRTE.D)
   gasoil: Series | null;      // USD/gallon NY Harbor ULSD (EIA PET.EER_EPD2F_PF4_Y35NY_DPG.D, diesel proxy)
   rbob: Series | null;        // USD/gallon NY Harbor RBOB gasoline spot (EIA PET.EER_EPMRU_PF4_Y35NY_DPG.D)
+  /** Raw ECB daily reference rates (EUR base) + the feed's publication date. Phase 69. */
+  ecb: { asOf: string; rates: Record<string, number> } | null;
   eurUsd: Series | null;      // EUR→USD (Frankfurter; ECB "today-only" fallback)
 };
 
@@ -195,14 +215,19 @@ export async function fetchMarketData(): Promise<MarketData> {
   // FX last-ditch fallback: if Frankfurter failed, pull today's rate from ECB
   // XML. prev7/prev30 stay equal to today → divergence contribution from FX
   // is zero — acceptable for a single day.
+  // Phase 69: the ECB feed is now fetched on every run rather than only as a
+  // Frankfurter fallback, because the pump-price currencies need it too. One
+  // request serves both, and `ecb` is passed out so the cron can refresh
+  // fx_rates without a second call.
+  const ecb = await fetchEcbDaily();
+
   let fxSeries = eurUsd;
-  if (!fxSeries) {
-    const spot = await fetchEcbEurUsd();
-    if (spot) {
-      const iso = new Date().toISOString().slice(0, 10);
-      fxSeries = { today: spot, prev7: spot, prev30: spot, asOf: iso };
-    }
+  if (!fxSeries && ecb?.rates.USD) {
+    // prev7/prev30 equal today → FX contributes zero divergence, which is
+    // acceptable for a single day and honest about having no history.
+    const spot = ecb.rates.USD;
+    fxSeries = { today: spot, prev7: spot, prev30: spot, asOf: ecb.asOf };
   }
 
-  return { brent, gasoil, rbob, eurUsd: fxSeries };
+  return { brent, gasoil, rbob, eurUsd: fxSeries, ecb };
 }

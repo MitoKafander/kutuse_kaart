@@ -158,9 +158,20 @@ alter table public.user_loyalty_discounts
 -- hold a Circle K discount in each currency they buy fuel in.
 alter table public.user_loyalty_discounts
   drop constraint if exists user_loyalty_discounts_user_id_brand_key;
-alter table public.user_loyalty_discounts
-  add constraint user_loyalty_discounts_user_brand_currency_key
-    unique (user_id, brand, currency);
+-- `add constraint` has no IF NOT EXISTS, and these migrations get re-applied
+-- against a restored dump during every rehearsal, so guard it explicitly.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.user_loyalty_discounts'::regclass
+      and conname = 'user_loyalty_discounts_user_brand_currency_key'
+  ) then
+    alter table public.user_loyalty_discounts
+      add constraint user_loyalty_discounts_user_brand_currency_key
+        unique (user_id, brand, currency);
+  end if;
+end $$;
 
 -- NOTE: the existing CHECK (discount_cents between 0 and 50) is left alone. It
 -- survives SEK by coincidence — 1 SEK = 100 öre and Swedish fuel-card discounts

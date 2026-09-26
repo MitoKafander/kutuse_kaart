@@ -145,6 +145,45 @@ async function fetchKytsFuelStats(
 }
 
 /**
+ * Refresh `fx_rates` from the ECB feed already fetched for the signal (phase 69).
+ *
+ * Only currencies that exist in `price_bounds` are stored — the FK enforces it,
+ * and there is no reason to carry rates for currencies no station prices in.
+ *
+ * DELIBERATELY NON-FATAL. These rates drive a secondary annotation and the sort
+ * order of two screens; the market insight is the cron's actual job. A stale rate
+ * degrades honestly (the UI renders `as_of`), so an FX failure must never cost a
+ * country its insight. Returns a summary for the response body instead of
+ * throwing.
+ */
+async function refreshFxRates(
+  // Untyped for the same reason fetchKytsFuelStats is — see its comment above.
+  sb: any,
+  ecb: { asOf: string; rates: Record<string, number> } | null,
+  dry: boolean,
+): Promise<{ ok: boolean; updated?: string[]; skipped?: string[]; reason?: string }> {
+  if (!ecb) return { ok: false, reason: 'ECB feed unavailable' };
+
+  const { data: supported, error: boundsErr } = await sb.from('price_bounds').select('currency');
+  if (boundsErr) return { ok: false, reason: `price_bounds: ${boundsErr.message}` };
+
+  const wanted = (supported ?? [])
+    .map((r: any) => r.currency as string)
+    .filter((c: string) => c !== 'EUR');                   // EUR is the base; an identity row is refused
+  const rows = wanted
+    .filter((c: string) => ecb.rates[c] != null)
+    .map((c: string) => ({ base: 'EUR', quote: c, rate: ecb.rates[c], as_of: ecb.asOf, updated_at: new Date().toISOString() }));
+  const missing = wanted.filter((c: string) => ecb.rates[c] == null);
+
+  if (!rows.length) return { ok: true, updated: [], skipped: missing, reason: 'nothing to refresh' };
+  if (dry) return { ok: true, updated: rows.map((r: any) => `${r.quote}=${r.rate} (dry)`), skipped: missing };
+
+  const { error } = await sb.from('fx_rates').upsert(rows, { onConflict: 'base,quote' });
+  if (error) return { ok: false, reason: error.message };
+  return { ok: true, updated: rows.map((r: any) => `${r.quote}=${r.rate}@${r.as_of}`), skipped: missing };
+}
+
+/**
  * One country's full pipeline: local averages -> deterministic signals ->
  * Gemini prose -> a fresh active row. Returns what happened, so the handler
  * can report per country without any one of them failing the whole cron.
@@ -355,6 +394,12 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     // one upstream outage fail the whole cron exactly as it did before.
     const market = await fetchMarketData();
 
+    // Phase 69: refresh FX from the ECB document the signal already fetched.
+    // Before the country loop so a rate is fresh for the whole run, and awaited
+    // rather than fired off so its outcome reaches the response body.
+    const fx = await refreshFxRates(sb, market.ecb, dry);
+    if (!fx.ok) console.warn('[generate-market-insight] fx refresh skipped:', fx.reason);
+
     // Sequential, not parallel: three concurrent Gemini calls is how you meet
     // a rate limit, and the cron has 60s of headroom for three small requests.
     const results = [];
@@ -366,6 +411,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     return res.status(failed.length === results.length ? 500 : 200).json({
       ok: failed.length < results.length,
       dryRun: dry || undefined,
+      fx,
       results,
       fetchLog: dry ? fetchLog : undefined,
     });
