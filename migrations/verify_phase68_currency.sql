@@ -121,6 +121,32 @@ begin
     case when ok then 'both rows accepted' else 'blocked by the unique key' end);
 end $$;
 
+-- ── Every client onConflict list must match a real unique constraint ────────
+-- Phase 68 widened user_loyalty_discounts' unique key and the client kept
+-- sending the old two-column list, so every loyalty save failed with 42P10 —
+-- shipped and unnoticed, because the schema was green and nothing exercised the
+-- write path. PostgREST does NOT fall back to a plain insert; it raises. Any
+-- migration that touches a unique key has to sweep the upserts that name it.
+insert into results
+select
+  'onConflict ' || c.tbl || ' (' || c.cols || ')',
+  exists (
+    select 1 from pg_constraint k
+    where k.conrelid = ('public.' || c.tbl)::regclass
+      and k.contype in ('u', 'p')
+      and (select string_agg(a.attname, ',' order by x.ord)
+           from unnest(k.conkey) with ordinality x(attnum, ord)
+           join pg_attribute a on a.attrelid = k.conrelid and a.attnum = x.attnum) = c.cols
+  ),
+  'client sends this column list'
+from (values
+  -- Keep in step with the upserts in src/ and scripts/ (grep onConflict).
+  ('user_loyalty_discounts', 'user_id,brand,currency'),
+  ('stations',               'latitude,longitude'),
+  ('maakonnad',              'id'),
+  ('parishes',               'id')
+) as c(tbl, cols);
+
 -- ── The euro-only CHECKs are gone ───────────────────────────────────────────
 insert into results
 select 'old euro-only CHECKs dropped',

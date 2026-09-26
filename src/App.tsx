@@ -311,6 +311,10 @@ function App() {
   const [showStaleDemo, setShowStaleDemo] = useState(() => {
     return localStorage.getItem('kyts-show-stale-demo') === 'true';
   });
+  // A loyalty discount is an absolute subunit amount (cents, öre), so it only
+  // means anything paired with a currency — and the one that matters is where
+  // the user actually buys fuel, i.e. their own country.
+  const loyaltyCurrency = COUNTRIES[activeCountry].currency;
   const [loyaltyDiscounts, setLoyaltyDiscounts] = useState<LoyaltyDiscounts>(() => {
     try { return JSON.parse(localStorage.getItem('kyts-loyalty-discounts') || '{}'); }
     catch { return {}; }
@@ -567,7 +571,7 @@ function App() {
       // Same fan-out for the signed-in user's three preference tables.
       const [favsRes, loyaltyRes, profRes] = await Promise.all([
         supabase.from('user_favorites').select('*'),
-        supabase.from('user_loyalty_discounts').select('brand, discount_cents'),
+        supabase.from('user_loyalty_discounts').select('brand, discount_cents, currency'),
         // select('*') rather than a column list: user_profiles is RLS-self-only and
         // one row, and listing columns means a deploy that lands before its
         // migration 400s the entire profile fetch (phase 65 added hidden_countries).
@@ -577,8 +581,14 @@ function App() {
       if (favsRes.data) setFavorites(favsRes.data);
 
       if (loyaltyRes.data) {
+        // Scoped to the active country's currency (phase 68): discount_cents is
+        // an ABSOLUTE subunit amount, so a 30-öre Swedish discount would
+        // otherwise come back off a euro price as 30 cents. Rows saved before
+        // the column existed default to EUR.
         const map: LoyaltyDiscounts = {};
-        loyaltyRes.data.forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
+        loyaltyRes.data
+          .filter((r: any) => (r.currency ?? 'EUR') === loyaltyCurrency)
+          .forEach((r: any) => { map[r.brand] = Number(r.discount_cents); });
         setLoyaltyDiscounts(map);
         localStorage.setItem('kyts-loyalty-discounts', JSON.stringify(map));
       }
@@ -1905,12 +1915,16 @@ function App() {
           if (session?.user?.id) {
             if (cents > 0) {
               await supabase.from('user_loyalty_discounts').upsert(
-                { user_id: session.user.id, brand, discount_cents: cents },
-                { onConflict: 'user_id,brand' }
+                { user_id: session.user.id, brand, discount_cents: cents, currency: loyaltyCurrency },
+                // Must name every column of the unique key — phase 68 widened it
+                // to (user_id, brand, currency), and a stale onConflict list
+                // raises 42P10 rather than falling back to an insert.
+                { onConflict: 'user_id,brand,currency' }
               );
             } else {
               await supabase.from('user_loyalty_discounts').delete()
-                .eq('user_id', session.user.id).eq('brand', brand);
+                .eq('user_id', session.user.id).eq('brand', brand)
+                .eq('currency', loyaltyCurrency);
             }
           }
         }}
