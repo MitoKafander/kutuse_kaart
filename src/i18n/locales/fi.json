@@ -231,7 +231,7 @@
       },
       "countries": {
         "label": "Maat",
-        "desc": "Napauta maata tehdäksesi siitä omasi — se määrittää karttanäkymän, tilastot ja löytökartan. Muut voit piilottaa.",
+        "desc": "Ainoa paikka, jossa maat valitaan. Napauta maata tehdäksesi siitä omasi — se asettaa karttanäkymän, tilastot, löytökartan ja tulostaulun. Muut voit piilottaa kartalta.",
         "yours": "SINUN",
         "alwaysShown": "Oma maasi näkyy aina"
       }
@@ -302,6 +302,8 @@
     "discovery": {
       "title": "Löytökartta",
       "description": "Katso, mitkä asemat olet löytänyt. Täytä kunnat ja maakunnat noustaksesi löytäjien tulostaululla.",
+      "showingCountry": "Näytetään: {{country}}",
+      "changeCountry": "Vaihda",
       "stats": {
         "stations": "{{done}}/{{total}} asemaa",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -316,8 +318,7 @@
         "emptyBrand_other": "Ei vielä yhtään asemaa löydetty. Löydettävänä {{count}} asemaa.",
         "remaining_one": "Löydettävänä vielä {{count}} asema.",
         "remaining_other": "Löydettävänä vielä {{count}} asemaa."
-      },
-      "countryPicker": "Maasi"
+      }
     },
     "activity": {
       "title": "Viimeisin toiminta"

@@ -8,7 +8,7 @@ import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getRepo
 import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
-import { COUNTRIES, COUNTRY_LIST, type CountryCode } from '../constants/countries';
+import { COUNTRIES, type CountryCode } from '../constants/countries';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
@@ -240,6 +240,21 @@ export function ProfileDrawer({
   const { t, i18n } = useTranslation();
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(session ? 'profile' : 'settings');
+  // The single country control lives on the Settings tab; the Discovery card
+  // links to it. Without the scroll-and-flash the jump lands mid-page and looks
+  // like nothing happened, which is how the duplicate got added in the first place.
+  const countriesRef = useRef<HTMLDivElement | null>(null);
+  const [countriesFlash, setCountriesFlash] = useState(false);
+  const openCountrySettings = () => {
+    setActiveTab('settings');
+    setCountriesFlash(true);
+    // Two frames: one for the tab to render, one for layout to settle before
+    // measuring the scroll target.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      countriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    window.setTimeout(() => setCountriesFlash(false), 1600);
+  };
   useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
@@ -864,34 +879,35 @@ export function ProfileDrawer({
               {t('profile.discovery.description')}
             </p>
 
-            {/* Country switcher. Hidden while Estonia is the only seeded
-                catalog, so nothing changes for an Estonia-only install. */}
+            {/* Which country's collection this is. NOT a second country
+                picker: there used to be one here AND one in Settings, both
+                calling onActiveCountryChange, so a single setting had two homes
+                on two different tabs. The fix is one control, not two that
+                agree with each other.
+
+                It lives in Settings rather than here because a signed-out user
+                is pinned to that tab (see activeTab's effect below) and still
+                has to be able to choose a country and hide others. */}
             {availableCountries.length > 1 && (
-              <div role="tablist" aria-label={t('profile.discovery.countryPicker')} style={{ display: 'flex', gap: 6 }}>
-                {availableCountries.map(code => {
-                  const meta = COUNTRIES[code];
-                  const active = code === activeCountry;
-                  return (
-                    <button
-                      key={code}
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => onActiveCountryChange(code)}
-                      style={{
-                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
-                        fontSize: '0.78rem',
-                        background: active ? 'var(--color-primary)' : 'var(--color-surface)',
-                        color: active ? 'white' : 'var(--color-text-muted)',
-                        border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
-                        transition: 'background 0.15s, color 0.15s',
-                      }}
-                    >
-                      <span aria-hidden>{meta.flag}</span> {t(meta.nameKey)}
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                onClick={openCountrySettings}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  width: '100%', padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-surface-border)',
+                  color: 'var(--color-text)', fontSize: '0.82rem', textAlign: 'left',
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
+                  {t('profile.discovery.showingCountry', { country: t(COUNTRIES[activeCountry].nameKey) })}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-primary)', fontSize: '0.78rem' }}>
+                  {t('profile.discovery.changeCountry')}
+                  <ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} />
+                </span>
+              </button>
             )}
 
             <button
@@ -1497,7 +1513,15 @@ export function ProfileDrawer({
                     "the Latvian map is broken" rather than "you hid these".
                     Your country is therefore always shown — its switch is on
                     and locked, and choosing a new country reveals it. */}
-                <div>
+                <div
+                  ref={countriesRef}
+                  style={{
+                    borderRadius: 12,
+                    // Fades out on its own; purely to answer "where did I land?".
+                    boxShadow: countriesFlash ? '0 0 0 2px var(--color-primary)' : 'none',
+                    transition: 'box-shadow 0.4s ease',
+                  }}
+                >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                     <MapPin size={16} /> {t('profile.settings.countries.label')}
                   </span>
@@ -1505,7 +1529,14 @@ export function ProfileDrawer({
                     {t('profile.settings.countries.desc')}
                   </span>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: '24px', marginTop: 10 }}>
-                    {COUNTRY_LIST.map(meta => {
+                    {/* availableCountries, not COUNTRY_LIST: a country whose
+                        registry entry is committed but whose catalog is not yet
+                        seeded should not be offerable. That window is real — it
+                        is exactly the state between deploying the client and
+                        running the seeds, which the add-a-country recipe
+                        requires. Offering an empty country there reads as a
+                        broken map. */}
+                    {availableCountries.map(code => COUNTRIES[code]).map(meta => {
                       const isHome = meta.code === activeCountry;
                       const visible = isHome || !hiddenCountries.includes(meta.code);
                       return (

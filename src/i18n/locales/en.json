@@ -231,7 +231,7 @@
       },
       "countries": {
         "label": "Countries",
-        "desc": "Tap a country to make it yours — it sets the map view, statistics and discovery map. You can hide the others from the map.",
+        "desc": "The one place countries are chosen. Tap a country to make it yours — it sets the map view, statistics, discovery map and leaderboard. You can hide the others from the map.",
         "yours": "YOURS",
         "alwaysShown": "Your own country is always shown"
       }
@@ -302,6 +302,8 @@
     "discovery": {
       "title": "Discovery map",
       "description": "See which stations you've discovered. Complete parishes and counties to rise in the Discoverers' leaderboard.",
+      "showingCountry": "Showing: {{country}}",
+      "changeCountry": "Change",
       "stats": {
         "stations": "{{done}}/{{total}} stations",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -314,8 +316,7 @@
         "noBrands": "No brands available yet.",
         "emptyBrand": "No stations collected yet. {{count}} left to discover.",
         "remaining": "{{count}} more to discover."
-      },
-      "countryPicker": "Your country"
+      }
     },
     "activity": {
       "title": "Recent activity"

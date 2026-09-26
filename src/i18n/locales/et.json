@@ -511,6 +511,8 @@
     "discovery": {
       "title": "Avastuskaart",
       "description": "Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.",
+      "showingCountry": "Näitab: {{country}}",
+      "changeCountry": "Vaheta",
       "stats": {
         "stations": "{{done}}/{{total}} jaama",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -525,8 +527,7 @@
         "emptyBrand_other": "Pole veel ühtegi jaama avastanud. Avastada jääb {{count}} jaama.",
         "remaining_one": "Avastada jääb veel {{count}} jaam.",
         "remaining_other": "Avastada jääb veel {{count}} jaama."
-      },
-      "countryPicker": "Sinu riik"
+      }
     },
     "activity": {
       "title": "Viimased tegevused"
@@ -598,7 +599,7 @@
       },
       "countries": {
         "label": "Riigid",
-        "desc": "Puuduta riiki, et see enda omaks määrata — see seab kaardivaate, statistika ja avastuskaardi. Teised saad kaardilt peita.",
+        "desc": "Ainus koht, kus riike valida. Puuduta riiki, et see enda omaks määrata — see seab kaardivaate, statistika, avastuskaardi ja edetabeli. Teised saad kaardilt peita.",
         "yours": "SINU",
         "alwaysShown": "Sinu riiki näidatakse alati"
       }

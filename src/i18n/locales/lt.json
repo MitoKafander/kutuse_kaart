@@ -231,7 +231,7 @@
       },
       "countries": {
         "label": "Šalys",
-        "desc": "Palieskite šalį, kad ji taptų jūsų — ji nustato žemėlapio vaizdą, statistiką ir atradimų žemėlapį. Kitas galite paslėpti.",
+        "desc": "Vienintelė vieta, kur pasirenkamos šalys. Palieskite šalį, kad padarytumėte ją savo — tai nustato žemėlapio vaizdą, statistiką, atradimų žemėlapį ir lyderių lentelę. Kitas galite paslėpti iš žemėlapio.",
         "yours": "JŪSŲ",
         "alwaysShown": "Jūsų šalis visada rodoma"
       }
@@ -302,6 +302,8 @@
     "discovery": {
       "title": "Atradimų žemėlapis",
       "description": "Pažiūrėkite, kurias degalines atradote. Užpildykite valsčius ir apskritis, kad pakiltumėte atradėjų lyderių lentelėje.",
+      "showingCountry": "Rodoma: {{country}}",
+      "changeCountry": "Keisti",
       "stats": {
         "stations": "{{done}}/{{total}} degalinės",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -314,8 +316,7 @@
         "noBrands": "Ženklų kol kas nėra.",
         "emptyBrand": "Dar neatrasta nei viena degalinė. Liko atrasti {{count}}.",
         "remaining": "Dar liko atrasti {{count}}."
-      },
-      "countryPicker": "Jūsų šalis"
+      }
     },
     "activity": {
       "title": "Paskutinė veikla"
