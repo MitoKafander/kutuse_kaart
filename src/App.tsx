@@ -1803,6 +1803,7 @@ function App() {
             onPricesSubmitted={handlePricesSubmitted}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
+            homeCountry={activeCountry}
           />
         )}
 
@@ -1817,6 +1818,7 @@ function App() {
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
             pendingScanRestore={pendingScanRestore}
+            homeCountry={activeCountry}
           />
         )}
 

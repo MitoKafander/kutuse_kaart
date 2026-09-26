@@ -3,7 +3,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
 import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey, fuelLabel, formatPrice, pricePlaceholder } from '../utils';
-import { CURRENCIES, currencyForCountry } from '../constants/countries';
+import { CURRENCIES, currencyForCountry, countryForCoords, type CountryCode } from '../constants/countries';
 import { capture, captureReloadSafe } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
@@ -35,6 +35,7 @@ export function ManualPriceModal({
   onPhotoExpandedChange,
   mode,
   pendingScanRestore,
+  homeCountry = 'EE',
 }: {
   station: any | null,
   isOpen: boolean,
@@ -44,6 +45,8 @@ export function ManualPriceModal({
   photoExpanded: boolean,
   onPhotoExpandedChange: (expanded: boolean) => void,
   mode?: 'station' | 'camera' | 'manual',
+  /** Last-resort currency source when neither the station nor GPS resolves one. */
+  homeCountry?: CountryCode,
   // When set, the modal is being re-opened post-reload to resume an
   // interrupted AI scan. Skip the file picker, pre-fill the captured
   // photo + station context, and immediately re-run the scan.
@@ -168,7 +171,7 @@ export function ManualPriceModal({
 
   if (!isOpen) return null;
 
-  const callGemini = async (base64: string, stationName: string): Promise<any> => {
+  const callGemini = async (base64: string, stationName: string, scanCurrency: string): Promise<any> => {
     let lastVercelId: string | null = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -198,7 +201,7 @@ export function ManualPriceModal({
         res = await fetch(`${apiBase}/api/parse-prices`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64, stationName }),
+          body: JSON.stringify({ imageBase64: base64, stationName, currency: scanCurrency }),
           signal: ac.signal,
           cache: 'no-store',
         });
@@ -418,7 +421,7 @@ export function ManualPriceModal({
     setIsAnalyzing(true);
     setRetryStatus(null);
     try {
-      const parsedJson = await callGemini(base64, stationNameHint);
+      const parsedJson = await callGemini(base64, stationNameHint, currency);
       // Reset streak on any successful round-trip, even NO_PRICES_READ —
       // the upstream path is healthy, the failure is in the photo itself.
       lastSuccessAtRef.current = Date.now();
@@ -800,9 +803,21 @@ export function ManualPriceModal({
   };
 
   const activeStation = resolvedStation;
-  // The station being priced decides the currency: its bounds, its decimals,
-  // its symbol, and how many digits precede the separator.
-  const currency = currencyForCountry(activeStation?.country);
+  /**
+   * Which currency this forecourt quotes in.
+   *
+   * The station decides it when we know which station it is. In FAB mode we
+   * often do not yet — that is the whole reason the scan sends no station hint —
+   * so fall back to the user's captured position, because they are standing at
+   * the forecourt. Only then to their home country. Getting this wrong in
+   * Sweden is not cosmetic: the scanner DROPS prices outside the currency's
+   * range, so a euro guess at a Swedish totem returns an empty scan.
+   */
+  const scanCountry =
+    activeStation?.country
+    ?? (capturedPosition ? countryForCoords(capturedPosition.lat, capturedPosition.lon) : null)
+    ?? homeCountry;
+  const currency = currencyForCountry(scanCountry);
   const cur = CURRENCIES[currency];
   const isFabMode = !station && !!allStations;
   const isStationMode = effectiveMode === 'station';

@@ -25,15 +25,67 @@ const dayLimit = redis
 // import graph. Without this whitelist Gemini hallucinates sub-text on totems
 // (e.g. the "Teeline" loyalty slogan on Olerex signs) as the station brand.
 const ALLOWED_BRANDS = [
-  // Estonian
-  'Olerex', 'Circle K', 'Neste', 'Alexela', 'Terminal', 'Krooning',
-  'Jetoil', 'JetGas', 'Statoil', 'Eesti Autogaas', 'Eksar Transoil',
-  'Premium 7', 'Hepa', 'Thor', 'Saare Kütus',
-  // Latvian (border + LV region)
+  // GENERATED — do not edit by hand. Run: node scripts/sync_scanner_brands.mjs --write
+  // Mirrors the canonical names in src/utils.ts CHAIN_PATTERNS, which is what
+  // getBrand() can ever return. Kept as a copy because Vercel builds api/ on its
+  // own and it cannot import from src/.
+  'Circle K', 'Olerex', 'Alexela', 'Neste', 'Terminal', 'Krooning',
+  'Jetoil', 'JetGas', 'Statoil', 'Eesti Autogaas', 'Propaan',
+  'Eksar Transoil', 'Premium 7', 'Hepa', 'Thor', 'GoOil', 'Saare Kütus',
   'Virši-A', 'Viada', 'KOOL', 'Astarte Nafta', 'Latvijas Nafta',
-  'Latvijas Propāna Gāze', 'Lateva', 'Gotika Auto',
+  'Latvijas Propāna Gāze', 'Lateva', 'Gotika Auto', 'Straujupīte',
+  'Ziemeļu Nafta', 'Dinaz', 'Ingrīda', 'Kings', 'Baltic Petroleum', 'Orlen',
+  'Jozita', 'Saurida', 'EMSI', 'Alauša', 'Stateta', 'Kvistija', 'Trevena',
+  'Apsaga', 'Skulas', 'Milda', 'ABC', 'St1', 'Teboil', 'SEO', 'Shell',
+  'Gulf',
 ] as const;
 const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
+
+/**
+ * Plausible pump ranges per currency (phase C of the local-currency work).
+ *
+ * These are BOTH the prompt hint and the server-side filter, and the filter
+ * DROPS anything outside them — so a currency missing from this table means
+ * every scan in that country comes back empty on a perfectly good photo. That is
+ * exactly what would have happened to Sweden: 17.49 SEK sits far outside the
+ * euro bands below.
+ *
+ * SEK is the EUR band multiplied by the reference rate (~11.3) and then widened
+ * generously outward, because nobody here has read a Swedish totem yet. It is a
+ * deliberate over-estimate: the job of these numbers is to kill obvious
+ * mis-bucketing (a diesel price landing in the LPG slot), not to duplicate the
+ * DB's ±35% sliding band. Tighten them against real Swedish reads rather than
+ * guessing harder now.
+ *
+ * `symbol`/`subunit` feed the prompt so the AdBlue-vs-LPG rule can be stated in
+ * money the sign actually shows.
+ */
+const CURRENCY_SCAN = {
+  EUR: {
+    symbol: '€',
+    subunitNote: '~€0.50–0.90/L',
+    ranges: {
+      'Bensiin 95': [1.20, 2.30],
+      'Bensiin 98': [1.30, 2.40],
+      'Diisel':     [1.20, 2.60],
+      'LPG':        [0.55, 1.40],
+    },
+  },
+  SEK: {
+    symbol: 'kr',
+    subunitNote: '~6–10 kr/L',
+    ranges: {
+      'Bensiin 95': [10, 30],
+      'Bensiin 98': [11, 32],
+      'Diisel':     [10, 34],
+      'LPG':        [ 5, 20],
+    },
+  },
+} as const;
+
+type ScanCurrency = keyof typeof CURRENCY_SCAN;
+const isScanCurrency = (v: unknown): v is ScanCurrency =>
+  typeof v === 'string' && Object.prototype.hasOwnProperty.call(CURRENCY_SCAN, v);
 
 function repairAndParseJson(raw: string): Record<string, unknown> | null {
   if (!raw) return null;
@@ -107,7 +159,13 @@ export default async function handler(req: NodeReq, res: NodeRes) {
   try {
     // Vercel's Node runtime auto-parses JSON bodies into req.body.
     const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
-    const { imageBase64, stationName } = body as { imageBase64?: string; stationName?: string };
+    const { imageBase64, stationName, currency: rawCurrency } = body as {
+      imageBase64?: string; stationName?: string; currency?: string;
+    };
+    // Defaults to EUR so an older cached bundle that sends no currency keeps
+    // behaving exactly as it did — the four euro countries are unaffected.
+    const currency: ScanCurrency = isScanCurrency(rawCurrency) ? rawCurrency : 'EUR';
+    const money = CURRENCY_SCAN[currency];
 
     if (!imageBase64) {
       return res.status(400).json({ error: 'Missing imageBase64 payload.' });
@@ -145,12 +203,18 @@ export default async function handler(req: NodeReq, res: NodeRes) {
     // band) so legitimate premium variants and price spikes still go
     // through; the goal is to kill obvious mis-bucketings, not to
     // duplicate the server-side enforcement.
+    const r = money.ranges;
     const FUEL_RANGE_HINT =
-      `Realistic Baltic (EE/LV/LT) price ranges (€/L) — use these to reject mis-bucketed reads:\n` +
-      `- "Bensiin 95": 1.20–2.30\n` +
-      `- "Bensiin 98": 1.30–2.40\n` +
-      `- "Diisel": 1.20–2.60 (includes premium variants like Diesel Pro / D Premium)\n` +
-      `- "LPG" (vedelgaas/autogaas): 0.55–1.40 — LPG is ALWAYS cheaper than petrol/diesel.\n` +
+      // The currency is stated explicitly and conversion is forbidden: asked for
+      // "prices", a helpful model will otherwise convert a Swedish totem into
+      // euros because most of its training data about this app's region is in
+      // euros. We want the number painted on the sign.
+      `The prices on this sign are in ${currency} (${money.symbol}). Report them EXACTLY as shown — never convert to another currency.\n` +
+      `Realistic price ranges (${money.symbol}/L) — use these to reject mis-bucketed reads:\n` +
+      `- "Bensiin 95": ${r['Bensiin 95'][0]}–${r['Bensiin 95'][1]}\n` +
+      `- "Bensiin 98": ${r['Bensiin 98'][0]}–${r['Bensiin 98'][1]}\n` +
+      `- "Diisel": ${r['Diisel'][0]}–${r['Diisel'][1]} (includes premium variants like Diesel Pro / D Premium)\n` +
+      `- "LPG" (vedelgaas/autogaas): ${r['LPG'][0]}–${r['LPG'][1]} — LPG is ALWAYS cheaper than petrol/diesel.\n` +
       `If a price you read for a fuel falls outside its range, you have almost certainly misread which row that price belongs to. ` +
       `Re-check the totem and assign the price to the correct fuel slot, or omit it. ` +
       `Never put a price in the LPG slot just because the totem has 4 rows — many totems have no LPG, and a fourth row may be a premium diesel variant, a payment-method legend, or AdBlue rather than an LPG price. ` +
@@ -158,16 +222,19 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       // can't separate them — a user reported Circle K (which sells no LPG)
       // getting its AdBlue price logged as LPG. The label is the only reliable
       // discriminator, so anchor LPG to its explicit row names.
-      `CRITICAL: AdBlue (also written "AdBlue", "AUS 32", "DEF", or "Urea") is a diesel exhaust additive, NOT a fuel. Its price (~€0.50–0.90/L) sits right inside the LPG range, so it is constantly mis-assigned to LPG. ` +
+      `CRITICAL: AdBlue (also written "AdBlue", "AUS 32", "DEF", or "Urea") is a diesel exhaust additive, NOT a fuel. Its price (${money.subunitNote}) sits right inside the LPG range, so it is constantly mis-assigned to LPG. ` +
       `Only return an LPG price when its row is explicitly labelled "LPG", "Vedelgaas", "Autogaas", "Gaas", "Gāze", "Auto gāze" (Latvian) or "Dujos", "Automobilinės dujos", "SND" (Lithuanian). If the cheapest row is labelled AdBlue / AUS 32 / DEF / Urea, ignore it entirely — never map it to LPG or any other fuel slot.\n` +
       // Totems across the border are labelled in the local language. Without
       // this, a Latvian "Dīzeļdegviela" or Lithuanian "Dyzelinas" row reads as
       // an unknown fuel and the scan comes back empty on a perfectly good photo.
       `Fuel row labels vary by country — map them to the four slots above:\n` +
-      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95.\n` +
-      `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, 100, 99 (premium petrol grades).\n` +
-      `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D.\n` +
-      `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND.`;
+      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95, Bensiini 95, Bensin 95, Blyfri 95.\n` +
+      `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, Bensiini 98, Bensin 98, 100, 99 (premium petrol grades).\n` +
+      `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D, Dieselöljy, Pro Diesel.\n` +
+      `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND, Nestekaasu, Gasol.\n` +
+      // Both are common on Swedish and Finnish forecourts and neither maps to
+      // any slot Kyts tracks, so say so rather than letting the model guess.
+      `IGNORE these rows entirely — they are real fuels but Kyts does not track them: E85 / Etanol E85 / RE85, HVO / HVO100 / Neste MY, Moottoripolttoöljy, Eldningsolja, CNG / CBG / Fordonsgas / Biokaasu.`;
 
     const prompt = hasKnownStation
       ? `You are a high-accuracy vision system analyzing a fuel station price board (totem) for a station conceptually named "${hint}".
@@ -184,7 +251,7 @@ Return strictly a valid JSON object with the following schema:
 - "Bensiin 95", "Bensiin 98", "Diisel", "LPG": Float values. Omit or set to null if not visible OR if the price you read falls outside the realistic range for that fuel.
 
 Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1.749}`
-      : `You are a high-accuracy vision system analyzing a fuel station price board (totem) at an unknown Estonian or Latvian fuel station.
+      : `You are a high-accuracy vision system analyzing a fuel station price board (totem) at an unknown fuel station in Estonia, Latvia, Lithuania, Finland or Sweden.
 Your job is twofold:
 1. Identify the station's brand based on logos, colors, or text in the image.
 2. Extract the numeric float prices for the following fuel types if they are visible: "Bensiin 95", "Bensiin 98", "Diisel", "LPG".
@@ -257,12 +324,9 @@ Example JSON: {"detectedBrand": "Alexela", "isBrandMatch": true, "Bensiin 95": 1
     // we drop it server-side so the client never sees a misclassified slot
     // and the user never gets the phase-51 rejection when they hit submit.
     // Loose on purpose; the server's phase-51 trigger is the actual policy.
-    const FUEL_RANGES: Record<string, [number, number]> = {
-      'Bensiin 95': [1.20, 2.30],
-      'Bensiin 98': [1.30, 2.40],
-      'Diisel':     [1.20, 2.60],
-      'LPG':        [0.55, 1.40],
-    };
+    // Same table the prompt was built from, so the hint and the enforcement can
+    // never disagree — they used to be two copies of the same euro numbers.
+    const FUEL_RANGES = money.ranges as Record<string, readonly [number, number]>;
     const prices: Record<string, number> = {};
     const droppedFuels: string[] = [];
     for (const k of FUEL_KEYS) {
