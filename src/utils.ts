@@ -446,6 +446,29 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'seo',            canonical: 'SEO' },          // "SEO", "Seo", "Hamarin Seo"
   { match: 'shell',          canonical: 'Shell' },        // incl. Shell Express
   { match: 'gulf',           canonical: 'Gulf' },
+
+  // Swedish chains. Counts are OSM's at the phase-D seed, for scale. Circle K,
+  // St1 and Gulf are already listed above and cover their Swedish forecourts;
+  // Shell is inert here, having left Sweden when St1 bought its network.
+  //
+  // ORDER MATTERS — first match wins. `saifa` precedes `preem` because Såifa is
+  // Preem's truck-stop network and OSM names it both ways round ("SÅIFA - Preem",
+  // "Preem Såifa"); leading with saifa keeps every such site on one brand instead
+  // of splitting on word order.
+  { match: 'saifa',          canonical: 'Såifa' },        // folded: matches "SÅIFA"/"Såifa", 18
+  { match: 'preem',          canonical: 'Preem' },        // 430
+  { match: 'okq8',           canonical: 'OKQ8' },         // 464. NOT bare "OK" —
+  // "ok" is a substring of ordinary words (Biokaasu, Tehnoküla) and would
+  // rebrand stations in other countries; OKQ8 is the chain that actually exists.
+  { match: 'ingo',           canonical: 'Ingo' },         // 249
+  { match: 'qstar',          canonical: 'Qstar' },        // 209
+  // ⚠️ Known false positive: "Nybro Transport - Tankanläggning" (Swedish for a
+  // tank installation) matches and will show as Tanka. One station in 3,411,
+  // and the house rule is that a mis-branded station is fixed by renaming the
+  // row, not by narrowing a pattern that is otherwise correct.
+  { match: 'tanka',          canonical: 'Tanka' },        // 117
+  { match: 'din x',          canonical: 'Din-X' },        // folded: matches "din-X", 107
+  { match: 'bilisten',       canonical: 'Bilisten' },     // 25
 ];
 
 // Diacritics are folded on BOTH sides (pattern and station name) so one

@@ -140,6 +140,77 @@ export function loadMunicipalities(cc) {
 }
 
 /** Latvia: attach each municipality to its planning region via the table above. */
+/**
+ * Sweden's 21 län, keyed by the statutory SCB code.
+ *
+ * Sweden DOES have admin_level=4 in OSM, but we do not use it. Every kommun
+ * carries `ref:scb`, the four-digit SCB kommunkod whose first two digits ARE the
+ * län code — so the grouping comes from government data rather than from
+ * centroid-in-polygon inference, which is both exact and immune to a boundary
+ * relation being mid-edit upstream. Verified against the cache: 290 kommuner map
+ * onto exactly these 21 codes, none missing, none unexpected, and the counts
+ * match the statutory figures (Stockholm 26, Västra Götaland 49, Skåne 33,
+ * Gotland 1 — Gotland being simultaneously a län and a single kommun).
+ *
+ * Codes 02, 11, 15 and 16 are deliberately absent: they were retired in
+ * historical county mergers and no kommun carries them.
+ */
+export const SE_LAN = [
+  { code: '01', id: 401, name: 'Stockholms län',       emoji: '🏙️' },
+  { code: '03', id: 402, name: 'Uppsala län',          emoji: '🎓' },
+  { code: '04', id: 403, name: 'Södermanlands län',    emoji: '🏰' },
+  { code: '05', id: 404, name: 'Östergötlands län',    emoji: '🌾' },
+  { code: '06', id: 405, name: 'Jönköpings län',       emoji: '🪑' },
+  { code: '07', id: 406, name: 'Kronobergs län',       emoji: '🌲' },
+  { code: '08', id: 407, name: 'Kalmar län',           emoji: '🏯' },
+  { code: '09', id: 408, name: 'Gotlands län',         emoji: '🐏' },
+  { code: '10', id: 409, name: 'Blekinge län',         emoji: '⚓' },
+  { code: '12', id: 410, name: 'Skåne län',            emoji: '🌷' },
+  { code: '13', id: 411, name: 'Hallands län',         emoji: '🏖️' },
+  { code: '14', id: 412, name: 'Västra Götalands län', emoji: '🚢' },
+  { code: '17', id: 413, name: 'Värmlands län',        emoji: '🌳' },
+  { code: '18', id: 414, name: 'Örebro län',           emoji: '🏭' },
+  { code: '19', id: 415, name: 'Västmanlands län',     emoji: '⛏️' },
+  { code: '20', id: 416, name: 'Dalarnas län',         emoji: '🐴' },
+  { code: '21', id: 417, name: 'Gävleborgs län',       emoji: '🌊' },
+  { code: '22', id: 418, name: 'Västernorrlands län',  emoji: '🪵' },
+  { code: '23', id: 419, name: 'Jämtlands län',        emoji: '⛰️' },
+  { code: '24', id: 420, name: 'Västerbottens län',    emoji: '🦌' },
+  { code: '25', id: 421, name: 'Norrbottens län',      emoji: '❄️' },
+];
+
+const SE_LAN_BY_CODE = new Map(SE_LAN.map((l) => [l.code, l]));
+
+/**
+ * Attach a län id to every kommun from its SCB code.
+ *
+ * Throws in both directions, like the Latvian loader: a kommun whose code has no
+ * län, or a län no kommun claims, means OSM and the statutory table have
+ * diverged — a Swedish county reform is exactly the event this should surface
+ * loudly rather than silently dropping municipalities off the Avastuskaart.
+ */
+export function assignSwedishRegions(municipalities) {
+  const noCode = [];
+  const assigned = municipalities.map((m) => {
+    // OSM drops the leading zero on codes below 1000, so "180" is Stockholm's
+    // 0180. Pad before slicing or every Stockholm kommun lands in län "18".
+    const raw = String(m.tags?.['ref:scb'] ?? m.tags?.ref ?? '').trim();
+    const code = raw.length === 3 ? `0${raw}` : raw;
+    const lan = code.length === 4 ? SE_LAN_BY_CODE.get(code.slice(0, 2)) : undefined;
+    if (!lan) { noCode.push(`${m.name} (ref:scb=${raw || 'missing'})`); return m; }
+    return { ...m, regionId: lan.id };
+  });
+  if (noCode.length) {
+    throw new Error(`SE: kommuner with no resolvable SCB län code: ${noCode.join(', ')}`);
+  }
+  const used = new Set(assigned.map((m) => m.regionId));
+  const unused = SE_LAN.filter((l) => !used.has(l.id));
+  if (unused.length) {
+    throw new Error(`SE: SE_LAN lists län no kommun belongs to: ${unused.map((l) => l.name).join(', ')}`);
+  }
+  return assigned;
+}
+
 export function assignLatvianRegions(municipalities) {
   const unknown = municipalities.filter((m) => !LV_MUNICIPALITY_REGION[m.name]);
   if (unknown.length) {
@@ -225,6 +296,7 @@ const OSM_LEVEL1 = {
 
 export function level1Rows(cc, municipalities) {
   if (cc === 'LV') return LV_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'LV' }));
+  if (cc === 'SE') return SE_LAN.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'SE' }));
   const spec = OSM_LEVEL1[cc];
   if (!spec) throw new Error(`No level-1 catalog for ${cc}`);
   const used = new Set(municipalities.map((m) => m.regionId));
@@ -248,8 +320,9 @@ export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);
-  const withRegion = cc === 'LV'
-    ? assignLatvianRegions(municipalities)                       // statutory table, no OSM level 1
+  const withRegion =
+    cc === 'LV' ? assignLatvianRegions(municipalities)           // statutory table, no OSM level 1
+    : cc === 'SE' ? assignSwedishRegions(municipalities)         // statutory SCB code, exact
     : assignOsmLevel1(cc, municipalities, OSM_LEVEL1[cc].ids);   // LT, FI: geometry decides
   return { municipalities: withRegion, level1: level1Rows(cc, withRegion) };
 }
