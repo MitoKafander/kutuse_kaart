@@ -2,6 +2,96 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Sweden, the fifth country and the first non-euro one (phase D) - 2026-09-26
+
+Kyts covers Estonia, Latvia, Lithuania, Finland and Sweden — **482 + 548 + 742 +
+1,890 + 2,955 = 6,617 active stations**. Sweden is the largest catalogue in the
+app, larger than the three Baltic states combined, and the first that does not
+price in euros. Phases A–C of `Notes/Plan_Local_Currency.md` existed to make it
+possible; this is the data.
+
+**✅ LIVE on kyts.ee.** `verify_countries.mjs` all green, Estonia untouched (15
+maakonnad / 78 vallad, `station_count` drift 0), and every count confirmed
+through the anonymous client path rather than only in SQL.
+
+- 🟢 **21 län over 290 kommuner**, ids 401–421. Seeded in the mandatory order —
+  boundaries committed and client deployed **first**, then regions, then
+  stations — because the live bundle's `toCountryCode` falls back to `EE` and
+  seeding early would have filed Sweden's regions inside Estonia's Avastuskaart.
+- 🔑 **Sweden groups by statutory code, not geometry** — a third pattern beside
+  Latvia's table and Lithuania/Finland's centroid-in-polygon. Sweden *does* have
+  `admin_level=4` in OSM, but every kommun carries `ref:scb`, the four-digit SCB
+  kommunkod whose **first two digits are the län code**. Government data beats
+  geometric inference: it cannot drift while a boundary relation is mid-edit
+  upstream, and it removed the need to fetch 21 county relations with full
+  member geometry — a query that ran **13 minutes without returning**.
+  Verified rather than assumed: 290 kommuner map onto exactly 21 codes, none
+  missing, none unexpected, zero orphans, and the counts match the statutory
+  figures (Stockholm 26, Västra Götaland 49, Skåne 33, Gotland 1 — Gotland being
+  both a län and a single kommun). Codes 02/11/15/16 are absent because
+  historical mergers retired them. `assignSwedishRegions` throws in **both**
+  directions, so a county reform surfaces loudly instead of dropping kommuner
+  off the map, and it pads the leading zero OSM omits below 1000 — without which
+  every Stockholm kommun (`0180` → `"180"`) would land in län 18.
+- 🟢 **2,955 stations** from 3,411 OSM features: 170 gas/electric-only, 3 fleet
+  depots and 1 bottled-gas cabinet excluded by the standing scope rules, then
+  282 same-forecourt duplicates collapsed by 120 m proximity. All 2,955 carry a
+  `parish_id`, spread across all 290 kommuner.
+- 🟢 **Eight Swedish chains** read out of the OSM data, not from memory: OKQ8
+  464, Preem 430, Ingo 249, Qstar 209, Tanka 117, Din-X 107, Bilisten 25,
+  Såifa 18. Circle K, St1 and Gulf were already patterns; Shell is inert, having
+  left Sweden when St1 bought its network. All eight verified inert against the
+  existing 3,662 stations before being added.
+- 🔑 **Two deliberate `CHAIN_PATTERNS` decisions**, which is first-match-wins.
+  `saifa` precedes `preem`, because Såifa is Preem's truck network and OSM writes
+  it both ways round ("SÅIFA - Preem", "Preem Såifa") — leading with saifa keeps
+  those sites on one brand instead of splitting on word order. And there is
+  **no bare `OK` pattern**: "ok" is a substring of ordinary words (Biokaasu,
+  Tehnoküla) and would rebrand stations in other countries, so OKQ8 — the chain
+  that actually exists — is the pattern.
+- 🟡 **One known false positive, measured and accepted.** "Nybro Transport -
+  Tankanläggning" (Swedish for a tank installation) matches `tanka` and will show
+  as Tanka. One station in 3,411; the house rule is to fix a mis-branded station
+  by renaming the row, not by narrowing a pattern that is otherwise correct.
+- ⚠️ **No Swedish UI locale.** Swedes get the English interface, which is also
+  precisely why price formatting must not key off the UI language —
+  `Intl('en','SEK')` renders `SEK 17.49`, not the `17,49 kr` on the pump.
+- 🟢 **Cache re-measured**, as adding a country requires: **2.91 MiB of the 5 MiB
+  quota** at 6,617 stations (~460 B each), leaving room for ~4,769 more. Norway
+  or Denmark would fit; Poland at ~7,500 would not.
+
+### Three hardcoded lists in the verifier, all now derived
+
+The same class that let Finland ship with undeployed boundaries, and it bit
+again: **Sweden was seeded and `verify_countries.mjs` printed "All checks
+passed" while three of its loops were not looking at Sweden at all.**
+
+- The catalog listing iterated `['EE','LV','LT','FI']` → now every country
+  present in the data.
+- The catalog-vs-geometry check had its own four-country literal → now parsed
+  from the country registry.
+- The served-boundary-file check was a list of eight filenames → now parsed from
+  the registry, and it immediately proved its worth by failing on Sweden's two
+  missing files before they were built.
+
+A list you have to remember to extend is a check that silently narrows every
+time the app grows.
+
+- 🟡 Also fixed `scripts/cache_headroom.mjs`, broken when it was promoted from a
+  throwaway: a line-range edit ate its import and it was never re-run, so it
+  threw `ReferenceError` the first time it was actually needed.
+
+### Border detection, and why it now matters more
+
+- 🔴 **`countryForCoords` puts Haparanda in Finland.** It is a bounding-box test
+  with a nearest-centre tiebreak, and Haparanda sits deep inside Finland's
+  rectangle — measured, 1 of 10 border points wrong. Tolerable while the answer
+  only picked a default Avastuskaart the user could change. **Not** tolerable
+  once it picks the scan currency, because the scanner drops out-of-range prices
+  and a euro guess at a Swedish totem returns an empty scan. Haparanda/Tornio is
+  exactly the crossing that makes Sweden worth having. The scan path now resolves
+  station → nearest catalogued station within 3 km → geometry → home country.
+
 ## [Shipped] - Local currency, phases B and C: FX for comparison, and a scanner that reads kronor (phases 69 + C) - 2026-09-26
 
 The two things that had to land before Swedish data. Phase A made the local

@@ -43,23 +43,31 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Four countries — ✅ LIVE (phase 65 Baltics 2026-09-23, phase 67 Finland 2026-09-24)
+## Five countries — ✅ LIVE (Baltics 2026-09-23, Finland 2026-09-24, Sweden 2026-09-26)
 
-Estonia, Latvia, Lithuania and Finland are all first-class countries on kyts.ee. Prod:
-**482 EE + 548 LV + 742 LT + 1,890 FI = 3,662 active stations**. Avastuskaart tiers:
-EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi, LT 10 apskritys /
-60 savivaldybės, FI 19 maakuntaa / 308 kuntaa. Full detail in CHANGELOG 2026-09-23 and
-2026-09-24.
+Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE = 6,617 active stations**.
+Avastuskaart tiers: EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi,
+LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner.
+Sweden is the first non-euro country — see the currency notes below. Full detail in
+CHANGELOG 2026-09-23 / -24 / -26.
 
-### Adding country five — Sweden, and it is NOT a data-only job
+### Adding country six
 
-✅ **Sweden's currency blockers are cleared.** Phases A, B and C of
-`Notes/Plan_Local_Currency.md` are done and live: prices carry a currency and render in
-their own, `fx_rates` powers cross-border ranking, and the scanner reads kronor (verified
-end-to-end on the deployed function — the same totem yields three prices as SEK and *zero*
-as EUR). **Phase D, the data seed below, is the remaining step**, plus Swedish chain
-patterns. Phase E (market insight for a non-euro country) self-gates until Sweden has 20+
-local samples.
+✅ **Sweden is done** (phases A–D of `Notes/Plan_Local_Currency.md`). Phase E, market
+insight for a non-euro country, self-gates until Sweden has 20+ local prices — at that
+point decide whether to make the USD-wholesale-vs-pump conversion per-currency or skip
+insight outside the eurozone. Do not leave it emitting euro-shaped claims about kronor.
+
+**Currency is no longer a blocker for anyone.** NOK, DKK and PLN each need one row in
+`price_bounds`, one entry in `CURRENCIES`, and scan ranges in `CURRENCY_SCAN` — no
+migration. **The cache is:** 2.91 MiB of 5 MiB at 6,617 stations, room for ~4,769 more.
+Norway (~1,900) or Denmark (~2,200) fit; **Poland (~7,500) does not** and needs the cache
+moved off localStorage first. Run `node scripts/cache_headroom.mjs` before committing.
+
+**Three ways to group level-2 into level-1, pick by what the country actually has:**
+a statutory code carried on each unit (Sweden's `ref:scb` — exact, preferred),
+a statutory table keyed by name (Latvia — when OSM has no level-1 at all),
+or centroid-in-polygon (Lithuania, Finland — when only geometry is available).
 
 Sweden's measured facts, so nobody re-derives them: OSM **admin_level 4 = 21 län** and
 **7 = 290 kommuner**, both full covers — **not level 8**, which has only 83 relations and is
@@ -172,7 +180,7 @@ explicit `drop view` of the dependent + the view first.
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
 - **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210,
-  FI 301-319 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
+  FI 301-319, SE 401-421 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
   `verify_countries.mjs` asserts nothing strays out of its band. They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.
@@ -218,7 +226,13 @@ explicit `drop view` of the dependent + the view first.
   ⚠️ Loyalty discounts are **absolute subunits**, so they are scoped to the active country's
   currency on both read and write.
   Remaining phases (FX, the scanner, Sweden's data) are in `Notes/Plan_Local_Currency.md`.
-- **PostgREST 1000-row cap — `stations` is way OVER it** (3,715 rows after Finland; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- **PostgREST 1000-row cap — `stations` is way OVER it** (6,672 rows after Sweden; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- 🔴 **A hardcoded list in a checker is a check that silently narrows.** Three loops in
+  `verify_countries.mjs` iterated a literal country list, so **Sweden was seeded and the
+  verifier printed "All checks passed" while three of its sections were not looking at
+  Sweden at all** — the same class that let Finland ship with undeployed boundaries. All
+  three now derive from the data or from `src/constants/countries.ts`. Apply the same rule
+  to anything new: derive the list, do not type it.
 - **A missing file under `public/` returns 200, not 404.** `vercel.json` rewrites
   `/((?!api/|assets/).*)` to index.html, so an undeployed static asset answers **200 with
   content-type text/html**; the boundary loader in `App.tsx` (`.catch(() => null)` around
