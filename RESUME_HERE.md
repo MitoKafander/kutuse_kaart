@@ -43,13 +43,18 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Five countries — ✅ LIVE (Baltics 2026-09-23, Finland 2026-09-24, Sweden 2026-09-26)
+## Six countries — ✅ LIVE (Baltics 2026-09-23, Finland -09-24, Sweden + Malta -09-26)
 
-Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE = 6,617 active stations**.
+Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT = 6,686 active stations**.
 Avastuskaart tiers: EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi,
-LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner.
-Sweden is the first non-euro country — see the currency notes below. Full detail in
-CHANGELOG 2026-09-23 / -24 / -26.
+LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner,
+MT 6 reġjuni / 68 kunsilli lokali. Sweden is the only non-euro country so far — see the
+currency notes below. Full detail in CHANGELOG 2026-09-23 / -24 / -26.
+
+⚠️ **Malta is a weak fit and that was a known, accepted call:** 69 stations, 24 of them
+unnamed, almost no chains, and Maltese pump prices are **set nationally** — so there is
+little for a crowd-sourced price map to find. Flagged before seeding; the numbers are in
+CHANGELOG 2026-09-26.
 
 ### Adding country six
 
@@ -66,8 +71,17 @@ moved off localStorage first. Run `node scripts/cache_headroom.mjs` before commi
 
 **Three ways to group level-2 into level-1, pick by what the country actually has:**
 a statutory code carried on each unit (Sweden's `ref:scb` — exact, preferred),
-a statutory table keyed by name (Latvia — when OSM has no level-1 at all),
-or centroid-in-polygon (Lithuania, Finland — when only geometry is available).
+a statutory table (Latvia keyed by name, **Malta keyed by ISO 3166-2** — when OSM has no
+level-1 tier at all), or centroid-in-polygon (Lithuania, Finland — only geometry available).
+⚠️ **Key such a table by a code, not a name, unless you have checked for duplicates** —
+Malta has two councils called `Ir-Rabat` and two called `Żebbuġ`.
+🔑 **Source the grouping, don't recall it.** Malta's councils carry `wikidata` tags, so
+P131 gave the mapping — and it is **six** regions since the 2021 reform, not the five I
+would have written from memory. Cross-check whatever geometry can settle (Gozo Region =
+the 14 councils across the channel).
+🔑 **Empty level-2 tiles are already handled** — `useRegionProgress` filters
+`station_count > 0`, so a council with no stations is excluded rather than uncompletable.
+Malta shows 37 of its 68.
 
 Sweden's measured facts, so nobody re-derives them: OSM **admin_level 4 = 21 län** and
 **7 = 290 kommuner**, both full covers — **not level 8**, which has only 83 relations and is
@@ -180,7 +194,7 @@ explicit `drop view` of the dependent + the view first.
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
 - **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210,
-  FI 301-319, SE 401-421 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
+  FI 301-319, SE 401-421, MT 501-506 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
   `verify_countries.mjs` asserts nothing strays out of its band. They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.

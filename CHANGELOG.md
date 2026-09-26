@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Malta, the sixth country - 2026-09-26
+
+**EE 482 · LV 548 · LT 742 · FI 1,890 · SE 2,955 · MT 69 = 6,686 active stations.**
+Malta is eurozone, so none of the local-currency machinery applied — the whole job
+was data, and the interesting part was deciding the shape before building it.
+
+**✅ LIVE on kyts.ee**, `verify_countries.mjs` all green, Estonia untouched.
+
+- 🟢 **6 regions over 68 kunsilli lokali**, ids 501–506. 78 OSM fuel features → 77
+  in scope (1 fleet depot) → **69 rows** after collapsing 8 same-forecourt
+  duplicates. All 69 carry a `parish_id`; all 6 regions populated.
+- 🔑 **Malta has NO OSM tier above admin_level=8.** Probed levels 4, 5, 6, 7, 9
+  and 10 — every one returns zero relations. So like Latvia it needs a statutory
+  grouping, and unlike Latvia the grouping could not come from memory.
+- 🔑 **The mapping is sourced, and sourcing changed the answer.** Every council
+  carries a `wikidata` tag, so the region came from Wikidata's P131: all 68
+  resolved to exactly one current region, summing to 68. **From memory I would
+  have written Malta's five-region structure — the 2021 reform made it six**
+  (Eastern 12, Southern 12, Port 11, Western 10, Northern 9, Gozo 14).
+  Cross-checked where geometry can settle it: Wikidata puts 14 councils in Gozo
+  Region and exactly 14 sit north-west of the Malta–Gozo channel.
+- 🔑 **Keyed by ISO 3166-2, not by name**, unlike Latvia's table. Two councils are
+  both named **`Ir-Rabat`** (MT-45 Victoria on Gozo, MT-46 Rabat on Malta) and two
+  are `Żebbuġ` in English — a name-keyed map would have silently collapsed each
+  pair and dropped tiles off the Avastuskaart. All 68 relations carry the ISO
+  code. `assignMalteseRegions` throws in both directions, like the LV and SE
+  loaders.
+- 🟡 **The Avastuskaart shape, measured rather than hoped.** 68 councils exist but
+  only **37 contain a station**, so 37 is what the badge grid shows —
+  `useRegionProgress` filters `station_count > 0`, so the 31 empty ones are
+  excluded rather than sitting there permanently uncompletable. **17 of the 37 are
+  single-station tiles**, the highest easy-win density of any country (Estonia has
+  12 of 78). This looked like a 47%-empty map until the filter was checked; EE and
+  FI already carry 1 and 5 such councils, so it is a handled case, not a new one.
+- 🟢 **No chain patterns, deliberately.** Malta has essentially no chains: 5 of 78
+  features carry a `brand=` tag at all, the largest is 2 stations, and 40 names
+  appear exactly once. Patterns earn their place when one chain wears many names
+  (SEO Kauhava vs SEO Ylistaro); here the repeated names are already identical, so
+  they group as collector pairs unaided, and the single Shell is caught by the
+  existing entry. An entry for "Lourdes Service Station" would be over-fitting two
+  rows.
+- ⚠️ **The caveat raised when Malta was chosen, now visible in the data:** 24 of 69
+  stations have no name, most forecourts are independents, and Maltese pump prices
+  are set nationally — so the dots will be largely uncoloured and there is little
+  price variation for a crowd to find. That was a product call made with these
+  numbers on the table, not a technical oversight.
+- 🟢 Cache: **2.93 MiB of 5 MiB** at 6,686 stations. Malta cost 0.02 MiB.
+
+**Three ways to group level-2 into level-1 are now in use, pick by what the country
+has:** a statutory code carried on each unit (SE `ref:scb` — exact, preferred) ·
+a statutory table (LV by name, MT by ISO code — when OSM has no level-1 tier) ·
+centroid-in-polygon (LT, FI — when only geometry is available).
+
 ## [Shipped] - Sweden, the fifth country and the first non-euro one (phase D) - 2026-09-26
 
 Kyts covers Estonia, Latvia, Lithuania, Finland and Sweden — **482 + 548 + 742 +
