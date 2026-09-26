@@ -61,6 +61,15 @@ async function countriesWithStations(sb: any): Promise<string[]> {
  */
 const MIN_SAMPLES = 20;
 
+/**
+ * Countries whose pump prices are in euros, and therefore the only ones the
+ * market signal can currently describe honestly. Deliberately a literal rather
+ * than a lookup: this file cannot import the client's country registry, and the
+ * set is meant to shrink to nothing when phase E makes the signal
+ * currency-aware — not to quietly grow as countries are added.
+ */
+const EUROZONE = new Set(['EE', 'LV', 'LT', 'FI']);
+
 type NodeReq = {
   method?: string;
   url?: string;
@@ -217,6 +226,20 @@ async function runForCountry(
       fetchKytsFuelStats(sb, 'Diisel', country),
       fetchKytsFuelStats(sb, 'Bensiin 95', country),
     ]);
+
+    // Non-euro countries are skipped until phase E of the local-currency work.
+    // The signal compares a USD wholesale series against pump prices and
+    // converts through EUR/USD, and computeSignal documents its output as being
+    // "in the currency the user actually pays in" — true for the eurozone four,
+    // false for Sweden. Rather than leave that armed to fire the day Sweden
+    // reaches MIN_SAMPLES and quietly emit euro-shaped claims about kronor,
+    // fail closed here. Remove this branch when the conversion is made
+    // per-currency; see Notes/Plan_Local_Currency.md phase E.
+    if (!EUROZONE.has(country)) {
+      const reason = `${country} prices in a non-euro currency; market insight is EUR-only until phase E`;
+      await finishRun('failed_skip', { error_message: reason });
+      return { country, ok: true, skipped: true, reason };
+    }
 
     // Not enough local prices to say anything about local pumps. Skip before
     // spending a Gemini call — see MIN_SAMPLES.
