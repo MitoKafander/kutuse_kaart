@@ -179,7 +179,7 @@
       "loyalty": {
         "title": "Kanta-asiakaskortit",
         "activeCount": "({{count}} aktiivista)",
-        "help": "Syötä alennus sentteinä per litra (esim. Alexelan kanta-asiakaskortti -4). Se näkyy kartalla, ja \"Halvin lähellä\" käyttää alennettua hintaa luokittelussa."
+        "help": "Syötä alennus litralta yksikköinä ({{unit}}) (esim. Alexelan kanta-asiakaskortti -4). Se näkyy kartalla, ja \"Halvin lähellä\" käyttää alennettua hintaa luokittelussa."
       },
       "dots": {
         "title": "Kartan pisteet",
@@ -451,7 +451,7 @@
       "firstChoose": "Valitse ensin asema"
     },
     "alert": {
-      "priceRange": "Hinnan on oltava välillä 0–10 € ({{type}}: {{value}}).",
+      "priceRange": "Hinnan on oltava välillä {{lo}}–{{hi}} {{currency}} ({{type}}: {{value}}).",
       "gpsRequired": "GPS-sijainti vaaditaan hinnan syöttämiseen. Salli sijainti ja yritä uudelleen.",
       "tooFar": "Olet {{distance}} km etäisyydellä asemasta. Hintoja voi syöttää vain silloin, kun olet aseman luona (enintään {{max}} km)."
     },
@@ -460,7 +460,8 @@
       "tooFast": "Liian nopeaa! Edellinen hintaraporttisi oli kaukana — sitä matkaa ei ole fyysisesti mahdollista ajaa tässä ajassa.",
       "rls": "Syöte ei läpäissyt tarkistusta. Tarkista hinnat ja yritä uudelleen.",
       "notFound": "Asemaa ei löytynyt. Valitse asema uudelleen ja yritä uudelleen.",
-      "outOfBand": "{{fuel}} hinta €{{price}} näyttää väärältä (odotettu €{{lo}}–€{{hi}}). Korjaa tämä rivi tai tyhjennä se ja yritä uudelleen.",
+      "outOfBand": "{{fuel}} hinta {{price}} {{currency}} näyttää väärältä (odotettu {{lo}}–{{hi}}). Korjaa tämä rivi tai tyhjennä se ja yritä uudelleen.",
+      "outOfRange": "Hinta {{price}} {{currency}} ei näytä polttoaineen hinnalta (odotettu {{lo}}–{{hi}}). Tarkista desimaalipilkku.",
       "generic": "Tallennus epäonnistui. Yritä vielä kerran — jos tämä toistuu, tarkista verkkoyhteys."
     }
   },

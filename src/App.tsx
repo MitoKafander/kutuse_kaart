@@ -1976,7 +1976,7 @@ function App() {
             session={session}
             onStationSelect={setSelectedStation}
             insight={activeInsight}
-            activeCountryName={t(COUNTRIES[activeCountry].nameKey)}
+            activeCountry={activeCountry}
           />
         )}
 

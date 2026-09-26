@@ -198,7 +198,7 @@
       "firstChoose": "Vali esmalt tankla"
     },
     "alert": {
-      "priceRange": "Hind peab olema vahemikus 0–10 € ({{type}}: {{value}}).",
+      "priceRange": "Hind peab olema vahemikus {{lo}}–{{hi}} {{currency}} ({{type}}: {{value}}).",
       "gpsRequired": "GPS-asukoht on vajalik hinna sisestamiseks. Luba asukoht ja proovi uuesti.",
       "tooFar": "Oled tanklast {{distance}} km kaugusel. Hindu saab sisestada vaid siis, kui oled tankla juures (kuni {{max}} km)."
     },
@@ -207,7 +207,8 @@
       "tooFast": "Liiga kiire! Sinu eelmine hinnaraport oli kaugel — fikseeritud asukohtade järgi pole võimalik selle ajaga kohale jõuda.",
       "rls": "Sisestus ei läbinud kontrolli. Kontrolli hindu ja proovi uuesti.",
       "notFound": "Tanklat ei leitud. Vali uuesti tankla ja proovi uuesti.",
-      "outOfBand": "{{fuel}} hind €{{price}} tundub vale (oodatud €{{lo}}–€{{hi}}). Paranda see rida või tühjenda see ja proovi uuesti.",
+      "outOfBand": "{{fuel}} hind {{price}} {{currency}} tundub vale (oodatud {{lo}}–{{hi}}). Paranda see rida või tühjenda see ja proovi uuesti.",
+      "outOfRange": "Hind {{price}} {{currency}} ei tundu kütusehinnana (oodatud {{lo}}–{{hi}}). Kontrolli koma asukohta.",
       "generic": "Salvestamine ebaõnnestus. Proovi veel kord — kui see kordub, kontrolli võrguühendust."
     }
   },
@@ -545,7 +546,7 @@
       "loyalty": {
         "title": "Kliendikaardid",
         "activeCount": "({{count}} aktiivset)",
-        "help": "Sisesta soodustus sentides liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja \"Odavaim lähedal\" kasutab sooduskaardi hinda järjestamiseks."
+        "help": "Sisesta soodustus ühikutes ({{unit}}) liitri kohta (nt Alexela kliendikaart -4). Kuvatakse kaardil ja \"Odavaim lähedal\" kasutab sooduskaardi hinda järjestamiseks."
       },
       "dots": {
         "title": "Kaardi punktid",

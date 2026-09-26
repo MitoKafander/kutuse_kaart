@@ -70,6 +70,80 @@ export function stripRegionSuffix(name: string): string {
 }
 
 import type { Station } from './types';
+import { CURRENCIES, currencyForCountry, type CurrencyCode } from './constants/countries';
+
+/**
+ * Render a pump price in its own currency.
+ *
+ * Kyts shows the local currency as the headline figure, always: a Swede hunting
+ * cheap fuel needs '17,49 kr', because that is the number on the sign and the
+ * number they pay. A converted euro figure is at best a footnote and at worst
+ * noise. EUR output is byte-identical to what the app rendered before currencies
+ * existed ('€1.789'), so nothing moved for the four eurozone countries.
+ *
+ * `decimals` overrides the currency default for the few callers that want a
+ * coarser axis (the StationDrawer chart ticks use 2).
+ */
+export function formatPrice(
+  value: number | null | undefined,
+  currency: CurrencyCode = 'EUR',
+  decimals?: number,
+): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  const c = CURRENCIES[currency] ?? CURRENCIES.EUR;
+  const n = value.toFixed(decimals ?? c.decimals).replace('.', c.decimalSeparator);
+  return c.symbolPosition === 'prefix' ? `${c.symbol}${n}` : `${n}\u00a0${c.symbol}`;
+}
+
+/** Same, for a price attached to a station (the common case). */
+export function formatStationPrice(
+  value: number | null | undefined,
+  station: { country?: unknown } | null | undefined,
+  decimals?: number,
+): string {
+  return formatPrice(value, currencyForCountry(station?.country), decimals);
+}
+
+/** The unit shown next to a price input or axis, e.g. '€/l' or 'kr/l'. */
+export function priceUnit(currency: CurrencyCode = 'EUR'): string {
+  return `${(CURRENCIES[currency] ?? CURRENCIES.EUR).symbol}/l`;
+}
+
+/**
+ * Placeholder for a price input: '0,000' for EUR, '00,00' for SEK.
+ *
+ * Always a comma, deliberately — the price input normalises whatever is typed to
+ * a comma and swaps it back to a dot before parseFloat, so its separator is its
+ * own convention and is NOT the display separator (EUR displays '€1.789' with a
+ * dot). Both currencies Kyts handles write decimals with a comma, so one
+ * character covers them; a dot-input locale would need this modelled properly.
+ */
+export function pricePlaceholder(currency: CurrencyCode = 'EUR'): string {
+  const c = CURRENCIES[currency] ?? CURRENCIES.EUR;
+  return `${'0'.repeat(c.integerDigits)},${'0'.repeat(c.decimals)}`;
+}
+
+/** The subunit label for a loyalty-discount input, e.g. '¢/l' or 'öre/l'. */
+export function subunitUnit(currency: CurrencyCode = 'EUR'): string {
+  return `${(CURRENCIES[currency] ?? CURRENCIES.EUR).subunitSymbol}/l`;
+}
+
+/**
+ * A price *movement* in subunits: fuel talk is "up 2.5 cents", not
+ * "up 0.025 euro". Takes the delta in major units and renders it in minor ones.
+ * EUR output ('2.5¢') is unchanged from before currencies existed; SEK says öre,
+ * which is a word and so carries a space.
+ */
+export function formatSubunitDelta(
+  majorDelta: number | null | undefined,
+  currency: CurrencyCode = 'EUR',
+  decimals = 1,
+): string {
+  if (majorDelta == null || !Number.isFinite(majorDelta)) return '—';
+  const c = CURRENCIES[currency] ?? CURRENCIES.EUR;
+  const n = (majorDelta * 100).toFixed(decimals).replace('.', c.decimalSeparator);
+  return c.subunitSpaced ? `${n}\u00a0${c.subunitSymbol}` : `${n}${c.subunitSymbol}`;
+}
 
 export type ReporterMap = Record<string, string>;
 

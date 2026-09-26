@@ -179,7 +179,7 @@
       "loyalty": {
         "title": "Loyalty cards",
         "activeCount": "({{count}} active)",
-        "help": "Enter the discount in cents per liter (e.g. Alexela loyalty card -4). It is displayed on the map and \"Cheapest nearby\" uses the discounted price for ranking."
+        "help": "Enter the discount per litre in {{unit}} (e.g. Alexela loyalty card -4). It is displayed on the map and \"Cheapest nearby\" uses the discounted price for ranking."
       },
       "dots": {
         "title": "Map dots",
@@ -449,7 +449,7 @@
       "firstChoose": "Pick a station first"
     },
     "alert": {
-      "priceRange": "The price must be between 0–10 € ({{type}}: {{value}}).",
+      "priceRange": "The price must be between {{lo}}–{{hi}} {{currency}} ({{type}}: {{value}}).",
       "gpsRequired": "GPS location is required to enter a price. Allow location and try again.",
       "tooFar": "You are {{distance}} km from the station. Prices can only be entered when you are at the station (up to {{max}} km)."
     },
@@ -458,7 +458,8 @@
       "tooFast": "Too fast! Your previous price report was far away — it's not physically possible to have travelled that far in this time.",
       "rls": "Input failed validation. Check the prices and try again.",
       "notFound": "Station not found. Select the station again and try again.",
-      "outOfBand": "{{fuel}} price €{{price}} looks wrong (expected €{{lo}}–€{{hi}}). Fix that row or clear it and try again.",
+      "outOfBand": "{{fuel}} price {{price}} {{currency}} looks wrong (expected {{lo}}–{{hi}}). Fix that row or clear it and try again.",
+      "outOfRange": "Price {{price}} {{currency}} doesn't look like a fuel price (expected {{lo}}–{{hi}}). Check the decimal point.",
       "generic": "Saving failed. Try once more — if it repeats, check your network connection."
     }
   },

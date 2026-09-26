@@ -4,7 +4,7 @@ import { X, Navigation, Search, Loader2, MapPin } from 'lucide-react';
 import {
   getStationDisplayName, haversineKm, pointToRouteKm,
   isPriceExpired, isPriceFresh, getNetPrice, hasDiscount,
-  getCurrentPositionAsync, getBrand, getReporter,
+  getCurrentPositionAsync, getBrand, getReporter, formatStationPrice,
 } from '../utils';
 import type { LoyaltyDiscounts, ReporterMap } from '../utils';
 import { COUNTRY_CODES } from '../constants/countries';
@@ -371,9 +371,9 @@ export function RoutePlanModal({
             }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{r.price.toFixed(3)}</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>{formatStationPrice(r.price, r.station)}</span>
                 {r.discounted && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>€{r.grossPrice.toFixed(3)}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>{formatStationPrice(r.grossPrice, r.station)}</span>
                 )}
                 <span style={{ fontSize: '0.7rem', color: r.isFresh ? 'var(--color-fresh)' : 'var(--color-warning)' }}>
                   {r.isFresh ? `● ${t('cheapest.fresh')}` : `● ${t('cheapest.stale')}`}

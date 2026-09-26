@@ -179,7 +179,7 @@
       "loyalty": {
         "title": "Kliento kortelės",
         "activeCount": "({{count}} aktyvios)",
-        "help": "Įveskite nuolaidą centais už litrą (pvz., Alexela kliento kortelė -4). Ji bus rodoma žemėlapyje, ir \"Pigiausia netoliese\" naudos nuolaidos kainą reitingavimui."
+        "help": "Įveskite nuolaidą už litrą vienetais ({{unit}}) (pvz., Alexela kliento kortelė -4). Ji bus rodoma žemėlapyje, ir \"Pigiausia netoliese\" naudos nuolaidos kainą reitingavimui."
       },
       "dots": {
         "title": "Žemėlapio taškai",
@@ -449,7 +449,7 @@
       "firstChoose": "Pirmiausia pasirinkite degalinę"
     },
     "alert": {
-      "priceRange": "Kaina turi būti nuo 0 iki 10 € ({{type}}: {{value}}).",
+      "priceRange": "Kaina turi būti nuo {{lo}} iki {{hi}} {{currency}} ({{type}}: {{value}}).",
       "gpsRequired": "GPS vieta būtina norint įvesti kainą. Leiskite nustatyti vietą ir bandykite dar kartą.",
       "tooFar": "Jūs esate {{distance}} km atstumu nuo degalinės. Kainas galima įvesti tik tada, kai esate prie degalinės (iki {{max}} km)."
     },
@@ -458,7 +458,8 @@
       "tooFast": "Per greitai! Jūsų ankstesnis kainos pranešimas buvo toli — fiziškai neįmanoma nuvažiuoti tokio atstumo per šį laiką.",
       "rls": "Įvestis nepraėjo patikrinimo. Patikrinkite kainas ir bandykite dar kartą.",
       "notFound": "Degalinė nerasta. Iš naujo pasirinkite degalinę ir bandykite dar kartą.",
-      "outOfBand": "{{fuel}} kaina €{{price}} atrodo neteisinga (tikėtasi €{{lo}}–€{{hi}}). Pataisyk šią eilutę arba ją išvalyk ir bandyk dar kartą.",
+      "outOfBand": "{{fuel}} kaina {{price}} {{currency}} atrodo neteisinga (tikėtasi {{lo}}–{{hi}}). Pataisyk šią eilutę arba ją išvalyk ir bandyk dar kartą.",
+      "outOfRange": "Kaina {{price}} {{currency}} neatrodo kaip degalų kaina (tikėtasi {{lo}}–{{hi}}). Patikrink skirtuką.",
       "generic": "Išsaugojimas nepavyko. Bandykite dar kartą — jei kartojasi, patikrinkite tinklo ryšį."
     }
   },

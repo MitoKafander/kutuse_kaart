@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Newspaper, X, TrendingUp, TrendingDown, Minus, Zap, Pause } from 'lucide-react';
+import { formatPrice } from '../utils';
+import { currencyForCountry, type CurrencyCode } from '../constants/countries';
 
 export type Signal = 'buy_now' | 'hold' | 'wait' | 'neutral';
 
@@ -126,9 +128,11 @@ function fmtPct(n: number | null | undefined): string {
   return `${sign}${abs.toFixed(1)}%`;
 }
 
-function fmtEur(n: number | null | undefined): string {
+// Kyts pump averages, in the currency of the country this insight describes.
+// Pre-phase-65 rows have no country and are Estonian, so the fallback is EUR.
+function fmtLocal(n: number | null | undefined, currency: CurrencyCode): string {
   if (n == null || !isFinite(n)) return '—';
-  return `${n.toFixed(3)}€`;
+  return formatPrice(n, currency);
 }
 
 function fmtUsd(n: number | null | undefined, digits = 2): string {
@@ -144,19 +148,19 @@ function DeltaArrow({ delta }: { delta: number | null | undefined }) {
     : <TrendingDown size={12} style={{ color: '#22c55e' }} />;
 }
 
-export function NumbersBlock({ data }: { data: InsightData }) {
+export function NumbersBlock({ data, currency = 'EUR' }: { data: InsightData; currency?: CurrencyCode }) {
   const { t } = useTranslation();
   const rows: Array<{ label: string; value: string; delta?: number | null }> = [];
 
   const d = data.kyts?.diesel;
   if (d?.today != null) {
     const delta = d.prev7 ? (d.today - d.prev7) / d.prev7 : null;
-    rows.push({ label: t('marketInsight.row.kytsDiesel', 'Kyts D keskmine'), value: fmtEur(d.today), delta });
+    rows.push({ label: t('marketInsight.row.kytsDiesel', 'Kyts D keskmine'), value: fmtLocal(d.today, currency), delta });
   }
   const g = data.kyts?.gasoline95;
   if (g?.today != null) {
     const delta = g.prev7 ? (g.today - g.prev7) / g.prev7 : null;
-    rows.push({ label: t('marketInsight.row.kyts95', 'Kyts 95 keskmine'), value: fmtEur(g.today), delta });
+    rows.push({ label: t('marketInsight.row.kyts95', 'Kyts 95 keskmine'), value: fmtLocal(g.today, currency), delta });
   }
   if (data.globals?.brent) {
     rows.push({ label: t('marketInsight.row.brent', 'Brent'), value: fmtUsd(data.globals.brent.today), delta: data.globals.brent.delta7d });
@@ -309,7 +313,7 @@ export function MarketInsightDrawer({
                   {headline}
                 </h3>
               )}
-              {insight.data && <NumbersBlock data={insight.data} />}
+              {insight.data && <NumbersBlock data={insight.data} currency={currencyForCountry(insight.country)} />}
             </>
           )}
 

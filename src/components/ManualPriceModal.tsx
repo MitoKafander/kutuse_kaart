@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey, fuelLabel } from '../utils';
+import { getStationDisplayName, haversineKm, getCurrentPositionAsync, geolocationErrorMessageKey, fuelLabel, formatPrice, pricePlaceholder } from '../utils';
+import { CURRENCIES, currencyForCountry } from '../constants/countries';
 import { capture, captureReloadSafe } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
@@ -632,6 +633,7 @@ export function ManualPriceModal({
   // rest collapse into a generic retry prompt since the auto-retry above
   // already burned one attempt on transient failures.
   const friendlyPriceSubmitError = (err: any): string => {
+    const bounds = CURRENCIES[currencyForCountry(resolvedStation?.country)];
     const code: string = err?.code || '';
     const msg: string = err?.message || '';
     if (msg.includes('km from station')) return t('manualPrice.submitError.tooFar');
@@ -639,12 +641,26 @@ export function ManualPriceModal({
     // Phase 51 band check: parse the structured trigger message so we can
     // surface the offending fuel slot inline and let the user fix-or-clear
     // that one row instead of the whole batch.
+    // Phase 68 bounds trigger: a typo'd decimal, judged per currency.
+    if (msg.includes('outside allowed range for')) {
+      const m = msg.match(/price ([\d.]+) outside allowed range for (\w+) \(expected ([\d.]+) to ([\d.]+)\)/);
+      if (m) {
+        const [, price, currencyCode, lo, hi] = m;
+        return t('manualPrice.submitError.outOfRange', {
+          price, lo, hi,
+          currency: CURRENCIES[currencyCode as keyof typeof CURRENCIES]?.symbol ?? currencyCode,
+        });
+      }
+    }
     if (msg.includes('outside band for')) {
-      const m = msg.match(/price (\d+\.\d+) outside band for (.+?) \(median \d+\.\d+, expected (\d+\.\d+) to (\d+\.\d+)\)/);
+      // Phase 65 added " in <country>" to the trigger message without updating
+      // this pattern, so the fuel capture swallowed it and fuelLabel() was handed
+      // "Diisel in EE" — which resolves to nothing and printed raw.
+      const m = msg.match(/price (\d+\.\d+) outside band for (.+?)(?: in [A-Z]{2})? \(median \d+\.\d+, expected (\d+\.\d+) to (\d+\.\d+)\)/);
       if (m) {
         const [, price, fuel, lo, hi] = m;
         return t('manualPrice.submitError.outOfBand', {
-          fuel: fuelLabel(fuel, t), price, lo, hi,
+          fuel: fuelLabel(fuel, t), price, lo, hi, currency: bounds.symbol,
         });
       }
     }
@@ -657,6 +673,8 @@ export function ManualPriceModal({
     e.preventDefault();
     const activeStation = resolvedStation;
     if (!activeStation) return;
+    const submitCurrency = currencyForCountry(activeStation.country);
+    const bounds = CURRENCIES[submitCurrency];
 
     setLoading(true);
 
@@ -670,9 +688,20 @@ export function ManualPriceModal({
         value: parseFloat(price.replace(',', '.')),
       }));
 
-    const invalid = parsed.find(p => !Number.isFinite(p.value) || p.value <= 0 || p.value >= 10);
+    // Mirrors price_bounds in the DB (phase 68), which is the real authority —
+    // the same arrangement as MAX_SUBMIT_KM and the proximity trigger. A flat
+    // 0-10 gate here would have refused every Swedish price before the server
+    // ever saw it.
+    const invalid = parsed.find(p =>
+      !Number.isFinite(p.value) || p.value < bounds.min || p.value > bounds.max);
     if (invalid) {
-      alert(t('manualPrice.alert.priceRange', { type: invalid.type, value: invalid.value }));
+      alert(t('manualPrice.alert.priceRange', {
+        type: fuelLabel(invalid.type, t),
+        value: invalid.value,
+        lo: bounds.min.toFixed(2),
+        hi: bounds.max.toFixed(2),
+        currency: bounds.symbol,
+      }));
       setLoading(false);
       return;
     }
@@ -703,6 +732,7 @@ export function ManualPriceModal({
       station_id: activeStation.id,
       fuel_type: p.type,
       price: p.value,
+      currency: submitCurrency,
       user_id: user?.id || null,
       entry_method: entryMethod,
       submitted_lat: capturedPosition.lat,
@@ -770,6 +800,10 @@ export function ManualPriceModal({
   };
 
   const activeStation = resolvedStation;
+  // The station being priced decides the currency: its bounds, its decimals,
+  // its symbol, and how many digits precede the separator.
+  const currency = currencyForCountry(activeStation?.country);
+  const cur = CURRENCIES[currency];
   const isFabMode = !station && !!allStations;
   const isStationMode = effectiveMode === 'station';
   const submitDistanceKm = (isStationMode && capturedPosition && activeStation)
@@ -1030,7 +1064,7 @@ export function ManualPriceModal({
                 {FUEL_TYPES.filter(ft => prices[ft]).map(ft => (
                   <span key={ft} style={{ display: 'inline-flex', gap: '4px' }}>
                     <span style={{ color: 'var(--color-text-muted)' }}>{ft === 'Bensiin 95' ? '95' : ft === 'Bensiin 98' ? '98' : ft === 'Diisel' ? 'D' : ft}</span>
-                    <span style={{ fontWeight: 600 }}>€{prices[ft]}</span>
+                    <span style={{ fontWeight: 600 }}>{formatPrice(parseFloat(String(prices[ft]).replace(',', '.')), currency)}</span>
                   </span>
                 ))}
               </div>
@@ -1289,11 +1323,16 @@ export function ManualPriceModal({
             <div key={type} className="glass-panel flex-between" style={{ padding: '16px', borderRadius: 'var(--radius-md)' }}>
               <span style={{ fontWeight: '500' }}>{fuelLabel(type, t)}</span>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }}>€</span>
+                <span style={{
+                  position: 'absolute',
+                  // '€1.789' puts the symbol first; '17,49 kr' puts it last.
+                  ...(cur.symbolPosition === 'prefix' ? { left: '12px' } : { right: '12px' }),
+                  top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)',
+                }}>{cur.symbol}</span>
                 <input
                   type="text"
                   inputMode="decimal"
-                  placeholder="0,000"
+                  placeholder={pricePlaceholder(currency)}
                   value={prices[type]}
                   onChange={e => {
                     // Estonian locale uses comma as the decimal separator.
@@ -1307,14 +1346,17 @@ export function ManualPriceModal({
                       v = v.slice(0, firstSep + 1) + v.slice(firstSep + 1).replace(/,/g, '');
                     }
                     const prev = prices[type] || '';
-                    // Auto-insert decimal comma after the first digit on typing
-                    // (fuel prices are always in the 0–9 € range).
-                    if (!v.includes(',') && v.length === 2 && prev.length === 1) {
-                      v = v[0] + ',' + v[1];
+                    // Auto-insert the decimal separator once the whole-unit
+                    // digits are in. Euro fuel has one (1,789) and Swedish has
+                    // two (17,49), so this cannot be hardcoded: inserting after
+                    // the first digit turns a Swede's "17" into "1,7".
+                    const intLen = cur.integerDigits;
+                    if (!v.includes(',') && v.length === intLen + 1 && prev.length === intLen) {
+                      v = v.slice(0, intLen) + ',' + v.slice(intLen);
                     }
-                    // Cap to 3 decimals (prices are quoted to the thousandth).
+                    // Cap decimals to what the currency's pumps quote.
                     const sep = v.indexOf(',');
-                    if (sep >= 0 && v.length - sep - 1 > 3) v = v.slice(0, sep + 4);
+                    if (sep >= 0 && v.length - sep - 1 > cur.decimals) v = v.slice(0, sep + 1 + cur.decimals);
                     setPrices({ ...prices, [type]: v });
                   }}
                   style={{

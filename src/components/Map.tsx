@@ -6,7 +6,8 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { LocateFixed, Lock, Plus, Minus } from 'lucide-react';
-import { FRESH_HOURS, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName, stripRegionSuffix } from '../utils';
+import { FRESH_HOURS, getNetPrice, hasDiscount, getCurrentPositionAsync, getBrand, localizeRegionName, stripRegionSuffix, formatPrice } from '../utils';
+import { currencyForCountry, type CurrencyCode } from '../constants/countries';
 import type { LoyaltyDiscounts } from '../utils';
 
 type NativeMap<K, V> = globalThis.Map<K, V>;
@@ -750,7 +751,10 @@ function createPriceIcon(
   isLightMap: boolean,
   brandName: string,
   showFuelLabel: boolean,
-  stationId?: string | number,
+  stationId: string | number | undefined,
+  // The station's own currency. Pills are cached per station id and a station
+  // never changes country, so this stays out of the pill hash.
+  currency: CurrencyCode,
 ): L.DivIcon {
   const brandColor = getBrandColor(brandName);
   const anyCheapest = rows.some(r => r.isCheapest);
@@ -778,13 +782,13 @@ function createPriceIcon(
   }
 
   const rowsHtml = rows.map(r => {
-    const priceStr = `€${r.price.toFixed(3)}`;
+    const priceStr = formatPrice(r.price, currency);
     const rowColor = anyCheapest ? '#1a1a2e' : textColor;
     const fuelBadge = showFuelLabel
       ? `<span style="font-size:10px;font-weight:700;color:${rowColor};opacity:0.6;margin-right:4px;min-width:18px;">${FUEL_SHORT[r.fuelType] ?? r.fuelType}</span>`
       : '';
     const grossStrike = r.discounted
-      ? `<span style="font-size:10px;font-weight:500;color:${rowColor};opacity:0.55;text-decoration:line-through;margin-left:3px;">€${r.grossPrice.toFixed(3)}</span>`
+      ? `<span style="font-size:10px;font-weight:500;color:${rowColor};opacity:0.55;text-decoration:line-through;margin-left:3px;">${formatPrice(r.grossPrice, currency)}</span>`
       : '';
     const cardBadge = r.discounted
       ? `<span style="font-size:9px;font-weight:700;color:${anyCheapest ? '#1a1a2e' : '#f59e0b'};margin-left:2px;">★</span>`
@@ -1569,7 +1573,7 @@ export function Map({
           const pillKey = String(station.id);
           let entry = pillIconCacheRef.current.get(pillKey);
           if (!entry || entry.hash !== pillHash) {
-            entry = { hash: pillHash, icon: createPriceIcon(rows, isSelected, isLight, getBrand(station.name), showFuelLabel, station.id) };
+            entry = { hash: pillHash, icon: createPriceIcon(rows, isSelected, isLight, getBrand(station.name), showFuelLabel, station.id, currencyForCountry(station.country)) };
             pillIconCacheRef.current.set(pillKey, entry);
           }
           const icon = entry.icon;

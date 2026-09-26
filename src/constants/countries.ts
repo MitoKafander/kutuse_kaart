@@ -42,7 +42,77 @@ export type CountryMeta = {
   translatableRegionSuffix: boolean;
   /** Locale offered first to a user whose device is in this country. */
   preferredLocale: string;
+  /**
+   * What drivers here pay in, and what Kyts therefore SHOWS. A Swede hunting
+   * cheap fuel needs "17,49 kr" — a euro figure is not the number on the sign
+   * and not the number they pay. Conversion, where it exists at all, is a
+   * secondary annotation for cross-border comparison and never the headline.
+   *
+   * Mirrors `price_bounds.currency` in the DB (phase 68), which is the authority
+   * the insert trigger enforces. Keep the two in step, the same way
+   * MAX_SUBMIT_KM mirrors the proximity trigger.
+   */
+  currency: CurrencyCode;
 };
+
+/** Currencies with a row in `price_bounds`. Adding one is a DB INSERT plus an entry here. */
+export const CURRENCY_CODES = ['EUR', 'SEK'] as const;
+export type CurrencyCode = (typeof CURRENCY_CODES)[number];
+
+export type CurrencyMeta = {
+  code: CurrencyCode;
+  /**
+   * Decimal places a pump quotes in. Euro fuel is priced to a tenth of a cent
+   * (1.789); Swedish pumps quote öre (17,49).
+   */
+  decimals: number;
+  /** Plausibility bounds, mirroring `price_bounds` — the client rejects early, the trigger is the authority. */
+  min: number;
+  max: number;
+  symbol: string;
+  /** Where the symbol sits: '€1.789' but '17,49 kr'. */
+  symbolPosition: 'prefix' | 'suffix';
+  decimalSeparator: '.' | ',';
+  /**
+   * The hundredth unit, used for price *movements* and loyalty discounts — a
+   * fuel price change is talked about in cents, not euros. SEK's is öre, which
+   * is a word rather than a sign, so it needs the space '¢' does not.
+   */
+  subunitSymbol: string;
+  subunitSpaced: boolean;
+  /**
+   * Digits before the decimal separator at the pump: euro fuel is 1 (1.789),
+   * Swedish is 2 (17.49). The price input auto-inserts the separator once this
+   * many digits are typed — get it wrong and a Swede typing "17" gets "1,7".
+   */
+  integerDigits: number;
+};
+
+/**
+ * Deliberately NOT Intl.NumberFormat keyed on the UI language, for two reasons.
+ *
+ * Intl('et', 'EUR') renders '1,789 €' while Kyts has always shown '€1.789';
+ * switching every price in the app is a UX decision of its own, not something
+ * enabling a second currency should smuggle in.
+ *
+ * And Intl keyed on the interface language gets Swedish wrong precisely where it
+ * matters: there is no `sv` locale yet, so Swedes read the English UI, and
+ * Intl('en', 'SEK') gives 'SEK 17.49' rather than the '17,49 kr' on the pump.
+ * The currency decides its own format here, whatever language surrounds it.
+ */
+export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
+  EUR: { code: 'EUR', decimals: 3, min: 0.30, max:  4.00, symbol: '€',  symbolPosition: 'prefix', decimalSeparator: '.', subunitSymbol: '¢',   subunitSpaced: false, integerDigits: 1 },
+  SEK: { code: 'SEK', decimals: 2, min: 5.00, max: 40.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'öre', subunitSpaced: true,  integerDigits: 2 },
+};
+
+export function isCurrencyCode(v: unknown): v is CurrencyCode {
+  return typeof v === 'string' && (CURRENCY_CODES as readonly string[]).includes(v);
+}
+
+/** The currency a price at this station is quoted in. */
+export function currencyForCountry(country: unknown): CurrencyCode {
+  return COUNTRIES[toCountryCode(country)].currency;
+}
 
 export const COUNTRIES: Record<CountryCode, CountryMeta> = {
   EE: {
@@ -57,6 +127,7 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level2Key: 'region.level2.EE',
     translatableRegionSuffix: true,
     preferredLocale: 'et',
+    currency: 'EUR',
   },
   LV: {
     code: 'LV',
@@ -70,6 +141,7 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level2Key: 'region.level2.LV',
     translatableRegionSuffix: false,
     preferredLocale: 'lv',
+    currency: 'EUR',
   },
   FI: {
     code: 'FI',
@@ -84,6 +156,7 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level2Key: 'region.level2.FI',
     translatableRegionSuffix: false,
     preferredLocale: 'fi',
+    currency: 'EUR',
   },
   LT: {
     code: 'LT',
@@ -97,6 +170,7 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level2Key: 'region.level2.LT',
     translatableRegionSuffix: false,
     preferredLocale: 'lt',
+    currency: 'EUR',
   },
 };
 

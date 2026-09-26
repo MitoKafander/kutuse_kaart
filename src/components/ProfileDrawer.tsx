@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { LoyaltyDiscounts, ReporterMap, BrandProgress } from '../utils';
 import { supabase } from '../supabase';
-import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter, EXPIRY_HOURS } from '../utils';
+import { getStationDisplayName, isPriceExpired, isPriceFresh, fuelLabel, getReporter, EXPIRY_HOURS, formatStationPrice, subunitUnit } from '../utils';
 import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils/analytics';
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
@@ -454,7 +454,7 @@ export function ProfileDrawer({
       const ago = getTimeAgo(p.reported_at, t);
       return {
         id: p.id,
-        text: `${station ? getStationDisplayName(station) : '?'} — ${p.fuel_type} €${p.price.toFixed(3)}`,
+        text: `${station ? getStationDisplayName(station) : '?'} — ${p.fuel_type} ${formatStationPrice(p.price, station)}`,
         time: ago
       };
     });
@@ -785,7 +785,7 @@ export function ProfileDrawer({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, marginLeft: '12px' }}>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: expired ? 'var(--color-text-muted)' : (fresh ? 'var(--color-fresh)' : 'var(--color-warning)') }}>
-                            {activePrice ? `€${activePrice.toFixed(3)}` : '-'}
+                            {activePrice ? formatStationPrice(activePrice, station) : '-'}
                           </div>
                           <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
                             {fuelTypeToShow}
@@ -1359,7 +1359,7 @@ export function ProfileDrawer({
                   {loyaltyOpen && (
                   <>
                   <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: '10px 0' }}>
-                    {t('profile.settings.loyalty.help')}
+                    {t('profile.settings.loyalty.help', { unit: subunitUnit(COUNTRIES[activeCountry].currency) })}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {allBrandsForLoyalty.map(brand => {
@@ -1391,7 +1391,7 @@ export function ProfileDrawer({
                                 padding: '4px 8px', fontSize: '0.85rem', outline: 'none'
                               }}
                             />
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>¢/L</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{subunitUnit(COUNTRIES[activeCountry].currency)}</span>
                           </div>
                         </div>
                       );

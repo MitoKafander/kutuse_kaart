@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Navigation, MapPin, Loader2 } from 'lucide-react';
-import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand, getReporter } from '../utils';
+import { haversineKm, getStationDisplayName, isPriceExpired, isPriceFresh, getNetPrice, hasDiscount, getCurrentPositionAsync, geolocationErrorMessageKey, getBrand, getReporter, formatStationPrice } from '../utils';
 import type { LoyaltyDiscounts, GeolocationErrorKind, ReporterMap } from '../utils';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
@@ -312,11 +312,11 @@ export function CheapestNearbyPanel({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--color-primary)' }}>
-                  €{result.price.toFixed(3)}
+                  {formatStationPrice(result.price, result.station)}
                 </span>
                 {result.discounted && (
                   <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>
-                    €{result.grossPrice.toFixed(3)}
+                    {formatStationPrice(result.grossPrice, result.station)}
                   </span>
                 )}
                 {result.discounted && (

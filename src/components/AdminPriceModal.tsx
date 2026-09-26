@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { X, Check, Loader2, Search, ShieldCheck, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
-import { getStationDisplayName } from '../utils';
+import { getStationDisplayName, priceUnit } from '../utils';
+import { CURRENCIES, currencyForCountry } from '../constants/countries';
 import * as Sentry from '@sentry/react';
 
 // Owner-only price entry. Bypasses the phase31/43/51 submission guards via the
@@ -57,6 +58,8 @@ export function AdminPriceModal({
 }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
+  // Admin entry is for one station at a time, so its country sets the currency.
+  const currency = currencyForCountry(selected?.country);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [whenLocal, setWhenLocal] = useState<string>(() => toLocalInput(new Date()));
   const [submitting, setSubmitting] = useState(false);
@@ -133,10 +136,13 @@ export function AdminPriceModal({
       setError('Enter at least one price.');
       return;
     }
-    // Sanity band that the DB still enforces even for admin (phase50).
-    const outOfBand = rows.find(r => r.price < 0.3 || r.price > 4.0);
+    // The DB enforces these even for admin — the phase-50 CHECK deliberately
+    // did, and its phase-68 replacement (enforce_price_bounds) keeps that
+    // property with no is_kyts_admin bypass. Mirrors price_bounds per currency.
+    const b = CURRENCIES[currency];
+    const outOfBand = rows.find(r => r.price < b.min || r.price > b.max);
     if (outOfBand) {
-      setError(`Price ${outOfBand.price} is outside 0.30–4.00 €.`);
+      setError(`Price ${outOfBand.price} is outside ${b.min.toFixed(2)}–${b.max.toFixed(2)} ${b.symbol}.`);
       return;
     }
 
@@ -285,7 +291,7 @@ export function AdminPriceModal({
                       background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: '1rem',
                     }}
                   />
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>€/l</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>{priceUnit(currency)}</span>
                 </div>
               ))}
             </div>

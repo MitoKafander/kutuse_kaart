@@ -4,7 +4,8 @@ import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Fl
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
-import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, type ReporterMap } from '../utils';
+import { getStationDisplayName, getEffectiveTimestamp, isPriceExpired, FRESH_HOURS, fuelLabel, getReporter, formatPrice, type ReporterMap } from '../utils';
+import { currencyForCountry } from '../constants/countries';
 
 // Logged-in users can re-confirm an already-up vote after this window. Each
 // re-confirm UPDATEs the existing vote row's created_at so the freshness math
@@ -48,6 +49,8 @@ export function StationDrawer({
   onToggleFavorite: () => void
 }) {
   const { t } = useTranslation();
+  // One station, so one currency for everything this drawer renders.
+  const currency = currencyForCountry(station?.country);
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
   const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
@@ -233,7 +236,7 @@ export function StationDrawer({
             }}>
               <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>{fuelLabel(type, t)}</div>
               <div style={{ fontSize: '1.4rem', fontWeight: '700' }}>
-                {!recentPrice || isDisputed ? '---' : `€${recentPrice.price.toFixed(3)}`}
+                {!recentPrice || isDisputed ? '---' : formatPrice(recentPrice.price, currency)}
               </div>
 
               {/* Disputed label */}
@@ -368,7 +371,7 @@ export function StationDrawer({
                     />
                     <YAxis 
                       domain={['auto', 'auto']}
-                      tickFormatter={(val) => `€${val.toFixed(2)}`}
+                      tickFormatter={(val) => formatPrice(val, currency, 2)}
                       stroke="var(--color-text-muted)"
                       fontSize={11}
                       tickLine={false}
@@ -378,7 +381,7 @@ export function StationDrawer({
                     <Tooltip 
                       contentStyle={{ background: 'var(--color-bg)', border: '1px solid var(--color-surface-border)', borderRadius: '8px' }}
                       itemStyle={{ color: 'var(--color-primary)', fontWeight: 'bold' }}
-                      formatter={(value: any) => [`€${Number(value).toFixed(3)}`, t('stationDrawer.priceLabel')]}
+                      formatter={(value: any) => [formatPrice(Number(value), currency), t('stationDrawer.priceLabel')]}
                       labelFormatter={(label) => new Date(label).toLocaleString(i18n.language, { dateStyle: 'medium', timeStyle: 'short' })}
                     />
                     <Line 

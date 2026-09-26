@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { X, TrendingUp } from 'lucide-react';
-import { getStationDisplayName, getBrand, FRESH_HOURS, EXPIRY_HOURS, fuelLabel } from '../utils';
+import { getStationDisplayName, getBrand, FRESH_HOURS, EXPIRY_HOURS, fuelLabel, formatPrice, formatSubunitDelta } from '../utils';
+import { COUNTRIES, type CountryCode } from '../constants/countries';
 import {
   SignalChip,
   ConfidenceBar,
@@ -128,7 +129,7 @@ function WhyBlock({
 }
 
 export function StatisticsDrawer({
-  isOpen, onClose, stations, prices, session, onStationSelect, insight, activeCountryName,
+  isOpen, onClose, stations, prices, session, onStationSelect, insight, activeCountry,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -137,10 +138,14 @@ export function StatisticsDrawer({
   session: any;
   onStationSelect?: (station: any) => void;
   insight?: MarketInsight | null;
-  /** Localised name of the country this drawer is reporting on. */
-  activeCountryName: string;
+  /** The country this drawer reports on — it scopes every figure here, and picks the currency. */
+  activeCountry: CountryCode;
 }) {
   const { t, i18n } = useTranslation();
+  // Statistics are scoped to one country (pooling medians across four would
+  // describe nowhere), so one currency covers the whole drawer.
+  const currency = COUNTRIES[activeCountry].currency;
+  const activeCountryName = t(COUNTRIES[activeCountry].nameKey);
   const [selectedFuel, setSelectedFuel] = useState<string>('Bensiin 95');
   // eslint-disable-next-line react-hooks/purity -- horizon "now" anchor for trend window; intentionally captured per render.
   const now = Date.now();
@@ -410,7 +415,7 @@ export function StatisticsDrawer({
                 {insightContent}
               </div>
             )}
-            {insight.data && <NumbersBlock data={insight.data} />}
+            {insight.data && <NumbersBlock data={insight.data} currency={currency} />}
             <div style={{
               marginTop: 12,
               fontSize: '0.75rem',
@@ -491,7 +496,7 @@ export function StatisticsDrawer({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>{getStationDisplayName(cheapestNow.station)}</span>
-                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: cheapestNowStale ? 'var(--color-text)' : 'var(--color-primary)' }}>€{cheapestNow.price.toFixed(3)}</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: cheapestNowStale ? 'var(--color-text)' : 'var(--color-primary)' }}>{formatPrice(cheapestNow.price, currency)}</span>
               </div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {(() => {
@@ -511,7 +516,7 @@ export function StatisticsDrawer({
                 background: i === 0 ? 'rgba(34,197,94,0.12)' : 'var(--color-surface)',
                 border: '1px solid var(--color-surface-border)', borderRadius: 8, fontSize: '0.9rem' }}>
                 <span>{i + 1}. {b.brand} <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>({b.n})</span></span>
-                <span style={{ fontWeight: 600 }}>€{b.median.toFixed(3)}</span>
+                <span style={{ fontWeight: 600 }}>{formatPrice(b.median, currency)}</span>
               </div>
             ))}
             {brandMedians.length === 0 && (
@@ -549,10 +554,10 @@ export function StatisticsDrawer({
                 <div key={f} className="glass-panel" style={{ padding: 10, borderRadius: 'var(--radius-md)' }}>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{fuelLabel(f, t)}</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>€{current.toFixed(3)}</span>
+                    <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)' }}>{formatPrice(current, currency)}</span>
                     {delta != null && (
                       <span style={{ fontSize: '0.75rem', color: delta >= 0 ? 'var(--color-warning)' : 'var(--color-fresh)' }}>
-                        {delta >= 0 ? '▲' : '▼'} {Math.abs(delta * 100).toFixed(1)}¢
+                        {delta >= 0 ? '▲' : '▼'} {formatSubunitDelta(Math.abs(delta), currency)}
                       </span>
                     )}
                   </div>
@@ -579,15 +584,15 @@ export function StatisticsDrawer({
                     {getStationDisplayName(d.station)}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                    {FUEL_LABEL[d.fuel] ?? d.fuel} · €{d.oldPrice.toFixed(3)} → €{d.newPrice.toFixed(3)}
+                    {FUEL_LABEL[d.fuel] ?? d.fuel} · {formatPrice(d.oldPrice, currency)} → {formatPrice(d.newPrice, currency)}
                     {' · '}
                     <span style={{ color: 'var(--color-fresh)' }}>
-                      {Math.abs(d.excess * 100).toFixed(1)}¢ {t('stats.drops.belowMarket', 'below market')}
+                      {formatSubunitDelta(Math.abs(d.excess), currency)} {t('stats.drops.belowMarket', 'below market')}
                     </span>
                   </div>
                 </div>
                 <span style={{ fontWeight: 700, color: 'var(--color-fresh)' }}>
-                  ▼ {Math.abs(d.delta * 100).toFixed(1)}¢
+                  ▼ {formatSubunitDelta(Math.abs(d.delta), currency)}
                 </span>
               </div>
             ))}

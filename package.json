@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "verify:currency": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/verify_currency_rendering.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

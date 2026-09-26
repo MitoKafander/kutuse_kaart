@@ -179,7 +179,7 @@
       "loyalty": {
         "title": "Klientu kartes",
         "activeCount": "({{count}} aktīvas)",
-        "help": "Ievadi atlaidi centos par litru (piemēram, Alexela klienta karte -4). Tā tiks parādīta kartē, un \"Lētākā tuvumā\" izmantos atlaides cenu ranžēšanai."
+        "help": "Ievadi atlaidi par litru vienībās ({{unit}}) (piemēram, Alexela klienta karte -4). Tā tiks parādīta kartē, un \"Lētākā tuvumā\" izmantos atlaides cenu ranžēšanai."
       },
       "dots": {
         "title": "Kartes punkti",
@@ -451,7 +451,7 @@
       "firstChoose": "Vispirms izvēlies staciju"
     },
     "alert": {
-      "priceRange": "Cenai jābūt no 0 līdz 10 € ({{type}}: {{value}}).",
+      "priceRange": "Cenai jābūt no {{lo}} līdz {{hi}} {{currency}} ({{type}}: {{value}}).",
       "gpsRequired": "GPS atrašanās vieta ir nepieciešama cenas ievadīšanai. Atļauj atrašanās vietu un mēģini vēlreiz.",
       "tooFar": "Tu atrodies {{distance}} km attālumā no stacijas. Cenas var ievadīt tikai tad, kad esi pie stacijas (līdz {{max}} km)."
     },
@@ -460,7 +460,8 @@
       "tooFast": "Pārāk ātri! Tavs iepriekšējais cenu ziņojums bija tālu — fiziski nav iespējams nobraukt šādu attālumu šajā laikā.",
       "rls": "Ievade neizturēja pārbaudi. Pārbaudi cenas un mēģini vēlreiz.",
       "notFound": "Stacija netika atrasta. Izvēlies staciju vēlreiz un mēģini vēlreiz.",
-      "outOfBand": "{{fuel}} cena €{{price}} izskatās nepareiza (gaidāms €{{lo}}–€{{hi}}). Izlabo šo rindu vai notīri to un mēģini vēlreiz.",
+      "outOfBand": "{{fuel}} cena {{price}} {{currency}} izskatās nepareiza (gaidāms {{lo}}–{{hi}}). Izlabo šo rindu vai notīri to un mēģini vēlreiz.",
+      "outOfRange": "Cena {{price}} {{currency}} neizskatās pēc degvielas cenas (gaidāms {{lo}}–{{hi}}). Pārbaudi komatu.",
       "generic": "Saglabāšana neizdevās. Mēģini vēlreiz — ja tas atkārtojas, pārbaudi tīkla savienojumu."
     }
   },
