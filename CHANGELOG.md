@@ -2,6 +2,119 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Local currency, phase A: currency exists and nothing moved (phase 68) - 2026-09-26
+
+Groundwork for Sweden. Every remaining neighbour is non-euro — SEK, NOK, DKK, PLN — so
+"price" silently meaning "price in EUR" had to become explicit before any Swedish station
+exists. EE/LV/LT/FI were the entire euro neighbourhood, which is why four countries shipped
+without the question ever arising.
+
+**The product decision: local currency is the headline, always.** A Swede hunting cheap fuel
+sees `17,49 kr`, because that is the number on the sign and the number they pay. A converted
+euro figure is at best a footnote. Conversion is deferred to phase B and will only ever be a
+secondary annotation for cross-border comparison, never written to the database.
+
+**✅ LIVE on kyts.ee**, migration applied, and **deliberately inert**: all 8,739 prices are in
+euro countries, the EUR bounds reproduce the CHECK they replace exactly, and
+`npm run verify:currency` asserts every euro string is byte-identical to what the app printed
+before. Full plan and remaining phases in `Notes/Plan_Local_Currency.md`.
+
+- 🟡 **`migrations/schema_phase68_currency.sql`** — `price_bounds(currency, min_price,
+  max_price, decimals)` seeded EUR 0.30–4.00 @3dp and SEK 5.00–40.00 @2dp; `prices.currency`
+  NOT NULL DEFAULT 'EUR' with an FK; `enforce_price_bounds()` + `trg_price_bounds` replacing
+  the two euro-only CHECKs; `currency` added to `user_loyalty_discounts` and to its unique
+  key. A **table** rather than a CASE in the trigger, so adding a currency is one INSERT with
+  no migration and no deploy. NOK/DKK/PLN are absent on purpose — their pump ranges are not
+  researched and the trigger fails closed on an unknown code.
+- 🔑 **`prices.currency` is stored, not derived** from `stations.country`. Currency changeover
+  is real, not hypothetical (Croatia 2023, Bulgaria 2026): a derived currency would
+  retroactively reinterpret every historical Swedish price the day Sweden joined the euro,
+  breaking medians, trends and the market signal. The column is the historical fact; the
+  country registry supplies the expected currency for a *new* submission.
+- 🔑 **Two invariants the rehearsal pins down.** `enforce_price_bounds` has **no
+  `is_kyts_admin()` early-return** — the phase-50 CHECK it replaces deliberately applied to
+  the owner too, unlike the proximity/velocity/band triggers, and a trigger that exempted
+  admins would silently widen the phase-62 bypass. And it **fails closed**: dropping the
+  CHECKs means an unknown currency would otherwise accept any value.
+- 🟢 **`migrations/verify_phase68_currency.sql`** — 21-check container-only harness. Proves
+  both halves rather than just the rejections: EUR 0.30/4.00 accepted and 0.29/4.01 refused
+  exactly as the dropped CHECK did, SEK 17.49 accepted, SEK 4.99/40.01 refused, unknown NOK
+  refused, omitted currency judged as EUR, bounds firing ahead of the band check, one brand
+  holding a discount in two currencies, and a forced `is_kyts_admin → true` still refused a
+  99.00 row. Re-run it whenever a currency is added or the price guards move.
+- 🟢 **`formatPrice` and friends** in `src/utils.ts`, driven by a `CURRENCIES` table in
+  `src/constants/countries.ts`, replacing **29 hardcoded `€` and 4 hardcoded `¢`** across
+  12 files. Scope follows the feature: StationDrawer, StatisticsDrawer, AdminPriceModal and
+  the market-insight numbers take one currency because each is scoped to a single station or
+  country; the map pills, CheapestNearby, the route planner and Profile's
+  favourites/activity resolve it **per station**, because those are cross-border by design
+  and a route can span a currency boundary.
+- 🔑 **Not `Intl.NumberFormat`**, for two measured reasons. `Intl('et','EUR')` renders
+  `1,789 €` where Kyts has always shown `€1.789`, and changing every price in the app is a UX
+  decision of its own rather than something a second currency should smuggle in. More
+  decisively, Intl keyed on the interface language gets Swedish wrong exactly where it
+  matters: there is no `sv` locale, so Swedes will read the English UI, and
+  `Intl('en','SEK')` gives `SEK 17.49` rather than the `17,49 kr` on the pump. The currency
+  decides its own format, whatever language surrounds it.
+- 🟡 **Four things the `€` grep missed, all real.** `¢` is currency-bound too — price
+  movements are quoted in subunits and SEK's is öre, a word that takes a space where `¢`
+  does not. The price input auto-inserted the decimal separator after the **first** digit,
+  commented *"fuel prices are always in the 0–9 € range"*, so a Swede typing `17` would have
+  got `1,7`. The client rejected anything outside `0–10` **before the server saw it**, so
+  every Swedish price would have been refused client-side whatever the DB allowed. And the
+  loyalty editor's `¢/L` label and its "enter the discount in cents" help text in six
+  languages are currency-bound.
+- 🔴 **Loyalty saves broke for a day, and that is the lesson of this phase.** The migration
+  widened the unique key to `(user_id, brand, currency)` while `App.tsx` kept upserting with
+  `onConflict: 'user_id,brand'`. PostgREST does not fall back to a plain insert when the
+  column list matches no constraint — it raises **42P10** — so every signed-in user editing a
+  discount failed silently. The A1 rehearsal proved the constraint swap was correct and the
+  A2 gate proved the formatters were correct, but **nothing exercised a write through the
+  client's own call shape**. Fixed in `283eebc`, proven against prod (old shape → 42P10, new
+  shape → works with EUR and SEK side by side), and the whole class swept: the three
+  `onConflict` lists in `scripts/` all still match real constraints. The harness now asserts
+  that every client `onConflict` resolves to an actual unique or primary key, so the next
+  migration that widens one fails the harness instead of production.
+- 🟡 **The read path had the same bug.** `select('brand, discount_cents')` with no currency
+  collapsed every currency into one brand-keyed map, so a 30-öre Circle K discount would have
+  come off a euro price as 30 cents. Both read and write are now scoped to the active
+  country's currency. `getNetPrice` itself needs no change — dividing minor units by 100 is
+  right in any currency whose subunit is a hundredth, which both EUR and SEK are.
+- 🟢 **Also fixes a pre-existing bug.** Phase 65 added `" in <country>"` to the band
+  trigger's message without updating the regex that parses it, so `fuelLabel()` was handed
+  `"Diisel in EE"`, resolved nothing, and printed raw. The pattern now tolerates the suffix,
+  verified against both message shapes.
+- 🟢 **`scripts/verify_currency_rendering.mjs`** (`npm run verify:currency`) — the phase-A
+  gate. Euro output against the literals it replaced, Swedish output, absent-price
+  fallbacks, full interpolation of every currency-bound locale key in all six locales, and
+  the two DB error patterns against messages copied from the rehearsal. It imports the real
+  modules, via a small `.ts` resolve hook since the app's imports are extensionless, so it
+  fails if the formatters drift. It earned its place immediately: it caught that the app
+  *displays* euro with a dot (`€1.789`) while its input normalises to a comma (`1,789`) —
+  two separators, both shipping — and that I had reused the wrong one for the placeholder.
+
+## [Fix] - Route planner geocoded only Estonian addresses - 2026-09-25
+
+Live bug in the three countries added that week, found while measuring the currency surface.
+
+- 🔴 **`RoutePlanModal` pinned Nominatim to `countrycodes=ee`** with Estonian result names, at
+  both call sites (the search button and the debounced typeahead), so a Finnish, Latvian or
+  Lithuanian user could not plan a route to anywhere at home. The Finnish case did not fail
+  empty, it failed *confidently*: searching **"Tampere"** returned **"Tampere Maja, Jaani,
+  Vanalinn, Tartu, Eesti"** — a cultural centre 500 km from the city they meant, with nothing
+  marking it as the wrong country. "Liepaja" and "Kaunas" returned nothing at all. Measured
+  against the live API before and after.
+- 🟢 The country list now comes from `COUNTRY_CODES` rather than a literal, so it follows the
+  registry when a fifth country is added, and `Accept-Language` follows `i18n.language`
+  instead of always asking for Estonian names. Deliberately **every supported country** and
+  not just the visible ones: the route planner is cross-border on purpose, so you have to be
+  able to aim at a neighbour.
+- 🟢 **`scripts/cache_headroom.mjs`** — the localStorage measurement RESUME_HERE says to run
+  before adding a country, promoted from a throwaway. At 3,662 stations the cache is
+  **1.69 MiB of the 5 MiB quota** (~485 B/station), leaving room for **~7,150 more stations**
+  before the station cache alone fills it. Poland (~7,500) would reach ~99%; Sweden (~2,800)
+  lands near 66%.
+
 ## [Shipped] - Finland as the fourth country (phase 67) - 2026-09-24
 
 Kyts now covers Estonia, Latvia, Lithuania and Finland — **482 + 548 + 742 + 1,890 =

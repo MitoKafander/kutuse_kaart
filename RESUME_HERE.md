@@ -9,8 +9,8 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
-- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
-- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 66** (country-scoped activity leaderboards + `get_display_name`, 2026-09-23). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
+- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (phase-A currency gate) · `node scripts/verify_countries.mjs` (4-country catalog + live boundary fetch) · `node scripts/cache_headroom.mjs` (localStorage budget — run before adding a country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
+- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 68** (currency as a first-class fact: `price_bounds`, `prices.currency`, `enforce_price_bounds`, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
 ## Verified state (2026-09-18)
@@ -51,7 +51,22 @@ EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi, LT 10 apskritys /
 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa. Full detail in CHANGELOG 2026-09-23 and
 2026-09-24.
 
-### Adding country five
+### Adding country five — Sweden, and it is NOT a data-only job
+
+⚠️ **Sweden is blocked on currency work, not on the recipe below.** It is the first non-euro
+country (SEK), and every remaining neighbour is too — NOK, DKK, PLN. Phase A of
+`Notes/Plan_Local_Currency.md` is **done and live** (prices carry a currency, every price
+renders in its own). Still owed before Swedish data lands:
+**B** FX for cross-border comparison, and **C** the camera scanner — `FUEL_RANGES` in
+`api/parse-prices.ts` are EUR and out-of-range reads are *dropped*, so until C ships every
+Swedish pump photo scans as empty. C before D is strongly recommended: the camera is the
+feature most likely to bring a new user back.
+
+Sweden's measured facts, so nobody re-derives them: OSM **admin_level 4 = 21 län** and
+**7 = 290 kommuner**, both full covers — **not level 8**, which has only 83 relations and is
+the same partial-cover trap Finland's level 7 was. Region id band **401–421**. ~2,800
+stations puts the localStorage cache near **66%** of quota. There is **no `sv` locale**, so
+Swedes get the English UI.
 
 Finland needed **no new code paths** — it went in as data plus one entry in each registry,
 which is what makes this a repeatable recipe rather than a one-off. Every script takes
@@ -166,6 +181,28 @@ explicit `drop view` of the dependent + the view first.
   in `LV_MUNICIPALITY_REGION`, not geometry. The loader throws if OSM's municipality list
   and that table ever disagree in either direction — if a Latvian reform lands, that's the
   error you'll see, and the table is what needs editing.
+- 🔴 **A stale `onConflict` list raises 42P10; PostgREST does NOT fall back to an insert.**
+  Phase 68 widened `user_loyalty_discounts`' unique key to `(user_id, brand, currency)` while
+  `App.tsx` still upserted on `(user_id, brand)`, so **every loyalty save failed silently for
+  a day**. The migration rehearsal was green and the bundle shipped fine — nothing exercised a
+  write through the client's own call shape. **Any migration that touches a unique or primary
+  key must `grep -rn onConflict src/ scripts/` and fix every match.**
+  `migrations/verify_phase68_currency.sql` now asserts each client `onConflict` list resolves
+  to a real constraint, so the harness fails instead of production.
+- 🔑 **Prices carry a currency (phase 68), and the local one is what users see.** `price_bounds`
+  (EUR 0.30–4.00 @3dp, SEK 5.00–40.00 @2dp) is the server authority, enforced by
+  `enforce_price_bounds()` / `trg_price_bounds`; `src/constants/countries.ts` `CURRENCIES`
+  mirrors it for client-side input validation, the same arrangement `MAX_SUBMIT_KM` has with
+  the proximity trigger — **change one and you must change the other.** Adding a currency is
+  one INSERT into `price_bounds` plus one entry in `CURRENCIES`; no migration needed.
+  ⚠️ `enforce_price_bounds` has **no `is_kyts_admin()` bypass** — the phase-50 CHECK it
+  replaced applied to the owner too, and restoring a bypass would silently widen phase 62.
+  ⚠️ Never render a price with a bare `€`: use `formatPrice` / `formatStationPrice` /
+  `formatSubunitDelta` from `src/utils.ts`. Deliberately not `Intl.NumberFormat` — see
+  CHANGELOG 2026-09-26 for why (it would change Estonian rendering *and* get Swedish wrong).
+  ⚠️ Loyalty discounts are **absolute subunits**, so they are scoped to the active country's
+  currency on both read and write.
+  Remaining phases (FX, the scanner, Sweden's data) are in `Notes/Plan_Local_Currency.md`.
 - **PostgREST 1000-row cap — `stations` is way OVER it** (3,715 rows after Finland; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
 - **A missing file under `public/` returns 200, not 404.** `vercel.json` rewrites
   `/((?!api/|assets/).*)` to index.html, so an undeployed static asset answers **200 with
