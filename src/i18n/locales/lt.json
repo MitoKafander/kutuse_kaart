@@ -21,14 +21,16 @@
       "LV": "regionai",
       "LT": "apskritys",
       "FI": "regionai",
-      "SE": "lenas"
+      "SE": "lenas",
+      "MT": "regionas"
     },
     "level2": {
       "EE": "valsčiai",
       "LV": "savivaldybės",
       "LT": "savivaldybės",
       "FI": "savivaldybės",
-      "SE": "komuna"
+      "SE": "komuna",
+      "MT": "vietos taryba"
     }
   },
   "price": {
@@ -729,7 +731,8 @@
     "LV": "Latvija",
     "LT": "Lietuva",
     "FI": "Suomija",
-    "SE": "Švedija"
+    "SE": "Švedija",
+    "MT": "Malta"
   },
   "freshness": {
     "label": "Kainos amžius",

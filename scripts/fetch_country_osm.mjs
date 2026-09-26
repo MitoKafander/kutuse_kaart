@@ -51,6 +51,11 @@ const ADMIN = {
   // geometry — a query that ran 13 minutes without returning. The level-1 map
   // layer is dissolved from the kommun polygons anyway, so nothing needs it.
   SE: { level1: null, level2: 7, minL2: 288, maxL2: 292, minFuel: 1500 },
+  // Malta: 68 kunsilli lokali at admin_level=8, and NOTHING above them — probed
+  // levels 4, 5, 6, 7, 9 and 10 all return zero relations. So like Latvia it has
+  // no OSM level-1 and needs a statutory grouping. Only ~78 fuel features in the
+  // whole country, so the bounds are small by nature, not by throttling.
+  MT: { level1: null, level2: 8, minL2: 66, maxL2: 70, minFuel: 50 },
 };
 
 for (const cc of COUNTRIES) {

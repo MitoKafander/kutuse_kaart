@@ -155,6 +155,109 @@ export function loadMunicipalities(cc) {
  * Codes 02, 11, 15 and 16 are deliberately absent: they were retired in
  * historical county mergers and no kommun carries them.
  */
+/**
+ * Malta's six regions (Local Councils Act as amended 2021) and the 68 kunsilli
+ * lokali beneath them.
+ *
+ * Malta has NO OSM tier above admin_level=8 — levels 4, 5, 6, 7, 9 and 10 all
+ * return zero relations — so like Latvia it needs a statutory grouping. Unlike
+ * Latvia, the mapping was not written from memory: it came from Wikidata's P131
+ * on each council's `wikidata` tag, which returned all 68 with exactly one
+ * current region each. That matters, because from memory I would have written
+ * the superseded FIVE-region structure; the 2021 reform made it six.
+ *
+ * Cross-checked independently where geometry can settle it: Wikidata puts 14
+ * councils in Gozo Region, and exactly 14 councils sit north-west of the
+ * Malta-Gozo channel. Sourced data and geometry agree.
+ */
+export const MT_REGIONS = [
+  { id: 501, name: 'Reġjun Lvant', emoji: '🌅' },
+  { id: 502, name: 'Reġjun Tramuntana', emoji: '🏖️' },
+  { id: 503, name: 'Reġjun Port', emoji: '⚓' },
+  { id: 504, name: 'Reġjun Nofsinhar', emoji: '🏛️' },
+  { id: 505, name: 'Reġjun Punent', emoji: '🌾' },
+  { id: 506, name: 'Reġjun Għawdex', emoji: '⛴️' },
+];
+
+/**
+ * Malta's 68 kunsilli lokali, keyed by ISO 3166-2 — NOT by name.
+ *
+ * Two councils share the name 'Ir-Rabat' (MT-45 Victoria on Gozo, MT-46 Rabat
+ * on Malta) and two are 'Żebbuġ' in English (MT-65 Gozo, MT-66 Malta), so the
+ * name-keyed shape Latvia uses would silently collapse them into one entry.
+ * The ISO code is carried by all 68 OSM relations and is unambiguous.
+ */
+export const MT_COUNCIL_REGION = {
+  'MT-01': 502,      // Attard
+  'MT-02': 502,      // Balzan
+  'MT-03': 503,      // Birgu
+  'MT-04': 501,      // Birkirkara
+  'MT-05': 504,      // Birżebbuġa
+  'MT-06': 503,      // Cospicua
+  'MT-07': 505,      // Dingli
+  'MT-08': 503,      // Fgura
+  'MT-09': 503,      // Floriana
+  'MT-10': 506,      // Fontana
+  'MT-11': 504,      // Gudja
+  'MT-12': 501,      // Gżira
+  'MT-13': 506,      // Għajnsielem
+  'MT-14': 506,      // Għarb
+  'MT-15': 501,      // Għargħur
+  'MT-16': 506,      // Għasri
+  'MT-17': 504,      // Għaxaq
+  'MT-18': 504,      // Ħamrun
+  'MT-19': 501,      // Iklin
+  'MT-20': 503,      // Senglea
+  'MT-21': 503,      // Kalkara
+  'MT-22': 506,      // Kerċem
+  'MT-23': 505,      // Kirkop
+  'MT-24': 501,      // Lija
+  'MT-25': 504,      // Luqa
+  'MT-26': 504,      // Marsa
+  'MT-27': 504,      // Marsascala
+  'MT-28': 504,      // Marsaxlokk
+  'MT-29': 505,      // Mdina
+  'MT-30': 502,      // Mellieħa
+  'MT-31': 502,      // Mġarr
+  'MT-32': 502,      // Mosta
+  'MT-33': 505,      // Mqabba
+  'MT-34': 501,      // Msida
+  'MT-35': 502,      // Mtarfa
+  'MT-36': 506,      // Munxar
+  'MT-37': 506,      // Nadur
+  'MT-38': 502,      // Naxxar
+  'MT-39': 503,      // Paola
+  'MT-40': 501,      // Pembroke
+  'MT-41': 501,      // Pietà
+  'MT-42': 506,      // Qala
+  'MT-43': 504,      // Qormi
+  'MT-44': 505,      // Qrendi
+  'MT-45': 506,      // Victoria
+  'MT-46': 505,      // Rabat
+  'MT-47': 505,      // Safi
+  'MT-48': 501,      // Saint Julian's
+  'MT-49': 502,      // San Ġwann
+  'MT-50': 506,      // Saint Lawrence
+  'MT-51': 502,      // Saint Paul's Bay
+  'MT-52': 506,      // Sannat
+  'MT-53': 504,      // Santa Luċija
+  'MT-54': 504,      // Santa Venera
+  'MT-55': 505,      // Siġġiewi
+  'MT-56': 501,      // Sliema
+  'MT-57': 501,      // Swieqi
+  'MT-58': 501,      // Ta' Xbiex
+  'MT-59': 503,      // Tarxien
+  'MT-60': 503,      // Valletta
+  'MT-61': 506,      // Xagħra
+  'MT-62': 506,      // Xewkija
+  'MT-63': 503,      // Xgħajra
+  'MT-64': 503,      // Żabbar
+  'MT-65': 506,      // Żebbuġ
+  'MT-66': 505,      // Żebbuġ
+  'MT-67': 504,      // Żejtun
+  'MT-68': 505,      // Żurrieq
+};
+
 export const SE_LAN = [
   { code: '01', id: 401, name: 'Stockholms län',       emoji: '🏙️' },
   { code: '03', id: 402, name: 'Uppsala län',          emoji: '🎓' },
@@ -207,6 +310,34 @@ export function assignSwedishRegions(municipalities) {
   const unused = SE_LAN.filter((l) => !used.has(l.id));
   if (unused.length) {
     throw new Error(`SE: SE_LAN lists län no kommun belongs to: ${unused.map((l) => l.name).join(', ')}`);
+  }
+  return assigned;
+}
+
+/**
+ * Attach a region id to every Maltese council from its ISO 3166-2 code.
+ *
+ * Throws in both directions, like the Latvian and Swedish loaders: a council
+ * OSM has but the table does not, or a region no council claims, means the two
+ * have diverged and the Avastuskaart would quietly lose tiles.
+ */
+export function assignMalteseRegions(municipalities) {
+  const unknown = municipalities.filter((m) => !MT_COUNCIL_REGION[m.tags?.['ISO3166-2']]);
+  if (unknown.length) {
+    throw new Error(
+      `MT: councils with no entry in MT_COUNCIL_REGION: ${unknown.map((m) => `${m.name} (${m.tags?.['ISO3166-2'] ?? 'no ISO'})`).join(', ')}`,
+    );
+  }
+  const assigned = municipalities.map((m) => ({ ...m, regionId: MT_COUNCIL_REGION[m.tags['ISO3166-2']] }));
+  const used = new Set(assigned.map((m) => m.regionId));
+  const unusedRegions = MT_REGIONS.filter((r) => !used.has(r.id));
+  if (unusedRegions.length) {
+    throw new Error(`MT: MT_REGIONS lists regions no council belongs to: ${unusedRegions.map((r) => r.name).join(', ')}`);
+  }
+  const osmIso = new Set(municipalities.map((m) => m.tags?.['ISO3166-2']));
+  const stale = Object.keys(MT_COUNCIL_REGION).filter((iso) => !osmIso.has(iso));
+  if (stale.length) {
+    throw new Error(`MT: MT_COUNCIL_REGION lists councils OSM no longer has: ${stale.join(', ')}`);
   }
   return assigned;
 }
@@ -297,6 +428,7 @@ const OSM_LEVEL1 = {
 export function level1Rows(cc, municipalities) {
   if (cc === 'LV') return LV_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'LV' }));
   if (cc === 'SE') return SE_LAN.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'SE' }));
+  if (cc === 'MT') return MT_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'MT' }));
   const spec = OSM_LEVEL1[cc];
   if (!spec) throw new Error(`No level-1 catalog for ${cc}`);
   const used = new Set(municipalities.map((m) => m.regionId));
@@ -316,13 +448,14 @@ export function level1Rows(cc, municipalities) {
  * Finland, and three of them were still defaulting to ['LV','LT'] after it
  * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
  */
-export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE'];
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);
   const withRegion =
     cc === 'LV' ? assignLatvianRegions(municipalities)           // statutory table, no OSM level 1
     : cc === 'SE' ? assignSwedishRegions(municipalities)         // statutory SCB code, exact
+    : cc === 'MT' ? assignMalteseRegions(municipalities)         // statutory table keyed by ISO 3166-2
     : assignOsmLevel1(cc, municipalities, OSM_LEVEL1[cc].ids);   // LT, FI: geometry decides
   return { municipalities: withRegion, level1: level1Rows(cc, withRegion) };
 }

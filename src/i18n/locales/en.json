@@ -21,14 +21,16 @@
       "LV": "regions",
       "LT": "counties",
       "FI": "regions",
-      "SE": "county"
+      "SE": "county",
+      "MT": "region"
     },
     "level2": {
       "EE": "parishes",
       "LV": "municipalities",
       "LT": "municipalities",
       "FI": "municipalities",
-      "SE": "municipality"
+      "SE": "municipality",
+      "MT": "local council"
     }
   },
   "price": {
@@ -808,7 +810,8 @@
     "LV": "Latvia",
     "LT": "Lithuania",
     "FI": "Finland",
-    "SE": "Sweden"
+    "SE": "Sweden",
+    "MT": "Malta"
   },
   "freshness": {
     "label": "Price age",

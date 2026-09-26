@@ -21,14 +21,16 @@
       "LV": "aluetta",
       "LT": "maakuntaa",
       "FI": "maakuntaa",
-      "SE": "lääni"
+      "SE": "lääni",
+      "MT": "alue"
     },
     "level2": {
       "EE": "kuntaa",
       "LV": "kuntaa",
       "LT": "kuntaa",
       "FI": "kuntaa",
-      "SE": "kunta"
+      "SE": "kunta",
+      "MT": "paikallisneuvosto"
     }
   },
   "price": {
@@ -731,7 +733,8 @@
     "LV": "Latvia",
     "LT": "Liettua",
     "FI": "Suomi",
-    "SE": "Ruotsi"
+    "SE": "Ruotsi",
+    "MT": "Malta"
   },
   "freshness": {
     "label": "Hinnan ikä",

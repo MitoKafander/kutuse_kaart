@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -192,6 +192,25 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     // pump.
     preferredLocale: 'en',
     currency: 'SEK',
+  },
+  MT: {
+    code: 'MT',
+    flag: '🇲🇹',
+    nameKey: 'country.MT',
+    center: [35.92, 14.41],
+    // 27 km end to end. Zoom 11 fits Malta and Gozo together; anything looser
+    // shows mostly sea.
+    zoom: 11,
+    bbox: [14.17, 35.78, 14.58, 36.10],
+    boundaries: { level1: '/regions_mt.geojson', level2: '/municipalities_mt.geojson' },
+    level1Key: 'region.level1.MT',
+    level2Key: 'region.level2.MT',
+    translatableRegionSuffix: false,
+    // Malta is officially bilingual and English is an official language, so the
+    // English interface is a real fit here rather than the fallback it is for
+    // Sweden.
+    preferredLocale: 'en',
+    currency: 'EUR',
   },
 };
 

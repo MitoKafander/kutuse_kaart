@@ -21,14 +21,16 @@
       "LV": "reģioni",
       "LT": "apriņķi",
       "FI": "reģioni",
-      "SE": "lēne"
+      "SE": "lēne",
+      "MT": "reģions"
     },
     "level2": {
       "EE": "pagasti",
       "LV": "novadi",
       "LT": "pašvaldības",
       "FI": "pašvaldības",
-      "SE": "komūna"
+      "SE": "komūna",
+      "MT": "vietējā padome"
     }
   },
   "price": {
@@ -731,7 +733,8 @@
     "LV": "Latvija",
     "LT": "Lietuva",
     "FI": "Somija",
-    "SE": "Zviedrija"
+    "SE": "Zviedrija",
+    "MT": "Malta"
   },
   "freshness": {
     "label": "Cenas vecums",
