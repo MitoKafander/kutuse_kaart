@@ -7,6 +7,7 @@ import {
   getCurrentPositionAsync, getBrand, getReporter,
 } from '../utils';
 import type { LoyaltyDiscounts, ReporterMap } from '../utils';
+import { COUNTRY_CODES } from '../constants/countries';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const CORRIDOR_OPTIONS = [1, 2, 5];
@@ -25,9 +26,19 @@ interface RouteResult {
 
 type SearchHit = { displayName: string; lat: number; lon: number };
 
-async function searchPlace(q: string): Promise<SearchHit[]> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ee&q=${encodeURIComponent(q)}`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'et' } });
+// Nominatim was pinned to `countrycodes=ee` with Estonian result names, so a
+// Finnish user typing "Tampere" got zero hits and could not plan a route at
+// all — same for Latvian and Lithuanian users searching their own cities. The
+// route planner is deliberately cross-border (a station just over the line is
+// the point), so the geocoder covers every country Kyts serves, and results
+// come back in the interface language rather than always in Estonian.
+const GEOCODE_COUNTRIES = COUNTRY_CODES.map((c) => c.toLowerCase()).join(',');
+
+const geocodeUrl = (q: string) =>
+  `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=${GEOCODE_COUNTRIES}&q=${encodeURIComponent(q)}`;
+
+async function searchPlace(q: string, lang: string): Promise<SearchHit[]> {
+  const res = await fetch(geocodeUrl(q), { headers: { 'Accept-Language': lang } });
   if (!res.ok) return [];
   const data: any[] = await res.json();
   return data.map(d => ({
@@ -77,7 +88,7 @@ export function RoutePlanModal({
   onRouteChange: (route: [number, number][] | null) => void;
   onStationSelect?: (station: any) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
   const [originError, setOriginError] = useState(false);
   const [locatingOrigin, setLocatingOrigin] = useState(false);
@@ -123,8 +134,7 @@ export function RoutePlanModal({
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ee&q=${encodeURIComponent(q)}`;
-        const res = await fetch(url, { headers: { 'Accept-Language': 'et' }, signal: ctrl.signal });
+        const res = await fetch(geocodeUrl(q), { headers: { 'Accept-Language': i18n.language }, signal: ctrl.signal });
         if (!res.ok) return;
         const data: any[] = await res.json();
         setHits(data.map(d => ({ displayName: d.display_name, lat: parseFloat(d.lat), lon: parseFloat(d.lon) })));
@@ -163,7 +173,7 @@ export function RoutePlanModal({
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
-    const results = await searchPlace(query.trim());
+    const results = await searchPlace(query.trim(), i18n.language);
     setHits(results);
     setSearching(false);
   };
