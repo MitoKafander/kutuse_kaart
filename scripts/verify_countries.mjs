@@ -46,7 +46,15 @@ const hasCountryCol = parishes.length > 0 && 'country' in parishes[0];
 check(hasCountryCol, 'parishes.country exists', hasCountryCol ? '' : 'migration schema_phase65 not applied yet');
 const countryOf = (r) => r.country ?? 'EE';
 
-for (const cc of ['EE', 'LV', 'LT', 'FI']) {
+// Every country present in the data, not a remembered list — Sweden was seeded
+// and reported "all checks passed" while this line still said ['EE','LV','LT','FI']
+// and simply did not print it.
+const seenCountries = [...new Set([
+  ...stations.map((s) => s.country),
+  ...parishes.map(countryOf),
+  ...maakonnad.map(countryOf),
+].filter(Boolean))].sort();
+for (const cc of seenCountries) {
   const st = stations.filter((s) => s.country === cc);
   const pa = parishes.filter((p) => countryOf(p) === cc);
   const mk = maakonnad.filter((m) => countryOf(m) === cc);
@@ -109,12 +117,18 @@ check(orphan === 0, 'every price hangs off a known station', orphan ? `${orphan}
 
 console.log('\n── boundary files match the catalog ──');
 const { readFileSync, existsSync } = await import('node:fs');
-for (const [cc, l1File, l2File] of [
-  ['EE', 'public/maakonnad.geojson', 'public/parishes.geojson'],
-  ['LV', 'public/regions_lv.geojson', 'public/municipalities_lv.geojson'],
-  ['LT', 'public/regions_lt.geojson', 'public/municipalities_lt.geojson'],
-  ['FI', 'public/regions_fi.geojson', 'public/municipalities_fi.geojson'],
-]) {
+// DERIVED from the country registry, for the same reason the served-file check
+// below is: a hardcoded list silently skips any country nobody remembered to
+// add to it. Sweden was seeded and verified green here while this loop was not
+// even looking at it.
+const registrySrc = readFileSync(new URL('../src/constants/countries.ts', import.meta.url), 'utf8');
+const registryPairs = [...registrySrc.matchAll(
+  /code:\s*'([A-Z]{2})',[\s\S]{0,600}?boundaries:\s*\{\s*level1:\s*'\/([^']+)',\s*level2:\s*'\/([^']+)'/g,
+)].map((m) => [m[1], `public/${m[2]}`, `public/${m[3]}`]);
+if (registryPairs.length < 2) {
+  throw new Error('Could not parse country/boundary pairs from src/constants/countries.ts — has its shape changed?');
+}
+for (const [cc, l1File, l2File] of registryPairs) {
   if (!existsSync(l2File)) { check(false, `${cc} boundary files exist`, `${l2File} missing`); continue; }
   const l1 = JSON.parse(readFileSync(l1File, 'utf8')).features;
   const l2 = JSON.parse(readFileSync(l2File, 'utf8')).features;

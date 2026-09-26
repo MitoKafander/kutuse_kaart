@@ -3,6 +3,10 @@
 // per-origin quota — and how many more stations fit. RUN THIS BEFORE ADDING A
 // COUNTRY: a quota failure is silent and takes the celebration store and country
 // preferences down with it, so the cache ceiling is the real limit on catalog size.
+//
+//   node scripts/cache_headroom.mjs
+
+import { fetchAll } from './_lib/db.mjs';
 
 const KEYS = ['addr:city','addr:district','addr:municipality','addr:place',
               'addr:street','addr:subdistrict','addr:village','alt_name','name','operator'];
