@@ -806,17 +806,37 @@ export function ManualPriceModal({
   /**
    * Which currency this forecourt quotes in.
    *
+   * Getting this wrong is not cosmetic: the scanner DROPS prices outside the
+   * currency's range, so a euro guess at a Swedish totem returns an empty scan
+   * with nothing to tell the user why.
+   *
    * The station decides it when we know which station it is. In FAB mode we
-   * often do not yet — that is the whole reason the scan sends no station hint —
-   * so fall back to the user's captured position, because they are standing at
-   * the forecourt. Only then to their home country. Getting this wrong in
-   * Sweden is not cosmetic: the scanner DROPS prices outside the currency's
-   * range, so a euro guess at a Swedish totem returns an empty scan.
+   * often do not yet — that is the whole reason the scan sends no station hint.
+   * Then the NEAREST CATALOGUED STATION wins, not a bbox lookup: the user is
+   * standing on a forecourt, so the closest one is almost certainly it, and
+   * `countryForCoords` is a rectangle test that cannot follow a border. Measured
+   * — it puts Haparanda (Sweden) in Finland, and Haparanda/Tornio is exactly the
+   * crossing that makes Sweden worth having. Geometry is the last resort before
+   * the user's own country.
    */
-  const scanCountry =
-    activeStation?.country
-    ?? (capturedPosition ? countryForCoords(capturedPosition.lat, capturedPosition.lon) : null)
-    ?? homeCountry;
+  const scanCountry = (() => {
+    if (activeStation?.country) return activeStation.country as CountryCode;
+    if (capturedPosition && allStations?.length) {
+      let best: { d: number; country?: string } | null = null;
+      for (const st of allStations) {
+        const d = haversineKm(capturedPosition.lat, capturedPosition.lon, st.latitude, st.longitude);
+        if (!best || d < best.d) best = { d, country: st.country };
+      }
+      // Only trust it from close range; beyond a few km the user is between
+      // stations and the nearest one says nothing about where they are standing.
+      if (best && best.d <= 3 && best.country) return best.country as CountryCode;
+    }
+    if (capturedPosition) {
+      const guess = countryForCoords(capturedPosition.lat, capturedPosition.lon);
+      if (guess) return guess;
+    }
+    return homeCountry;
+  })();
   const currency = currencyForCountry(scanCountry);
   const cur = CURRENCIES[currency];
   const isFabMode = !station && !!allStations;

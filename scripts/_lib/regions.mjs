@@ -244,7 +244,7 @@ export function level1Rows(cc, municipalities) {
  * Finland, and three of them were still defaulting to ['LV','LT'] after it
  * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
  */
-export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI'];
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);

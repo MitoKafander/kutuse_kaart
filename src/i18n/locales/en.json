@@ -20,13 +20,15 @@
       "EE": "counties",
       "LV": "regions",
       "LT": "counties",
-      "FI": "regions"
+      "FI": "regions",
+      "SE": "county"
     },
     "level2": {
       "EE": "parishes",
       "LV": "municipalities",
       "LT": "municipalities",
-      "FI": "municipalities"
+      "FI": "municipalities",
+      "SE": "municipality"
     }
   },
   "price": {
@@ -805,7 +807,8 @@
     "EE": "Estonia",
     "LV": "Latvia",
     "LT": "Lithuania",
-    "FI": "Finland"
+    "FI": "Finland",
+    "SE": "Sweden"
   },
   "freshness": {
     "label": "Price age",

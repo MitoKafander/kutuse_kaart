@@ -20,13 +20,15 @@
       "EE": "maakonda",
       "LV": "regiooni",
       "LT": "maakonda",
-      "FI": "maakonda"
+      "FI": "maakonda",
+      "SE": "lään"
     },
     "level2": {
       "EE": "valda",
       "LV": "omavalitsust",
       "LT": "omavalitsust",
-      "FI": "omavalitsust"
+      "FI": "omavalitsust",
+      "SE": "kommuun"
     }
   },
   "price": {
@@ -807,7 +809,8 @@
     "EE": "Eesti",
     "LV": "Läti",
     "LT": "Leedu",
-    "FI": "Soome"
+    "FI": "Soome",
+    "SE": "Rootsi"
   },
   "freshness": {
     "label": "Hinna vanus",

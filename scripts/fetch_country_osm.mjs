@@ -39,6 +39,12 @@ const ADMIN = {
   // Note level 8, not 5 — Finland has no level-5 tier, and its level 7 (69
   // relations) is a partial cover, the same trap Latvia's pilsētas were.
   FI: { level1: 4, level2: 8, minL1: 18, maxL1: 20, minL2: 290, maxL2: 320, minFuel: 1500 },
+  // Sweden: 21 län (admin_level=4) over 290 kommuner (admin_level=7). Probed
+  // against OSM before writing this, because guessing the tier is the recurring
+  // trap — level 8 has only 83 relations, a partial cover exactly like Finland's
+  // level 7 was. Bounds are tight (21/290 are fixed statutory counts) so a
+  // throttled mirror answering with a short list fails loudly.
+  SE: { level1: 4, level2: 7, minL1: 21, maxL1: 21, minL2: 288, maxL2: 292, minFuel: 1500 },
 };
 
 for (const cc of COUNTRIES) {

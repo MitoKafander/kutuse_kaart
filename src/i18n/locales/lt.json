@@ -20,13 +20,15 @@
       "EE": "apskritys",
       "LV": "regionai",
       "LT": "apskritys",
-      "FI": "regionai"
+      "FI": "regionai",
+      "SE": "lenas"
     },
     "level2": {
       "EE": "valsčiai",
       "LV": "savivaldybės",
       "LT": "savivaldybės",
-      "FI": "savivaldybės"
+      "FI": "savivaldybės",
+      "SE": "komuna"
     }
   },
   "price": {
@@ -726,7 +728,8 @@
     "EE": "Estija",
     "LV": "Latvija",
     "LT": "Lietuva",
-    "FI": "Suomija"
+    "FI": "Suomija",
+    "SE": "Švedija"
   },
   "freshness": {
     "label": "Kainos amžius",

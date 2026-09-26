@@ -87,13 +87,13 @@ check(crossed.length === 0, 'no station points at another country\'s municipalit
   crossed.length ? `${crossed.length} station(s)` : '');
 
 console.log('\n── region ids stay in their allocated bands ──');
-const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299], FI: [301, 399] };
+const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299], FI: [301, 399], SE: [401, 499] };
 const strayId = maakonnad.filter((m) => {
   const b = band[countryOf(m)];
   return !b || m.id < b[0] || m.id > b[1];
 });
 check(strayId.length === 0, 'every level-1 region id sits in its country\'s band',
-  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299, FI 301-399');
+  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299, FI 301-399, SE 401-499');
 
 console.log('\n── prices ──');
 const prices = await fetchAll('prices', 'id, station_id, fuel_type, price');
@@ -139,12 +139,19 @@ for (const [cc, l1File, l2File] of [
 // commit. Checking the served content-type is the only honest test.
 if (process.env.SKIP_LIVE_CHECK !== '1') {
   console.log('\n── boundary files as served by kyts.ee ──');
-  for (const file of [
-    'maakonnad.geojson', 'parishes.geojson',
-    'regions_lv.geojson', 'municipalities_lv.geojson',
-    'regions_lt.geojson', 'municipalities_lt.geojson',
-    'regions_fi.geojson', 'municipalities_fi.geojson',
-  ]) {
+  // DERIVED from src/constants/countries.ts, not a literal list. A hardcoded
+  // list only checks the countries someone remembered to add to it — which is
+  // exactly how Finland shipped with undeployed boundaries while every other
+  // signal stayed green. Reading the registry means a new country is covered
+  // the moment it is registered, whether or not anyone updated this file.
+  const registry = readFileSync(new URL('../src/constants/countries.ts', import.meta.url), 'utf8');
+  const boundaryFiles = [...registry.matchAll(/boundaries:\s*\{\s*level1:\s*'\/([^']+)',\s*level2:\s*'\/([^']+)'/g)]
+    .flatMap((m) => [m[1], m[2]]);
+  if (boundaryFiles.length < 2) {
+    throw new Error('Could not parse boundary paths from src/constants/countries.ts — has its shape changed?');
+  }
+  console.log(`  (${boundaryFiles.length} files, derived from the country registry)`);
+  for (const file of boundaryFiles) {
     try {
       const res = await fetch(`https://kyts.ee/${file}`);
       const type = res.headers.get('content-type') ?? '';

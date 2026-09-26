@@ -27,9 +27,18 @@ const check = (label, got, want) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label.padEnd(48)} ${JSON.stringify(got)}${ok ? '' : ` != ${JSON.stringify(want)}`}`);
 };
 
-console.log('\n── every live country is still euro, so nothing should move ──');
-for (const cc of COUNTRY_CODES) {
+console.log('\n── the four eurozone countries must not have moved ──');
+// Phase A's inertness claim, still load-bearing: EE/LV/LT/FI shipped years of
+// prices as bare numbers meaning euros, so anything that changed their currency
+// would retroactively reinterpret that history.
+for (const cc of ['EE', 'LV', 'LT', 'FI']) {
   check(`${cc} -> EUR`, currencyForCountry(cc), 'EUR');
+}
+// And every country the registry knows must resolve to a currency that actually
+// has formatting rules, or its prices render through the EUR fallback.
+for (const cc of COUNTRY_CODES) {
+  const cur = currencyForCountry(cc);
+  check(`${cc} currency (${cur}) has formatting rules`, Object.keys(CURRENCIES).includes(cur), true);
 }
 
 console.log('\n── euro output identical to the replaced literals ──');

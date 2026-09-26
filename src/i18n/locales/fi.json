@@ -20,13 +20,15 @@
       "EE": "maakuntaa",
       "LV": "aluetta",
       "LT": "maakuntaa",
-      "FI": "maakuntaa"
+      "FI": "maakuntaa",
+      "SE": "lääni"
     },
     "level2": {
       "EE": "kuntaa",
       "LV": "kuntaa",
       "LT": "kuntaa",
-      "FI": "kuntaa"
+      "FI": "kuntaa",
+      "SE": "kunta"
     }
   },
   "price": {
@@ -728,7 +730,8 @@
     "EE": "Viro",
     "LV": "Latvia",
     "LT": "Liettua",
-    "FI": "Suomi"
+    "FI": "Suomi",
+    "SE": "Ruotsi"
   },
   "freshness": {
     "label": "Hinnan ikä",

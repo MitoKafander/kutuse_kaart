@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -172,6 +172,27 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     preferredLocale: 'lt',
     currency: 'EUR',
   },
+  SE: {
+    code: 'SE',
+    flag: '🇸🇪',
+    nameKey: 'country.SE',
+    center: [62.5, 16.5],
+    // Sweden runs 55°N to 69°N — even longer than Finland. Zoom 4 fits the
+    // whole country; 5 cuts off Norrland.
+    zoom: 4,
+    bbox: [10.8, 55.2, 24.3, 69.1],
+    boundaries: { level1: '/regions_se.geojson', level2: '/municipalities_se.geojson' },
+    level1Key: 'region.level1.SE',
+    level2Key: 'region.level2.SE',
+    translatableRegionSuffix: false,
+    // ⚠️ No Swedish locale yet, so Swedes get the English interface. Deliberate:
+    // adding sv.json is translation work needing a native reviewer, not part of
+    // the data seed. It is also why price formatting must NOT key off the UI
+    // language — Intl('en','SEK') renders 'SEK 17.49', not the '17,49 kr' on the
+    // pump.
+    preferredLocale: 'en',
+    currency: 'SEK',
+  },
 };
 
 export const DEFAULT_COUNTRY: CountryCode = 'EE';
@@ -193,6 +214,13 @@ export function toCountryCode(v: unknown): CountryCode {
  * more than one resolves to the nearest country centre — good enough for
  * picking someone's default Avastuskaart, and never used for anything the DB
  * cares about (stations carry their own `country`).
+ *
+ * ⚠️ IT IS WRONG AT SOME BORDERS, by construction. Measured: Haparanda (Sweden)
+ * comes back FI, because it sits deep inside Finland's rectangle and closer to
+ * Finland's centre than Sweden's. That is tolerable for an initial country
+ * guess the user can change, and NOT tolerable anywhere the answer silently
+ * changes behaviour — the scan-currency path in ManualPriceModal therefore
+ * prefers the nearest catalogued station and only falls back to this.
  */
 export function countryForCoords(lat: number, lon: number): CountryCode | null {
   const hits = COUNTRY_LIST.filter(
