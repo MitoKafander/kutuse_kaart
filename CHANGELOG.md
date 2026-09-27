@@ -48,6 +48,37 @@ countries the map was drawing **6,686 stations**. An Estonian driver now renders
   Previously a GPS fix arriving before the stations would have locked in a bbox
   answer, since the effect writes its result and then never runs again.
 
+## [Shipped] - The country selector is a bubble on the map - 2026-09-27
+
+Two iterations in one day, and the second was Mikk's: *"võibolla teha üldse
+mingi väike bubble täitsa peavaatesse."*
+
+- 🔴 **My first attempt traded a duplicate for a wasted tap.** Having removed the
+  second control, I left a "Showing: Latvia / Change" row in the Avastuskaart
+  card that jumped to Settings. Mikk: *"Liiga palju ülearuseid klikke."* A
+  button whose only job is to send you somewhere else is not a fix.
+- 🟢 **`CountryBubble` on the map.** The selector decides which stations are
+  drawn, which Avastuskaart you collect, which statistics and leaderboard you
+  see and which currency prices render in — the scope of everything on screen,
+  so it belongs on screen. One instance, zero navigation.
+- 🔑 **It also dissolves the constraint that forced the old placement.** A
+  signed-out user is pinned to the Settings tab and never reaches Profile, so
+  no single in-drawer position worked for everyone; a Profile-only picker
+  stranded them and a Settings-only one made signed-in users cross over. The
+  map works for everyone.
+- 🟡 **Positioned at a fixed offset above the freshness slider, not relative to
+  it.** The slider is hidden in discovery mode and the bubble is not, and a
+  control that jumps when its neighbour disappears is worse than one that stays
+  put. Dismisses on outside tap or Escape, or the open list sits over the map
+  and eats the next pan.
+- 🟢 Removed with it: the country section in Settings, the pointer row, the
+  scroll-and-flash jump, two `ProfileDrawer` props and four dead locale keys
+  across six locales.
+- 🟡 **What stays in the drawer is a label, not a control** — flag and country
+  name in the Avastuskaart card. Its counters read "0/548 stations · 0/42
+  municipalities" and the bubble is behind the drawer while you read them, so
+  they still have to say whose they are.
+
 ## [Shipped] - One country control, not two on separate tabs - 2026-09-27
 
 Mikk: *"on mitu kohta, kus riike saab valida ja need on veel eraldi lehel.

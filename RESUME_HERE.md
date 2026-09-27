@@ -241,6 +241,12 @@ explicit `drop view` of the dependent + the view first.
   currency on both read and write.
   Remaining phases (FX, the scanner, Sweden's data) are in `Notes/Plan_Local_Currency.md`.
 - **PostgREST 1000-row cap — `stations` is way OVER it** (6,672 rows after Sweden; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- 🔑 **The country selector is `CountryBubble` ON THE MAP — the only one.** Left edge above
+  the freshness slider. Not in the profile drawer: a signed-out user is pinned to the
+  Settings tab and never reaches Profile, so no in-drawer position serves everyone. The
+  Avastuskaart card carries a flag+name LABEL only, because the bubble is hidden behind the
+  drawer while you read its counters. ⚠️ Don't add a second one, and don't add a button
+  that navigates to it — both were tried and rejected on 2026-09-27.
 - 🔑 **ONE COUNTRY ON THE MAP (2026-09-27).** `activeCountry` decides which stations exist
   — map, search, pills, freshness counts, Avastuskaart, statistics, leaderboard, currency.
   Per-country visibility is gone; `user_profiles.hidden_countries` and
