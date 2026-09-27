@@ -43,9 +43,10 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Six countries — ✅ LIVE (Baltics 2026-09-23, Finland -09-24, Sweden + Malta -09-26)
+## Seven countries — ✅ LIVE (Baltics -09-23, Finland -09-24, Sweden + Malta -09-26, Norway -09-27)
 
-Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT = 6,686 active stations**.
+Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT + 2,158 NO = 8,844 active
+stations**.
 Avastuskaart tiers: EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi,
 LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner,
 MT 6 reġjuni / 68 kunsilli lokali. Sweden is the only non-euro country so far — see the
@@ -63,14 +64,23 @@ insight for a non-euro country, self-gates until Sweden has 20+ local prices —
 point decide whether to make the USD-wholesale-vs-pump conversion per-currency or skip
 insight outside the eurozone. Do not leave it emitting euro-shaped claims about kronor.
 
-**Currency is no longer a blocker for anyone.** NOK, DKK and PLN each need one row in
-`price_bounds`, one entry in `CURRENCIES`, and scan ranges in `CURRENCY_SCAN` — no
-migration. **The cache is:** 2.91 MiB of 5 MiB at 6,617 stations, room for ~4,769 more.
-Norway (~1,900) or Denmark (~2,200) fit; **Poland (~7,500) does not** and needs the cache
-moved off localStorage first. Run `node scripts/cache_headroom.mjs` before committing.
+**Currency is no longer a blocker.** DKK and PLN each need one row in `price_bounds`, one
+entry in `CURRENCIES`, and scan ranges in `CURRENCY_SCAN` — no migration. NOK went in
+exactly that way on 2026-09-27.
+
+**The cache holds ONE country since 2026-09-27**, so the limit is no longer a running
+total — it is "does the biggest single country fit", about **6,800 stations**. Worst case
+today is SE at 1.21 MiB of 5 MiB. **Poland (~7,500) is now borderline rather than
+impossible.** Run `node scripts/cache_headroom.mjs` before committing.
+
+⚠️ **The seeder SKIPS stations that fall outside every municipality** rather than inserting
+them with a null `parish_id`, and lists what it dropped. If a mainland station shows up
+there, a boundary is wrong — do not "fix" it by re-allowing nulls. Norway's Svalbard pumps
+are the intended case.
 
 **Three ways to group level-2 into level-1, pick by what the country actually has:**
-a statutory code carried on each unit (Sweden's `ref:scb` — exact, preferred),
+a statutory code carried on each unit (Sweden's `ref:scb`, Norway's kommunenummer in
+`ref` — exact, preferred),
 a statutory table (Latvia keyed by name, **Malta keyed by ISO 3166-2** — when OSM has no
 level-1 tier at all), or centroid-in-polygon (Lithuania, Finland — only geometry available).
 ⚠️ **Key such a table by a code, not a name, unless you have checked for duplicates** —
@@ -194,7 +204,7 @@ explicit `drop view` of the dependent + the view first.
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
 - **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210,
-  FI 301-319, SE 401-421, MT 501-506 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
+  FI 301-319, SE 401-421, MT 501-506, NO 601-615 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
   `verify_countries.mjs` asserts nothing strays out of its band. They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.

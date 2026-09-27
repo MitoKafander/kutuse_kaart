@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Norway, and the cache stops being the ceiling - 2026-09-27
+
+**EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 = 8,844
+active stations** across seven countries.
+
+### The cache now holds one country, because the map draws one
+
+- 🔑 The station cache held every country because every country was drawn. Once
+  the map went single-country it was caching 6,686 rows to paint 482 — and that
+  cache was **the only thing capping how many countries Kyts could carry**.
+- 🟢 Now one country: worst case **SE 1.21 MiB (24%)**, typical **EE 0.23 MiB
+  (5%)**. Vindicated immediately — caching everything would now be **3.73 MiB
+  (75%)**, so Norway alone would have taken the old scheme near the ceiling.
+- 🔑 The constraint changed shape. It is no longer a running total every country
+  eats into; it is "does the biggest single country fit", roughly 6,800 stations
+  once prices, votes and the celebration store are left room. **Poland at ~7,500
+  goes from impossible to borderline.**
+- 🟡 The cached payload records its country and a mismatch is discarded rather
+  than shown — a stale country's stations would paint the wrong map for the few
+  hundred ms before the network answers. The old format is dropped by the same
+  check and rewritten on next load. `cache_headroom.mjs` was measuring the old
+  reality and now reports per-country sizes and the one-country limit.
+
+### Norway
+
+- 🟢 **15 fylker over 357 kommuner**, ids 601–615, 2,158 stations from 2,374 OSM
+  features. 7 municipalities have no station (2%), 50 have exactly one.
+- 🔑 **Grouped by kommunenummer**, like Sweden. OSM has both tiers, but the
+  four-digit `ref` has the fylke number as its first two digits — government
+  data rather than centroid-in-polygon, and no need to fetch 16 county
+  relations with geometry. Derived from the cache, then each fylke name
+  cross-checked against a known municipality in its group
+  (46→Vaksdal→Vestland, 56→Sør-Varanger→Finnmark, all fifteen).
+- 🔑 **NOK cost one row in `price_bounds` and one entry in `CURRENCIES`. No
+  migration** — exactly what phase A was for. The scanner gate then caught NOK's
+  absence from `CURRENCY_SCAN` before it shipped: a currency the client can send
+  but the scanner has no ranges for returns an *empty* scan on a good photo,
+  not a degraded one.
+- 🟡 **Svalbard is excluded, and that needed a decision.** OSM tags nine Svalbard
+  land areas (Oscar II Land, Nordenskiöld Land, …) at admin_level=7 beside real
+  kommuner. They are geographic regions, carry no kommunenummer and belong to no
+  fylke — Svalbard sits outside Norway's county structure. Dropping them also
+  drops Longyearbyen's three pumps, which is right for an Avastuskaart built on
+  fylker and kommuner.
+- 🔴 **That exposed a general gap worth fixing.** The station seeder would have
+  inserted those three with `parish_id NULL` — the only such rows across seven
+  countries, invisible on the Avastuskaart and uncounted in every region. It now
+  **skips them and says so loudly, listing each one**: if a mainland station ever
+  lands there it means a boundary is wrong, not that the station is. Verified
+  after the seed: 0 null-parish stations in every country.
+- 🟢 **Six chains added** (Uno-X 304, YX 253, Esso 227, LPG Norge 38, Automat1
+  32, Bunker Oil 27); Circle K and St1 already covered theirs. `uno x` also
+  catches two **Swedish** rows, and that is correct rather than a collision to
+  avoid — Uno-X trades in both countries and those really are Uno-X.
+- ⚠️ **Deliberately no `driv` pattern**, despite Driv having 170 forecourts.
+  *Drivstoff* is Norwegian for fuel, so the substring catches independents like
+  "Dråpen Drivstoff" — ten distinct names that are not the chain. Substring
+  matching cannot separate a chain from a common noun it prefixes. Unnecessary
+  anyway: all 170 are named exactly "Driv" and already group unaided.
+
 ## [Shipped] - One country at a time - 2026-09-27
 
 Mikk: showing every country's stations at once makes the app too slow, and the
