@@ -1908,6 +1908,8 @@ function App() {
         hideEmptyDots={hideEmptyDots}
         onHideEmptyDotsChange={handleHideEmptyDotsChange}
         activeCountry={activeCountry}
+        onActiveCountryChange={handleActiveCountryChange}
+        availableCountries={availableCountries}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}

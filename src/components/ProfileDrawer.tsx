@@ -9,6 +9,7 @@ import { initAnalytics, isAnalyticsOptedOut, setAnalyticsOptOut } from '../utils
 import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 import { COUNTRIES, type CountryCode } from '../constants/countries';
+import { CountryMenu } from './CountryBubble';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
@@ -135,6 +136,8 @@ export function ProfileDrawer({
   hideEmptyDots,
   onHideEmptyDotsChange,
   activeCountry,
+  onActiveCountryChange,
+  availableCountries,
   showStaleDemo,
   onShowStaleDemoChange,
   allBrandsForLoyalty,
@@ -201,6 +204,9 @@ export function ProfileDrawer({
   /** Countries whose stations are hidden from the map (phase 65). */
   /** Which country's Avastuskaart is on screen. */
   activeCountry: CountryCode;
+  onActiveCountryChange: (country: CountryCode) => void;
+  /** Countries with a seeded catalog — same set the map bubble offers. */
+  availableCountries: CountryCode[];
   /** Countries that actually have a region catalog seeded. */
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
@@ -232,6 +238,7 @@ export function ProfileDrawer({
   const { t, i18n } = useTranslation();
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(session ? 'profile' : 'settings');
+  const [countryMenuOpen, setCountryMenuOpen] = useState(false);
   useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
@@ -848,14 +855,50 @@ export function ProfileDrawer({
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
               {t('profile.discovery.description')}
             </p>
-            {/* Deliberately not interactive. The country is chosen on the map,
-                which is hidden behind this drawer — so the counters below still
-                have to say whose they are, without becoming a second place to
-                change it. */}
-            <p style={{ fontSize: '0.78rem', color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
-              {t(COUNTRIES[activeCountry].nameKey)}
-            </p>
+            {/* Says whose the counters below are, and lets you change it here
+                rather than closing the drawer to reach the map bubble. It is
+                the SAME menu and the same state — two triggers for one control,
+                which is not the thing that went wrong before. That was two
+                controls, and then a button whose only job was to navigate. */}
+            {availableCountries.length > 1 ? (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setCountryMenuOpen(o => !o)}
+                  aria-expanded={countryMenuOpen}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-surface-border)',
+                    color: 'var(--color-text)', fontSize: '0.85rem', textAlign: 'left',
+                  }}
+                >
+                  <span aria-hidden style={{ fontSize: '1.05rem' }}>{COUNTRIES[activeCountry].flag}</span>
+                  <span style={{ flex: 1 }}>{t(COUNTRIES[activeCountry].nameKey)}</span>
+                  <ChevronDown
+                    size={15}
+                    style={{
+                      color: 'var(--color-text-muted)',
+                      transform: countryMenuOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                </button>
+                {countryMenuOpen && (
+                  <CountryMenu
+                    activeCountry={activeCountry}
+                    availableCountries={availableCountries}
+                    onPick={(code) => { if (code !== activeCountry) onActiveCountryChange(code); setCountryMenuOpen(false); }}
+                    style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 10 }}
+                  />
+                )}
+              </div>
+            ) : (
+              <p style={{ fontSize: '0.78rem', color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
+                {t(COUNTRIES[activeCountry].nameKey)}
+              </p>
+            )}
 
 
             <button
