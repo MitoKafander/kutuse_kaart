@@ -63,10 +63,10 @@ const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal'
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 const AdminPriceModal = lazyWithReload(() => import('./components/AdminPriceModal').then(m => ({ default: m.AdminPriceModal })));
 import { supabase } from './supabase';
-import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS } from './utils';
+import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS, haversineKm } from './utils';
 import type { LoyaltyDiscounts, BrandProgress, FxRates } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
-import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, isCurrencyCode, type CountryCode } from './constants/countries';
+import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, isCountryCode, isCurrencyCode, type CountryCode } from './constants/countries';
 import { clearCountryPrefs, readActiveCountry, writeActiveCountry, ACTIVE_COUNTRY_KEY } from './utils/countryPrefs';
 import './index.css';
 
@@ -1018,8 +1018,26 @@ function App() {
   useEffect(() => {
     if (!liveUserLocation) return;
     if (localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
-    const guess = countryForCoords(liveUserLocation.lat, liveUserLocation.lon);
+    // Wait for the catalog rather than guess without it. This guess now decides
+    // which stations exist on the map at all, not merely the home view, so
+    // getting it wrong is no longer cosmetic — and once written it is never
+    // revisited.
+    if (!stations.length) return;
+
+    // Nearest catalogued station first, geometry only as a fallback.
+    // countryForCoords is a bounding-box test with a nearest-centre tiebreak and
+    // it is measurably wrong at borders: it places Haparanda in Finland, which
+    // is exactly where a Swede would be standing when this runs.
+    let nearest: { d: number; country?: string } | null = null;
+    for (const st of stations) {
+      const d = haversineKm(liveUserLocation.lat, liveUserLocation.lon, st.latitude, st.longitude);
+      if (!nearest || d < nearest.d) nearest = { d, country: st.country };
+    }
+    const guess = (nearest && nearest.d <= 3 && isCountryCode(nearest.country))
+      ? nearest.country
+      : countryForCoords(liveUserLocation.lat, liveUserLocation.lon);
     if (!guess) return;
+
     // Persist it. Standing where you are is a stronger signal than the browser
     // language guess that got us here, and without writing it the app re-guesses
     // (and briefly re-renders Estonia) on every single load.
@@ -1027,7 +1045,7 @@ function App() {
       if (prev !== guess) writeActiveCountry(guess);
       return guess;
     });
-  }, [liveUserLocation]);
+  }, [liveUserLocation, stations]);
 
   const handleActiveCountryChange = (next: CountryCode) => {
     setActiveCountry(next);
