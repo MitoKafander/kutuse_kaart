@@ -228,10 +228,6 @@
         "confirm2": "Pēdējais apstiprinājums: šo darbību nevar atcelt. Turpināt?",
         "success": "Konts dzēsts.",
         "error": "Konta dzēšana neizdevās: {{message}}"
-      },
-      "countries": {
-        "label": "Valstis",
-        "desc": "Izvēlies valsti, ko redzi kartē. Viena valsts vienlaikus — tā karte paliek ātra — un tā pati izvēle iestata statistiku, atklājumu karti un līderu tabulu. \"Lētākā tuvumā\" un maršruta plānotājs joprojām skatās pāri robežai."
       }
     },
     "header": {
@@ -300,8 +296,6 @@
     "discovery": {
       "title": "Atklājumu karte",
       "description": "Apskati, kādas stacijas esi atklājis. Aizpildi pagastus un apriņķus, lai paceltos atklājēju līderu sarakstā.",
-      "showingCountry": "Rāda: {{country}}",
-      "changeCountry": "Mainīt",
       "stats": {
         "stations": "{{done}}/{{total}} stacijas",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -733,7 +727,10 @@
     "LT": "Lietuva",
     "FI": "Somija",
     "SE": "Zviedrija",
-    "MT": "Malta"
+    "MT": "Malta",
+    "picker": {
+      "label": "Valsts"
+    }
   },
   "freshness": {
     "label": "Cenas vecums",

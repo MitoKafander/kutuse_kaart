@@ -228,10 +228,6 @@
         "confirm2": "Lopullinen vahvistus: tätä toimintoa ei voi peruuttaa. Jatketaanko?",
         "success": "Tili poistettu.",
         "error": "Tilin poisto epäonnistui: {{message}}"
-      },
-      "countries": {
-        "label": "Maat",
-        "desc": "Valitse maa, jonka näet kartalla. Yksi maa kerrallaan — se pitää kartan nopeana — ja sama valinta asettaa tilastot, löytökartan ja tulostaulun. \"Halvin lähellä\" ja reittisuunnittelija katsovat yhä rajan yli."
       }
     },
     "header": {
@@ -300,8 +296,6 @@
     "discovery": {
       "title": "Löytökartta",
       "description": "Katso, mitkä asemat olet löytänyt. Täytä kunnat ja maakunnat noustaksesi löytäjien tulostaululla.",
-      "showingCountry": "Näytetään: {{country}}",
-      "changeCountry": "Vaihda",
       "stats": {
         "stations": "{{done}}/{{total}} asemaa",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -733,7 +727,10 @@
     "LT": "Liettua",
     "FI": "Suomi",
     "SE": "Ruotsi",
-    "MT": "Malta"
+    "MT": "Malta",
+    "picker": {
+      "label": "Maa"
+    }
   },
   "freshness": {
     "label": "Hinnan ikä",

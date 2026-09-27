@@ -511,8 +511,6 @@
     "discovery": {
       "title": "Avastuskaart",
       "description": "Vaata, millised jaamad oled avastanud. Täida valda ja maakondi, et tõusta Avastajate edetabelis.",
-      "showingCountry": "Näitab: {{country}}",
-      "changeCountry": "Vaheta",
       "stats": {
         "stations": "{{done}}/{{total}} jaama",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -596,10 +594,6 @@
         "confirm2": "Viimane kinnitus: see tegevus on tagasipööramatu. Jätkan?",
         "success": "Konto on kustutatud.",
         "error": "Konto kustutamine ebaõnnestus: {{message}}"
-      },
-      "countries": {
-        "label": "Riigid",
-        "desc": "Vali riik, mida kaardil näed. Korraga on näha ühe riigi jaamad — see hoiab kaardi kiirena — ja see sama valik seab statistika, avastuskaardi ja edetabeli. „Odavaim lähedal\" ja teekonna planeerija vaatavad ikka üle piiri."
       }
     }
   },
@@ -812,7 +806,10 @@
     "LT": "Leedu",
     "FI": "Soome",
     "SE": "Rootsi",
-    "MT": "Malta"
+    "MT": "Malta",
+    "picker": {
+      "label": "Riik"
+    }
   },
   "freshness": {
     "label": "Hinna vanus",

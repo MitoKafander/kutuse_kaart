@@ -135,8 +135,6 @@ export function ProfileDrawer({
   hideEmptyDots,
   onHideEmptyDotsChange,
   activeCountry,
-  onActiveCountryChange,
-  availableCountries,
   showStaleDemo,
   onShowStaleDemoChange,
   allBrandsForLoyalty,
@@ -203,9 +201,7 @@ export function ProfileDrawer({
   /** Countries whose stations are hidden from the map (phase 65). */
   /** Which country's Avastuskaart is on screen. */
   activeCountry: CountryCode;
-  onActiveCountryChange: (country: CountryCode) => void;
   /** Countries that actually have a region catalog seeded. */
-  availableCountries: CountryCode[];
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
   allBrandsForLoyalty: string[];
@@ -236,21 +232,6 @@ export function ProfileDrawer({
   const { t, i18n } = useTranslation();
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(session ? 'profile' : 'settings');
-  // The single country control lives on the Settings tab; the Discovery card
-  // links to it. Without the scroll-and-flash the jump lands mid-page and looks
-  // like nothing happened, which is how the duplicate got added in the first place.
-  const countriesRef = useRef<HTMLDivElement | null>(null);
-  const [countriesFlash, setCountriesFlash] = useState(false);
-  const openCountrySettings = () => {
-    setActiveTab('settings');
-    setCountriesFlash(true);
-    // Two frames: one for the tab to render, one for layout to settle before
-    // measuring the scroll target.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      countriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
-    window.setTimeout(() => setCountriesFlash(false), 1600);
-  };
   useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
@@ -867,37 +848,15 @@ export function ProfileDrawer({
             <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.4 }}>
               {t('profile.discovery.description')}
             </p>
+            {/* Deliberately not interactive. The country is chosen on the map,
+                which is hidden behind this drawer — so the counters below still
+                have to say whose they are, without becoming a second place to
+                change it. */}
+            <p style={{ fontSize: '0.78rem', color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
+              {t(COUNTRIES[activeCountry].nameKey)}
+            </p>
 
-            {/* Which country's collection this is. NOT a second country
-                picker: there used to be one here AND one in Settings, both
-                calling onActiveCountryChange, so a single setting had two homes
-                on two different tabs. The fix is one control, not two that
-                agree with each other.
-
-                It lives in Settings rather than here because a signed-out user
-                is pinned to that tab (see activeTab's effect below) and still
-                has to be able to choose a country and hide others. */}
-            {availableCountries.length > 1 && (
-              <button
-                onClick={openCountrySettings}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                  width: '100%', padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-surface-border)',
-                  color: 'var(--color-text)', fontSize: '0.82rem', textAlign: 'left',
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span aria-hidden>{COUNTRIES[activeCountry].flag}</span>
-                  {t('profile.discovery.showingCountry', { country: t(COUNTRIES[activeCountry].nameKey) })}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-primary)', fontSize: '0.78rem' }}>
-                  {t('profile.discovery.changeCountry')}
-                  <ChevronDown size={14} style={{ transform: 'rotate(-90deg)' }} />
-                </span>
-              </button>
-            )}
 
             <button
               onClick={() => setStatsExpanded(e => !e)}
@@ -1495,60 +1454,6 @@ export function ProfileDrawer({
                   </label>
                 </div>
 
-                {/* ONE country section, because these two settings are not
-                    independent and used to be able to contradict each other:
-                    picking Latvia as your country while Latvia's stations were
-                    hidden drew Latvia's regions on an empty map, which reads as
-                    "the Latvian map is broken" rather than "you hid these".
-                    Your country is therefore always shown — its switch is on
-                    and locked, and choosing a new country reveals it. */}
-                <div
-                  ref={countriesRef}
-                  style={{
-                    borderRadius: 12,
-                    // Fades out on its own; purely to answer "where did I land?".
-                    boxShadow: countriesFlash ? '0 0 0 2px var(--color-primary)' : 'none',
-                    transition: 'box-shadow 0.4s ease',
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    <MapPin size={16} /> {t('profile.settings.countries.label')}
-                  </span>
-                  <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--color-text-muted)', paddingLeft: '24px', marginTop: 2 }}>
-                    {t('profile.settings.countries.desc')}
-                  </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: '24px', marginTop: 10 }}>
-                    {/* availableCountries, not COUNTRY_LIST: a country whose
-                        registry entry is committed but whose catalog is not yet
-                        seeded should not be offerable. That window is real — it
-                        is exactly the state between deploying the client and
-                        running the seeds, which the add-a-country recipe
-                        requires. Offering an empty country there reads as a
-                        broken map. */}
-                    {availableCountries.map(code => COUNTRIES[code]).map(meta => {
-                      const isActive = meta.code === activeCountry;
-                      return (
-                        <button
-                          key={meta.code}
-                          onClick={() => onActiveCountryChange(meta.code)}
-                          aria-pressed={isActive}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                            padding: '10px 12px', borderRadius: 10, textAlign: 'left',
-                            cursor: isActive ? 'default' : 'pointer',
-                            background: isActive ? 'var(--color-primary-alpha-10, var(--color-surface))' : 'transparent',
-                            border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
-                            color: 'var(--color-text)', fontSize: '0.9rem',
-                          }}
-                        >
-                          <span aria-hidden style={{ fontSize: '1.05rem' }}>{meta.flag}</span>
-                          <span style={{ flex: 1 }}>{t(meta.nameKey)}</span>
-                          {isActive && <Check size={16} color="var(--color-primary)" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
 
                 {/* Find cheapest fuel (needs a fuel type selected) */}

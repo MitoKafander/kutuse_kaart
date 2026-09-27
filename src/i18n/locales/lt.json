@@ -228,10 +228,6 @@
         "confirm2": "Galutinis patvirtinimas: šio veiksmo negalima atšaukti. Tęsti?",
         "success": "Paskyra ištrinta.",
         "error": "Paskyros ištrinti nepavyko: {{message}}"
-      },
-      "countries": {
-        "label": "Šalys",
-        "desc": "Pasirink šalį, kurią matai žemėlapyje. Po vieną šalį — taip žemėlapis lieka greitas — ir tas pats pasirinkimas nustato statistiką, atradimų žemėlapį ir lyderių lentelę. „Pigiausia netoliese\" ir maršruto planuoklis vis dar žiūri per sieną."
       }
     },
     "header": {
@@ -300,8 +296,6 @@
     "discovery": {
       "title": "Atradimų žemėlapis",
       "description": "Pažiūrėkite, kurias degalines atradote. Užpildykite valsčius ir apskritis, kad pakiltumėte atradėjų lyderių lentelėje.",
-      "showingCountry": "Rodoma: {{country}}",
-      "changeCountry": "Keisti",
       "stats": {
         "stations": "{{done}}/{{total}} degalinės",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -731,7 +725,10 @@
     "LT": "Lietuva",
     "FI": "Suomija",
     "SE": "Švedija",
-    "MT": "Malta"
+    "MT": "Malta",
+    "picker": {
+      "label": "Šalis"
+    }
   },
   "freshness": {
     "label": "Kainos amžius",

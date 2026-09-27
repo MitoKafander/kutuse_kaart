@@ -228,10 +228,6 @@
         "confirm2": "Final confirmation: this action cannot be undone. Continue?",
         "success": "Account deleted.",
         "error": "Account deletion failed: {{message}}"
-      },
-      "countries": {
-        "label": "Countries",
-        "desc": "Choose the country you see on the map. One country at a time — that keeps the map fast — and the same choice sets your statistics, discovery map and leaderboard. \"Cheapest nearby\" and the route planner still look across the border."
       }
     },
     "header": {
@@ -300,8 +296,6 @@
     "discovery": {
       "title": "Discovery map",
       "description": "See which stations you've discovered. Complete parishes and counties to rise in the Discoverers' leaderboard.",
-      "showingCountry": "Showing: {{country}}",
-      "changeCountry": "Change",
       "stats": {
         "stations": "{{done}}/{{total}} stations",
         "level1": "{{done}}/{{total}} {{unit}}",
@@ -810,7 +804,10 @@
     "LT": "Lithuania",
     "FI": "Finland",
     "SE": "Sweden",
-    "MT": "Malta"
+    "MT": "Malta",
+    "picker": {
+      "label": "Country"
+    }
   },
   "freshness": {
     "label": "Price age",

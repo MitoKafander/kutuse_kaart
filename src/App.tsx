@@ -9,6 +9,7 @@ import { CelebrationOverlay } from './components/CelebrationOverlay';
 import { PointsToast, type PointsEvent } from './components/PointsToast';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { FreshnessSlider } from './components/FreshnessSlider';
+import { CountryBubble } from './components/CountryBubble';
 import { UpdateBanner } from './components/UpdateBanner';
 import { FeedbackReplyToast } from './components/FeedbackReplyToast';
 import { type MarketInsight } from './components/MarketInsightDrawer';
@@ -1575,6 +1576,17 @@ function App() {
         <Fuel size={22} />
       </button>
 
+      {/* Country selector, on the map. It scopes everything on screen — the
+          stations drawn, the Avastuskaart, the statistics, the leaderboard,
+          the currency — so it lives where that scope is visible rather than
+          behind a drawer tab. Shown in discovery mode too: the Avastuskaart is
+          per country as well. */}
+      <CountryBubble
+        activeCountry={activeCountry}
+        availableCountries={availableCountries}
+        onChange={handleActiveCountryChange}
+      />
+
       {/* Freshness slider — left edge, opposite the action FABs. Hidden in
           discovery mode, where the map is about coverage rather than prices. */}
       {!showDiscoveryMap && (
@@ -1884,8 +1896,6 @@ function App() {
         hideEmptyDots={hideEmptyDots}
         onHideEmptyDotsChange={handleHideEmptyDotsChange}
         activeCountry={activeCountry}
-        onActiveCountryChange={handleActiveCountryChange}
-        availableCountries={availableCountries}
         showStaleDemo={showStaleDemo}
         onShowStaleDemoChange={(v) => { setShowStaleDemo(v); localStorage.setItem('kyts-show-stale-demo', String(v)); }}
         mapStyle={mapStyle}
