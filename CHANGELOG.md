@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Denmark, and near-miss stations get rescued instead of dropped - 2026-09-27
+
+**EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 · DK 1,921
+= 10,765 active stations** across eight countries.
+
+- 🟢 **5 regioner over 98 kommuner**, ids 701–705, 1,921 stations from 2,143 OSM
+  features. DKK cost one row in `price_bounds`, one entry in `CURRENCIES` and
+  one block in `CURRENCY_SCAN` — no migration, the third currency to go in that
+  way. Its ECB rate (7.4755) was inserted rather than left for the overnight
+  cron, so cross-border ranking worked from the first Danish station.
+- 🔑 **Centroid-in-polygon, a deliberate reversal from the last two countries.**
+  Sweden and Norway both encode their region in the municipal code; Denmark's
+  2007 kommunekode ranges are irregular and do not. Fetching level-1 geometry is
+  affordable here precisely because there are **five** relations, where Norway's
+  16 and Sweden's 21 were the reason to avoid it. Verified: 0 orphans, and the
+  counts match the official split (Hovedstaden 29, Midtjylland 19, Nordjylland
+  11, Sjælland 17, Syddanmark 22).
+
+### The skip rule fired, and it was right
+
+- 🔴 The station seeder skips anything outside every municipality, and its own
+  comment said a **mainland** hit means a boundary is wrong rather than the
+  station. Denmark produced five, all mainland — so they got measured before
+  being written off. Every one sat **5 to 110 metres** from a boundary: quays,
+  piers and reclaimed land, where OSM's administrative line follows the historic
+  shore rather than the current one.
+- 🟢 The seeder now **snaps an unplaced station to the nearest municipality
+  within 500 m** before skipping anything. All five recovered. The tolerance was
+  checked against the case the skip exists for: Norway's three Svalbard pumps
+  are still dropped, being hundreds of kilometres from the nearest kommune
+  rather than tens of metres.
+- 🟡 `seed_country_regions.mjs` re-checks placement without the snap and counted
+  those five as "unplaced". It leaves them alone (`continue`, never a write) so
+  the rescue survives — but its message claimed they "keep parish_id NULL",
+  which is now false. Corrected, with the reason, so the next person does not
+  "fix" it by re-allowing nulls.
+- 🟢 Verified after seeding: **0 null-parish stations in any of the eight
+  countries.**
+
+### Chains: five added, two refused
+
+- 🟢 F24 122, Q8 111, Go'on 107, OIL! 67, Bonus 33. Circle K, Uno-X, Shell, Ingo
+  and Statoil were already patterns — Denmark shares most of its forecourts with
+  its neighbours, and Uno-X arrived with Norway a few hours earlier.
+- 🔑 **`q8` must stay below `okq8`.** "OKQ8" contains "q8", so on first-match-wins
+  the wrong order rebrands all **445 Swedish OKQ8 stations** as Q8. Tested both
+  ways against the real resolver before committing.
+- ⚠️ **No `ok` pattern, though OK is Denmark's largest chain at 629 forecourts.**
+  The same refusal Sweden got: "ok" is a substring of ordinary words — Biokaasu,
+  Tehnoküla, Ilmajoki — and substring matching cannot express a word boundary.
+  Unnecessary for the bulk anyway: all 629 are named exactly "OK" and group
+  unaided. Only ~20 variants (OK Plus, OK Truck) fragment, much the cheaper harm.
+- ⚠️ **No `1 2 3` pattern.** Denmark's 1-2-3 is a Circle K discount brand with 14
+  sites, but the folded pattern also catches a Latvian station literally named
+  "1-2-3" that is unrelated.
+
 ## [Shipped] - Norway, and the cache stops being the ceiling - 2026-09-27
 
 **EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 = 8,844

@@ -80,9 +80,15 @@ are the intended case.
 
 **Three ways to group level-2 into level-1, pick by what the country actually has:**
 a statutory code carried on each unit (Sweden's `ref:scb`, Norway's kommunenummer in
-`ref` — exact, preferred),
+`ref` — exact, preferred; **Denmark's kommunekode does NOT encode its region**, so check
+before assuming),
 a statutory table (Latvia keyed by name, **Malta keyed by ISO 3166-2** — when OSM has no
-level-1 tier at all), or centroid-in-polygon (Lithuania, Finland — only geometry available).
+level-1 tier at all), or centroid-in-polygon (Lithuania, Finland, Denmark — only geometry
+available, and cheap when level-1 is a handful: DK's 5 vs NO's 16 and SE's 21).
+⚠️ **CHAIN_PATTERNS is first-match-wins and substring-based.** `q8` must sit below `okq8`
+or 445 Swedish stations get rebranded. A chain whose name is a common substring cannot be
+patterned at all — no `ok` (Denmark's largest, 629 sites) and no `driv` (Norway, 170);
+both are named exactly that in OSM and group unaided.
 ⚠️ **Key such a table by a code, not a name, unless you have checked for duplicates** —
 Malta has two councils called `Ir-Rabat` and two called `Żebbuġ`.
 🔑 **Source the grouping, don't recall it.** Malta's councils carry `wikidata` tags, so
