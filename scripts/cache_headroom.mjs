@@ -22,25 +22,30 @@ const rows = await fetchAll('stations', 'id, name, latitude, longitude, country,
   (q) => q.eq('active', true));
 
 const size = (list) => (JSON.stringify(list.map(cacheable)).length * 2) / 1048576;  // 2 bytes/char
+const CACHE_LIMIT = 1500;   // keep in step with CACHE_LIMIT in src/App.tsx
+
 const byCountry = {};
 for (const r of rows) (byCountry[r.country] ??= []).push(r);
-
-const all = size(rows);
-const worst = Object.entries(byCountry).sort((a, b) => b[1].length - a[1].length)[0];
 const perStation = (JSON.stringify(rows.map(cacheable)).length * 2) / rows.length;
 
 console.log(`${rows.length} active stations · ~${perStation.toFixed(0)} bytes each\n`);
-console.log('The cache holds ONE country (since 2026-09-27), because the map draws one:');
-for (const [cc, list] of Object.entries(byCountry).sort((a, b) => b[1].length - a[1].length)) {
-  const mib = size(list);
-  console.log(`  ${cc}: ${String(list.length).padStart(5)} stations -> ${mib.toFixed(2)} MiB (${(100 * mib / 5).toFixed(0)}% of quota)`);
-}
-console.log(`\nWorst case is ${worst[0]} at ${size(worst[1]).toFixed(2)} MiB.`);
-console.log(`Caching every country instead would be ${all.toFixed(2)} MiB (${(100 * all / 5).toFixed(0)}%) — what it used to do.`);
+console.log(`The cache keeps at most ${CACHE_LIMIT} stations — one country, nearest the`);
+console.log('last map centre — so its cost is CONSTANT and catalogue size is no longer a');
+console.log('ceiling. What follows is what each country would cost if it were uncapped,');
+console.log('which is only useful for spotting how much the cap is doing:\n');
 
-// What matters now is the biggest single country a new one could bring, not
-// the running total.
-const headroom = Math.floor((5 * 1048576 / 2) / (perStation / 2));
-console.log(`\nA new country is affordable as long as IT ALONE fits: roughly ${headroom} stations`);
-console.log('leaves nothing for prices, votes, the celebration store or country prefs, so treat');
-console.log(`~${Math.floor(headroom * 0.6)} as the practical limit for one country.`);
+let capped = 0;
+for (const [cc, list] of Object.entries(byCountry).sort((a, b) => b[1].length - a[1].length)) {
+  const full = size(list);
+  const kept = Math.min(list.length, CACHE_LIMIT);
+  const mark = list.length > CACHE_LIMIT ? `  -> capped to ${kept}` : '';
+  if (list.length > CACHE_LIMIT) capped++;
+  console.log(`  ${cc}: ${String(list.length).padStart(5)} stations, uncapped ${full.toFixed(2)} MiB (${(100 * full / 5).toFixed(0)}%)${mark}`);
+}
+
+const cappedMiB = (CACHE_LIMIT * perStation) / 1048576;
+console.log(`\nActual worst case, any country: ~${cappedMiB.toFixed(2)} MiB (${(100 * cappedMiB / 5).toFixed(0)}% of the 5 MiB quota).`);
+console.log(`${capped} of ${Object.keys(byCountry).length} countries are large enough for the cap to bite.`);
+console.log('\nAdding a country no longer has a cache cost to check — it is bounded by');
+console.log('construction. What still matters per country: the seed size itself, and');
+console.log('whether prices/votes/celebration store are growing into the same quota.');
