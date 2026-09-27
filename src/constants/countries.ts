@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK', 'PL'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -56,7 +56,7 @@ export type CountryMeta = {
 };
 
 /** Currencies with a row in `price_bounds`. Adding one is a DB INSERT plus an entry here. */
-export const CURRENCY_CODES = ['EUR', 'SEK', 'NOK', 'DKK'] as const;
+export const CURRENCY_CODES = ['EUR', 'SEK', 'NOK', 'DKK', 'PLN'] as const;
 export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 export type CurrencyMeta = {
@@ -111,6 +111,9 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
   // neighbours. Same widening rule as SEK and NOK: an over-estimate drops
   // nothing, an under-estimate returns an empty scan on a good photo.
   DKK: { code: 'DKK', decimals: 2, min: 4.00, max: 30.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'øre', subunitSpaced: true,  integerDigits: 2 },
+  // Polish pumps run ~6-7 PLN/L, the cheapest in the region and the reason
+  // Lithuanians cross for fuel. Subunit is the grosz.
+  PLN: { code: 'PLN', decimals: 2, min: 2.00, max: 15.00, symbol: 'zł', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'gr',  subunitSpaced: true,  integerDigits: 1 },
 };
 
 export function isCurrencyCode(v: unknown): v is CurrencyCode {
@@ -252,6 +255,21 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     // No Danish locale, so English — as for Sweden and Norway.
     preferredLocale: 'en',
     currency: 'DKK',
+  },
+  PL: {
+    code: 'PL',
+    flag: '🇵🇱',
+    nameKey: 'country.PL',
+    center: [52.1, 19.4],
+    zoom: 6,
+    bbox: [14.1, 48.9, 24.2, 55.0],
+    boundaries: { level1: '/regions_pl.geojson', level2: '/municipalities_pl.geojson' },
+    level1Key: 'region.level1.PL',
+    level2Key: 'region.level2.PL',
+    translatableRegionSuffix: false,
+    // No Polish locale yet, so English.
+    preferredLocale: 'en',
+    currency: 'PLN',
   },
 };
 

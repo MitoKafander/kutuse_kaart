@@ -516,6 +516,39 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   // ⚠️ NO `1 2 3` PATTERN either. Denmark's 1-2-3 is a Circle K discount brand
   // with 14 sites, but the folded pattern also catches a Latvian station
   // literally named "1-2-3" that has nothing to do with it.
+
+  // Polish chains. Orlen (1,912 — the largest single chain in the whole app),
+  // Shell (463) and Circle K (374) are already patterns above; Orlen arrived
+  // with Lithuania.
+  //
+  // Polish OSM often prefixes a descriptive "Stacja paliw …" ("fuel station"),
+  // so these patterns are doing real work beyond exact names.
+  //
+  // `bp` also catches one Norwegian and one Lithuanian station literally named
+  // BP — correct, like `uno x` reaching into Sweden.
+  { match: 'bp',             canonical: 'BP' },           // 587
+  { match: 'moya',           canonical: 'Moya' },         // 470
+  { match: 'avia',           canonical: 'Avia' },         // 145
+  { match: 'pieprzyk',       canonical: 'Pieprzyk' },     // 99
+  // ⚠️ Known false positive: "Dynamic Gas & Wash" contains "amic". One station,
+  // against 28 that would otherwise fragment across Amic / Amic Energy / AMIC
+  // Energy / Amic Energia — the trade is clearly worth it, same call as Tanka.
+  { match: 'amic',           canonical: 'Amic' },         // 94 + 28 variants
+  { match: 'watis',          canonical: 'Watis' },        // 67
+  { match: 'lotos',          canonical: 'Lotos' },        // 60
+  { match: 'huzar',          canonical: 'Huzar' },        // 47
+  { match: 'bliska',         canonical: 'Bliska' },       // 45
+  { match: 'intermarche',    canonical: 'Intermarché' },  // folded: matches "Intermarché", 41
+  //
+  // ⚠️ NO `mol` PATTERN, despite MOL having 319 Polish forecourts. All 319 are
+  // named exactly "MOL" and group unaided; the pattern would gain two strays
+  // ("Mol", "Moll") and cost a Norwegian independent — "Coop Marked Moldjord"
+  // contains "mol". Two gained against one broken is not a trade worth making
+  // when the 319 already work.
+  //
+  // ⚠️ NO `oktan` PATTERN. It would gain about two ("OKTAN", "Oktan - Kosma")
+  // and cost two: a Polish "Troktan" and a Latvian chain genuinely called
+  // "Oktans". The 37 exact "Oktan" rows group unaided.
 ];
 
 // Diacritics are folded on BOTH sides (pattern and station name) so one

@@ -205,6 +205,45 @@ export function loadMunicipalities(cc) {
  *
  * Names read from DK_counties.json, not recalled.
  */
+/**
+ * Poland's 16 województwa, keyed by the OSM name exactly as the cache carries
+ * it — lowercase "województwo", which is how Polish writes it and how OSM
+ * stores it.
+ *
+ * Poland is the first THREE-tier country: województwo (4) over powiat (6) over
+ * gmina (7). Kyts uses the first two. Gminy would be 2,480 tiles at 3.5
+ * stations each, against the 6-20 every other country runs — too fine to read
+ * as a collectable area, and eight times Finland's level-2 count.
+ *
+ * Centroid-in-polygon, like Denmark: the powiat has a TERYT code but it does
+ * not carry the voivodeship as a clean prefix the way Sweden's and Norway's
+ * municipal codes do, and sixteen level-1 relations are cheap to fetch.
+ */
+export const PL_VOIVODESHIP_IDS = {
+  'województwo dolnośląskie':        801,
+  'województwo kujawsko-pomorskie':  802,
+  'województwo lubelskie':           803,
+  'województwo lubuskie':            804,
+  'województwo łódzkie':             805,
+  'województwo małopolskie':         806,
+  'województwo mazowieckie':         807,
+  'województwo opolskie':            808,
+  'województwo podkarpackie':        809,
+  'województwo podlaskie':           810,
+  'województwo pomorskie':           811,
+  'województwo śląskie':             812,
+  'województwo świętokrzyskie':      813,
+  'województwo warmińsko-mazurskie': 814,
+  'województwo wielkopolskie':       815,
+  'województwo zachodniopomorskie':  816,
+};
+
+export const PL_VOIVODESHIP_EMOJI = {
+  801: '⛰️', 802: '🌾', 803: '🌻', 804: '🌲', 805: '🏭', 806: '🏔️',
+  807: '🏙️', 808: '🌳', 809: '🦌', 810: '🦬', 811: '⚓', 812: '⛏️',
+  813: '🪨', 814: '🏞️', 815: '🌽', 816: '🌊',
+};
+
 export const DK_REGION_IDS = {
   'Region Hovedstaden': 701,
   'Region Midtjylland': 702,
@@ -518,6 +557,7 @@ const OSM_LEVEL1 = {
   LT: { ids: LT_COUNTY_IDS, emoji: LT_COUNTY_EMOJI },
   FI: { ids: FI_REGION_IDS, emoji: FI_REGION_EMOJI },
   DK: { ids: DK_REGION_IDS, emoji: DK_REGION_EMOJI },
+  PL: { ids: PL_VOIVODESHIP_IDS, emoji: PL_VOIVODESHIP_EMOJI },
 };
 
 export function level1Rows(cc, municipalities) {
@@ -544,7 +584,7 @@ export function level1Rows(cc, municipalities) {
  * Finland, and three of them were still defaulting to ['LV','LT'] after it
  * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
  */
-export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK'];
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK', 'PL'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);

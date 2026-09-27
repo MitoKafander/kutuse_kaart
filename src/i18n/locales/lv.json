@@ -24,7 +24,8 @@
       "SE": "lēne",
       "MT": "reģions",
       "NO": "apgabals",
-      "DK": "reģions"
+      "DK": "reģions",
+      "PL": "vojevodiste"
     },
     "level2": {
       "EE": "pagasti",
@@ -34,7 +35,8 @@
       "SE": "komūna",
       "MT": "vietējā padome",
       "NO": "komūna",
-      "DK": "komūna"
+      "DK": "komūna",
+      "PL": "apriņķis"
     }
   },
   "price": {
@@ -734,6 +736,7 @@
     "MT": "Malta",
     "NO": "Norvēģija",
     "DK": "Dānija",
+    "PL": "Polija",
     "picker": {
       "label": "Valsts"
     }

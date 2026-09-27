@@ -24,7 +24,8 @@
       "SE": "county",
       "MT": "region",
       "NO": "county",
-      "DK": "region"
+      "DK": "region",
+      "PL": "voivodeship"
     },
     "level2": {
       "EE": "parishes",
@@ -34,7 +35,8 @@
       "SE": "municipality",
       "MT": "local council",
       "NO": "municipality",
-      "DK": "municipality"
+      "DK": "municipality",
+      "PL": "county"
     }
   },
   "price": {
@@ -811,6 +813,7 @@
     "MT": "Malta",
     "NO": "Norway",
     "DK": "Denmark",
+    "PL": "Poland",
     "picker": {
       "label": "Country"
     }

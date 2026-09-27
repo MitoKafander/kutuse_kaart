@@ -24,7 +24,8 @@
       "SE": "lään",
       "MT": "reġjun",
       "NO": "maakond",
-      "DK": "regioon"
+      "DK": "regioon",
+      "PL": "vojevoodkond"
     },
     "level2": {
       "EE": "valda",
@@ -34,7 +35,8 @@
       "SE": "kommuun",
       "MT": "kohalik nõukogu",
       "NO": "kommuun",
-      "DK": "kommuun"
+      "DK": "kommuun",
+      "PL": "powiat"
     }
   },
   "price": {
@@ -813,6 +815,7 @@
     "MT": "Malta",
     "NO": "Norra",
     "DK": "Taani",
+    "PL": "Poola",
     "picker": {
       "label": "Riik"
     }

@@ -24,7 +24,8 @@
       "SE": "lääni",
       "MT": "alue",
       "NO": "lääni",
-      "DK": "alue"
+      "DK": "alue",
+      "PL": "voivodikunta"
     },
     "level2": {
       "EE": "kuntaa",
@@ -34,7 +35,8 @@
       "SE": "kunta",
       "MT": "paikallisneuvosto",
       "NO": "kunta",
-      "DK": "kunta"
+      "DK": "kunta",
+      "PL": "piirikunta"
     }
   },
   "price": {
@@ -734,6 +736,7 @@
     "MT": "Malta",
     "NO": "Norja",
     "DK": "Tanska",
+    "PL": "Puola",
     "picker": {
       "label": "Maa"
     }

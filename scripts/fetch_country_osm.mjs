@@ -68,6 +68,16 @@ const ADMIN = {
   // geometry is the obvious choice: five relations is cheap, where Norway's 16
   // and Sweden's 21 were not. Probed; levels 5, 6 and 8 are empty.
   DK: { level1: 4, level2: 7, minL1: 5, maxL1: 5, minL2: 96, maxL2: 100, minFuel: 1200 },
+  // Poland: 16 województwa (level 4) over 380 powiaty (level 6). The first
+  // THREE-tier country — gminy sit below at level 7 with 2,480 of them, which
+  // would be 3.5 stations per tile against the 6-20 every other country runs.
+  // Powiat is the tier that reads as a collectable area.
+  //
+  // Probed with scripts/probe_country_osm.mjs. An earlier hand-rolled probe
+  // reported zero powiaty and zero fuel stations because its sanity check
+  // accepted a count of zero from a throttled mirror — the numbers here come
+  // from the rerun that rejects it.
+  PL: { level1: 4, level2: 6, minL1: 16, maxL1: 16, minL2: 375, maxL2: 385, minFuel: 5000 },
 };
 
 for (const cc of COUNTRIES) {

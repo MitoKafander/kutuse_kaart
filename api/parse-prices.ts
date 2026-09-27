@@ -39,7 +39,8 @@ const ALLOWED_BRANDS = [
   'Apsaga', 'Skulas', 'Milda', 'ABC', 'St1', 'Teboil', 'SEO', 'Shell',
   'Gulf', 'Såifa', 'Preem', 'OKQ8', 'Ingo', 'Qstar', 'Tanka', 'Din-X',
   'Bilisten', 'Uno-X', 'YX', 'Esso', 'LPG Norge', 'Automat1', 'Bunker Oil',
-  'F24', 'Q8', 'OIL!', 'Bonus',
+  'F24', 'Q8', 'OIL!', 'Bonus', 'BP', 'Moya', 'Avia', 'Pieprzyk', 'Amic',
+  'Watis', 'Lotos', 'Huzar', 'Bliska', 'Intermarché',
 ] as const;
 const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
 
@@ -106,6 +107,19 @@ const CURRENCY_SCAN = {
       'Bensiin 98': [ 8, 26],
       'Diisel':     [ 7, 26],
       'LPG':        [ 4, 16],
+    },
+  },
+  // Poland is the cheapest market in the region, ~6-7 PLN/L — the only
+  // currency here whose pump prices have a SINGLE digit before the separator,
+  // like the euro.
+  PLN: {
+    symbol: 'zł',
+    subunitNote: '~2–4 zł/L',
+    ranges: {
+      'Bensiin 95': [3.5, 12],
+      'Bensiin 98': [4.0, 13],
+      'Diisel':     [3.5, 13],
+      'LPG':        [1.5,  7],
     },
   },
 } as const;
