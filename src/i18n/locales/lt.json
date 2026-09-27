@@ -231,9 +231,7 @@
       },
       "countries": {
         "label": "Šalys",
-        "desc": "Vienintelė vieta, kur pasirenkamos šalys. Palieskite šalį, kad padarytumėte ją savo — tai nustato žemėlapio vaizdą, statistiką, atradimų žemėlapį ir lyderių lentelę. Kitas galite paslėpti iš žemėlapio.",
-        "yours": "JŪSŲ",
-        "alwaysShown": "Jūsų šalis visada rodoma"
+        "desc": "Pasirink šalį, kurią matai žemėlapyje. Po vieną šalį — taip žemėlapis lieka greitas — ir tas pats pasirinkimas nustato statistiką, atradimų žemėlapį ir lyderių lentelę. „Pigiausia netoliese\" ir maršruto planuoklis vis dar žiūri per sieną."
       }
     },
     "header": {

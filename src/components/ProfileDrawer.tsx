@@ -134,8 +134,6 @@ export function ProfileDrawer({
   onShowClustersChange,
   hideEmptyDots,
   onHideEmptyDotsChange,
-  hiddenCountries,
-  onHiddenCountriesChange,
   activeCountry,
   onActiveCountryChange,
   availableCountries,
@@ -203,8 +201,6 @@ export function ProfileDrawer({
   hideEmptyDots: boolean;
   onHideEmptyDotsChange: (hide: boolean) => void;
   /** Countries whose stations are hidden from the map (phase 65). */
-  hiddenCountries: CountryCode[];
-  onHiddenCountriesChange: (hidden: CountryCode[]) => void;
   /** Which country's Avastuskaart is on screen. */
   activeCountry: CountryCode;
   onActiveCountryChange: (country: CountryCode) => void;
@@ -396,13 +392,6 @@ export function ProfileDrawer({
     // Supabase write + localStorage mirror are handled by the parent so the
     // same toggle path is shared with the map banner.
     onShowDiscoveryMapChange(!showDiscoveryMap);
-  };
-
-  const handleCountryVisibilityToggle = (code: CountryCode) => {
-    const next = hiddenCountries.includes(code)
-      ? hiddenCountries.filter(c => c !== code)
-      : [...hiddenCountries, code];
-    onHiddenCountriesChange(next);
   };
 
   const handleAnalyticsToggle = () => {
@@ -1537,66 +1526,25 @@ export function ProfileDrawer({
                         requires. Offering an empty country there reads as a
                         broken map. */}
                     {availableCountries.map(code => COUNTRIES[code]).map(meta => {
-                      const isHome = meta.code === activeCountry;
-                      const visible = isHome || !hiddenCountries.includes(meta.code);
+                      const isActive = meta.code === activeCountry;
                       return (
-                        <div
+                        <button
                           key={meta.code}
+                          onClick={() => onActiveCountryChange(meta.code)}
+                          aria-pressed={isActive}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            padding: '8px 10px', borderRadius: 10,
-                            background: isHome ? 'var(--color-primary-alpha-10, var(--color-surface))' : 'transparent',
-                            border: `1px solid ${isHome ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                            padding: '10px 12px', borderRadius: 10, textAlign: 'left',
+                            cursor: isActive ? 'default' : 'pointer',
+                            background: isActive ? 'var(--color-primary-alpha-10, var(--color-surface))' : 'transparent',
+                            border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--color-surface-border)'}`,
+                            color: 'var(--color-text)', fontSize: '0.9rem',
                           }}
                         >
-                          {/* Tapping the name makes this your country. */}
-                          <button
-                            onClick={() => onActiveCountryChange(meta.code)}
-                            disabled={isHome}
-                            style={{
-                              flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-                              background: 'transparent', border: 'none', padding: 0,
-                              cursor: isHome ? 'default' : 'pointer',
-                              color: 'var(--color-text)', fontSize: '0.85rem', textAlign: 'left',
-                            }}
-                          >
-                            <span aria-hidden>{meta.flag}</span>
-                            <span>{t(meta.nameKey)}</span>
-                            {isHome && (
-                              <span style={{
-                                fontSize: '0.62rem', fontWeight: 600, letterSpacing: '0.3px',
-                                color: 'var(--color-primary)', border: '1px solid var(--color-primary)',
-                                borderRadius: 6, padding: '1px 5px', whiteSpace: 'nowrap',
-                              }}>
-                                {t('profile.settings.countries.yours')}
-                              </span>
-                            )}
-                          </button>
-
-                          {/* Visibility. Locked on for your own country — you
-                              cannot be "in" a country and hide it. */}
-                          <div
-                            role="switch"
-                            aria-checked={visible}
-                            aria-disabled={isHome}
-                            aria-label={t(meta.nameKey)}
-                            title={isHome ? t('profile.settings.countries.alwaysShown') : undefined}
-                            onClick={() => { if (!isHome) handleCountryVisibilityToggle(meta.code); }}
-                            style={{
-                              width: '44px', height: '24px', borderRadius: '12px', flexShrink: 0,
-                              background: visible ? 'var(--color-primary)' : 'var(--color-surface)',
-                              border: '1px solid var(--color-surface-border)',
-                              position: 'relative', transition: 'background 0.2s',
-                              cursor: isHome ? 'not-allowed' : 'pointer',
-                              opacity: isHome ? 0.55 : 1,
-                            }}
-                          >
-                            <div style={{
-                              width: '20px', height: '20px', borderRadius: '50%', background: 'white',
-                              position: 'absolute', top: '1px', left: visible ? '22px' : '2px', transition: 'left 0.2s'
-                            }}/>
-                          </div>
-                        </div>
+                          <span aria-hidden style={{ fontSize: '1.05rem' }}>{meta.flag}</span>
+                          <span style={{ flex: 1 }}>{t(meta.nameKey)}</span>
+                          {isActive && <Check size={16} color="var(--color-primary)" />}
+                        </button>
                       );
                     })}
                   </div>

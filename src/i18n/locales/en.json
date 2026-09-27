@@ -231,9 +231,7 @@
       },
       "countries": {
         "label": "Countries",
-        "desc": "The one place countries are chosen. Tap a country to make it yours — it sets the map view, statistics, discovery map and leaderboard. You can hide the others from the map.",
-        "yours": "YOURS",
-        "alwaysShown": "Your own country is always shown"
+        "desc": "Choose the country you see on the map. One country at a time — that keeps the map fast — and the same choice sets your statistics, discovery map and leaderboard. \"Cheapest nearby\" and the route planner still look across the border."
       }
     },
     "header": {

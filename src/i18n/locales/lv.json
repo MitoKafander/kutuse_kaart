@@ -231,9 +231,7 @@
       },
       "countries": {
         "label": "Valstis",
-        "desc": "Vienīgā vieta, kur izvēlēties valstis. Pieskaries valstij, lai padarītu to par savu — tas iestata kartes skatu, statistiku, atklājumu karti un līderu tabulu. Pārējās vari paslēpt no kartes.",
-        "yours": "JŪSU",
-        "alwaysShown": "Jūsu valsts vienmēr ir redzama"
+        "desc": "Izvēlies valsti, ko redzi kartē. Viena valsts vienlaikus — tā karte paliek ātra — un tā pati izvēle iestata statistiku, atklājumu karti un līderu tabulu. \"Lētākā tuvumā\" un maršruta plānotājs joprojām skatās pāri robežai."
       }
     },
     "header": {

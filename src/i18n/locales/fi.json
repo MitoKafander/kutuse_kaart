@@ -231,9 +231,7 @@
       },
       "countries": {
         "label": "Maat",
-        "desc": "Ainoa paikka, jossa maat valitaan. Napauta maata tehdäksesi siitä omasi — se asettaa karttanäkymän, tilastot, löytökartan ja tulostaulun. Muut voit piilottaa kartalta.",
-        "yours": "SINUN",
-        "alwaysShown": "Oma maasi näkyy aina"
+        "desc": "Valitse maa, jonka näet kartalla. Yksi maa kerrallaan — se pitää kartan nopeana — ja sama valinta asettaa tilastot, löytökartan ja tulostaulun. \"Halvin lähellä\" ja reittisuunnittelija katsovat yhä rajan yli."
       }
     },
     "header": {

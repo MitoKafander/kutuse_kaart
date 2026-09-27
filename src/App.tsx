@@ -67,11 +67,7 @@ import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HO
 import type { LoyaltyDiscounts, BrandProgress, FxRates } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
 import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, isCurrencyCode, type CountryCode } from './constants/countries';
-import {
-  readHiddenCountries, writeHiddenCountries, clearCountryPrefs,
-  sanitizeHiddenCountries, readActiveCountry, writeActiveCountry,
-  ACTIVE_COUNTRY_KEY,
-} from './utils/countryPrefs';
+import { clearCountryPrefs, readActiveCountry, writeActiveCountry, ACTIVE_COUNTRY_KEY } from './utils/countryPrefs';
 import './index.css';
 
 // Bumped from v1 for phase 65: cached region rows now carry a `country`, and a
@@ -301,10 +297,8 @@ function App() {
   const [hideEmptyDots, setHideEmptyDots] = useState(() => {
     return localStorage.getItem('kyts-hide-empty-dots') === 'true';
   });
-  // Phase 65: per-country station visibility. Replaces the single
-  // show_latvian_stations boolean — an empty array means "show every country".
-  const [hiddenCountries, setHiddenCountries] = useState<CountryCode[]>(() => readHiddenCountries());
-  // Which country's Avastuskaart is on screen. Region catalogs, boundary
+  // The single country the app is showing: its stations on the map, its
+  // Avastuskaart, its statistics, its leaderboard, its currency. Region catalogs, boundary
   // polygons and the Avastajad board are all scoped to this, so an Estonian
   // user's counters are exactly what they were before the expansion.
   const [activeCountry, setActiveCountry] = useState<CountryCode>(() => readActiveCountry());
@@ -633,16 +627,6 @@ function App() {
         setHideEmptyDots(prof.hide_empty_dots);
         localStorage.setItem('kyts-hide-empty-dots', String(prof.hide_empty_dots));
       }
-      // hidden_countries (phase 65) wins; fall back to the phase-27 boolean so
-      // the preference survives both an unapplied migration and an old row.
-      if (Array.isArray(prof?.hidden_countries)) {
-        const hidden = sanitizeHiddenCountries(prof.hidden_countries);
-        setHiddenCountries(hidden);
-        writeHiddenCountries(hidden);
-      } else if (prof?.show_latvian_stations === false) {
-        setHiddenCountries(['LV']);
-        writeHiddenCountries(['LV']);
-      }
       if (prof?.apply_loyalty !== null && prof?.apply_loyalty !== undefined) {
         setApplyLoyalty(prof.apply_loyalty);
         localStorage.setItem('kyts-apply-loyalty', String(prof.apply_loyalty));
@@ -677,7 +661,6 @@ function App() {
       setDisplayName('');
       setHideEmptyDots(false);
       setShowClusters(true);
-      setHiddenCountries([]);
       // activeCountry is NOT reset — see clearCountryPrefs(). It's device-level
       // like theme, and signing out doesn't move you to another country.
       setDotStyle('info');
@@ -1023,31 +1006,11 @@ function App() {
     return activeInsights.find(i => toCountryCode(i.country) === activeCountry) ?? null;
   }, [activeInsights, activeCountry]);
 
-  // Phase 65 station visibility. Writes BOTH the new array and the phase-27
-  // boolean: the array is the truth, the boolean keeps an installed PWA still
-  // running the pre-expansion bundle in agreement about Latvia. If the profile
-  // write is rejected because the column doesn't exist yet (migration not
-  // applied), fall back to writing the legacy boolean alone so the toggle
-  // still persists instead of silently doing nothing.
-  const handleHiddenCountriesChange = (requested: CountryCode[]) => {
-    // Defensive half of the same invariant: whatever the caller asks for, the
-    // active country is never hidden. The UI disables that switch, but this is
-    // the guarantee the rest of the app relies on.
-    const next = requested.filter(c => c !== activeCountry);
-    setHiddenCountries(next);
-    writeHiddenCountries(next);
-    if (session?.user?.id) {
-      const uid = session.user.id;
-      void supabase.from('user_profiles')
-        .upsert({ id: uid, hidden_countries: next, show_latvian_stations: !next.includes('LV') })
-        .then(({ error }) => {
-          if (!error) return;
-          void supabase.from('user_profiles')
-            .upsert({ id: uid, show_latvian_stations: !next.includes('LV') })
-            .then(() => {}, () => {});
-        }, () => {});
-    }
-  };
+  // Phase 65's per-country visibility is gone: the map now draws ONE country,
+  // so there is nothing left to hide. `user_profiles.hidden_countries` and the
+  // phase-27 `show_latvian_stations` boolean are both left in the schema
+  // untouched — harmless, and they are the rollback path if single-country
+  // turns out to be the wrong call.
 
   // First fix on the user's position picks their country for them, unless
   // they've already chosen one. A Latvian shouldn't have to find a setting to
@@ -1069,14 +1032,12 @@ function App() {
   const handleActiveCountryChange = (next: CountryCode) => {
     setActiveCountry(next);
     writeActiveCountry(next);
-    // You cannot be "in" a country and also hide its stations. Without this,
-    // picking Latvia while Latvia was hidden drew Latvia's regions over an
-    // empty map — which reads as a broken app, not as a setting you chose.
-    if (hiddenCountries.includes(next)) {
-      handleHiddenCountriesChange(hiddenCountries.filter(c => c !== next));
-    }
     // Region focus belongs to the country we're leaving.
     setFocusedMaakondId(null);
+    // Ditto a selected station: keeping it would leave the previous country's
+    // pin floating on the new country's map, since mapStations deliberately
+    // carries a selected station across borders.
+    setSelectedStation(null);
   };
 
   // Centralized so the main-screen filter pill and the profile-settings toggle
@@ -1167,15 +1128,23 @@ function App() {
     return Array.from(brands).sort();
   }, [stations]);
 
-  // Compute filtered stations based on Brand Menu ONLY
-  // Everything in a country the user hasn't switched off. This is the honest
-  // "stations that exist for me" set: the map filters it further by brand,
-  // and search runs off it directly so hiding Lithuania also stops Lithuanian
-  // stations turning up in the search dropdown.
-  const countryVisibleStations = useMemo(
-    () => stations.filter(station => !hiddenCountries.includes(toCountryCode(station.country))),
-    [stations, hiddenCountries],
-  );
+  // ONE COUNTRY ON THE MAP. Until now every country the user had not switched
+  // off was drawn at once, which by six countries meant 6,686 stations — and a
+  // Latvian forecourt is not something an Estonian driver can act on anyway.
+  // The map, the search dropdown, the price pills and the freshness counts all
+  // run off the active country alone.
+  //
+  // The two genuinely cross-border panels are deliberately NOT limited to it
+  // and read `stations` directly — see their call sites below.
+  const mapStations = useMemo(() => {
+    // A station chosen from a cross-border result must stay drawable even
+    // though its country is not the active one — otherwise tapping the cheapest
+    // station over the border opens a drawer for a dot that is not on the map.
+    if (!selectedStation || toCountryCode(selectedStation.country) === activeCountry) return countryStations;
+    return countryStations.some(s => String(s.id) === String(selectedStation.id))
+      ? countryStations
+      : [...countryStations, selectedStation];
+  }, [countryStations, selectedStation, activeCountry]);
 
   // How many stations would show a price at each slider stop. Drives the
   // read-out, and is what makes the control legible before you touch it: the
@@ -1190,21 +1159,21 @@ function App() {
       const prev = newestAgeByStation.get(sid);
       if (prev === undefined || age < prev) newestAgeByStation.set(sid, age);
     }
-    const visibleIds = new Set(countryVisibleStations.map(s => String(s.id)));
+    const visibleIds = new Set(mapStations.map(s => String(s.id)));
     return AGE_STOPS.map(stop => {
       let n = 0;
       for (const [sid, age] of newestAgeByStation) if (visibleIds.has(sid) && age <= stop) n++;
       return n;
     });
-  }, [prices, votes, countryVisibleStations]);
+  }, [prices, votes, mapStations]);
 
   const filteredStations = useMemo(() => {
-    return countryVisibleStations.filter(station => {
+    return mapStations.filter(station => {
       // Filter by Brand Menu (canonical chain)
       if (selectedBrands.length > 0 && !selectedBrands.includes(getBrand(station.name))) return false;
       return true;
     });
-  }, [countryVisibleStations, selectedBrands]);
+  }, [mapStations, selectedBrands]);
 
   // Per-station search index — folded, weighted fields, built once per station
   // list rather than on every keystroke. Diacritics are stripped via NFD so
@@ -1213,7 +1182,7 @@ function App() {
   const searchIndex = useMemo(() => {
     const fold = (s: string) =>
       s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
-    return countryVisibleStations.map((station) => {
+    return mapStations.map((station) => {
       // getBrand returns the 'Tundmatu' sentinel only when the name is empty
       // (146 LV/LT/FI stations have no OSM name) — keep that out of the
       // searchable text so unnamed stations don't all match on an Estonian word.
@@ -1262,7 +1231,7 @@ function App() {
         ],
       };
     });
-  }, [countryVisibleStations]);
+  }, [mapStations]);
 
   // Live dropdown results (max 10, so ranking matters). The query is tokenised
   // on whitespace and *every* token must match some field — so a brand plus a
@@ -1896,8 +1865,6 @@ function App() {
         onShowClustersChange={(v) => { setShowClusters(v); localStorage.setItem('kyts-show-clusters', String(v)); }}
         hideEmptyDots={hideEmptyDots}
         onHideEmptyDotsChange={handleHideEmptyDotsChange}
-        hiddenCountries={hiddenCountries}
-        onHiddenCountriesChange={handleHiddenCountriesChange}
         activeCountry={activeCountry}
         onActiveCountryChange={handleActiveCountryChange}
         availableCountries={availableCountries}
@@ -1971,11 +1938,18 @@ function App() {
           />
         )}
 
+        {/* `stations`, EVERY country — not the active one. This answers "what
+            is the cheapest fuel near me", and at Valga the honest answer is a
+            pump 2 km away in Valka. It renders one result per fuel type, so
+            searching wide costs nothing, and phase 69 gave it cross-currency
+            ranking precisely so it stays correct at Tornio/Haparanda. Picking a
+            result still works: the map draws a selected station even when it
+            sits outside the active country. */}
         {isCheapestNearbyOpen && (
           <CheapestNearbyPanel
             isOpen={isCheapestNearbyOpen}
             onClose={() => setIsCheapestNearbyOpen(false)}
-            stations={countryVisibleStations}
+            stations={stations}
             prices={prices}
             allVotes={votes}
             reporterMap={reporterMap}
@@ -1991,10 +1965,12 @@ function App() {
           />
         )}
 
+        {/* Every country too: a route from Tallinn to Riga crosses a border
+            and the stations along it are the entire point. */}
         {routeMounted && <RoutePlanModal
           isOpen={isRouteOpen}
           onClose={() => setIsRouteOpen(false)}
-          stations={countryVisibleStations}
+          stations={stations}
           prices={prices}
           allVotes={votes}
           reporterMap={reporterMap}

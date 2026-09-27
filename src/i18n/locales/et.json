@@ -599,9 +599,7 @@
       },
       "countries": {
         "label": "Riigid",
-        "desc": "Ainus koht, kus riike valida. Puuduta riiki, et see enda omaks määrata — see seab kaardivaate, statistika, avastuskaardi ja edetabeli. Teised saad kaardilt peita.",
-        "yours": "SINU",
-        "alwaysShown": "Sinu riiki näidatakse alati"
+        "desc": "Vali riik, mida kaardil näed. Korraga on näha ühe riigi jaamad — see hoiab kaardi kiirena — ja see sama valik seab statistika, avastuskaardi ja edetabeli. „Odavaim lähedal\" ja teekonna planeerija vaatavad ikka üle piiri."
       }
     }
   },
