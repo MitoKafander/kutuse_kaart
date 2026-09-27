@@ -22,7 +22,8 @@
       "LT": "apriņķi",
       "FI": "reģioni",
       "SE": "lēne",
-      "MT": "reģions"
+      "MT": "reģions",
+      "NO": "apgabals"
     },
     "level2": {
       "EE": "pagasti",
@@ -30,7 +31,8 @@
       "LT": "pašvaldības",
       "FI": "pašvaldības",
       "SE": "komūna",
-      "MT": "vietējā padome"
+      "MT": "vietējā padome",
+      "NO": "komūna"
     }
   },
   "price": {
@@ -728,6 +730,7 @@
     "FI": "Somija",
     "SE": "Zviedrija",
     "MT": "Malta",
+    "NO": "Norvēģija",
     "picker": {
       "label": "Valsts"
     }

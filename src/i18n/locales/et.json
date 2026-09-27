@@ -22,7 +22,8 @@
       "LT": "maakonda",
       "FI": "maakonda",
       "SE": "lään",
-      "MT": "reġjun"
+      "MT": "reġjun",
+      "NO": "maakond"
     },
     "level2": {
       "EE": "valda",
@@ -30,7 +31,8 @@
       "LT": "omavalitsust",
       "FI": "omavalitsust",
       "SE": "kommuun",
-      "MT": "kohalik nõukogu"
+      "MT": "kohalik nõukogu",
+      "NO": "kommuun"
     }
   },
   "price": {
@@ -807,6 +809,7 @@
     "FI": "Soome",
     "SE": "Rootsi",
     "MT": "Malta",
+    "NO": "Norra",
     "picker": {
       "label": "Riik"
     }

@@ -22,7 +22,8 @@
       "LT": "maakuntaa",
       "FI": "maakuntaa",
       "SE": "lääni",
-      "MT": "alue"
+      "MT": "alue",
+      "NO": "lääni"
     },
     "level2": {
       "EE": "kuntaa",
@@ -30,7 +31,8 @@
       "LT": "kuntaa",
       "FI": "kuntaa",
       "SE": "kunta",
-      "MT": "paikallisneuvosto"
+      "MT": "paikallisneuvosto",
+      "NO": "kunta"
     }
   },
   "price": {
@@ -728,6 +730,7 @@
     "FI": "Suomi",
     "SE": "Ruotsi",
     "MT": "Malta",
+    "NO": "Norja",
     "picker": {
       "label": "Maa"
     }

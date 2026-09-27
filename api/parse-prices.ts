@@ -82,6 +82,20 @@ const CURRENCY_SCAN = {
       'LPG':        [ 5, 20],
     },
   },
+  // Norway runs the most expensive pumps in Europe, ~20-25 NOK/L, so the bands
+  // sit above Sweden's rather than beside them. Widened outward on the same
+  // principle: an over-estimate drops nothing, an under-estimate returns an
+  // empty scan on a good photo. Tighten on real Norwegian reads.
+  NOK: {
+    symbol: 'kr',
+    subunitNote: '~7–12 kr/L',
+    ranges: {
+      'Bensiin 95': [12, 36],
+      'Bensiin 98': [13, 38],
+      'Diisel':     [12, 40],
+      'LPG':        [ 6, 24],
+    },
+  },
 } as const;
 
 type ScanCurrency = keyof typeof CURRENCY_SCAN;
@@ -229,7 +243,7 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       // this, a Latvian "Dīzeļdegviela" or Lithuanian "Dyzelinas" row reads as
       // an unknown fuel and the scan comes back empty on a perfectly good photo.
       `Fuel row labels vary by country — map them to the four slots above:\n` +
-      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95, Bensiini 95, Bensin 95, Blyfri 95.\n` +
+      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95, Bensiini 95, Bensin 95, Blyfri 95, Blyfri 95 Oktan.\n` +
       `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, Bensiini 98, Bensin 98, 100, 99 (premium petrol grades).\n` +
       `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D, Dieselöljy, Pro Diesel.\n` +
       `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND, Nestekaasu, Gasol.\n` +

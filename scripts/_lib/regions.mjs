@@ -170,6 +170,73 @@ export function loadMunicipalities(cc) {
  * councils in Gozo Region, and exactly 14 councils sit north-west of the
  * Malta-Gozo channel. Sourced data and geometry agree.
  */
+/**
+ * Norway's 15 fylker (the 2024 structure, after the counties split back up)
+ * and the ~357 kommuner beneath them.
+ *
+ * Same trick as Sweden: the kommunenummer in OSM's `ref` is four digits whose
+ * first two ARE the fylke number, so the grouping is government data rather
+ * than centroid-in-polygon inference — and it saves fetching 16 county
+ * relations with full member geometry.
+ *
+ * Derived from the cache, not recalled: the 357 kommuner carrying a `ref`
+ * group into exactly these 15 prefixes. Each name was then cross-checked
+ * against a known municipality in its group (46→Vaksdal→Vestland,
+ * 50→Frøya→Trøndelag, 56→Sør-Varanger→Finnmark, and so on for all fifteen)
+ * rather than trusted from memory — Malta taught that lesson, where the
+ * remembered structure was one reform out of date.
+ *
+ * ⚠️ SVALBARD IS DELIBERATELY ABSENT. OSM tags nine Svalbard land areas
+ * (Oscar II Land, Nordenskiöld Land, …) at admin_level=7 alongside real
+ * kommuner, but they are geographic regions, carry no kommunenummer, and
+ * belong to no fylke — Svalbard sits outside Norway's county structure. They
+ * are filtered out here, which also drops Longyearbyen's three pumps: the
+ * station seeder skips anything that lands outside every municipality rather
+ * than inserting it with a null parish_id.
+ */
+export const NO_FYLKER = [
+  { code: '03', id: 601, name: 'Oslo',              emoji: '🏙️' },
+  { code: '11', id: 602, name: 'Rogaland',          emoji: '🛢️' },
+  { code: '15', id: 603, name: 'Møre og Romsdal',   emoji: '🐟' },
+  { code: '18', id: 604, name: 'Nordland',          emoji: '🌌' },
+  { code: '31', id: 605, name: 'Østfold',           emoji: '🌾' },
+  { code: '32', id: 606, name: 'Akershus',          emoji: '🌲' },
+  { code: '33', id: 607, name: 'Buskerud',          emoji: '⛷️' },
+  { code: '34', id: 608, name: 'Innlandet',         emoji: '🦌' },
+  { code: '39', id: 609, name: 'Vestfold',          emoji: '⛵' },
+  { code: '40', id: 610, name: 'Telemark',          emoji: '🏔️' },
+  { code: '42', id: 611, name: 'Agder',             emoji: '🏖️' },
+  { code: '46', id: 612, name: 'Vestland',          emoji: '🌊' },
+  { code: '50', id: 613, name: 'Trøndelag',         emoji: '⛪' },
+  { code: '55', id: 614, name: 'Troms',             emoji: '❄️' },
+  { code: '56', id: 615, name: 'Finnmark',          emoji: '🐻‍❄️' },
+];
+
+const NO_FYLKE_BY_CODE = new Map(NO_FYLKER.map((f) => [f.code, f]));
+
+/**
+ * Attach a fylke id to every kommune from its kommunenummer, DROPPING anything
+ * without one — see the Svalbard note above. Throws if a fylke ends up with no
+ * kommuner, which would mean OSM and this table have diverged.
+ */
+export function assignNorwegianRegions(municipalities) {
+  const kept = [];
+  for (const m of municipalities) {
+    const raw = String(m.tags?.ref ?? '').trim();
+    const code = raw.length === 3 ? `0${raw}` : raw;
+    if (code.length !== 4 || !/^\d{4}$/.test(code)) continue;   // Svalbard land areas
+    const fylke = NO_FYLKE_BY_CODE.get(code.slice(0, 2));
+    if (!fylke) throw new Error(`NO: kommune ${m.name} has kommunenummer ${code}, whose fylke ${code.slice(0, 2)} is not in NO_FYLKER`);
+    kept.push({ ...m, regionId: fylke.id });
+  }
+  const used = new Set(kept.map((m) => m.regionId));
+  const unused = NO_FYLKER.filter((f) => !used.has(f.id));
+  if (unused.length) {
+    throw new Error(`NO: NO_FYLKER lists fylker no kommune belongs to: ${unused.map((f) => f.name).join(', ')}`);
+  }
+  return kept;
+}
+
 export const MT_REGIONS = [
   { id: 501, name: 'Reġjun Lvant', emoji: '🌅' },
   { id: 502, name: 'Reġjun Tramuntana', emoji: '🏖️' },
@@ -429,6 +496,7 @@ export function level1Rows(cc, municipalities) {
   if (cc === 'LV') return LV_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'LV' }));
   if (cc === 'SE') return SE_LAN.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'SE' }));
   if (cc === 'MT') return MT_REGIONS.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'MT' }));
+  if (cc === 'NO') return NO_FYLKER.map((r) => ({ id: r.id, name: r.name, emoji: r.emoji, country: 'NO' }));
   const spec = OSM_LEVEL1[cc];
   if (!spec) throw new Error(`No level-1 catalog for ${cc}`);
   const used = new Set(municipalities.map((m) => m.regionId));
@@ -448,7 +516,7 @@ export function level1Rows(cc, municipalities) {
  * Finland, and three of them were still defaulting to ['LV','LT'] after it
  * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
  */
-export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT'];
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT', 'NO'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);
@@ -456,6 +524,7 @@ export function loadRegionTree(cc) {
     cc === 'LV' ? assignLatvianRegions(municipalities)           // statutory table, no OSM level 1
     : cc === 'SE' ? assignSwedishRegions(municipalities)         // statutory SCB code, exact
     : cc === 'MT' ? assignMalteseRegions(municipalities)         // statutory table keyed by ISO 3166-2
+    : cc === 'NO' ? assignNorwegianRegions(municipalities)       // kommunenummer encodes the fylke
     : assignOsmLevel1(cc, municipalities, OSM_LEVEL1[cc].ids);   // LT, FI: geometry decides
   return { municipalities: withRegion, level1: level1Rows(cc, withRegion) };
 }

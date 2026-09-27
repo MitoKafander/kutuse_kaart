@@ -103,7 +103,7 @@ for (const cc of COUNTRIES) {
   }
   // Two OSM points within MATCH_METRES of each other (a way and its node, a
   // forecourt mapped twice) must not both be inserted either.
-  const deduped = [];
+  let deduped = [];
   for (const c of fresh) {
     if (deduped.some((d) => metresBetween(c.latitude, c.longitude, d.latitude, d.longitude) <= MATCH_METRES)) continue;
     deduped.push(c);
@@ -112,8 +112,22 @@ for (const cc of COUNTRIES) {
   const crossCountry = matched.filter((m) => m.existing.country !== cc);
   console.log(`  already in DB: ${matched.length}${crossCountry.length ? ` (${crossCountry.length} filed under another country)` : ''}`);
   console.log(`  new: ${deduped.length}${fresh.length - deduped.length ? ` (+${fresh.length - deduped.length} collapsed as same-forecourt duplicates)` : ''}`);
-  const noParish = deduped.filter((d) => d.parish_id == null).length;
-  if (noParish) console.log(`    ${noParish} new station(s) fall outside every municipality boundary (parish_id NULL)`);
+  // SKIP, don't insert with a null parish. A station outside every municipality
+  // cannot appear on the Avastuskaart, cannot be counted toward any region, and
+  // would be the only rows in the table with a null parish_id — an invariant
+  // that currently holds across every country. Norway surfaced this: OSM tags
+  // Svalbard's land areas at admin_level=7 alongside real kommuner, and its
+  // three Longyearbyen pumps sit outside the county structure entirely.
+  //
+  // Reported loudly rather than dropped quietly: if a MAINLAND station ever
+  // lands here it means a boundary is wrong, not that the station is.
+  const orphans = deduped.filter((d) => d.parish_id == null);
+  if (orphans.length) {
+    console.log(`    SKIPPING ${orphans.length} station(s) outside every municipality boundary:`);
+    for (const o of orphans.slice(0, 6)) console.log(`      ${o.name || '(unnamed)'} @ ${o.latitude}, ${o.longitude}`);
+    if (orphans.length > 6) console.log(`      …and ${orphans.length - 6} more`);
+  }
+  deduped = deduped.filter((d) => d.parish_id != null);
 
   const brands = {};
   for (const d of deduped) brands[d.name] = (brands[d.name] || 0) + 1;

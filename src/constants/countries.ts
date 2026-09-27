@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT', 'NO'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -56,7 +56,7 @@ export type CountryMeta = {
 };
 
 /** Currencies with a row in `price_bounds`. Adding one is a DB INSERT plus an entry here. */
-export const CURRENCY_CODES = ['EUR', 'SEK'] as const;
+export const CURRENCY_CODES = ['EUR', 'SEK', 'NOK'] as const;
 export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 export type CurrencyMeta = {
@@ -103,6 +103,10 @@ export type CurrencyMeta = {
 export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
   EUR: { code: 'EUR', decimals: 3, min: 0.30, max:  4.00, symbol: '€',  symbolPosition: 'prefix', decimalSeparator: '.', subunitSymbol: '¢',   subunitSpaced: false, integerDigits: 1 },
   SEK: { code: 'SEK', decimals: 2, min: 5.00, max: 40.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'öre', subunitSpaced: true,  integerDigits: 2 },
+  // Norwegian pumps quote to the øre and run the highest in Europe — roughly
+  // 20-25 NOK/L. Bounds widened outward from that, like SEK's, and to be
+  // tightened on real reads rather than guessed harder now.
+  NOK: { code: 'NOK', decimals: 2, min: 5.00, max: 45.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'øre', subunitSpaced: true,  integerDigits: 2 },
 };
 
 export function isCurrencyCode(v: unknown): v is CurrencyCode {
@@ -211,6 +215,23 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     // Sweden.
     preferredLocale: 'en',
     currency: 'EUR',
+  },
+  NO: {
+    code: 'NO',
+    flag: '🇳🇴',
+    nameKey: 'country.NO',
+    center: [64.5, 12.0],
+    // 58°N to 71°N and hooked around Sweden. Zoom 4 fits the mainland; 5 loses
+    // Finnmark.
+    zoom: 4,
+    bbox: [4.0, 57.8, 31.5, 71.5],
+    boundaries: { level1: '/regions_no.geojson', level2: '/municipalities_no.geojson' },
+    level1Key: 'region.level1.NO',
+    level2Key: 'region.level2.NO',
+    translatableRegionSuffix: false,
+    // No Norwegian locale, so English — same as Sweden.
+    preferredLocale: 'en',
+    currency: 'NOK',
   },
 };
 

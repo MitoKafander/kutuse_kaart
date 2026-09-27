@@ -56,6 +56,13 @@ const ADMIN = {
   // no OSM level-1 and needs a statutory grouping. Only ~78 fuel features in the
   // whole country, so the bounds are small by nature, not by throttling.
   MT: { level1: null, level2: 8, minL2: 66, maxL2: 70, minFuel: 50 },
+  // Norway: 15 fylker at admin_level=4 (OSM returns 16 — Svalbard is tagged
+  // alongside them) over ~357 kommuner at level 7. Probed: levels 5, 6 and 8
+  // are all empty, so 7 is the municipal tier here even though Finland's was 8
+  // and Malta's was 8 as well. `level1: null` because the kommunenummer
+  // encodes the fylke, the same trick Sweden's ref:scb allows — no need to
+  // fetch 16 county relations with full geometry.
+  NO: { level1: null, level2: 7, minL2: 350, maxL2: 372, minFuel: 1500 },
 };
 
 for (const cc of COUNTRIES) {

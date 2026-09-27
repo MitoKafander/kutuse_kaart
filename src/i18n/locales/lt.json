@@ -22,7 +22,8 @@
       "LT": "apskritys",
       "FI": "regionai",
       "SE": "lenas",
-      "MT": "regionas"
+      "MT": "regionas",
+      "NO": "apskritis"
     },
     "level2": {
       "EE": "valsčiai",
@@ -30,7 +31,8 @@
       "LT": "savivaldybės",
       "FI": "savivaldybės",
       "SE": "komuna",
-      "MT": "vietos taryba"
+      "MT": "vietos taryba",
+      "NO": "komuna"
     }
   },
   "price": {
@@ -726,6 +728,7 @@
     "FI": "Suomija",
     "SE": "Švedija",
     "MT": "Malta",
+    "NO": "Norvegija",
     "picker": {
       "label": "Šalis"
     }
