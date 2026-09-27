@@ -25,6 +25,15 @@ import { join } from 'node:path';
 import { CACHE_DIR, pointInRings } from './_lib/overpass.mjs';
 import { loadRegionTree, SEEDABLE_COUNTRIES } from './_lib/regions.mjs';
 
+// Local copy: src/utils.ts has one, but api/ and scripts/ cannot import from
+// src/, and this is four lines.
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371, rad = (d) => (d * Math.PI) / 180;
+  const a = Math.sin(rad(lat2 - lat1) / 2) ** 2
+    + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lon2 - lon1) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+};
+
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const wanted = args.filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
@@ -112,6 +121,42 @@ for (const cc of COUNTRIES) {
   const crossCountry = matched.filter((m) => m.existing.country !== cc);
   console.log(`  already in DB: ${matched.length}${crossCountry.length ? ` (${crossCountry.length} filed under another country)` : ''}`);
   console.log(`  new: ${deduped.length}${fresh.length - deduped.length ? ` (+${fresh.length - deduped.length} collapsed as same-forecourt duplicates)` : ''}`);
+  // Rescue the near-misses before writing anything off. A forecourt on a quay,
+  // a pier or reclaimed land often sits a few metres OUTSIDE the municipality
+  // polygon, because OSM's administrative boundary follows the historic
+  // coastline rather than the current one. Denmark surfaced five such stations
+  // at 5-110 m from a boundary — real stations, wrong line.
+  //
+  // 500 m is deliberately tight. It swallows a coastline mismatch and nothing
+  // else: Norway's Svalbard pumps, the case this skip exists for, are hundreds
+  // of kilometres from the nearest kommune.
+  const SNAP_M = 500;
+  const nearestVertexKm = (lon, lat, m) => {
+    let best = Infinity;
+    for (const ring of [...m.rings.outer, ...m.rings.inner]) {
+      for (const [rl, rt] of ring) {
+        const d = haversineKm(lat, lon, rt, rl);
+        if (d < best) best = d;
+      }
+    }
+    return best;
+  };
+  let snapped = 0;
+  for (const d of deduped) {
+    if (d.parish_id != null) continue;
+    let best = null;
+    for (const m of municipalities) {
+      const km = nearestVertexKm(d.longitude, d.latitude, m);
+      if (!best || km < best.km) best = { km, m };
+    }
+    if (best && best.km * 1000 <= SNAP_M) {
+      d.parish_id = best.m.id;
+      snapped++;
+      console.log(`    snapped "${d.name || '(unnamed)'}" to ${best.m.name} (${(best.km * 1000).toFixed(0)} m outside its boundary)`);
+    }
+  }
+  if (snapped) console.log(`    ${snapped} station(s) snapped to the municipality they sit on the edge of`);
+
   // SKIP, don't insert with a null parish. A station outside every municipality
   // cannot appear on the Avastuskaart, cannot be counted toward any region, and
   // would be the only rows in the table with a null parish_id — an invariant

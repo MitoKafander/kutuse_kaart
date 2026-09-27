@@ -62,9 +62,17 @@ for (const cc of COUNTRIES) {
   }
   console.log(`  parish_id: ${assignments.length} station(s) to (re)assign, ${unplaced} outside every municipality`);
   if (unplaced) {
-    // Expected only for a coastal station whose coordinate sits just off the
-    // digitised coastline. Worth a look if it's more than a handful.
-    console.log(`    (a station outside every boundary keeps parish_id NULL and sits out the Avastuskaart)`);
+    // Expected for a coastal station whose coordinate sits just off the
+    // digitised coastline — a quay or pier, where OSM's administrative
+    // boundary follows the historic shore. Worth a look if it is more than a
+    // handful.
+    //
+    // These are LEFT ALONE, not nulled: seed_country_stations.mjs snaps a
+    // station within 500 m of a boundary to that municipality, so an
+    // "unplaced" row here may already carry a perfectly good parish_id from
+    // that pass. Denmark has five such stations. Overwriting them from this
+    // script would quietly undo the rescue.
+    console.log(`    (left as-is — may already be snapped by the station seeder; only a NULL one sits out the Avastuskaart)`);
   }
 
   if (DRY_RUN) {
