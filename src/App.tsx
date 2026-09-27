@@ -967,6 +967,17 @@ function App() {
     return { displayCompletedParishIds: done, displayParishProgress: progress };
   }, [viewedUser, userContributedStationIds, parishes, stationParishMap]);
 
+  // Municipalities with no stations at all. They are drawn on the discovery map
+  // (hiding them would leave holes) but can never be completed — the progress
+  // maths above skips them — so the map has to say "nothing here" rather than
+  // "not done yet". Malta forced the issue: 31 of its 68 councils have no
+  // forecourt. Estonia has 1 and Finland 5, so this was quietly wrong before
+  // Malta too.
+  const emptyParishIds = useMemo(
+    () => new Set(parishes.filter(p => (p.station_count ?? 0) <= 0).map(p => p.id)),
+    [parishes],
+  );
+
   // Station ids that belong to the focused maakond. Null when no focus set
   // (Map.tsx treats null as "no filter").
   const focusedMaakondStationIds = useMemo(() => {
@@ -1319,6 +1330,7 @@ function App() {
         parishGeo={parishGeo}
         completedParishIds={displayCompletedParishIds}
         parishProgress={displayParishProgress}
+        emptyParishIds={emptyParishIds}
       />
 
       {(showDiscoveryMap || viewedUser) && (

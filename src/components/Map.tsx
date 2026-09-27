@@ -380,12 +380,15 @@ function DiscoveryParishLayer({
   zoom,
   isLight,
   completedParishIds,
+  emptyParishIds,
 }: {
   geo: any | null;
   focusedMaakondId: number | null;
   zoom: number;
   isLight: boolean;
   completedParishIds?: Set<number> | null;
+  /** Municipalities with no stations at all — nothing to collect, ever. */
+  emptyParishIds?: Set<number> | null;
 }) {
   const map = useMap();
   const layerRef = useRef<any>(null);
@@ -415,6 +418,23 @@ function DiscoveryParishLayer({
     fillColor: isLight ? '#22c55e' : '#4ade80',
     fillOpacity: isLight ? 0.18 : 0.22,
   }), [isLight]);
+  // A municipality with no stations in it. It cannot be completed — the
+  // progress maths skips it and it never enters completedParishIds — so
+  // drawing it like a pending one told the user to go and collect something
+  // that does not exist. Malta made this impossible to ignore: 31 of its 68
+  // councils have no forecourt, 46% of the map. Estonia has 1 and Finland 5,
+  // so the bug predates Malta; Malta just made it the majority case.
+  //
+  // Faint and SOLID: the dashes are what mark a tile as "collectable, pending",
+  // so removing them is the signal that this one is not part of the game. Not
+  // hidden altogether — that would leave 31 holes in a small dense country and
+  // read as a broken map rather than an empty one.
+  const emptyStyle = useMemo(() => ({
+    color: isLight ? '#94a3b8' : '#64748b',
+    weight: 0.8,
+    opacity: 0.35,
+    fillOpacity: 0,
+  }), [isLight]);
   // Hover wash — deliberately lighter than completed so the two states read
   // as different kinds of highlight (reward vs "you're pointing at this").
   const hoverStyle = useMemo(() => ({
@@ -430,6 +450,8 @@ function DiscoveryParishLayer({
   // per `geo` load, but the styles + completion set change freely.
   const hoverStyleRef = useRef(hoverStyle);
   useEffect(() => { hoverStyleRef.current = hoverStyle; }, [hoverStyle]);
+  const emptyParishIdsRef = useRef(emptyParishIds);
+  useEffect(() => { emptyParishIdsRef.current = emptyParishIds; }, [emptyParishIds]);
 
   const baseStyleForRef = useRef<(sublayer: any) => any>(() => hiddenStyle);
   useEffect(() => {
@@ -437,16 +459,20 @@ function DiscoveryParishLayer({
       const props = sublayer.feature?.properties;
       const inFocused = focusedMaakondId != null && props?.maakond_id === focusedMaakondId;
       const isCompleted = props?.id != null && completedParishIds?.has(props.id);
+      const isEmpty = props?.id != null && emptyParishIds?.has(props.id);
       const showAtZoom = zoom >= 9;
       // Completed trumps focused trumps dim. Still gated by showAtZoom /
       // focused-maakond visibility — a country-scale wash of specks would be
       // noise, not reward.
       if (!showAtZoom && !inFocused) return hiddenStyle;
       if (isCompleted) return completedStyle;
+      // Before the focused branch: focusing a county must not promote its
+      // empty municipalities into looking collectable.
+      if (isEmpty) return emptyStyle;
       if (inFocused) return focusedParishStyle;
       return dimStyle;
     };
-  }, [zoom, focusedMaakondId, completedParishIds, hiddenStyle, completedStyle, focusedParishStyle, dimStyle]);
+  }, [zoom, focusedMaakondId, completedParishIds, emptyParishIds, hiddenStyle, completedStyle, focusedParishStyle, dimStyle, emptyStyle]);
 
   useEffect(() => {
     if (!geo) return;
@@ -474,6 +500,9 @@ function DiscoveryParishLayer({
           // in focused maakond) — the cursor would otherwise light up empty
           // space at country scale.
           if (!base || base.weight === 0) return false;
+          // Nor a municipality with no stations: a hover wash is an invitation,
+          // and there is nothing there to collect.
+          if (emptyParishIdsRef.current?.has(sublayer.feature?.properties?.id)) return false;
           sublayer.setStyle(hoverStyleRef.current);
           return true;
         };
@@ -948,6 +977,7 @@ export function Map({
   parishGeo = null,
   completedParishIds = null,
   parishProgress = null,
+  emptyParishIds = null,
   homeCenter = ESTONIA_CENTER,
   homeZoom = 7,
   activeCountry = 'EE',
@@ -978,6 +1008,8 @@ export function Map({
   parishGeo?: any | null,
   completedParishIds?: Set<number> | null,
   parishProgress?: Map<number, { done: number; total: number }> | null,
+  /** Municipalities with zero stations — drawn, but not as pending work. */
+  emptyParishIds?: Set<number> | null,
   /** First view before geolocation resolves — the active country's home box. */
   homeCenter?: [number, number],
   homeZoom?: number,
@@ -1534,6 +1566,7 @@ export function Map({
               zoom={zoomLevel}
               isLight={isLight}
               completedParishIds={completedParishIds}
+              emptyParishIds={emptyParishIds}
             />
             <DiscoveryRegionsLayer
               geo={maakondGeo}
