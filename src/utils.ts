@@ -492,6 +492,30 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'lpg norge',      canonical: 'LPG Norge' },    // 38
   { match: 'automat1',       canonical: 'Automat1' },     // 32
   { match: 'bunker oil',     canonical: 'Bunker Oil' },   // 27
+
+  // Danish chains. Circle K (225), Uno-X (204), Shell (165+44 Express), Ingo
+  // (151) and Statoil (12) are already patterns above — Denmark shares most of
+  // its forecourts with its neighbours.
+  //
+  // ⚠️ `q8` MUST stay below `okq8`, which sits in the Swedish block above.
+  // "OKQ8" contains "q8", so on first-match-wins the wrong order would rebrand
+  // all 445 Swedish OKQ8 stations as Q8. Verified both ways round below.
+  { match: 'f24',            canonical: 'F24' },          // 122
+  { match: 'q8',             canonical: 'Q8' },           // 111 — see the order note
+  { match: "go'on",          canonical: "Go'on" },        // 107
+  { match: 'oil!',           canonical: 'OIL!' },         // 67
+  { match: 'bonus',          canonical: 'Bonus' },        // 33
+  // ⚠️ NO `ok` PATTERN, even though OK is Denmark's LARGEST chain at 629
+  // forecourts — the same refusal Sweden got, for the same reason: "ok" is a
+  // substring of ordinary words (Biokaasu, Tehnoküla, Ilmajoki) and would
+  // rebrand stations in other countries. Substring matching cannot express a
+  // word boundary. It is also unnecessary for the bulk: all 629 are named
+  // exactly "OK" and group as one collector brand unaided. Only the ~20
+  // variants (OK Plus, OK Truck, OK Tank) fragment, which is the cheaper harm.
+  //
+  // ⚠️ NO `1 2 3` PATTERN either. Denmark's 1-2-3 is a Circle K discount brand
+  // with 14 sites, but the folded pattern also catches a Latvian station
+  // literally named "1-2-3" that has nothing to do with it.
 ];
 
 // Diacritics are folded on BOTH sides (pattern and station name) so one

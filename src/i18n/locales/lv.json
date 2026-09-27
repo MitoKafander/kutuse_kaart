@@ -23,7 +23,8 @@
       "FI": "reģioni",
       "SE": "lēne",
       "MT": "reģions",
-      "NO": "apgabals"
+      "NO": "apgabals",
+      "DK": "reģions"
     },
     "level2": {
       "EE": "pagasti",
@@ -32,7 +33,8 @@
       "FI": "pašvaldības",
       "SE": "komūna",
       "MT": "vietējā padome",
-      "NO": "komūna"
+      "NO": "komūna",
+      "DK": "komūna"
     }
   },
   "price": {
@@ -731,6 +733,7 @@
     "SE": "Zviedrija",
     "MT": "Malta",
     "NO": "Norvēģija",
+    "DK": "Dānija",
     "picker": {
       "label": "Valsts"
     }

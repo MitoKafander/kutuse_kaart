@@ -23,7 +23,8 @@
       "FI": "regions",
       "SE": "county",
       "MT": "region",
-      "NO": "county"
+      "NO": "county",
+      "DK": "region"
     },
     "level2": {
       "EE": "parishes",
@@ -32,7 +33,8 @@
       "FI": "municipalities",
       "SE": "municipality",
       "MT": "local council",
-      "NO": "municipality"
+      "NO": "municipality",
+      "DK": "municipality"
     }
   },
   "price": {
@@ -808,6 +810,7 @@
     "SE": "Sweden",
     "MT": "Malta",
     "NO": "Norway",
+    "DK": "Denmark",
     "picker": {
       "label": "Country"
     }

@@ -39,6 +39,7 @@ const ALLOWED_BRANDS = [
   'Apsaga', 'Skulas', 'Milda', 'ABC', 'St1', 'Teboil', 'SEO', 'Shell',
   'Gulf', 'Såifa', 'Preem', 'OKQ8', 'Ingo', 'Qstar', 'Tanka', 'Din-X',
   'Bilisten', 'Uno-X', 'YX', 'Esso', 'LPG Norge', 'Automat1', 'Bunker Oil',
+  'F24', 'Q8', 'OIL!', 'Bonus',
 ] as const;
 const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
 
@@ -94,6 +95,17 @@ const CURRENCY_SCAN = {
       'Bensiin 98': [13, 38],
       'Diisel':     [12, 40],
       'LPG':        [ 6, 24],
+    },
+  },
+  // Denmark sits between the euro and its krone neighbours, ~12-15 DKK/L.
+  DKK: {
+    symbol: 'kr',
+    subunitNote: '~4–8 kr/L',
+    ranges: {
+      'Bensiin 95': [ 7, 24],
+      'Bensiin 98': [ 8, 26],
+      'Diisel':     [ 7, 26],
+      'LPG':        [ 4, 16],
     },
   },
 } as const;

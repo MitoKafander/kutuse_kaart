@@ -95,13 +95,13 @@ check(crossed.length === 0, 'no station points at another country\'s municipalit
   crossed.length ? `${crossed.length} station(s)` : '');
 
 console.log('\n── region ids stay in their allocated bands ──');
-const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299], FI: [301, 399], SE: [401, 499], MT: [501, 599], NO: [601, 699] };
+const band = { EE: [1, 99], LV: [101, 199], LT: [201, 299], FI: [301, 399], SE: [401, 499], MT: [501, 599], NO: [601, 699], DK: [701, 799] };
 const strayId = maakonnad.filter((m) => {
   const b = band[countryOf(m)];
   return !b || m.id < b[0] || m.id > b[1];
 });
 check(strayId.length === 0, 'every level-1 region id sits in its country\'s band',
-  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299, FI 301-399, SE 401-499, MT 501-599, NO 601-699');
+  strayId.length ? strayId.map((m) => `${m.name}#${m.id}`).join(', ') : 'EE 1-99, LV 101-199, LT 201-299, FI 301-399, SE 401-499, MT 501-599, NO 601-699, DK 701-799');
 
 console.log('\n── prices ──');
 const prices = await fetchAll('prices', 'id, station_id, fuel_type, price');

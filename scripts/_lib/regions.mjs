@@ -194,6 +194,33 @@ export function loadMunicipalities(cc) {
  * station seeder skips anything that lands outside every municipality rather
  * than inserting it with a null parish_id.
  */
+/**
+ * Denmark's 5 regioner, keyed by the OSM name exactly as the cache carries it.
+ *
+ * Unlike Sweden and Norway, the Danish kommunekode does NOT encode the region
+ * — the 2007 ranges are irregular — so this goes through centroid-in-polygon
+ * like Lithuania and Finland. That is affordable here precisely because there
+ * are five level-1 relations to fetch, where Norway's 16 and Sweden's 21 were
+ * the reason to avoid it.
+ *
+ * Names read from DK_counties.json, not recalled.
+ */
+export const DK_REGION_IDS = {
+  'Region Hovedstaden': 701,
+  'Region Midtjylland': 702,
+  'Region Nordjylland': 703,
+  'Region Sjælland':    704,
+  'Region Syddanmark':  705,
+};
+
+export const DK_REGION_EMOJI = {
+  701: '🏙️',  // Hovedstaden — Copenhagen
+  702: '🌾',  // Midtjylland
+  703: '🌊',  // Nordjylland
+  704: '🏰',  // Sjælland
+  705: '🌉',  // Syddanmark — the bridges
+};
+
 export const NO_FYLKER = [
   { code: '03', id: 601, name: 'Oslo',              emoji: '🏙️' },
   { code: '11', id: 602, name: 'Rogaland',          emoji: '🛢️' },
@@ -490,6 +517,7 @@ export function assignOsmLevel1(cc, municipalities, idTable) {
 const OSM_LEVEL1 = {
   LT: { ids: LT_COUNTY_IDS, emoji: LT_COUNTY_EMOJI },
   FI: { ids: FI_REGION_IDS, emoji: FI_REGION_EMOJI },
+  DK: { ids: DK_REGION_IDS, emoji: DK_REGION_EMOJI },
 };
 
 export function level1Rows(cc, municipalities) {
@@ -516,7 +544,7 @@ export function level1Rows(cc, municipalities) {
  * Finland, and three of them were still defaulting to ['LV','LT'] after it
  * shipped, so a bare re-run fetched Finland's OSM and then seeded nothing.
  */
-export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT', 'NO'];
+export const SEEDABLE_COUNTRIES = ['LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK'];
 
 export function loadRegionTree(cc) {
   const municipalities = loadMunicipalities(cc);

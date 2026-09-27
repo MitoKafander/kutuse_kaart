@@ -23,7 +23,8 @@
       "FI": "maakonda",
       "SE": "lään",
       "MT": "reġjun",
-      "NO": "maakond"
+      "NO": "maakond",
+      "DK": "regioon"
     },
     "level2": {
       "EE": "valda",
@@ -32,7 +33,8 @@
       "FI": "omavalitsust",
       "SE": "kommuun",
       "MT": "kohalik nõukogu",
-      "NO": "kommuun"
+      "NO": "kommuun",
+      "DK": "kommuun"
     }
   },
   "price": {
@@ -810,6 +812,7 @@
     "SE": "Rootsi",
     "MT": "Malta",
     "NO": "Norra",
+    "DK": "Taani",
     "picker": {
       "label": "Riik"
     }

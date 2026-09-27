@@ -8,7 +8,7 @@
 //
 // `stations.country` is the DB-side key and matches `code` exactly.
 
-export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT', 'NO'] as const;
+export const COUNTRY_CODES = ['EE', 'LV', 'LT', 'FI', 'SE', 'MT', 'NO', 'DK'] as const;
 export type CountryCode = (typeof COUNTRY_CODES)[number];
 
 export type CountryMeta = {
@@ -56,7 +56,7 @@ export type CountryMeta = {
 };
 
 /** Currencies with a row in `price_bounds`. Adding one is a DB INSERT plus an entry here. */
-export const CURRENCY_CODES = ['EUR', 'SEK', 'NOK'] as const;
+export const CURRENCY_CODES = ['EUR', 'SEK', 'NOK', 'DKK'] as const;
 export type CurrencyCode = (typeof CURRENCY_CODES)[number];
 
 export type CurrencyMeta = {
@@ -107,6 +107,10 @@ export const CURRENCIES: Record<CurrencyCode, CurrencyMeta> = {
   // 20-25 NOK/L. Bounds widened outward from that, like SEK's, and to be
   // tightened on real reads rather than guessed harder now.
   NOK: { code: 'NOK', decimals: 2, min: 5.00, max: 45.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'øre', subunitSpaced: true,  integerDigits: 2 },
+  // Danish pumps run ~12-15 DKK/L, between the euro and the two krone
+  // neighbours. Same widening rule as SEK and NOK: an over-estimate drops
+  // nothing, an under-estimate returns an empty scan on a good photo.
+  DKK: { code: 'DKK', decimals: 2, min: 4.00, max: 30.00, symbol: 'kr', symbolPosition: 'suffix', decimalSeparator: ',', subunitSymbol: 'øre', subunitSpaced: true,  integerDigits: 2 },
 };
 
 export function isCurrencyCode(v: unknown): v is CurrencyCode {
@@ -232,6 +236,22 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     // No Norwegian locale, so English — same as Sweden.
     preferredLocale: 'en',
     currency: 'NOK',
+  },
+  DK: {
+    code: 'DK',
+    flag: '🇩🇰',
+    nameKey: 'country.DK',
+    center: [56.0, 10.6],
+    // Compact and low-lying; zoom 7 fits Jutland and the islands together.
+    zoom: 7,
+    bbox: [7.9, 54.4, 15.3, 57.9],
+    boundaries: { level1: '/regions_dk.geojson', level2: '/municipalities_dk.geojson' },
+    level1Key: 'region.level1.DK',
+    level2Key: 'region.level2.DK',
+    translatableRegionSuffix: false,
+    // No Danish locale, so English — as for Sweden and Norway.
+    preferredLocale: 'en',
+    currency: 'DKK',
   },
 };
 

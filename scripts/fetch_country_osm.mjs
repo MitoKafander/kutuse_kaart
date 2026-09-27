@@ -63,6 +63,11 @@ const ADMIN = {
   // encodes the fylke, the same trick Sweden's ref:scb allows — no need to
   // fetch 16 county relations with full geometry.
   NO: { level1: null, level2: 7, minL2: 350, maxL2: 372, minFuel: 1500 },
+  // Denmark: 5 regioner at admin_level=4 over 98 kommuner at level 7 — the
+  // textbook case, and the first since Lithuania where fetching level-1
+  // geometry is the obvious choice: five relations is cheap, where Norway's 16
+  // and Sweden's 21 were not. Probed; levels 5, 6 and 8 are empty.
+  DK: { level1: 4, level2: 7, minL1: 5, maxL1: 5, minL2: 96, maxL2: 100, minFuel: 1200 },
 };
 
 for (const cc of COUNTRIES) {
