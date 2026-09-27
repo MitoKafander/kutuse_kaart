@@ -737,6 +737,28 @@ function StationPanController({ station, hasPriceLabels }: { station: any | null
 
 // Tracks the current viewport bounds so top-N pills are recomputed only for
 // stations visible on screen. Debounced to avoid thrashing during pans.
+/**
+ * Where the user last had the map. Read by the station cache, which keeps only
+ * the stations near here — see App.tsx. Written from the viewport tracker's
+ * existing debounce rather than a listener of its own, and only when the map
+ * has actually moved a couple of kilometres, so panning does not hammer
+ * localStorage synchronously on a slow phone.
+ */
+export const MAP_CENTRE_KEY = 'kyts:map-centre';
+let lastWrittenCentre: { lat: number; lon: number } | null = null;
+function rememberMapCentre(lat: number, lon: number) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (lastWrittenCentre) {
+    // ~2 km, in degrees, without pulling in a distance helper for a threshold.
+    const moved = Math.abs(lat - lastWrittenCentre.lat) > 0.02
+      || Math.abs(lon - lastWrittenCentre.lon) > 0.04;
+    if (!moved) return;
+  }
+  lastWrittenCentre = { lat, lon };
+  try { localStorage.setItem(MAP_CENTRE_KEY, JSON.stringify({ lat, lon })); }
+  catch { /* private mode / quota */ }
+}
+
 function ViewportBoundsTracker({ onChange }: { onChange: (b: L.LatLngBounds, zoom: number, map: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
@@ -1510,7 +1532,10 @@ export function Map({
         />
         <LocationTracker followMode={followMode} position={userLocation} setPosition={setUserLocation} />
         <StationPanController station={selectedStation} hasPriceLabels={!!focusedFuelType} />
-        <ViewportBoundsTracker onChange={(b, z, m) => { setViewportBounds(b); setZoomLevel(z); setMapInstance(m); }} />
+        <ViewportBoundsTracker onChange={(b, z, m) => {
+          setViewportBounds(b); setZoomLevel(z); setMapInstance(m);
+          rememberMapCentre(m.getCenter().lat, m.getCenter().lng);
+        }} />
 
         {routePolyline && routePolyline.length > 1 && (
           <Polyline positions={routePolyline} pathOptions={{ color: '#22c55e', weight: 4, opacity: 0.75 }} />

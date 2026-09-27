@@ -10,6 +10,7 @@ import { PointsToast, type PointsEvent } from './components/PointsToast';
 import { DiscoveryBanner } from './components/DiscoveryBanner';
 import { FreshnessSlider } from './components/FreshnessSlider';
 import { CountryBubble } from './components/CountryBubble';
+import { MAP_CENTRE_KEY } from './components/Map';
 import { UpdateBanner } from './components/UpdateBanner';
 import { FeedbackReplyToast } from './components/FeedbackReplyToast';
 import { type MarketInsight } from './components/MarketInsightDrawer';
@@ -102,6 +103,15 @@ const CACHED_AMENITY_KEYS = [
  * a large slice of iOS users into that state. The full rows still live in
  * memory from the network fetch; only the cached copy is slimmed.
  */
+/**
+ * How many stations the first-paint cache keeps. 1,500 x ~429 B is roughly
+ * 0.6 MiB, about 12% of the 5 MiB origin quota — constant regardless of how
+ * large the country is, which is what stops catalogue growth from ever being
+ * the limit again. Every country through Denmark fits under it outright except
+ * Sweden and Norway; Poland and Germany would not have come close.
+ */
+const CACHE_LIMIT = 1500;
+
 function cacheableStation(s: any) {
   const amenities: Record<string, unknown> = {};
   const src = s?.amenities;
@@ -559,21 +569,51 @@ function App() {
 
     if (stRes.data) {
       setStations(stRes.data);
-      // Cache ONLY the active country. Until the map went single-country this
-      // had to hold everything, because everything was drawn; now 6,686 rows
-      // are cached to paint 482, and the cache was the only thing capping how
-      // many countries Kyts could carry (2.93 MiB of a 5 MiB quota, ~4,700
-      // stations of headroom left). One country is ~0.2 MiB for Estonia and
-      // the ceiling stops being the constraint.
+      // The cache is worth keeping and worth capping. Measured against prod:
+      // it takes Sweden's first painted marker from 2,165 ms to 180 ms and
+      // Estonia's from 1,202 to 118 — twelvefold and tenfold — so dropping it
+      // is not an option. But storing a whole country to paint the few dozen
+      // markers on screen is the same waste that caching every country was,
+      // one level down, and it is what makes catalogue size a ceiling at all:
+      // Poland alone would be 3.56 MiB of a 5 MiB quota, Germany 5.73.
       //
-      // The full set still arrives over the network a moment later, so the
-      // cross-border panels and search are unaffected beyond first paint.
+      // So: the NEAREST `CACHE_LIMIT` stations to wherever the user last had
+      // the map. Cost becomes constant — about 0.6 MiB — whatever the country
+      // holds, and the ones kept are the ones they are about to look at. On a
+      // first-ever visit there is no centre yet and the country's home view is
+      // exactly the right fallback.
+      //
+      // The full set still arrives over the network a moment later, so search
+      // and the cross-border panels are unaffected beyond first paint; cluster
+      // counts correct themselves in the same tick.
       try {
         const cc = readActiveCountry();
         const own = stRes.data.filter((st: any) => toCountryCode(st.country) === cc);
+        let centre: { lat: number; lon: number } | null = null;
+        try {
+          const raw = localStorage.getItem(MAP_CENTRE_KEY);
+          const p = raw ? JSON.parse(raw) : null;
+          if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) centre = p;
+        } catch { /* ignore a malformed centre and fall back below */ }
+        if (!centre) {
+          const home = COUNTRIES[cc].center;
+          centre = { lat: home[0], lon: home[1] };
+        }
+        const near = own.length <= CACHE_LIMIT
+          ? own
+          : own
+              .map((st: any) => ({
+                st,
+                // Squared degrees: ordering only, so the cost of a real
+                // distance is not worth paying over thousands of rows.
+                d: (Number(st.latitude) - centre!.lat) ** 2 + (Number(st.longitude) - centre!.lon) ** 2,
+              }))
+              .sort((a, b) => a.d - b.d)
+              .slice(0, CACHE_LIMIT)
+              .map(x => x.st);
         localStorage.setItem('kyts:cache:stations', JSON.stringify({
           country: cc,
-          stations: own.map(cacheableStation),
+          stations: near.map(cacheableStation),
         }));
       } catch { /* quota exceeded — non-fatal, next load will retry */ }
     }
