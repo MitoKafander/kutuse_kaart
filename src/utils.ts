@@ -469,6 +469,29 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   { match: 'tanka',          canonical: 'Tanka' },        // 117
   { match: 'din x',          canonical: 'Din-X' },        // folded: matches "din-X", 107
   { match: 'bilisten',       canonical: 'Bilisten' },     // 25
+
+  // Norwegian chains. Counts are OSM's at the phase-NO seed. Circle K (432)
+  // and St1 (244) are already patterns above and cover their Norwegian
+  // forecourts.
+  //
+  // `uno x` deliberately also catches two SWEDISH rows ("Uno-X Löberöd",
+  // "Uno X"). Uno-X trades in both countries and those really are Uno-X, so
+  // this is the rare collision that fixes something rather than breaking it —
+  // the usual inert-against-other-countries rule exists to stop a pattern
+  // renaming things it has no business renaming, not to stop it being right.
+  //
+  // ⚠️ THERE IS DELIBERATELY NO `driv` PATTERN, despite Driv being a real
+  // chain with 170 forecourts. "Drivstoff" is Norwegian for fuel, so the
+  // substring matches independents like "Dråpen Drivstoff" and "Coop Marked
+  // Meløy Drivstoffpumpe" — ten distinct names that are not the chain. It is
+  // also unnecessary: all 170 are named exactly "Driv" in OSM, so they already
+  // group as one collector brand without help.
+  { match: 'uno x',          canonical: 'Uno-X' },        // folded: matches "Uno-X", 304
+  { match: 'yx',             canonical: 'YX' },           // 253
+  { match: 'esso',           canonical: 'Esso' },         // 227
+  { match: 'lpg norge',      canonical: 'LPG Norge' },    // 38
+  { match: 'automat1',       canonical: 'Automat1' },     // 32
+  { match: 'bunker oil',     canonical: 'Bunker Oil' },   // 27
 ];
 
 // Diacritics are folded on BOTH sides (pattern and station name) so one

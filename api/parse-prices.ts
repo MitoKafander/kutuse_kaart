@@ -38,7 +38,7 @@ const ALLOWED_BRANDS = [
   'Jozita', 'Saurida', 'EMSI', 'Alauša', 'Stateta', 'Kvistija', 'Trevena',
   'Apsaga', 'Skulas', 'Milda', 'ABC', 'St1', 'Teboil', 'SEO', 'Shell',
   'Gulf', 'Såifa', 'Preem', 'OKQ8', 'Ingo', 'Qstar', 'Tanka', 'Din-X',
-  'Bilisten',
+  'Bilisten', 'Uno-X', 'YX', 'Esso', 'LPG Norge', 'Automat1', 'Bunker Oil',
 ] as const;
 const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
 
