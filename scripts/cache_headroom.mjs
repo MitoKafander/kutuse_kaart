@@ -20,20 +20,27 @@ const cacheable = (s) => {
 
 const rows = await fetchAll('stations', 'id, name, latitude, longitude, country, parish_id, active, amenities',
   (q) => q.eq('active', true));
-const blob = JSON.stringify(rows.map(cacheable));
-const mib = (blob.length * 2) / 1048576;      // 2 bytes/char
-const perStation = (blob.length * 2) / rows.length;
 
-console.log(`${rows.length} active stations -> ${mib.toFixed(2)} MiB of a 5 MiB quota (${(100*mib/5).toFixed(0)}%)`);
-console.log(`~${perStation.toFixed(0)} bytes per station`);
-console.log('');
-console.log('Headroom, if a fifth country costs the same per station:');
-for (const n of [1000, 2000, 3000, 5000, 7000, 9000]) {
-  const t = ((blob.length + (blob.length / rows.length) * n) * 2) / 1048576;
-  const flag = t > 5 ? '  ❌ OVER QUOTA' : t > 4 ? '  ⚠️  >80%' : '';
-  console.log(`  +${String(n).padStart(5)} stations -> ${t.toFixed(2)} MiB (${(100*t/5).toFixed(0)}%)${flag}`);
+const size = (list) => (JSON.stringify(list.map(cacheable)).length * 2) / 1048576;  // 2 bytes/char
+const byCountry = {};
+for (const r of rows) (byCountry[r.country] ??= []).push(r);
+
+const all = size(rows);
+const worst = Object.entries(byCountry).sort((a, b) => b[1].length - a[1].length)[0];
+const perStation = (JSON.stringify(rows.map(cacheable)).length * 2) / rows.length;
+
+console.log(`${rows.length} active stations · ~${perStation.toFixed(0)} bytes each\n`);
+console.log('The cache holds ONE country (since 2026-09-27), because the map draws one:');
+for (const [cc, list] of Object.entries(byCountry).sort((a, b) => b[1].length - a[1].length)) {
+  const mib = size(list);
+  console.log(`  ${cc}: ${String(list.length).padStart(5)} stations -> ${mib.toFixed(2)} MiB (${(100 * mib / 5).toFixed(0)}% of quota)`);
 }
-console.log('');
-const headroom = Math.floor((5 * 1048576 / 2 - blob.length) / (blob.length / rows.length));
-console.log(`Hard ceiling: ~${headroom} more stations before the station cache alone fills the quota`);
-console.log('(and prices, votes, the celebration store and country prefs share it)');
+console.log(`\nWorst case is ${worst[0]} at ${size(worst[1]).toFixed(2)} MiB.`);
+console.log(`Caching every country instead would be ${all.toFixed(2)} MiB (${(100 * all / 5).toFixed(0)}%) — what it used to do.`);
+
+// What matters now is the biggest single country a new one could bring, not
+// the running total.
+const headroom = Math.floor((5 * 1048576 / 2) / (perStation / 2));
+console.log(`\nA new country is affordable as long as IT ALONE fits: roughly ${headroom} stations`);
+console.log('leaves nothing for prices, votes, the celebration store or country prefs, so treat');
+console.log(`~${Math.floor(headroom * 0.6)} as the practical limit for one country.`);

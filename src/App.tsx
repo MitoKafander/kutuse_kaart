@@ -232,7 +232,16 @@ function App() {
   const [stations, setStations] = useState<any[]>(() => {
     try {
       const raw = localStorage.getItem('kyts:cache:stations');
-      return raw ? JSON.parse(raw) : [];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      // Cache holds ONE country (see the write below). A payload for a country
+      // the user has since left is worse than none — it would paint the wrong
+      // map for the few hundred ms before the network answers — so it is
+      // discarded rather than shown. The pre-2026-09-27 format was a bare
+      // array of every country; it has no `country` field and is dropped the
+      // same way, then rewritten on the next load.
+      if (!parsed || !Array.isArray(parsed.stations)) return [];
+      return parsed.country === readActiveCountry() ? parsed.stations : [];
     } catch { return []; }
   });
   const [prices, setPrices] = useState<any[]>([]);
@@ -550,8 +559,23 @@ function App() {
 
     if (stRes.data) {
       setStations(stRes.data);
-      try { localStorage.setItem('kyts:cache:stations', JSON.stringify(stRes.data.map(cacheableStation))); }
-      catch { /* quota exceeded — non-fatal, next load will retry */ }
+      // Cache ONLY the active country. Until the map went single-country this
+      // had to hold everything, because everything was drawn; now 6,686 rows
+      // are cached to paint 482, and the cache was the only thing capping how
+      // many countries Kyts could carry (2.93 MiB of a 5 MiB quota, ~4,700
+      // stations of headroom left). One country is ~0.2 MiB for Estonia and
+      // the ceiling stops being the constraint.
+      //
+      // The full set still arrives over the network a moment later, so the
+      // cross-border panels and search are unaffected beyond first paint.
+      try {
+        const cc = readActiveCountry();
+        const own = stRes.data.filter((st: any) => toCountryCode(st.country) === cc);
+        localStorage.setItem('kyts:cache:stations', JSON.stringify({
+          country: cc,
+          stations: own.map(cacheableStation),
+        }));
+      } catch { /* quota exceeded — non-fatal, next load will retry */ }
     }
     // Only claim the prices are loaded when they actually arrived. This used
     // to flip unconditionally, so a failed fetch (fetchAllRows returns
