@@ -2,6 +2,76 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - One country at a time - 2026-09-27
+
+Mikk: showing every country's stations at once makes the app too slow, and the
+user should not be put in that position at all. The numbers agree — at six
+countries the map was drawing **6,686 stations**. An Estonian driver now renders
+**482**, fourteen times fewer; even a Swede, in the largest catalogue, drops to
+2,955.
+
+- 🟢 **The active country now decides which stations exist on the map**, not just
+  the home view. It was already the single concept behind the Avastuskaart,
+  statistics, the leaderboard and the currency, so this makes it mean one thing
+  everywhere.
+- 🟢 **Per-country visibility is gone entirely** — state, handler, profile write,
+  localStorage mirror, the six-row toggle list, two locale keys and half of
+  `countryPrefs.ts`. With one country on the map there is nothing to hide.
+  Settings → Riigid is now a plain single-select: flag, name, tick.
+  `user_profiles.hidden_countries` and the phase-27 `show_latvian_stations`
+  boolean stay in the schema untouched — harmless, and the rollback path.
+- 🔑 **Two panels deliberately stay cross-border**, and this is the judgement call
+  to overturn if you disagree with it: **"Cheapest nearby" and the route planner
+  read every country.** They are proximity and corridor tools, not browsing — at
+  Valga the honest answer to "cheapest fuel near me" is a pump 2 km away in
+  Valka, and a Tallinn–Riga route is made of stations on both sides. They render
+  a handful of results rather than thousands, so searching wide costs nothing,
+  and phase 69 gave them cross-currency ranking precisely so this stays correct
+  at Tornio/Haparanda.
+- 🟡 **One loose end that created, now closed:** a station picked from a
+  cross-border result would have opened a drawer for a dot that is not on the
+  map. `mapStations` carries a selected station across the border so it stays
+  drawable, and switching country clears the selection — otherwise the previous
+  country's pin floats over the new country's map.
+
+### The border guess stopped being cosmetic
+
+- 🔴 **`countryForCoords` places Haparanda in Finland.** It is a bounding-box test
+  with a nearest-centre tiebreak, measured wrong at 1 of 10 border points. While
+  every country was drawn that was a wrong home view over a map that still
+  showed everything. Now it decides which stations exist, and the guess is
+  persisted and never revisited — so the same fix the scan-currency path already
+  had applies here: **nearest catalogued station within 3 km wins, geometry is
+  the fallback.** A station you are standing next to says more about which
+  country that is than a rectangle drawn around the whole of Sweden.
+- 🟡 It also now **waits for the catalog** instead of guessing without it.
+  Previously a GPS fix arriving before the stations would have locked in a bbox
+  answer, since the effect writes its result and then never runs again.
+
+## [Shipped] - One country control, not two on separate tabs - 2026-09-27
+
+Mikk: *"on mitu kohta, kus riike saab valida ja need on veel eraldi lehel.
+Kuidagi väga ebaintuitiivne."*
+
+- 🔴 **They were not merely similar — both called `onActiveCountryChange`.** The
+  same setting had two homes on two different tabs: a row of country pills in
+  Profile → Avastuskaart, and the Riigid list in Settings. The Settings one was
+  the real control; the pills were a second way to do half of it.
+- 🔑 **The control lives in Settings, and that direction is forced by something
+  easy to miss:** a signed-out user is pinned to the Settings tab by
+  `activeTab`'s effect, so moving it to Profile would take the country picker
+  away from everyone not logged in.
+- 🟢 The Avastuskaart card now shows which country it is displaying and links to
+  the control — switching tab, scrolling the Riigid block into view and flashing
+  its outline. Without the scroll the jump lands mid-page and looks like nothing
+  happened, which is plausibly how a duplicate got added in the first place.
+- 🟡 The Riigid list iterated `COUNTRY_LIST` while the pills used
+  `availableCountries`; both now use the latter, so a country whose registry
+  entry is committed but whose catalog is not yet seeded cannot be chosen. That
+  window is not hypothetical — it is exactly the state between deploying the
+  client and running the seeds, which the recipe requires, and it occurred twice
+  in one day for Sweden and Malta.
+
 ## [Shipped] - Malta, the sixth country - 2026-09-26
 
 **EE 482 · LV 548 · LT 742 · FI 1,890 · SE 2,955 · MT 69 = 6,686 active stations.**

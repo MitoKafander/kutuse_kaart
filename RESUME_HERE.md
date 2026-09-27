@@ -241,6 +241,17 @@ explicit `drop view` of the dependent + the view first.
   currency on both read and write.
   Remaining phases (FX, the scanner, Sweden's data) are in `Notes/Plan_Local_Currency.md`.
 - **PostgREST 1000-row cap — `stations` is way OVER it** (6,672 rows after Sweden; it was 610 before the Baltic seed). Any `.limit(N>1000)` *and any bare `.select()`* silently truncates, and a truncated station list looks exactly like a complete one. This shipped broken for ~15 minutes on 2026-09-23: the live map showed LT 23/742 and EE 430/482. Client reads go through `fetchAllRows` (App.tsx), scripts through `fetchAll` (`scripts/_lib/db.mjs`). Everything else is small (parishes 180, maakonnad 30, v_reporters 41, user_profiles 61) — **stations is the one to watch**, and the next table to cross 1k will fail the same silent way.
+- 🔑 **ONE COUNTRY ON THE MAP (2026-09-27).** `activeCountry` decides which stations exist
+  — map, search, pills, freshness counts, Avastuskaart, statistics, leaderboard, currency.
+  Per-country visibility is gone; `user_profiles.hidden_countries` and
+  `show_latvian_stations` remain in the schema only as the rollback path.
+  ⚠️ **"Cheapest nearby" and the route planner deliberately read EVERY country** — they are
+  proximity/corridor tools and a pump 2 km over the border is the right answer. `mapStations`
+  therefore carries a *selected* station across the border so it stays drawable.
+  ⚠️ **`countryForCoords` is a bbox test and is wrong at some borders** (Haparanda → FI).
+  Both the first-run country guess and the scan currency now prefer the **nearest catalogued
+  station within 3 km**, geometry only as fallback. Don't reintroduce a bare bbox call
+  anywhere the answer changes behaviour.
 - 🔴 **A hardcoded list in a checker is a check that silently narrows.** Three loops in
   `verify_countries.mjs` iterated a literal country list, so **Sweden was seeded and the
   verifier printed "All checks passed" while three of its sections were not looking at
