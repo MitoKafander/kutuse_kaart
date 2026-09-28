@@ -1362,6 +1362,20 @@ export function Map({
       }))
     : [];
 
+  // The UNCLUSTERED path ("Group nearby stations" off) renders each dot as a
+  // React <Marker>, which ClusterLayer's cullOffscreen never sees — so with
+  // clustering off, Poland put all 8,022 back into the DOM, in the normal view
+  // and the Avastuskaart alike. Same rule, same threshold: big catalogues keep
+  // only dots within the viewport plus half a screen of margin, so a short
+  // pan never uncovers an empty band. The selected station always stays.
+  // Only these render lists are culled; the cluster layers above need every
+  // dot, or their counts would describe the screen instead of the country.
+  const cullBounds = cullOffscreen && viewportBounds ? viewportBounds.pad(0.5) : null;
+  const inDom = <T extends { station: any }>(dots: T[]): T[] => cullBounds
+    ? dots.filter(d => String(d.station.id) === String(selectedStation?.id)
+        || cullBounds.contains([d.station.latitude, d.station.longitude]))
+    : dots;
+
   const isLight = mapStyle === 'light';
 
   // No-data stations render as hollow rings — same visual language as the
@@ -1570,7 +1584,7 @@ export function Map({
               cullOffscreen={cullOffscreen}
             />
           ) : (
-            <>{discoveryDots.map(d => (
+            <>{inDom(discoveryDots).map(d => (
               <Marker
                 key={d.station.id}
                 position={[d.station.latitude, d.station.longitude]}
@@ -1586,14 +1600,14 @@ export function Map({
             {showClusters ? (
               <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} cullOffscreen={cullOffscreen} />
             ) : (
-              <>{fadedDots.map(renderFadedDot)}</>
+              <>{inDom(fadedDots).map(renderFadedDot)}</>
             )}
 
             {/* Layer 2: Fresh/active dots — vibrant */}
             {showClusters ? (
               <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} cullOffscreen={cullOffscreen} />
             ) : (
-              <>{freshDots.map(renderFreshDot)}</>
+              <>{inDom(freshDots).map(renderFreshDot)}</>
             )}
           </>
         ))}

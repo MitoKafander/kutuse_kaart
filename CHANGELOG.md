@@ -20,6 +20,14 @@ load was fine in both (~3 s cold, ~0.3 s warm); the cost was all in use.
   At Estonia's 482 that was free. It is now ON only for catalogues over 2,000
   stations (PL, SE, NO) — the small countries keep April's behaviour exactly.
   Click check after pans: 10/10 opened the station drawer.
+- 🟡 **The same hole on the unclustered path.** With "Group nearby stations"
+  off, dots render as React `<Marker>`s that `ClusterLayer` never sees, so
+  Poland put all 8,022 back into the DOM in both the normal view and the
+  Avastuskaart. Same threshold, same rule now: only dots within the viewport
+  plus half a screen (and the selected station). Street-level zoom/pan went
+  1.7–3.1 s → 0 (checked with a signed-in session, since sign-out resets this
+  setting). At country zoom the unclustered mode still draws every dot — that
+  is what the setting means; 1 of 61 profiles has it off.
 - 🔴 **`municipalities_pl.geojson` was 4.7 MB** (380 powiaty at the shared 25%
   simplification). `rebuild_boundaries_country.mjs` now takes a per-country
   ratio; PL at 8% → 1.6 MB (regions 1.0 MB → 337 KB). All 380 ids and their
