@@ -38,9 +38,9 @@ const ALLOWED_BRANDS = [
   'Jozita', 'Saurida', 'EMSI', 'Alauša', 'Stateta', 'Kvistija', 'Trevena',
   'Apsaga', 'Skulas', 'Milda', 'ABC', 'St1', 'Teboil', 'SEO', 'Shell',
   'Gulf', 'Såifa', 'Preem', 'OKQ8', 'Ingo', 'Qstar', 'Tanka', 'Din-X',
-  'Bilisten', 'Uno-X', 'YX', 'Esso', 'LPG Norge', 'Automat1', 'Bunker Oil',
-  'F24', 'Q8', 'OIL!', 'Bonus', 'BP', 'Moya', 'Avia', 'Pieprzyk', 'Amic',
-  'Watis', 'Lotos', 'Huzar', 'Bliska', 'Intermarché',
+  'Bilisten', 'Uno-X', 'Tyxon', 'YX', 'Esso', 'LPG Norge', 'Automat1',
+  'Bunker Oil', 'F24', 'Q8', 'OIL!', 'Bonus', 'BP', 'Moya', 'Avia',
+  'Pieprzyk', 'Amic', 'Watis', 'Lotos', 'Huzar', 'Bliska', 'Intermarché',
 ] as const;
 const ALLOWED_BRANDS_LIST = ALLOWED_BRANDS.map(b => `"${b}"`).join(', ');
 
@@ -269,10 +269,10 @@ export default async function handler(req: NodeReq, res: NodeRes) {
       // this, a Latvian "Dīzeļdegviela" or Lithuanian "Dyzelinas" row reads as
       // an unknown fuel and the scan comes back empty on a perfectly good photo.
       `Fuel row labels vary by country — map them to the four slots above:\n` +
-      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95, Bensiini 95, Bensin 95, Blyfri 95, Blyfri 95 Oktan.\n` +
-      `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, Bensiini 98, Bensin 98, 100, 99 (premium petrol grades).\n` +
-      `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D, Dieselöljy, Pro Diesel.\n` +
-      `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND, Nestekaasu, Gasol.\n` +
+      `- "Bensiin 95" also appears as: 95, E95, 95 E10, Benzīns 95, Benzinas 95, Miles 95, Futura 95, Pulse 95, Bensiini 95, Bensin 95, Blyfri 95, Blyfri 95 Oktan, Pb 95, Pb95, Benzyna 95, Efecta 95.\n` +
+      `- "Bensiin 98" also appears as: 98, E98, 98 E5, Benzīns 98, Benzinas 98, Miles 98, Futura 98, Bensiini 98, Bensin 98, Blyfri 98, Pb 98, Pb98, Verva 98, 100, 99 (premium petrol grades).\n` +
+      `- "Diisel" also appears as: D, DK, Diisel, Diesel, Dīzelis, Dīzeļdegviela, Dyzelinas, Dyzelinas DK, Diesel Pro, Futura D, Miles Plus D, Dieselöljy, Pro Diesel, ON, Olej napędowy, ON Verva, Efecta Diesel.\n` +
+      `- "LPG" also appears as: Vedelgaas, Autogaas, Gāze, Auto gāze, Dujos, SND, Nestekaasu, Gasol, Autogas, Autogass, Autogaz, Gaz.\n` +
       // Both are common on Swedish and Finnish forecourts and neither maps to
       // any slot Kyts tracks, so say so rather than letting the model guess.
       `IGNORE these rows entirely — they are real fuels but Kyts does not track them: E85 / Etanol E85 / RE85, HVO / HVO100 / Neste MY, Moottoripolttoöljy, Eldningsolja, CNG / CBG / Fordonsgas / Biokaasu.`;

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown } from 'lucide-react';
 import { COUNTRIES, type CountryCode } from '../constants/countries';
+import { useDismissOnOutside } from '../hooks/useDismissOnOutside';
 
 // The country selector.
 //
@@ -108,21 +109,7 @@ export function CountryBubble({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Dismiss on an outside tap or Escape. Without this the list stays over the
-  // map and swallows the next pan.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  useDismissOnOutside(open, rootRef, () => setOpen(false));
 
   // One country means no choice to offer.
   if (availableCountries.length <= 1) return null;
@@ -136,8 +123,9 @@ export function CountryBubble({
         position: 'absolute',
         left: 10,
         // Clears the freshness slider (~230 px tall, centred) without depending
-        // on it being rendered.
-        top: 'calc(50% - 175px)',
+        // on it being rendered. The floor keeps it out of the search bar on a
+        // short landscape viewport, where 50% − 175 px alone lands at the top.
+        top: 'max(calc(84px + env(safe-area-inset-top)), calc(50% - 175px))',
         zIndex: 800,
         display: 'flex',
         alignItems: 'flex-start',

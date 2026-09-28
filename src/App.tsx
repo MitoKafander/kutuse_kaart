@@ -187,6 +187,64 @@ async function fetchAllRows<T = any>(
   return { data: all, error: null };
 }
 
+/**
+ * The first-paint cache: the `CACHE_LIMIT` stations of `cc` nearest to
+ * `centre`, or to where the user last had the map, or to the country's home
+ * view — in that order of preference.
+ *
+ * The cache is worth keeping and worth capping. Measured against prod: it
+ * takes Sweden's first painted marker from 2,165 ms to 180 ms and Estonia's
+ * from 1,202 to 118 — twelvefold and tenfold — so dropping it is not an
+ * option. But storing a whole country to paint the few dozen markers on screen
+ * is the same waste that caching every country was, one level down, and it is
+ * what makes catalogue size a ceiling at all: Poland alone would be 3.56 MiB
+ * of a 5 MiB quota, Germany 5.73. Keeping the nearest `CACHE_LIMIT` makes the
+ * cost constant — about 0.6 MiB — whatever the country holds, and the ones
+ * kept are the ones they are about to look at.
+ *
+ * Written after every network fetch AND on a country switch: the read side
+ * discards a payload for any other country, so a switch that did not rewrite
+ * it would make the next open cold.
+ *
+ * The full set still arrives over the network a moment later, so search and
+ * the cross-border panels are unaffected beyond first paint; cluster counts
+ * correct themselves in the same tick.
+ */
+function writeStationCache(all: any[], cc: CountryCode, centre?: { lat: number; lon: number }) {
+  try {
+    const own = all.filter((st: any) => toCountryCode(st.country) === cc);
+    let at = centre ?? null;
+    if (!at) {
+      try {
+        const raw = localStorage.getItem(MAP_CENTRE_KEY);
+        const p = raw ? JSON.parse(raw) : null;
+        if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) at = p;
+      } catch { /* ignore a malformed centre and fall back below */ }
+    }
+    if (!at) {
+      const home = COUNTRIES[cc].center;
+      at = { lat: home[0], lon: home[1] };
+    }
+    const c = at;
+    const near = own.length <= CACHE_LIMIT
+      ? own
+      : own
+          .map((st: any) => ({
+            st,
+            // Squared degrees: ordering only, so the cost of a real distance
+            // is not worth paying over thousands of rows.
+            d: (Number(st.latitude) - c.lat) ** 2 + (Number(st.longitude) - c.lon) ** 2,
+          }))
+          .sort((a, b) => a.d - b.d)
+          .slice(0, CACHE_LIMIT)
+          .map(x => x.st);
+    localStorage.setItem('kyts:cache:stations', JSON.stringify({
+      country: cc,
+      stations: near.map(cacheableStation),
+    }));
+  } catch { /* quota exceeded — non-fatal, next load will retry */ }
+}
+
 function App() {
   const { t } = useTranslation();
   const [session, setSession] = useState<any>(null);
@@ -239,6 +297,13 @@ function App() {
   // out of the cache: the table is paged in via fetchAllRows and can run to
   // many MB of JSON; the parse cost on cold mount outweighs the
   // perceived-perf win, and the dots themselves are the "we're alive" signal.
+  // True once `stations` is the full network set rather than the one-country
+  // first-paint cache. Two decisions must wait for it: the first-run country
+  // guess (a Valka user with only Estonia's stations cached would find Valga's
+  // pumps "nearest" and be pinned to Estonia for good) and re-aiming the cache
+  // on a country switch (filtering the old country's cache by the new code
+  // would write an empty payload).
+  const stationsFromNetworkRef = useRef(false);
   const [stations, setStations] = useState<any[]>(() => {
     try {
       const raw = localStorage.getItem('kyts:cache:stations');
@@ -569,53 +634,8 @@ function App() {
 
     if (stRes.data) {
       setStations(stRes.data);
-      // The cache is worth keeping and worth capping. Measured against prod:
-      // it takes Sweden's first painted marker from 2,165 ms to 180 ms and
-      // Estonia's from 1,202 to 118 — twelvefold and tenfold — so dropping it
-      // is not an option. But storing a whole country to paint the few dozen
-      // markers on screen is the same waste that caching every country was,
-      // one level down, and it is what makes catalogue size a ceiling at all:
-      // Poland alone would be 3.56 MiB of a 5 MiB quota, Germany 5.73.
-      //
-      // So: the NEAREST `CACHE_LIMIT` stations to wherever the user last had
-      // the map. Cost becomes constant — about 0.6 MiB — whatever the country
-      // holds, and the ones kept are the ones they are about to look at. On a
-      // first-ever visit there is no centre yet and the country's home view is
-      // exactly the right fallback.
-      //
-      // The full set still arrives over the network a moment later, so search
-      // and the cross-border panels are unaffected beyond first paint; cluster
-      // counts correct themselves in the same tick.
-      try {
-        const cc = readActiveCountry();
-        const own = stRes.data.filter((st: any) => toCountryCode(st.country) === cc);
-        let centre: { lat: number; lon: number } | null = null;
-        try {
-          const raw = localStorage.getItem(MAP_CENTRE_KEY);
-          const p = raw ? JSON.parse(raw) : null;
-          if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) centre = p;
-        } catch { /* ignore a malformed centre and fall back below */ }
-        if (!centre) {
-          const home = COUNTRIES[cc].center;
-          centre = { lat: home[0], lon: home[1] };
-        }
-        const near = own.length <= CACHE_LIMIT
-          ? own
-          : own
-              .map((st: any) => ({
-                st,
-                // Squared degrees: ordering only, so the cost of a real
-                // distance is not worth paying over thousands of rows.
-                d: (Number(st.latitude) - centre!.lat) ** 2 + (Number(st.longitude) - centre!.lon) ** 2,
-              }))
-              .sort((a, b) => a.d - b.d)
-              .slice(0, CACHE_LIMIT)
-              .map(x => x.st);
-        localStorage.setItem('kyts:cache:stations', JSON.stringify({
-          country: cc,
-          stations: near.map(cacheableStation),
-        }));
-      } catch { /* quota exceeded — non-fatal, next load will retry */ }
+      stationsFromNetworkRef.current = true;
+      writeStationCache(stRes.data, readActiveCountry());
     }
     // Only claim the prices are loaded when they actually arrived. This used
     // to flip unconditionally, so a failed fetch (fetchAllRows returns
@@ -1094,11 +1114,12 @@ function App() {
   useEffect(() => {
     if (!liveUserLocation) return;
     if (localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
-    // Wait for the catalog rather than guess without it. This guess now decides
-    // which stations exist on the map at all, not merely the home view, so
-    // getting it wrong is no longer cosmetic — and once written it is never
-    // revisited.
-    if (!stations.length) return;
+    // Wait for the FULL catalog rather than guess without it. This guess now
+    // decides which stations exist on the map at all, not merely the home view,
+    // so getting it wrong is no longer cosmetic — and once written it is never
+    // revisited. The one-country first-paint cache does not count: measured
+    // against it, a user in Valka would find Valga's pumps nearest.
+    if (!stationsFromNetworkRef.current) return;
 
     // Nearest catalogued station first, geometry only as a fallback.
     // countryForCoords is a bounding-box test with a nearest-centre tiebreak and
@@ -1132,6 +1153,14 @@ function App() {
     // pin floating on the new country's map, since mapStations deliberately
     // carries a selected station across borders.
     setSelectedStation(null);
+    // Re-aim the first-paint cache at the new country now, or the next open is
+    // cold: the read side discards a payload for any other country. Aimed at
+    // the new home view, not the persisted map centre — that still points into
+    // the country being left, and the map is about to fly home anyway.
+    if (stationsFromNetworkRef.current) {
+      const home = COUNTRIES[next].center;
+      writeStationCache(stations, next, { lat: home[0], lon: home[1] });
+    }
   };
 
   // Centralized so the main-screen filter pill and the profile-settings toggle

@@ -17,9 +17,11 @@
 //   · access=private            fleet/company depots
 //   · CNG/CBG/LNG/H2/EV-only    out of scope (Elenger declined; Notes/Plan_CNG_CBG_Stations.md)
 //   · shop=gas with no fuel:*   an Alexela-at-Coop-style bottled-gas cabinet
+//   · name says closed          "Nieczynna stacja paliw" — retagged by rename, not by tag
 // LPG is NOT excluded — it's one of the four fuel types Kyts tracks.
 
 import { sb, fetchAll, chunk } from './_lib/db.mjs';
+import { closedNameReason } from './_lib/stations.mjs';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CACHE_DIR, pointInRings } from './_lib/overpass.mjs';
@@ -57,6 +59,8 @@ function metresBetween(aLat, aLon, bLat, bLon) {
 /** Why this OSM element is out of scope, or null to keep it. */
 function excludeReason(tags) {
   if (tags.access === 'private' || tags.access === 'no') return 'private/fleet depot';
+  const closed = closedNameReason(tags.name);
+  if (closed) return closed;
   const fuelKeys = Object.keys(tags).filter((k) => k.startsWith('fuel:') && tags[k] !== 'no');
   const liquidOrLpg = fuelKeys.some((k) => !/cng|biogas|lng|hydrogen|electricity|methane/.test(k));
   if (fuelKeys.length > 0 && !liquidOrLpg) return 'gas/electric only';

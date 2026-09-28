@@ -10,6 +10,7 @@ import type { RegionProgress } from '../hooks/useRegionProgress';
 import { DiscoveryBadgeGrid } from './DiscoveryBadgeGrid';
 import { COUNTRIES, type CountryCode } from '../constants/countries';
 import { CountryMenu } from './CountryBubble';
+import { useDismissOnOutside } from '../hooks/useDismissOnOutside';
 
 // --- Contributor Badge System ---
 // 20 tiers of escalating absurdity. Thresholds grow ~geometrically so the
@@ -207,7 +208,6 @@ export function ProfileDrawer({
   onActiveCountryChange: (country: CountryCode) => void;
   /** Countries with a seeded catalog — same set the map bubble offers. */
   availableCountries: CountryCode[];
-  /** Countries that actually have a region catalog seeded. */
   showStaleDemo: boolean;
   onShowStaleDemoChange: (show: boolean) => void;
   allBrandsForLoyalty: string[];
@@ -239,6 +239,8 @@ export function ProfileDrawer({
   const [favSort, setFavSort] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'fresh'>('name-asc');
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(session ? 'profile' : 'settings');
   const [countryMenuOpen, setCountryMenuOpen] = useState(false);
+  const countryMenuRef = useRef<HTMLDivElement | null>(null);
+  useDismissOnOutside(countryMenuOpen, countryMenuRef, () => setCountryMenuOpen(false));
   useEffect(() => { if (!session) setActiveTab('settings'); }, [session]);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [brandsOpen, setBrandsOpen] = useState(false);
@@ -861,7 +863,7 @@ export function ProfileDrawer({
                 which is not the thing that went wrong before. That was two
                 controls, and then a button whose only job was to navigate. */}
             {availableCountries.length > 1 ? (
-              <div style={{ position: 'relative' }}>
+              <div ref={countryMenuRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setCountryMenuOpen(o => !o)}
                   aria-expanded={countryMenuOpen}

@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "verify:currency": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/verify_currency_rendering.mjs",
     "verify:scanner": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/verify_scanner_contract.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "measure:chains": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/measure_chain_patterns.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

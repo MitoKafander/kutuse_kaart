@@ -457,6 +457,13 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   // of splitting on word order.
   { match: 'saifa',          canonical: 'Såifa' },        // folded: matches "SÅIFA"/"Såifa", 18
   { match: 'preem',          canonical: 'Preem' },        // 430
+  // OSM spells OKQ8 three more ways. They MUST precede `q8` (in the Danish
+  // block below) or six Swedish OKQ8 forecourts are branded as Denmark's Q8 —
+  // found by `npm run measure:chains`. Hyphens fold to spaces, slashes do not,
+  // so "OK/Q8" needs its own line.
+  { match: 'ok q8',          canonical: 'OKQ8' },         // SE 3
+  { match: 'ok/q8',          canonical: 'OKQ8' },         // SE 1
+  { match: 'qkq8',           canonical: 'OKQ8' },         // SE 2 — an OSM typo, still OKQ8
   { match: 'okq8',           canonical: 'OKQ8' },         // 464. NOT bare "OK" —
   // "ok" is a substring of ordinary words (Biokaasu, Tehnoküla) and would
   // rebrand stations in other countries; OKQ8 is the chain that actually exists.
@@ -487,6 +494,10 @@ const CHAIN_PATTERNS: { match: string; canonical: string }[] = [
   // also unnecessary: all 170 are named exactly "Driv" in OSM, so they already
   // group as one collector brand without help.
   { match: 'uno x',          canonical: 'Uno-X' },        // folded: matches "Uno-X", 304
+  // Tyxon is a Polish independent whose name contains "yx". It has to sit
+  // ABOVE `yx` or Norway's YX gains three Polish forecourts — the first stray
+  // `npm run measure:chains` caught, on the day it was written.
+  { match: 'tyxon',          canonical: 'Tyxon' },        // PL 3 — must precede `yx`
   { match: 'yx',             canonical: 'YX' },           // 253
   { match: 'esso',           canonical: 'Esso' },         // 227
   { match: 'lpg norge',      canonical: 'LPG Norge' },    // 38
