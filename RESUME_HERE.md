@@ -9,7 +9,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
-- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (4-country catalog + live boundary fetch) · `node scripts/cache_headroom.mjs` (localStorage budget — run before adding a country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
+- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (every country's catalog + live boundary fetch) · `node scripts/probe_country_osm.mjs <CC>` (step 0 of a new country) · `node scripts/cache_headroom.mjs` (cache is capped; only matters if the projection changes). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
 - **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 69** (`fx_rates` — ECB reference rates for cross-currency comparison, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
@@ -43,13 +43,14 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Market signal made honest** (`api/_lib/marketInsight/computeSignal.ts`, `api/generate-market-insight.ts`): confidence cap 90→70; **diesel `proxyReliable:false`** → emits "no timing edge", never a confident buy/wait (its US NY-Harbor proxy backtested ~0 vs EE diesel); gasoline RBOB signal kept; overall confidence follows the actionable leg.
 - Signal changes apply on the **next cron firing** (06:00 / 15:00 UTC), not immediately.
 
-## Seven countries — ✅ LIVE (Baltics -09-23, Finland -09-24, Sweden + Malta -09-26, Norway -09-27)
+## Nine countries — ✅ LIVE (Baltics -09-23, FI -09-24, SE+MT -09-26, NO+DK -09-27, PL -09-28)
 
-Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT + 2,158 NO = 8,844 active
-stations**.
+Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT + 2,158 NO + 1,921 DK +
+8,027 PL = 18,792 active stations**. Poland alone is 43% of the catalogue.
 Avastuskaart tiers: EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi,
 LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner,
-MT 6 reġjuni / 68 kunsilli lokali. Sweden is the only non-euro country so far — see the
+MT 6 reġjuni / 68 kunsilli lokali, NO 15 fylker / 357 kommuner, DK 5 regioner / 98
+kommuner, PL 16 województwa / 380 powiaty. SE, NO, DK and PL are non-euro — see the
 currency notes below. Full detail in CHANGELOG 2026-09-23 / -24 / -26.
 
 ⚠️ **Malta is a weak fit and that was a known, accepted call:** 69 stations, 24 of them
@@ -57,34 +58,50 @@ unnamed, almost no chains, and Maltese pump prices are **set nationally** — so
 little for a crowd-sourced price map to find. Flagged before seeding; the numbers are in
 CHANGELOG 2026-09-26.
 
-### Adding country six
+### Adding country ten
 
 ✅ **Sweden is done** (phases A–D of `Notes/Plan_Local_Currency.md`). Phase E, market
 insight for a non-euro country, self-gates until Sweden has 20+ local prices — at that
 point decide whether to make the USD-wholesale-vs-pump conversion per-currency or skip
 insight outside the eurozone. Do not leave it emitting euro-shaped claims about kronor.
 
-**Currency is no longer a blocker.** DKK and PLN each need one row in `price_bounds`, one
-entry in `CURRENCIES`, and scan ranges in `CURRENCY_SCAN` — no migration. NOK went in
-exactly that way on 2026-09-27.
+**Step 0 is `node scripts/probe_country_osm.mjs <CC>`.** It reports admin-level counts,
+fuel count, stations-per-tile for each candidate tier and the cache cost, with a sanity
+check that REJECTS a zero count. Do not retype it by hand: the hand-rolled version used
+`total != null`, a throttled Overpass mirror answered 200 with an empty result, and it
+reported "Poland has no powiaty and no fuel stations". That nearly chose a tier.
 
-**The cache holds ONE country since 2026-09-27**, so the limit is no longer a running
-total — it is "does the biggest single country fit", about **6,800 stations**. Worst case
-today is SE at 1.21 MiB of 5 MiB. **Poland (~7,500) is now borderline rather than
-impossible.** Run `node scripts/cache_headroom.mjs` before committing.
+**Currency is a solved shape.** A new one needs one row in `price_bounds`, one entry in
+`CURRENCIES`, one block in `CURRENCY_SCAN`, and its ECB rate in `fx_rates` (insert it
+rather than waiting for the cron, or cross-border ranking is off until 06:00). NOK, DKK
+and PLN all went in that way. Note `integerDigits`: krone prices have 2 digits before the
+separator, złoty and euro have 1.
 
-⚠️ **The seeder SKIPS stations that fall outside every municipality** rather than inserting
-them with a null `parish_id`, and lists what it dropped. If a mainland station shows up
-there, a boundary is wrong — do not "fix" it by re-allowing nulls. Norway's Svalbard pumps
-are the intended case.
+**The first-paint cache is CAPPED at 1,500 stations nearest the last map centre**
+(`CACHE_LIMIT` in App.tsx, 2026-09-27), so its cost is a constant ~0.61 MiB whatever the
+country holds. **Catalogue size is no longer a ceiling** — Poland (8,027) and even
+Germany (~14,000) fit. Measured: the cache is worth keeping (SE first marker 2,165 → 144
+ms), so don't drop it; and re-measure with `node scripts/cache_headroom.mjs` only if the
+per-station projection in `cacheableStation` changes.
+
+⚠️ **Unplaced stations: SNAP within 500 m, else SKIP.** A forecourt on a quay often sits
+metres outside the municipality polygon because OSM's boundary follows the historic shore
+— Denmark had five at 5–110 m. The seeder snaps those to the nearest municipality and
+skips only what is genuinely outside (Norway's Svalbard pumps, hundreds of km away). Never
+insert a null `parish_id`: 0 such rows exist across all nine countries.
+⚠️ `seed_country_regions.mjs` re-checks placement WITHOUT the snap and will report those as
+"unplaced". It leaves them alone — don't make it write.
 
 **Three ways to group level-2 into level-1, pick by what the country actually has:**
 a statutory code carried on each unit (Sweden's `ref:scb`, Norway's kommunenummer in
 `ref` — exact, preferred; **Denmark's kommunekode does NOT encode its region**, so check
 before assuming),
 a statutory table (Latvia keyed by name, **Malta keyed by ISO 3166-2** — when OSM has no
-level-1 tier at all), or centroid-in-polygon (Lithuania, Finland, Denmark — only geometry
-available, and cheap when level-1 is a handful: DK's 5 vs NO's 16 and SE's 21).
+level-1 tier at all), or centroid-in-polygon (Lithuania, Finland, Denmark, Poland — only
+geometry available, and cheap when level-1 is a handful: DK's 5 and PL's 16 vs SE's 21).
+⚠️ **A country may have MORE than two tiers.** Poland has three (województwo / powiat /
+gmina); `probe_country_osm.mjs` prints stations-per-tile for each so you can pick the one
+that reads as a collectable area (aim for ~6–25, not 3).
 ⚠️ **CHAIN_PATTERNS is first-match-wins and substring-based.** `q8` must sit below `okq8`
 or 445 Swedish stations get rebranded. A chain whose name is a common substring cannot be
 patterned at all — no `ok` (Denmark's largest, 629 sites) and no `driv` (Norway, 170);
@@ -210,7 +227,7 @@ explicit `drop view` of the dependent + the view first.
   declared sanity check; use it for any new OSM query rather than a bare `fetch`, or a seed
   will one day read "this country has no municipalities" and act on it.
 - **Region ids are hand-allocated and permanent:** EE 1-15, LV 101-105, LT 201-210,
-  FI 301-319, SE 401-421, MT 501-506, NO 601-615 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
+  FI 301-319, SE 401-421, MT 501-506, NO 601-615, DK 701-705, PL 801-816 (`scripts/_lib/regions.mjs`), one 100-wide band per country and
   `verify_countries.mjs` asserts nothing strays out of its band. They're `maakonnad.id` in prod AND `maakond_id`
   inside the shipped boundary geojson — renumbering silently unlinks the drawn map from the
   catalog. Level-2 ids are OSM relation ids, same as Estonia's 78 parishes.

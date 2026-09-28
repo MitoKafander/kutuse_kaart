@@ -81,5 +81,9 @@ if (fuel) {
     if (n > 1) console.log(`      level ${lvl}: ${n} units -> ${(fuel / n).toFixed(1)} stations each`);
   }
 }
-console.log(`  · Cache cost: ~429 B/station, 5 MiB quota, ONE country cached.`);
-if (fuel) console.log(`      ${cc} ≈ ${(fuel * 429 / 1048576).toFixed(2)} MiB (${(100 * fuel * 429 / 1048576 / 5).toFixed(0)}% of quota)`);
+// Cache cost used to be listed here per country. It is no longer a factor:
+// since 2026-09-27 the first-paint cache is CAPPED at CACHE_LIMIT (1,500)
+// stations nearest the last map centre, ~0.61 MiB whatever the country holds.
+// Size only matters again if the per-station projection in cacheableStation
+// changes — that is what `scripts/cache_headroom.mjs` is for.
+console.log(`  · Cache cost: constant (capped at 1,500 nearest stations) — not a factor in this choice.`);

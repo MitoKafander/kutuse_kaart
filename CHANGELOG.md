@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Poland, and the cache stops scaling with the country - 2026-09-28
+
+**EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 · DK 1,921 ·
+PL 8,027 = 18,792 active stations** across nine countries. Poland nearly doubled
+the catalogue on its own, and was only possible because of the first item below.
+
+### The first-paint cache is capped, so catalogue size is no longer a ceiling
+
+- 🔑 **Measured before deciding.** The cache takes Sweden's first painted marker
+  from **2,165 ms to 180 ms** and Estonia's from 1,202 to 118 — twelvefold and
+  tenfold — so dropping it was never an option, whatever it cost.
+- 🟢 **It now keeps the 1,500 stations nearest to wherever the user last had the
+  map**, instead of a whole country. Cost is constant at **~0.61 MiB (12% of
+  quota)** regardless of the catalogue: Poland alone would have been 3.56 MiB,
+  Germany 5.73. The map centre is persisted from the viewport tracker's existing
+  debounce, and only when the map has moved a couple of kilometres. On a first
+  visit the country's home view is the fallback.
+- 🟢 Re-measured after deploy: **Sweden 144 ms** with 1,500 cached, faster than
+  the 180 ms with 2,955 — less JSON to parse. The cap cut cost 49% and made first
+  paint quicker, not slower.
+- 🟡 `cache_headroom.mjs` was still reporting the old running-total model and now
+  reports the cap. A measuring tool describing the wrong model is exactly the
+  trap the Poland probe fell into the same afternoon.
+
+### Poland
+
+- 🔑 **The first three-tier country.** Województwo (level 4, 16) over powiat
+  (level 6, 380) over gmina (level 7, 2,480). Kyts takes the first two: gminy
+  would be 3.5 stations per tile against the 6–20 every other country runs.
+  Powiat reads as a collectable area at **22.9 each** — between Denmark's 19.6
+  and Lithuania's 12.4. Centroid-in-polygon like Denmark; the TERYT code does not
+  carry the voivodeship as a clean prefix. 0 orphans, counts match the official
+  split, Warsaw in Mazowieckie.
+- 🟢 **8,027 stations** from 8,711 OSM features (27 gas/electric-only, 25 fleet
+  depots excluded; 632 same-forecourt duplicates collapsed). 0 outside any
+  boundary. 997 unnamed. All 16 voivodeships populated, no empty powiat.
+- 🟢 **PLN** is the fourth currency in as one row + one entry + one block. The
+  first non-euro one with a **single digit before the separator** (~6,50 zł/L),
+  so `integerDigits` is 1 like the euro, not 2 like the three krone currencies.
+  ECB rate 4.3718 inserted so cross-border ranking with Lithuania works from the
+  first station.
+- 🟢 **Ten chains added** — BP 587, Moya 470, Avia 145, Pieprzyk 99, Amic 94,
+  Watis 67, Lotos 60, Huzar 47, Bliska 45, Intermarché 41. Orlen (1,912, now the
+  largest chain in the app), Shell and Circle K were already patterns. Polish OSM
+  prefixes "Stacja paliw …", so these do real work beyond exact-name grouping.
+- ⚠️ **Two refused on the numbers.** No `mol` despite 319 forecourts: all 319 are
+  named exactly "MOL" and group unaided, so the pattern would gain two strays and
+  cost a Norwegian independent ("Coop Marked Mol**djord**"). No `oktan`: gains
+  ~2, costs 2 — a Polish "Troktan" and a Latvian chain genuinely called "Oktans".
+  `amic` went the other way: 94 exact plus **28 variants** that would fragment,
+  against one false positive ("Dyn**amic** Gas & Wash").
+
+### The probe nearly picked a tier off a throttled mirror
+
+- 🔴 The first Poland probe reported **zero powiaty and zero fuel stations**. Its
+  sanity check was `total != null`, which accepts zero — and a throttled Overpass
+  mirror answers 200 with an empty result. The repo's own helper exists to rotate
+  mirrors until a declared check passes; the check has to actually be one. This
+  was the fourth time the probe had been retyped by hand and the first time it
+  was wrong.
+- 🟢 **`scripts/probe_country_osm.mjs`** — step 0 of adding a country, written down
+  once with `> 0` baked in. Reports admin-level counts, fuel count, stations per
+  candidate tile, and the (now constant) cache cost.
+
 ## [Shipped] - Denmark, and near-miss stations get rescued instead of dropped - 2026-09-27
 
 **EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 · DK 1,921
