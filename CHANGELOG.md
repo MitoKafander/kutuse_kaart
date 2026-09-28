@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Fixed] - Poland was slow: every marker in the DOM, and a 4.7 MB boundary file - 2026-09-28
+
+Measured on kyts.ee with a 4× CPU throttle (mid-range phone), EE vs PL. First
+load was fine in both (~3 s cold, ~0.3 s warm); the cost was all in use.
+
+| PL, main thread blocked | before | after |
+|---|---|---|
+| zoom in to street level | 2,040 ms | 0 ms |
+| pan at street level | 1,498 ms | 0 ms |
+| open the Avastuskaart | 3,822 ms | 242 ms |
+| pan the Avastuskaart | 3,129 ms | 0 ms |
+
+- 🔴 **Past zoom 11 all 8,022 Polish markers were live DOM nodes.** Clustering
+  switches off there, and `removeOutsideVisibleBounds` had been turned off in
+  April (0085d0f) because dropping/re-adding markers on pan made clicks miss.
+  At Estonia's 482 that was free. It is now ON only for catalogues over 2,000
+  stations (PL, SE, NO) — the small countries keep April's behaviour exactly.
+  Click check after pans: 10/10 opened the station drawer.
+- 🔴 **`municipalities_pl.geojson` was 4.7 MB** (380 powiaty at the shared 25%
+  simplification). `rebuild_boundaries_country.mjs` now takes a per-country
+  ratio; PL at 8% → 1.6 MB (regions 1.0 MB → 337 KB). All 380 ids and their
+  voivodeships verified identical — the file is drawn-only, placement lives in
+  the DB.
+
 ## [Shipped] - SEO landing pages go live: Tallinn + every Estonian county - 2026-09-28
 
 - 🔴 **`/linn/tallinn` had been frozen since 28 July** while saying it showed "the

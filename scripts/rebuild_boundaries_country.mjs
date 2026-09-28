@@ -53,9 +53,14 @@ for (const cc of COUNTRIES) {
   const tL1 = join(pub, `.bb_${cc}_l1.geojson`);
   writeFileSync(tLabeled, JSON.stringify(labeled));
 
-  // Same knobs as the Estonian pipeline: 25% topology-preserving simplify,
-  // keep-shapes so nothing is dropped, 0.001° coordinate precision.
-  execFileSync('npx', ['-y', 'mapshaper', tLabeled, '-simplify', '25%', 'keep-shapes', '-o', tL2, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
+  // Same knobs as the Estonian pipeline: topology-preserving simplify,
+  // keep-shapes so nothing is dropped, 0.001° coordinate precision. The ratio
+  // is per country because the cost is per VERTEX: Poland's 380 powiaty at 25%
+  // were 4.7 MB and blocked the main thread 3.8 s on opening the Avastuskaart
+  // and ~3 s on every pan (measured, 4x CPU throttle). They are only ever seen
+  // at country-to-region zoom, where 8% is indistinguishable.
+  const SIMPLIFY = { PL: '8%' };
+  execFileSync('npx', ['-y', 'mapshaper', tLabeled, '-simplify', SIMPLIFY[cc] ?? '25%', 'keep-shapes', '-o', tL2, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
   execFileSync('npx', ['-y', 'mapshaper', tL2, '-dissolve', 'maakond_id', '-o', tL1, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
 
   const l2Out = JSON.parse(readFileSync(tL2, 'utf8')).features

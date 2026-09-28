@@ -184,8 +184,19 @@ function ClusterLayer({
   markers,
   iconCreateFunction,
   refreshKey,
+  cullOffscreen = false,
 }: {
   markers: ClusterMarkerSpec[];
+  /**
+   * Keep only on-screen markers in the DOM. OFF by default, because the
+   * April fix (0085d0f) turned it off: dropping and re-adding markers as you
+   * pan made clicks miss in the old animated setup. But past zoom 11 clustering
+   * is disabled, and with this off EVERY marker in the layer is a live DOM
+   * node — Poland's 8,022 blocked the main thread 2 s on zoom-in and 1.5 s per
+   * pan (4x CPU throttle). So it is switched on only for big catalogues, where
+   * that cost is real; the small countries keep April's behaviour exactly.
+   */
+  cullOffscreen?: boolean;
   iconCreateFunction: (cluster: any) => L.DivIcon;
   // When this changes, cluster icons are re-rendered without tearing down the
   // whole layer — used by Avastuskaart to redraw arc fills when the user's
@@ -205,7 +216,7 @@ function ClusterLayer({
       showCoverageOnHover: false,
       animate: false,
       animateAddingMarkers: false,
-      removeOutsideVisibleBounds: false,
+      removeOutsideVisibleBounds: cullOffscreen,
       iconCreateFunction,
     });
     map.addLayer(group);
@@ -216,7 +227,7 @@ function ClusterLayer({
       groupRef.current = null;
       markerMap.clear();
     };
-  }, [map, iconCreateFunction]);
+  }, [map, iconCreateFunction, cullOffscreen]);
 
   useEffect(() => {
     const group = groupRef.current;
@@ -1057,6 +1068,10 @@ export function Map({
     if (!showDiscoveryMap || !focusedMaakondStationIds) return stations;
     return stations.filter(s => focusedMaakondStationIds.has(String(s.id)));
   }, [stations, showDiscoveryMap, focusedMaakondStationIds]);
+  // See ClusterLayer's cullOffscreen. Keyed on the whole country's size, not
+  // the working set, so it does not flip (and rebuild the layer) when a
+  // county is focused. SE (2,955) and NO (2,158) cross it; FI (1,890) does not.
+  const cullOffscreen = stations.length > 2000;
   // Keep the module-level ref read by the discovery cluster icon function in
   // sync with the latest prop — iconCreateFunction is cached inside MCG so we
   // can't close over props the normal React way.
@@ -1552,6 +1567,7 @@ export function Map({
               markers={discoveryClusterMarkers}
               iconCreateFunction={createDiscoveryClusterIcon}
               refreshKey={discoveryRefreshKey}
+              cullOffscreen={cullOffscreen}
             />
           ) : (
             <>{discoveryDots.map(d => (
@@ -1568,14 +1584,14 @@ export function Map({
           <>
             {/* Layer 1: Faded dots (no data / expired) */}
             {showClusters ? (
-              <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} />
+              <ClusterLayer markers={fadedClusterMarkers} iconCreateFunction={createClusterIcon} cullOffscreen={cullOffscreen} />
             ) : (
               <>{fadedDots.map(renderFadedDot)}</>
             )}
 
             {/* Layer 2: Fresh/active dots — vibrant */}
             {showClusters ? (
-              <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} />
+              <ClusterLayer markers={freshClusterMarkers} iconCreateFunction={createClusterIcon} cullOffscreen={cullOffscreen} />
             ) : (
               <>{freshDots.map(renderFreshDot)}</>
             )}
