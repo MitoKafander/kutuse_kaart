@@ -123,9 +123,11 @@ export function CountryBubble({
         position: 'absolute',
         left: 10,
         // Clears the freshness slider (~230 px tall, centred) without depending
-        // on it being rendered. The floor keeps it out of the search bar on a
-        // short landscape viewport, where 50% − 175 px alone lands at the top.
-        top: 'max(calc(84px + env(safe-area-inset-top)), calc(50% - 175px))',
+        // on it being rendered. The floor keeps it below the search bar AND the
+        // fuel-pill row under it (which ends ~93 px down) on a short landscape
+        // viewport, where 50% − 175 px alone lands at the top. Measured at
+        // 640×320: 84 px cleared the search bar but sat 9 px into the pills.
+        top: 'max(calc(104px + env(safe-area-inset-top)), calc(50% - 175px))',
         zIndex: 800,
         display: 'flex',
         alignItems: 'flex-start',
