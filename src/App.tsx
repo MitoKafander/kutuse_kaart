@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
-import { Search, UserCircle, Camera, Euro, Navigation, TrendingUp, X, Fuel, Compass, EyeOff } from 'lucide-react';
+import { Search, UserCircle, Camera, Euro, Coins, Navigation, TrendingUp, X, Fuel, Compass, EyeOff } from 'lucide-react';
 import { capture } from './utils/analytics';
 import { GdprBanner } from './components/GdprBanner';
 import { BrandPickerPill } from './components/BrandPickerPill';
@@ -1718,7 +1718,9 @@ function App() {
           transition: 'all 0.2s ease',
         }}
       >
-        <Euro size={22} />
+        {/* € only where the pump says €. A euro sign on a Polish or Swedish
+            map advertises the wrong currency on the one button about price. */}
+        {homeCurrency === 'EUR' ? <Euro size={22} /> : <Coins size={22} />}
       </button>
 
       <button

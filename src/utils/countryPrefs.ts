@@ -77,8 +77,12 @@ export function countryFromBrowserLanguage(): CountryCode | null {
       if (byRegion) return byRegion;
     }
     const base = tag.split('-')[0];
-    const byLocale = COUNTRY_CODES.find((c) => COUNTRIES[c].preferredLocale === base);
-    if (byLocale) return byLocale;
+    // Only a language that belongs to exactly ONE country says where you are.
+    // English is the fallback locale for several (SE, MT, NO, DK), and
+    // first-match-wins put every 'en-US' / 'en-GB' browser — common among
+    // Estonians — on Sweden's map before geolocation arrived.
+    const byLocale = COUNTRY_CODES.filter((c) => COUNTRIES[c].preferredLocale === base);
+    if (byLocale.length === 1) return byLocale[0];
   }
   return null;
 }

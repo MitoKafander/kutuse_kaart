@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { COUNTRIES, type CountryCode } from '../constants/countries';
-import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe, Smartphone } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Fuel, Euro, Coins, Camera, Trophy, Compass, UserPlus, Navigation, TrendingUp, MapPin, Globe, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import i18n, { LANGUAGES, type SupportedLanguage } from '../i18n';
@@ -83,7 +83,10 @@ function buildSteps(t: TFunction, currentLng: string, onPickLanguage: (code: Sup
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', maxWidth: '340px' }}>
           <Camera size={32} color={COLOR_BLUE} />
           <Fuel size={32} color={COLOR_ORANGE} />
-          <Euro size={32} color={COLOR_YELLOW} />
+          {/* Must match the map button, which is € only in the eurozone. */}
+          {COUNTRIES[activeCountry].currency === 'EUR'
+            ? <Euro size={32} color={COLOR_YELLOW} />
+            : <Coins size={32} color={COLOR_YELLOW} />}
           <Navigation size={32} color={COLOR_GREEN} />
           <TrendingUp size={32} color={COLOR_PURPLE} />
           <Compass size={32} color={COLOR_CYAN} />

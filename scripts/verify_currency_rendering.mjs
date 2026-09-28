@@ -107,7 +107,7 @@ const CASES = {
 };
 const get = (o, path) => path.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
 
-for (const loc of ['et', 'en', 'ru', 'fi', 'lv', 'lt']) {
+for (const loc of ['et', 'en', 'ru', 'fi', 'lv', 'lt', 'pl']) {
   const dict = JSON.parse(readFileSync(new URL(`../src/i18n/locales/${loc}.json`, import.meta.url), 'utf8'));
   for (const [key, vars] of Object.entries(CASES)) {
     const tpl = get(dict, key);

@@ -267,8 +267,7 @@ export const COUNTRIES: Record<CountryCode, CountryMeta> = {
     level1Key: 'region.level1.PL',
     level2Key: 'region.level2.PL',
     translatableRegionSuffix: false,
-    // No Polish locale yet, so English.
-    preferredLocale: 'en',
+    preferredLocale: 'pl',
     currency: 'PLN',
   },
 };

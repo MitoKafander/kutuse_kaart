@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Polish, and English browsers stop landing in Sweden - 2026-09-28
+
+- 🟢 **Polski** is the seventh locale — the full UI (every key `en.json` has
+  outside the legal pages, which stay EN/ET as for ru/fi/lv/lt). Machine-drafted;
+  a native read-through is still worth doing before promoting it. Poland has the
+  largest catalogue in the app, so it got a language before the Nordics.
+  - Counts use i18next's Polish plural forms (`_one/_few/_many`: 1 stacja, 3
+    stacje, 5 stacji) where a number is passed, and a neutral "Stacje: 12" base
+    otherwise. Tier names are genitive plural because they only follow a count.
+  - `PL.preferredLocale` is `pl`, so a Polish browser opens on Polish AND on
+    Poland's map. Checked in a browser: pl-PL → Polska + Polish UI.
+- 🔴 **Every `en-US` / `en-GB` browser opened on Sweden's map.** The language
+  guess matched the first country whose `preferredLocale` equalled the browser
+  language, and SE, MT, NO and DK all fall back to `en` — so English, the default
+  on many Estonian phones and laptops, meant Sweden until geolocation arrived
+  (and forever, without location permission). A locale now only names a country
+  if exactly one country uses it. Checked: en-US and en-GB → Estonia; lv-LV and
+  et-EE unchanged.
+- 🟡 **The "cheapest nearby" button showed € on every map**, including Poland's,
+  Sweden's, Norway's and Denmark's. It is € in the eurozone and a neutral coins
+  icon elsewhere; the tutorial's matching icon follows it.
+- `verify:currency` now checks the price strings in `pl` too.
+
 ## [Audit] - Nine countries, read back - 2026-09-28
 
 A light pass over two days of country work: tsc, lint, the three verify

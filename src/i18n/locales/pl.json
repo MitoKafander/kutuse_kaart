@@ -1,0 +1,771 @@
+{
+  "seaded": {
+    "language": {
+      "label": "Język"
+    }
+  },
+  "fuelType": {
+    "bensiin95": "Benzyna 95",
+    "bensiin98": "Benzyna 98",
+    "diisel": "Diesel (ON)",
+    "lpg": "LPG"
+  },
+  "region": {
+    "suffix": {
+      "maakond": "prowincja",
+      "vald": "gmina",
+      "linn": "miasto"
+    },
+    "level1": {
+      "EE": "prowincji",
+      "LV": "regionów",
+      "LT": "okręgów",
+      "FI": "regionów",
+      "SE": "regionów",
+      "MT": "regionów",
+      "NO": "okręgów",
+      "DK": "regionów",
+      "PL": "województw"
+    },
+    "level2": {
+      "EE": "gmin",
+      "LV": "gmin",
+      "LT": "rejonów",
+      "FI": "gmin",
+      "SE": "gmin",
+      "MT": "rad lokalnych",
+      "NO": "gmin",
+      "DK": "gmin",
+      "PL": "powiatów"
+    }
+  },
+  "price": {
+    "reportedBy": "Zgłosił(a): {{name}}",
+    "anonymous": "Anonim"
+  },
+  "auth": {
+    "heading": {
+      "signIn": "Zaloguj się",
+      "signUp": "Załóż konto"
+    },
+    "aria": {
+      "close": "Zamknij"
+    },
+    "continueWithGoogle": "Kontynuuj z Google",
+    "divider": {
+      "or": "lub"
+    },
+    "email": {
+      "placeholder": "E-mail"
+    },
+    "password": {
+      "placeholder": "Hasło"
+    },
+    "button": {
+      "loading": "Ładowanie...",
+      "signIn": "Zaloguj się",
+      "signUp": "Załóż konto"
+    },
+    "toggle": {
+      "noAccount": "Nie masz konta?",
+      "haveAccount": "Masz już konto?",
+      "toSignUp": "Zarejestruj się",
+      "toSignIn": "Zaloguj się"
+    },
+    "signupSuccess": "Konto utworzone! Sprawdź skrzynkę e-mail."
+  },
+  "gdpr": {
+    "body": "Kyts używa plików cookie do logowania i zapamiętywania ustawień oraz anonimowej analityki produktu (PostHog, UE — bez plików cookie). Zobacz <terms>regulamin</terms> i <privacy>politykę prywatności</privacy>.",
+    "accept": "Akceptuję",
+    "decline": "Odrzucam"
+  },
+  "update": {
+    "title": "Dostępna nowa wersja",
+    "body": "Odśwież, aby korzystać z najnowszej wersji Kyts.",
+    "button": {
+      "reload": "Odśwież",
+      "reloading": "Odświeżanie..."
+    }
+  },
+  "tutorial": {
+    "buttons": {
+      "skip": "Pomiń",
+      "close": "Zamknij samouczek",
+      "back": "Wstecz",
+      "next": "Dalej",
+      "done": "Gotowe"
+    },
+    "aria": {
+      "steps": "Kroki samouczka",
+      "stepN": "Krok {{current}} / {{total}}"
+    },
+    "hint": {
+      "findAgain": "Samouczek znajdziesz później w Ustawienia → Samouczek."
+    },
+    "step1": {
+      "title": "Witaj w Kyts!",
+      "body": "Mapa tworzona przez społeczność: ceny paliw zgłaszane przez kierowców ({{country}}) razem z czasem aktualizacji. Znajdź najtańszą stację i dodawaj ceny sam."
+    },
+    "step2": {
+      "title": "Przyciski po prawej",
+      "color": {
+        "blue": "Niebieski",
+        "orange": "Pomarańczowy",
+        "yellow": "Żółty",
+        "green": "Zielony",
+        "purple": "Fioletowy",
+        "cyan": "Turkusowy"
+      },
+      "desc": {
+        "blue": "zrób zdjęcie pylonu cenowego, AI odczyta ceny.",
+        "orange": "wpisz ceny ręcznie.",
+        "yellow": "najtańsze stacje w pobliżu.",
+        "green": "najtańsze paliwo na trasie.",
+        "purple": "statystyki i trendy.",
+        "cyan": "mapa odkryć — które stacje już odkryłeś."
+      }
+    },
+    "step3": {
+      "title": "Zasada 1 km",
+      "body": "Ceny możesz wpisać tylko wtedy, gdy jesteś mniej niż 1 km od stacji. To zapobiega fałszywym zgłoszeniom z drugiego końca kraju i utrzymuje dane wiarygodne."
+    },
+    "step4": {
+      "title": "Dodawaj ceny, zdobywaj odznaki",
+      "body": "Za zgłoszone ceny zdobywasz tytuły (🌱 Turysta → ♾️ Wszechświat Kyts) i awansujesz w rankingu. Włącz mapę odkryć w Ustawieniach i zbierz odznaki wszystkich {{count}} {{unit}}."
+    },
+    "step5": {
+      "title": "Załóż konto",
+      "body": "Ceny możesz zgłaszać i potwierdzać bez konta. Po zalogowaniu zyskujesz ulubione stacje, miejsce w rankingu, rabaty z kart lojalnościowych i synchronizację między urządzeniami. Ikona profilu jest w prawym górnym rogu."
+    },
+    "step6": {
+      "title": "Dodaj do ekranu głównego",
+      "body": "Przypnij Kyts do ekranu głównego — jedno dotknięcie otwiera go na pełnym ekranie jak zwykłą aplikację, ładuje się od razu, a ostatnio pobrane ceny są widoczne nawet offline. Jak to zrobić, pokażemy w następnym kroku."
+    }
+  },
+  "install": {
+    "eyebrow": "Jeszcze jedno",
+    "title": "Zainstaluj Kyts",
+    "why": "Jedno dotknięcie otwiera Kyts na pełnym ekranie jak zwykłą aplikację. Bez pasków przeglądarki, błyskawiczne ładowanie, a ostatnie ceny są widoczne nawet bez zasięgu.",
+    "dismiss": "Nie teraz",
+    "aria": {
+      "close": "Zamknij propozycję instalacji"
+    },
+    "ios": {
+      "step1": "Dotknij przycisku Udostępnij na dole Safari",
+      "step2": "Przewiń w dół i wybierz „Do ekranu początkowego”",
+      "step3": "Dotknij „Dodaj” w prawym górnym rogu, aby potwierdzić"
+    },
+    "android": {
+      "cta": "Zainstaluj teraz",
+      "installing": "Instalowanie…",
+      "oneTap": "Jedno dotknięcie instaluje Kyts jako prawdziwą aplikację na telefonie — bez pasków przeglądarki, uruchamiana na pełnym ekranie.",
+      "fallback": {
+        "step1": "Otwórz menu przeglądarki (⋮ w prawym górnym rogu)",
+        "step2": "Wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”"
+      }
+    }
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Profil",
+      "settings": "Ustawienia"
+    },
+    "settings": {
+      "title": "Ustawienia",
+      "theme": {
+        "title": "Motyw mapy",
+        "dark": "Ciemny",
+        "light": "Jasny"
+      },
+      "fuel": {
+        "title": "Paliwo Twojego auta",
+        "removeTooltip": "Kliknij ponownie, aby usunąć"
+      },
+      "brands": {
+        "title": "Preferowane stacje",
+        "selectedCount": "(wybrane: {{count}})",
+        "help": "Wybierz sieci, które preferuje „Najtaniej w pobliżu”. Puste = wszystkie."
+      },
+      "loyalty": {
+        "title": "Karty lojalnościowe",
+        "activeCount": "(aktywne: {{count}})",
+        "help": "Podaj rabat na litr w {{unit}} (np. karta lojalnościowa -4). Jest widoczny na mapie, a „Najtaniej w pobliżu” sortuje według ceny po rabacie."
+      },
+      "dots": {
+        "title": "Punkty na mapie",
+        "info": {
+          "label": "Info",
+          "desc": "Szary = brak danych"
+        },
+        "brand": {
+          "label": "Marka",
+          "desc": "Wszystkie w kolorze marki"
+        }
+      },
+      "cluster": {
+        "label": "Grupuj pobliskie stacje"
+      },
+      "hideEmpty": {
+        "label": "Ukryj stacje bez cen",
+        "desc": "Płynniejsze przesuwanie, mniej bałaganu"
+      },
+      "staleDemo": {
+        "label": "Pokaż nieaktualne ceny (demo)",
+        "desc": "Pokazuje też ceny starsze niż 24 h"
+      },
+      "shareReporterName": {
+        "label": "Pokazuj nazwę użytkownika przy cenach",
+        "desc": "Wyświetla „Zgłosił(a): Twoja nazwa” przy cenach, które dodajesz"
+      },
+      "analytics": {
+        "label": "Anonimowa analityka",
+        "desc": "PostHog (UE) — pomaga nam ulepszać serwis"
+      },
+      "openTutorial": "Otwórz samouczek",
+      "feedback": "Wyślij opinię",
+      "legal": {
+        "terms": "Regulamin",
+        "privacy": "Polityka prywatności"
+      },
+      "deleteAccount": {
+        "button": "Usuń konto",
+        "inProgress": "Usuwanie…",
+        "confirm1": "Czy na pewno chcesz usunąć konto? Twój profil, ulubione i ustawienia zostaną trwale usunięte. Publiczna historia cen zostanie zachowana anonimowo.",
+        "confirm2": "Ostateczne potwierdzenie: tej operacji nie można cofnąć. Kontynuować?",
+        "success": "Konto usunięte.",
+        "error": "Nie udało się usunąć konta: {{message}}"
+      }
+    },
+    "header": {
+      "title": "Twój profil",
+      "anonymousTitle": "Ustawienia",
+      "signIn": "Zaloguj się",
+      "editName": "Zmień nazwę",
+      "logout": "Wyloguj się",
+      "logoutConfirm": "Czy na pewno chcesz się wylogować?"
+    },
+    "untilNextTier": "Jeszcze {{count}} do {{emoji}} {{label}}",
+    "tiers": {
+      "turist": "Turysta",
+      "uustulnuk": "Nowicjusz",
+      "pumbahaldjas": "Duszek Dystrybutora",
+      "hinnakirjutaja": "Skryba Cen",
+      "kutusekratt": "Paliwowy Skrzat",
+      "tanklaspioon": "Szpieg Stacji",
+      "bensiinihunt": "Benzynowy Wilk",
+      "hinnakutt": "Łowca Cen",
+      "hinnatabaja": "Łapacz Cen",
+      "diiselidentist": "Dieslowy Dentysta",
+      "pumbaprofessor": "Profesor Dystrybutora",
+      "diiselidiplomaat": "Dieslowy Dyplomata",
+      "pumbapoeet": "Poeta Dystrybutora",
+      "tanklaskaut": "Zwiadowca Stacji",
+      "kutusekaardistaja": "Kartograf Paliw",
+      "kutuseryuutel": "Rycerz Paliwa",
+      "hinnavoitja": "Zwycięzca Cen",
+      "pumbakuningas": "Król Dystrybutora",
+      "pumbatark": "Mędrzec Dystrybutora",
+      "oktaanioraakel": "Wyrocznia Oktanów",
+      "hinnaprohvet": "Prorok Cen",
+      "bensiinibaron": "Baron Benzyny",
+      "tanklataht": "Gwiazda Stacji",
+      "kuttesultan": "Sułtan Paliwa",
+      "hinnarakett": "Cenowa Rakieta",
+      "liiterlord": "Lord Litrów",
+      "kutuselegend": "Legenda Paliwa",
+      "diiselpaavst": "Dieslowy Papież",
+      "kytsJumal": "Bóg Kyts",
+      "kytsKoiksus": "Wszechświat Kyts"
+    },
+    "favorites": {
+      "title": "Ulubione stacje",
+      "stationCount": "Stacje: {{count}}",
+      "stationCount_one": "{{count}} stacja",
+      "stationCount_few": "{{count}} stacje",
+      "stationCount_many": "{{count}} stacji",
+      "stationCount_other": "{{count}} stacji",
+      "empty": "Brak ulubionych stacji. Dotknij serca przy stacji, aby ją dodać.",
+      "navigate": "Nawiguj",
+      "sort": {
+        "nameAsc": "Nazwa A→Z",
+        "nameDesc": "Nazwa Z→A",
+        "priceAsc": "Cena ↑",
+        "priceDesc": "Cena ↓",
+        "fresh": "Świeże"
+      },
+      "time": {
+        "expired": "Nieaktualne",
+        "justNow": "Przed chwilą",
+        "today": "Dziś {{time}}",
+        "yesterday": "Wczoraj {{time}}"
+      }
+    },
+    "leaderboard": {
+      "button": "Ranking"
+    },
+    "discovery": {
+      "title": "Mapa odkryć",
+      "description": "Zobacz, które stacje już odkryłeś. Kompletuj gminy i regiony, aby awansować w rankingu Odkrywców.",
+      "stats": {
+        "stations": "{{done}}/{{total}} stacji",
+        "level1": "{{done}}/{{total}} {{unit}}",
+        "level2": "{{done}}/{{total}} {{unit}}"
+      },
+      "shareLabel": "Udostępnij publicznie",
+      "shareDesc": "Inni zobaczą, które stacje odkryłeś, gdy klikną Twoją nazwę.",
+      "brands": {
+        "summary": "Marki: {{done}}/{{total}}",
+        "noBrands": "Brak dostępnych marek.",
+        "emptyBrand": "Nie zebrano jeszcze żadnej stacji. Do odkrycia: {{count}}.",
+        "remaining": "Do odkrycia jeszcze: {{count}}."
+      }
+    },
+    "activity": {
+      "title": "Ostatnia aktywność"
+    }
+  },
+  "common": {
+    "close": "Zamknij",
+    "unknownBrand": "Nieznana"
+  },
+  "time": {
+    "expired": "Nieaktualne",
+    "justNow": "Przed chwilą",
+    "today": "Dziś {{time}}",
+    "yesterday": "Wczoraj {{time}}",
+    "hoursAgo": "{{count}} godz. temu",
+    "daysAgo": "{{count}} d. temu"
+  },
+  "discoveryGrid": {
+    "loading": "Regiony jeszcze się nie załadowały…",
+    "tile": {
+      "noStations": "brak stacji",
+      "stations": "{{done}}/{{total}} stacji",
+      "level2": "{{done}}/{{total}} {{unit}}"
+    }
+  },
+  "app": {
+    "search": {
+      "placeholder": "Szukaj stacji, miasta...",
+      "fallbackCountry": "Estonia"
+    },
+    "fab": {
+      "camera": "Zrób zdjęcie cen",
+      "manual": "Wpisz ceny ręcznie",
+      "cheapestNearby": "Najtańsze paliwo w pobliżu",
+      "routeFind": "Najtańsze paliwo na trasie",
+      "routeResults": "Pokaż wyniki trasy",
+      "cancelRoute": "Anuluj trasę",
+      "stats": "Statystyki",
+      "discovery": "Mapa odkryć"
+    },
+    "errorBoundary": "Coś poszło nie tak. Odśwież stronę."
+  },
+  "map": {
+    "gps": {
+      "lockedTip": "GPS zablokowany — naciśnij ponownie, aby zwolnić",
+      "tapToLock": "Naciśnij ponownie, aby zablokować GPS",
+      "findLocation": "Znajdź moją lokalizację"
+    },
+    "zoom": {
+      "in": "Przybliż",
+      "out": "Oddal"
+    }
+  },
+  "brandPicker": {
+    "label": "Sieć",
+    "labelWithCount": "Sieć · {{count}}",
+    "clear": "Wyczyść wybór"
+  },
+  "discoveryBanner": {
+    "openTitle": "Otwórz mapę odkryć",
+    "viewing": "Oglądasz: {{name}}",
+    "modeLabel": "Tryb odkryć",
+    "viewingHelp": "Mapa odkryć innego użytkownika",
+    "tapToChange": "Dotknij, aby zmienić region",
+    "tapToOpen": "Dotknij, aby otworzyć mapę odkryć",
+    "tapXForAll": "Dotknij X, aby zobaczyć wszystkie regiony",
+    "pricesHidden": "Ceny są ukryte",
+    "removeFocus": "Usuń wybór regionu",
+    "turnOff": "Wyłącz"
+  },
+  "manualPrice": {
+    "title": {
+      "update": "Nowe ceny: {{station}}",
+      "manual": "Wpisz ceny",
+      "scan": "Skanuj ceny"
+    },
+    "gps": {
+      "tooFar": "Jesteś {{distance}} km od stacji. Ceny można wpisać tylko na stacji (do {{max}} km).",
+      "refresh": "Odśwież",
+      "retry": "Spróbuj ponownie",
+      "checking": "Sprawdzanie lokalizacji...",
+      "detecting": "Ustalanie lokalizacji..."
+    },
+    "manual": {
+      "noStations": "Brak stacji w promieniu 500 m.",
+      "changeStation": "Zmień stację",
+      "savedConfirm": "Ceny zapisane",
+      "refreshLocation": "Odśwież lokalizację"
+    },
+    "picker": {
+      "aiDetected": "AI odczytało ceny:",
+      "promptManual": "Wybierz stację, do której dodajesz ceny:",
+      "promptUpdate": "Wybierz stację, której ceny aktualizujesz:",
+      "refreshTitle": "Odśwież lokalizację",
+      "autoSelected": "Wybrano: {{name}}"
+    },
+    "camera": {
+      "uploadFromGallery": "Wgraj zdjęcie",
+      "aiReading": "AI czyta...",
+      "retake": "Zrób ponownie",
+      "scanPrices": "Aparatem",
+      "scanPricesLong": "Skanuj ceny aparatem",
+      "retryStatus": "Ponawianie... ({{attempt}}/{{max}})",
+      "scannedAlt": "Zeskanowane zdjęcie"
+    },
+    "brandMismatch": {
+      "message": "Na zdjęciu wydaje się być stacja <strong>{{detected}}</strong>, a aktualizujesz ceny stacji <strong>{{station}}</strong>. Sprawdź, czy ceny się zgadzają.",
+      "fallback": "innej sieci"
+    },
+    "brandNotInArea": {
+      "message": "AI rozpoznało na zdjęciu stację <strong>{{detected}}</strong>, ale w pobliżu nie ma żadnej stacji <strong>{{detected}}</strong>. Sprawdź, czy jesteś we właściwym miejscu, albo wybierz stację z listy, jeśli masz pewność."
+    },
+    "scanError": {
+      "quotaExceeded": "Osiągnięto limit usługi AI. Spróbuj później albo wpisz ceny ręcznie.",
+      "rateLimited": "Za dużo skanów z rzędu. Odczekaj około minuty i spróbuj ponownie.",
+      "aiUpstreamBusy": "Usługa AI jest teraz przeciążona. Spróbuj za kilka minut albo wpisz ceny ręcznie.",
+      "noNearbyStation": "Nie znaleziono stacji paliw w pobliżu (w promieniu {{max}} km). Sprawdź uprawnienia GPS albo wybierz stację ręcznie.",
+      "noGps": "Brak sygnału GPS. Sprawdź uprawnienia lokalizacji i spróbuj ponownie.",
+      "noPricesRead": "AI nie odczytało cen ze zdjęcia. Stań na wprost pylonu, unikaj odblasków albo wpisz ceny ręcznie.",
+      "timeout": "AI odpowiadało zbyt długo. Spróbuj ponownie albo wpisz ceny ręcznie.",
+      "network": "Błąd sieci. Sprawdź połączenie z internetem i spróbuj ponownie.",
+      "generic": "Odczyt AI nie powiódł się. Wpisz ceny ręcznie albo spróbuj ponownie."
+    },
+    "submit": {
+      "saving": "Zapisywanie...",
+      "save": "Zapisz",
+      "confirm": "Potwierdź",
+      "locationNeeded": "Wymagana lokalizacja",
+      "waitingGps": "Czekam na sygnał GPS...",
+      "noStations": "Nie znaleziono stacji",
+      "choosePrompt": "Wybierz stację z listy",
+      "tooFar": "Jesteś za daleko",
+      "aiReading": "AI skanuje zdjęcie...",
+      "takePhoto": "Zrób zdjęcie pylonu cenowego",
+      "firstChoose": "Najpierw wybierz stację"
+    },
+    "alert": {
+      "priceRange": "Cena musi mieścić się w zakresie {{lo}}–{{hi}} {{currency}} ({{type}}: {{value}}).",
+      "gpsRequired": "Do wpisania ceny potrzebna jest lokalizacja GPS. Zezwól na lokalizację i spróbuj ponownie.",
+      "tooFar": "Jesteś {{distance}} km od stacji. Ceny można wpisać tylko będąc na stacji (do {{max}} km)."
+    },
+    "submitError": {
+      "tooFar": "Jesteś za daleko od stacji. Podejdź bliżej i spróbuj ponownie.",
+      "tooFast": "Za szybko! Twoje poprzednie zgłoszenie było daleko stąd — nie da się fizycznie przejechać takiego dystansu w tym czasie.",
+      "rls": "Dane nie przeszły walidacji. Sprawdź ceny i spróbuj ponownie.",
+      "notFound": "Nie znaleziono stacji. Wybierz stację ponownie i spróbuj jeszcze raz.",
+      "outOfBand": "Cena {{fuel}} {{price}} {{currency}} wygląda na błędną (oczekiwano {{lo}}–{{hi}}). Popraw ten wiersz albo go wyczyść i spróbuj ponownie.",
+      "outOfRange": "Cena {{price}} {{currency}} nie wygląda na cenę paliwa (oczekiwano {{lo}}–{{hi}}). Sprawdź przecinek.",
+      "generic": "Zapis nie powiódł się. Spróbuj jeszcze raz — jeśli się powtórzy, sprawdź połączenie z siecią."
+    }
+  },
+  "feedbackReply": {
+    "title": "Odpowiedź na Twoją opinię",
+    "originalLabel": "Twoja wiadomość:",
+    "showOriginal": "Pokaż wiadomość",
+    "hideOriginal": "Ukryj wiadomość",
+    "button": {
+      "dismiss": "Rozumiem"
+    }
+  },
+  "geo": {
+    "error": {
+      "permission": "Lokalizacja niedostępna. Zezwól aplikacji na użycie lokalizacji i spróbuj ponownie.",
+      "timeout": "Ustalanie lokalizacji trwa dłużej niż zwykle. Spróbuj ponownie.",
+      "unsupported": "Twoja przeglądarka nie obsługuje geolokalizacji.",
+      "unavailable": "Nie udało się ustalić lokalizacji. Spróbuj ponownie."
+    }
+  },
+  "stationDrawer": {
+    "disputed": "Podważona",
+    "priceConfirmed": "Cena potwierdzona ✓",
+    "confirmCooldownMinutes": "Potwierdzono — spróbuj ponownie za {{minutes}} min",
+    "confirmCooldownHours": "Potwierdzono — spróbuj ponownie za {{hours}} godz.",
+    "notEnoughHistory": "Za mało historii dla tego paliwa.",
+    "priceLabel": "Cena",
+    "voteFailed": "Głosowanie nie powiodło się.",
+    "updatePrices": "Aktualizuj ceny",
+    "reportLink": "Zgłoś stację",
+    "aria": {
+      "confirm": "Potwierdź cenę",
+      "dispute": "Podważ cenę"
+    },
+    "titles": {
+      "history": "Pokaż historię cen",
+      "navigate": "Nawiguj"
+    }
+  },
+  "stationReport": {
+    "title": "Zgłoś stację",
+    "intro": "Stacja {{station}} jest zamknięta, ma błędne dane albo nie jest publicznie dostępna? Wybierz powód i dodaj uwagę, jeśli chcesz — sprawdzamy zgłoszenia ręcznie i poprawiamy mapę.",
+    "kind": {
+      "abandoned": {
+        "label": "Zamknięta / opuszczona",
+        "hint": "Fizycznie zamknięta lub zburzona."
+      },
+      "inaccessible": {
+        "label": "Teren prywatny / niedostępna",
+        "hint": "Na terenie prywatnym, np. stacja tylko dla floty firmowej."
+      },
+      "wrong_location": {
+        "label": "Błędna lokalizacja",
+        "hint": "Pinezka na mapie nie jest tam, gdzie naprawdę stoi stacja."
+      },
+      "wrong_info": {
+        "label": "Błędne informacje",
+        "hint": "Nazwa marki lub inne dane są nieprawidłowe."
+      }
+    },
+    "notePlaceholder": "Dodatkowe szczegóły (opcjonalnie)",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Za długie: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Wyślij zgłoszenie",
+      "sending": "Wysyłanie..."
+    },
+    "sent": {
+      "thanks": "Dziękujemy!",
+      "body": "Otrzymaliśmy Twoje zgłoszenie. Sprawdzamy stacje ręcznie i wprowadzamy potrzebne poprawki."
+    },
+    "error": {
+      "submit": "Wysyłanie nie powiodło się. Spróbuj ponownie później."
+    }
+  },
+  "cheapest": {
+    "title": "Najtańsze paliwo w pobliżu",
+    "fallbackLocation": "Używam lokalizacji mapy — świeży GPS jeszcze nie dotarł.",
+    "radius": "Promień:",
+    "filtered": "Filtr:",
+    "locating": "Ustalanie lokalizacji...",
+    "empty": "Brak cen w tym promieniu. Spróbuj większego promienia.",
+    "loyaltyTag": "karta lojalnościowa",
+    "fresh": "świeża",
+    "stale": "nieaktualna",
+    "outsideRadius": "poza promieniem",
+    "go": "Jedź",
+    "retry": "Spróbuj ponownie"
+  },
+  "route": {
+    "title": "Dokąd jedziesz?",
+    "searchPlaceholder": "Cel (np. Warszawa, Kraków)",
+    "clearSearch": "Wyczyść",
+    "destination": "Cel:",
+    "corridor": "Korytarz:",
+    "fuel": "Paliwo:",
+    "locating": "Ustalanie lokalizacji...",
+    "computing": "Wyznaczanie trasy...",
+    "retry": "Spróbuj ponownie",
+    "error": {
+      "notFound": "Nie znaleziono trasy. Spróbuj innego celu albo sprawdź połączenie z internetem.",
+      "computeFailed": "Wyznaczanie trasy nie powiodło się. Spróbuj ponownie.",
+      "locationMissing": "Nie znaleziono lokalizacji. Do zaplanowania trasy potrzebny jest punkt startowy.",
+      "noStations": "Brak stacji z tym paliwem w pobliżu trasy. Spróbuj szerszego korytarza."
+    },
+    "distance": {
+      "fromRouteMeters": "{{meters}} m od trasy",
+      "fromRouteKm": "{{km}} km od trasy",
+      "fromOriginKm": "{{km}} km od startu"
+    }
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "period": {
+      "week": "Tydzień",
+      "month": "Miesiąc",
+      "all": "Wszystko"
+    },
+    "dimension": {
+      "activity": "Najaktywniejsi",
+      "discovery": "Odkrywcy"
+    },
+    "discoveryHint": "Kolejność: regiony, potem gminy, potem stacje — od początku.",
+    "youLabel": "Ty:",
+    "anonymous": "Anonim",
+    "loading": "Ładowanie...",
+    "empty": {
+      "discovery": "Nikt jeszcze niczego nie odkrył. Bądź pierwszy!",
+      "activity": "Brak danych za ten okres."
+    },
+    "youSuffix": "(ty)",
+    "stats": {
+      "prices": "Ceny: {{count}}",
+      "prices_one": "{{count}} cena",
+      "prices_few": "{{count}} ceny",
+      "prices_many": "{{count}} cen",
+      "prices_other": "{{count}} ceny",
+      "stations": "Stacje: {{count}}",
+      "stations_one": "{{count}} stacja",
+      "stations_few": "{{count}} stacje",
+      "stations_many": "{{count}} stacji",
+      "stations_other": "{{count}} stacji",
+      "level1": "{{done}}/{{total}} {{unit}}",
+      "level2": "{{count}} {{unit}}"
+    },
+    "viewFootprint": {
+      "title": "Zobacz mapę odkryć tego użytkownika",
+      "label": "Zobacz"
+    }
+  },
+  "stats": {
+    "title": "Statystyki ({{days}} dni)",
+    "trends": {
+      "heading": "Trendy cen",
+      "notEnoughData": "za mało danych"
+    },
+    "fuelLabel": "Paliwo:",
+    "cheapestNow": {
+      "heading": "Najtaniej teraz",
+      "noFresh": "Brak świeżej ceny w ciągu ostatnich {{hours}} godz.",
+      "stale": "nieaktualna"
+    },
+    "brandMedians": {
+      "heading": "Najtańsza marka ({{fuel}}, mediana)",
+      "empty": "Za mało cen."
+    },
+    "drops": {
+      "heading": "Największe spadki cen (7 dni)",
+      "empty": "Nie wykryto spadków cen.",
+      "belowMarket": "poniżej rynku"
+    },
+    "contribution": {
+      "heading": "Mój wkład",
+      "body": "Zgłoszone ceny w ciągu ostatnich {{days}} dni: <strong>{{count}}</strong>.",
+      "signIn": "Zaloguj się, aby zobaczyć swój wkład."
+    }
+  },
+  "celebration": {
+    "newStation": "Odkryto nową stację!",
+    "stationProgress": "Zebrane stacje: {{done}} / {{total}}",
+    "parishCovered": "{{name}} zaliczone!",
+    "maakondDiscovered": "{{name}} odkryte!",
+    "allStationsCovered": "Wszystkie stacje zaliczone",
+    "brandCollected": "{{brand}} zebrane!",
+    "brandProgress": "Wszystkie stacje: {{n}}",
+    "milestone": "{{name}} — {{pct}}%",
+    "milestoneProgress": "Zebrane stacje: {{done}}/{{total}}",
+    "discoverHint": "Otwórz mapę odkryć, aby zobaczyć postępy"
+  },
+  "feedback": {
+    "title": "Opinia",
+    "intro": "Pochwały, krytyka, zgłoszenia błędów czy pomysły — wszystko mile widziane.",
+    "introSignedIn": "Do wiadomości dołączamy Twój identyfikator użytkownika, abyśmy mogli w razie potrzeby odpowiedzieć.",
+    "introSignedOut": "Jeśli oczekujesz odpowiedzi, najpierw się zaloguj albo dopisz swój e-mail do wiadomości.",
+    "placeholder": "Co masz na myśli?",
+    "counter": {
+      "normal": "{{count}}/{{max}}",
+      "tooLong": "Za długie: {{count}}/{{max}}"
+    },
+    "button": {
+      "send": "Wyślij",
+      "sending": "Wysyłanie..."
+    },
+    "sent": {
+      "thanks": "Dziękujemy!",
+      "body": "Twoja opinia do nas dotarła. W razie potrzeby odpowiemy."
+    },
+    "error": {
+      "submit": "Wysyłanie nie powiodło się. Spróbuj ponownie za chwilę."
+    }
+  },
+  "filter": {
+    "title": "Czego szukasz?",
+    "resetAll": "Resetuj wszystko",
+    "fuelType": "Rodzaj paliwa",
+    "advanced": "Filtry zaawansowane",
+    "loyaltyPrices": "Pokaż ceny z kartą lojalnościową",
+    "findCheapest": "Znajdź najtańsze paliwo",
+    "brand": "Marka",
+    "clearCount": "Wyczyść ({{count}})",
+    "findCheapestHint": "*Najpierw wybierz rodzaj paliwa"
+  },
+  "legal": {
+    "notice": {
+      "englishOnly": "Ten dokument jest dostępny tylko po estońsku i angielsku."
+    },
+    "effectiveDate": "Obowiązuje od: 15 kwietnia 2026"
+  },
+  "header": {
+    "aria": {
+      "filter": "Otwórz filtry",
+      "profile": "Otwórz profil"
+    }
+  },
+  "marketInsight": {
+    "title": "Przegląd rynku",
+    "confidence": "Pewność",
+    "numbers": "LICZBY",
+    "disclaimer": "Orientacyjnie — to nie jest porada inwestycyjna",
+    "fuel": {
+      "diesel": "Diesel",
+      "gasoline95": "Benzyna 95"
+    },
+    "signal": {
+      "buy_now": "TANKUJ TERAZ",
+      "hold": "MOŻNA TANKOWAĆ",
+      "wait": "POCZEKAJ 3-5 DNI",
+      "neutral": "SPOKOJNIE"
+    },
+    "row": {
+      "kytsDiesel": "Kyts D śr.",
+      "kyts95": "Kyts 95 śr.",
+      "brent": "Brent",
+      "eurUsd": "EUR/USD",
+      "gasoil": "ICE Gasoil 7d",
+      "rbob": "NYMEX RBOB 7d"
+    },
+    "why": {
+      "heading": "DLACZEGO TAKI SYGNAŁ?",
+      "wholesale": "Hurt 7d",
+      "pump": "Dystrybutor 7d",
+      "gap": "Różnica",
+      "samples": "zgłoszeń",
+      "reason": {
+        "pump_lagging_up": "Ceny na dystrybutorach nie nadążają za hurtem — podwyżka prawdopodobna w najbliższych dniach.",
+        "pump_lagging_down": "Hurt spada szybciej niż ceny na dystrybutorach — obniżka prawdopodobna.",
+        "flat_market": "Rynek spokojny, bez istotnych ruchów.",
+        "aligned": "Dystrybutory i hurt idą razem — brak przewagi czasowej.",
+        "insufficient_data": "Za mało danych, by wyznaczyć sygnał.",
+        "low_sample_count": "Za mało zgłoszeń w Kyts, by mieć pewność.",
+        "proxy_unreliable": "Hurtowy wskaźnik diesla nie przewiduje wiarygodnie cen na dystrybutorach ({{country}}) — brak przewagi czasowej."
+      }
+    }
+  },
+  "country": {
+    "EE": "Estonia",
+    "LV": "Łotwa",
+    "LT": "Litwa",
+    "FI": "Finlandia",
+    "SE": "Szwecja",
+    "MT": "Malta",
+    "NO": "Norwegia",
+    "DK": "Dania",
+    "PL": "Polska",
+    "picker": {
+      "label": "Kraj"
+    }
+  },
+  "freshness": {
+    "label": "Wiek ceny",
+    "hours": "{{n}} godz.",
+    "days": "{{n}} d.",
+    "all": "wszystkie",
+    "stations": "Stacje: {{count}}",
+    "stations_one": "{{count}} stacja",
+    "stations_few": "{{count}} stacje",
+    "stations_many": "{{count}} stacji",
+    "stations_other": "{{count}} stacji"
+  }
+}

@@ -10,7 +10,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
 - **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (every country's catalog + live boundary fetch) · `node scripts/probe_country_osm.mjs <CC>` (step 0 of a new country) · `node scripts/cache_headroom.mjs` (cache is capped; only matters if the projection changes) · `npm run measure:chains` (after ANY `CHAIN_PATTERNS` edit — lists every raw name each brand swallows, per country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
-- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 69** (`fx_rates` — ECB reference rates for cross-currency comparison, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
+- **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 70** (`explicit_grants` — pins prod's Data API grants ahead of Supabase's 2026-10-30 change; no-op on prod, 2026-09-28). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
 ## Verified state (2026-09-18)
@@ -148,7 +148,13 @@ idempotent, so a bare re-run after an OSM refresh is safe and re-checks the lot.
   Check the levels against OSM by hand: Finland's level-2 tier is 8, not 5 (it has no 5),
   and its level 7 covers only 69 of 308 units — a partial cover that looks like a working
   answer. Latvia's pilsētas were the same trap.
-- `src/i18n/locales/*.json` — country name + both tier names in all six locales.
+- `src/i18n/locales/*.json` — country name + both tier names in all SEVEN locales (et/en/ru/fi/lv/lt/pl).
+  Tier names in `pl.json` are GENITIVE PLURAL ("województw", "gmin") because they only ever
+  follow a count ("3/16 {{unit}}").
+- A country with its OWN language gets `preferredLocale` = that code, which also makes a
+  browser in that language open onto that country. ⚠️ A locale shared by several countries
+  (`en` for SE/MT/NO/DK) deliberately matches none — first-match-wins used to send every
+  `en-US` browser to Sweden.
 - `src/utils.ts` `CHAIN_PATTERNS` if the country's OSM data names chains inside `name`
   rather than tagging `brand=` (Finland needed six). **Verify each new pattern is inert
   against every existing active station before seeding** — a loose pattern silently
@@ -231,6 +237,7 @@ explicit `drop view` of the dependent + the view first.
 5. Progressive TS typing pass (the ~185 `any`s) — only worth doing alongside `supabase gen types typescript`.
 
 ## Gotchas (the time-costing ones)
+- **New table = explicit `grant` in the same file (Supabase, from 2026-10-30).** New `public` tables are no longer auto-granted to anon/authenticated/service_role ([discussion](https://github.com/orgs/supabase/discussions/45329)); without grants the app gets `42501 permission denied` even with correct RLS. Grant all three roles what they need, then RLS + policies. Phase 70 pins every existing table's grants, so replaying the schema files into a fresh project needs it run LAST.
 - **Map shows "API KEY REQUIRED" watermark?** CARTO basemaps need a key since 2026 (fixed 2026-09-18, `930110e`). Key = `VITE_CARTO_KEY`, Vercel **Production, type Config** (public by design; Vercel warns about the `VITE_` prefix — ignore). Key is **referer-restricted to kyts.ee + www.kyts.ee** (CARTO rejects `localhost`), so it's NOT in local `.env` → local dev shows the watermark, harmless. Free tier = 5M tiles/mo, non-commercial; manage at carto.com/basemaps/apikey (sign in with info@mikkrosin.ee). CARTO attribution must stay visible (terms).
 - **AI scan / market insight failing with an auth/quota/billing error (not `AI_UPSTREAM_BUSY`)?** Check the Gemini prepay credit balance in AI Studio first. Since 2026-09-13 an empty balance stops the calls instead of billing.
 - **Overpass answers `200 {elements: []}` when it's busy.** Not an error, not empty data — a

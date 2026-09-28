@@ -7,8 +7,9 @@ import ru from './locales/ru.json';
 import fi from './locales/fi.json';
 import lv from './locales/lv.json';
 import lt from './locales/lt.json';
+import pl from './locales/pl.json';
 
-const LOCALE_DATA = { et, en, ru, fi, lv, lt } as const;
+const LOCALE_DATA = { et, en, ru, fi, lv, lt, pl } as const;
 
 export const ALL_LANGUAGES: ReadonlyArray<{
   code: keyof typeof LOCALE_DATA;
@@ -21,6 +22,10 @@ export const ALL_LANGUAGES: ReadonlyArray<{
   { code: 'fi', nativeName: 'Suomi', flag: '🇫🇮' },
   { code: 'lv', nativeName: 'Latviešu', flag: '🇱🇻' },
   { code: 'lt', nativeName: 'Lietuvių', flag: '🇱🇹' },
+  // Poland is the largest catalogue in the app (8,022 stations), so its
+  // drivers get their own language rather than the English fallback the
+  // Nordic countries still have. Machine-drafted; legal text stays EN.
+  { code: 'pl', nativeName: 'Polski', flag: '🇵🇱' },
 ];
 
 export type SupportedLanguage = (typeof ALL_LANGUAGES)[number]['code'];
@@ -45,6 +50,7 @@ i18n
       fi: { translation: fi },
       lv: { translation: lv },
       lt: { translation: lt },
+      pl: { translation: pl },
     },
     // English, not Estonian. A key missing from lv/lt used to fall back to
     // Estonian — so a Latvian hit an Estonian sentence mid-screen, which reads
