@@ -9,7 +9,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 - **Gemini billing = PREPAY since 2026-09-13** (Google AI Studio, irreversible; €25 initial credit). Zero balance → Gemini calls fail silently (scans error, insights stop updating). Balance/top-up lives in AI Studio → Billing.
 - **Secrets:** local `.env` holds `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `CRON_SECRET`, Sentry. ⚠️ `EIA_API_KEY` lives **only in Vercel env**, not local — local market-insight runs skip EIA. Despite the legacy names, `VITE_SUPABASE_ANON_KEY` holds the `sb_publishable_` key (since the first commit, 2026-04-06) and `SUPABASE_SERVICE_ROLE_KEY` the `sb_secret_` key (local + Vercel, since 2026-09-18).
 - **DB read-only diagnostics:** service-role key in `.env` + `@supabase/supabase-js`; copy the paging loop in `scripts/diagnose_point_spam.js`. PostgREST caps every response at 1000 rows — always page.
-- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (every country's catalog + live boundary fetch) · `node scripts/probe_country_osm.mjs <CC>` (step 0 of a new country) · `node scripts/cache_headroom.mjs` (cache is capped; only matters if the projection changes). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
+- **Build / verify:** `npm run build` · `npx tsc --noEmit -p tsconfig.app.json` (frontend) · `npx tsc --noEmit -p api/tsconfig.json` (serverless) · `npm run verify:currency` (currency rendering + FX) · `npm run verify:scanner` (scanner country/currency contract) · `node scripts/verify_countries.mjs` (every country's catalog + live boundary fetch) · `node scripts/probe_country_osm.mjs <CC>` (step 0 of a new country) · `node scripts/cache_headroom.mjs` (cache is capped; only matters if the projection changes) · `npm run measure:chains` (after ANY `CHAIN_PATTERNS` edit — lists every raw name each brand swallows, per country). ESLint baseline = 0 errors / ~189 warnings, almost all `no-explicit-any` (deliberate).
 - **Migrations:** DDL run by hand in the Supabase SQL editor (not the MCP). Latest applied = **phase 69** (`fx_rates` — ECB reference rates for cross-currency comparison, 2026-09-26). ⚠️ Migrations now go through `supabase db query --linked -f <file>` — the **CLI is authenticated**, see "SQL access" below. Supabase MCP `execute_sql` is **unauthorized** (no access token) — read/verify via the service-role `@supabase/supabase-js` client instead.
 - **DB writes (data fixes):** service-role `.mjs` scripts under `scripts/` (e.g. `apply_station_audit_fix.mjs`, `apply_feedback_triage_2026-07-25.mjs`). `~/.claude/settings.json` allows `Bash(node scripts/*)`. ⚠️ Write these as **named committed scripts** — ad-hoc `_tmp_*.mjs` heredocs that write to prod get **auto-mode-classifier-DENIED** even under that allow rule; a committed `scripts/*.mjs` doing the same writes passes.
 
@@ -46,7 +46,7 @@ Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.
 ## Nine countries — ✅ LIVE (Baltics -09-23, FI -09-24, SE+MT -09-26, NO+DK -09-27, PL -09-28)
 
 Prod: **482 EE + 548 LV + 742 LT + 1,890 FI + 2,955 SE + 69 MT + 2,158 NO + 1,921 DK +
-8,027 PL = 18,792 active stations**. Poland alone is 43% of the catalogue.
+8,022 PL = 18,787 active stations**. Poland alone is 43% of the catalogue.
 Avastuskaart tiers: EE 15 maakonda / 78 valda, LV 5 planning regions / 42 novadi,
 LT 10 apskritys / 60 savivaldybės, FI 19 maakuntaa / 308 kuntaa, SE 21 län / 290 kommuner,
 MT 6 reġjuni / 68 kunsilli lokali, NO 15 fylker / 357 kommuner, DK 5 regioner / 98
@@ -91,6 +91,17 @@ skips only what is genuinely outside (Norway's Svalbard pumps, hundreds of km aw
 insert a null `parish_id`: 0 such rows exist across all nine countries.
 ⚠️ `seed_country_regions.mjs` re-checks placement WITHOUT the snap and will report those as
 "unplaced". It leaves them alone — don't make it write.
+
+⚠️ **A name can say "closed".** OSM mappers rename a dead forecourt ("Nieczynna stacja
+paliw") rather than retag it, so `amenity=fuel` survives the fetch. `CLOSED_NAME_RE` in
+`scripts/_lib/stations.mjs` makes the seeder skip those; run
+`node scripts/deactivate_closed_named_stations.mjs` (then `--write`) after any seed to
+catch what a new language spells differently, and add its stem to the regex.
+
+⚠️ **Check a chain pattern against ALL nine countries, not the one that introduced it.**
+`npm run measure:chains` prints the raw names each brand swallows, per country. Its first
+run caught `yx` eating Poland's Tyxon and `q8` eating six OKQ8 spellings — both patterns
+had looked clean against their own country's OSM cache.
 
 **Three ways to group level-2 into level-1, pick by what the country actually has:**
 a statutory code carried on each unit (Sweden's `ref:scb`, Norway's kommunenummer in

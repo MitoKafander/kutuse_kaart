@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Audit] - Nine countries, read back - 2026-09-28
+
+A light pass over two days of country work: tsc, lint, the three verify
+scripts and the diffs themselves — then a measurement wherever the code made a
+claim it had not proved.
+
+- 🔴 **`yx` swallowed Poland's Tyxon** (3 forecourts branded as Norway's YX) and
+  **`q8` swallowed six OKQ8 spellings** ("OK Q8", "OK/Q8", "QKQ8") as Denmark's
+  Q8. Each pattern had been checked against the OSM cache of the country that
+  introduced it — half the check. **`npm run measure:chains`** now lists, for
+  every collector brand, the raw names that produce it, per country; these were
+  its first two findings. `tyxon` precedes `yx`; the three OKQ8 variants
+  precede `q8`.
+- 🟡 **Switching country left the first-paint cache aimed at the old one**, so
+  the next open was cold. The write is now one function, called after the fetch
+  AND on a switch — aimed at the new home view, since the persisted centre still
+  points into the country being left. Both that rewrite and the first-run
+  country guess now wait for the full network catalog: guessed against a
+  one-country cache, a user in Valka would find Valga's pumps nearest and be
+  pinned to Estonia for good.
+- 🟡 **The scanner prompt knew no Polish fuel label.** Pb 95 / Pb 98 / ON / Olej
+  napędowy / Autogaz added with Orlen's Efecta and Verva grades, plus the
+  Norwegian/Danish gaps (Blyfri 98, Autogass).
+- 🟡 **Five Polish stations were named "Nieczynna …" — closed.** OSM mappers
+  rename a dead forecourt rather than retag it, so `amenity=fuel` survives.
+  `CLOSED_NAME_RE` (`scripts/_lib/stations.mjs`) makes the seeder skip them
+  and `deactivate_closed_named_stations.mjs --write` cleaned the five — only
+  Poland had any, across nine languages of "closed". PL 8,027 → **8,022;
+  18,787 total**, `station_count` drift 0.
+- 🟢 Small: the profile's country menu closes on an outside tap like the map
+  bubble (one shared hook, `src/hooks/useDismissOnOutside.ts`); the bubble no
+  longer rises into the search bar on a short landscape viewport; a JSDoc that
+  described `availableCountries` sat on `showStaleDemo`.
+- ✅ Clean: tsc, eslint (0 errors), `verify:currency`, `verify:scanner`,
+  `verify_countries.mjs` (all 18 boundary files served with the right type),
+  NO/DK/PL keys present in all six locales.
+
 ## [Shipped] - Poland, and the cache stops scaling with the country - 2026-09-28
 
 **EE 482 · LV 548 · LT 742 · FI 1,890 · MT 69 · SE 2,955 · NO 2,158 · DK 1,921 ·
