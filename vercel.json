@@ -1,13 +1,42 @@
 {
   "rewrites": [
-    { "source": "/linn/tallinn", "destination": "/linn/tallinn.html" },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/linn/:slug",
+      "destination": "/api/landing?kind=city&slug=:slug"
+    },
+    {
+      "source": "/maakond/:slug",
+      "destination": "/api/landing?kind=county&slug=:slug"
+    },
     {
       "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
   ],
   "crons": [
-    { "path": "/api/generate-market-insight", "schedule": "0 6 * * *" },
-    { "path": "/api/generate-market-insight", "schedule": "0 15 * * *" }
+    {
+      "path": "/api/generate-market-insight",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/generate-market-insight",
+      "schedule": "0 15 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/linn/:slug/",
+      "destination": "/linn/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/maakond/:slug/",
+      "destination": "/maakond/:slug",
+      "permanent": true
+    }
   ]
 }

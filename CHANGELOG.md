@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - SEO landing pages go live: Tallinn + every Estonian county - 2026-09-28
+
+- 🔴 **`/linn/tallinn` had been frozen since 28 July** while saying it showed "the
+  last week's prices" — a static file from `gen_city_landing.mjs` that nothing
+  regenerated. Google was indexing two-month-old prices under a freshness claim.
+- 🟢 **`api/landing.ts` renders the same standalone page per request** (edge
+  cache 10 min) for `/linn/:slug` and all 15 `/maakond/:slug`. Same honesty rules
+  as the probe: only prices from the last 7 days are shown; a page is `index`
+  only with ≥3 stations carrying one, otherwise it renders (a shared link works)
+  as `noindex,follow` with a "no fresh prices — add one" note. Unknown slug →
+  real 404; wrong case → 301; trailing slash → 308.
+- 🟢 **`/sitemap.xml` is dynamic** (`api/sitemap.ts`) and lists only the
+  indexable pages, `lastmod` = their freshest price. Today that is Tallinn,
+  Harjumaa and Raplamaa — measured: 13 of 15 counties have no price in 7 days
+  (Tartumaa: 0 in 45). Counties join the sitemap on their own as prices arrive.
+- 🔑 **Deliberately NOT the hybrid in `Notes/SEO_PHASE1_DESIGN.md`** (lander
+  under the booted app). Its four blocker-class risks — asset-hash skew, lander
+  vs WRS, overlay-history corruption, LCP — exist only because the app boots on
+  top. The July probe had already chosen standalone; this keeps that and makes
+  it live. The app, homepage and PWA are untouched. The doc's six open decisions
+  were taken at their recommendations, except the indexing window: 7 days
+  (= display window), not 45, since a page must not be indexed on prices it
+  refuses to show.
+- 🔴 **The service worker answered every navigation with the app shell**, so a
+  returning visitor opening a landing page from Google got the map instead.
+  `navigateFallbackDenylist` now excludes `/linn/`, `/maakond/` and the sitemap.
+- `scripts/_ts_resolve_hook.mjs` maps `./x.js` → `x.ts` so `api/` modules can be
+  exercised from Node scripts.
+
 ## [Shipped] - Polish, and English browsers stop landing in Sweden - 2026-09-28
 
 - 🟢 **Polski** is the seventh locale — the full UI (every key `en.json` has

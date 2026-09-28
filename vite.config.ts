@@ -26,6 +26,11 @@ export default defineConfig({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         navigateFallback: '/index.html',
+        // SEO landing pages are served by api/landing, not the app. Without this
+        // a returning visitor opening one from a search result got the map
+        // shell instead — the precached index.html answers every navigation.
+        // The NetworkFirst rule below still serves them, with a cache fallback.
+        navigateFallbackDenylist: [/^\/(linn|maakond)\//, /^\/sitemap\.xml$/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',

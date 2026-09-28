@@ -14,5 +14,14 @@ export async function resolve(specifier, context, next) {
       // Fall through: not every extensionless import is a .ts file.
     }
   }
+  // The api/ functions import siblings as './x.js' (what Vercel's bundler and
+  // `moduleResolution: bundler` expect) while the file on disk is x.ts.
+  if (specifier.startsWith('.') && specifier.endsWith('.js')) {
+    try {
+      return await next(`${specifier.slice(0, -3)}.ts`, context);
+    } catch {
+      // A real .js file — fall through.
+    }
+  }
   return next(specifier, context);
 }
