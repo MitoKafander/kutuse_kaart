@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Changed] - One performance rule for every country - 2026-09-28
+
+Poland's fixes were two special cases (`>2,000 stations`, `PL: 8%`). Both are
+now one rule that every country follows.
+
+- 🟢 **Off-screen markers are culled everywhere**, not only above 2,000
+  stations. The April concern (clicks missing while markers were re-added on
+  pan) did not come back — animations being off was the other half of that bug.
+  Checked by tapping markers after pans in every country's capital, new build
+  vs production side by side: identical, 23/23 hits (SE had none in the tap
+  zone either way).
+- 🟢 **Boundaries are simplified by distance, not percentage**: a vertex about
+  every 150 m (`mapshaper -simplify interval=150`), in both
+  `rebuild_boundaries_country.mjs` (`SIMPLIFY_M`, `--interval=N`) and Estonia's
+  `rebuild_boundaries.mjs`. A percentage gives each country different on-screen
+  detail; a distance gives the same everywhere. 150 m is what Poland's 8%
+  already was, so Poland looks the same. Every id/name verified identical.
+
+| file | before | after |
+|---|---|---|
+| parishes (EE) | 1,783 KB | 391 KB |
+| maakonnad (EE) | 1,088 KB | 196 KB |
+| municipalities NO / SE / DK | 2,489 / 2,081 / 2,047 KB | 700 / 770 / 292 KB |
+| municipalities PL / FI / LV / LT / MT | 1,631 / 964 / 851 / 663 / 99 KB | 1,522 / 622 / 206 / 248 / 30 KB |
+
+  Visual check old-vs-new overlaid: indistinguishable for EE at zoom 10; Malta
+  at zoom 13 loses the 0.001° stair-step noise and small wiggles, shapes intact.
+- 🟡 `rebuild_boundaries.mjs` (Estonia) had silently broken with the expansion:
+  it read every country's parishes (1,681 rows, past the 1,000-row cap) and
+  required each to match an Estonian geometry. Now scoped to EE. Its OSM source
+  file (/tmp/geofix) no longer exists; this rebuild re-simplified the shipped
+  file, which is lossless for the ids and only removes vertices.
+
 ## [Fixed] - Poland was slow: every marker in the DOM, and a 4.7 MB boundary file - 2026-09-28
 
 Measured on kyts.ee with a 4× CPU throttle (mid-range phone), EE vs PL. First

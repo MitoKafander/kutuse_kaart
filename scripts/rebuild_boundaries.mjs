@@ -46,8 +46,11 @@ const SRC = process.argv[2] || '/tmp/geofix/ee_municipalities_current.geojson';
 const sb = createClient(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
-const { data: dbPar } = await sb.from('parishes').select('id, maakond_id, name');
-const { data: dbMk } = await sb.from('maakonnad').select('id, name');
+// Estonia only. Since the expansion these tables hold nine countries (1,681
+// parishes, past PostgREST's 1,000-row cap), and the "every DB parish must
+// match" check below would fail on the first Latvian novads.
+const { data: dbMk } = await sb.from('maakonnad').select('id, name, country').eq('country', 'EE');
+const { data: dbPar } = await sb.from('parishes').select('id, maakond_id, name').in('maakond_id', dbMk.map((m) => m.id));
 if (!dbPar?.length || !dbMk?.length) throw new Error('DB read failed');
 const parById = new Map(dbPar.map((p) => [p.id, p]));
 const mkName = new Map(dbMk.map((m) => [m.id, m.name]));
@@ -71,7 +74,9 @@ const tLabeled = join(pub, '.boundaries_labeled.geojson');
 const tPar = join(pub, '.boundaries_par.geojson');
 const tMk = join(pub, '.boundaries_mk.geojson');
 writeFileSync(tLabeled, JSON.stringify(labeled));
-execFileSync('npx', ['mapshaper', tLabeled, '-simplify', '25%', 'keep-shapes', '-o', tPar, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
+// Same rule as every other country (rebuild_boundaries_country.mjs SIMPLIFY_M):
+// a vertex roughly every 150 m, not a percentage.
+execFileSync('npx', ['mapshaper', tLabeled, '-simplify', 'interval=150', 'keep-shapes', '-o', tPar, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
 execFileSync('npx', ['mapshaper', tPar, '-dissolve', 'maakond_id', '-o', tMk, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
 
 const parOut = JSON.parse(readFileSync(tPar, 'utf8')).features

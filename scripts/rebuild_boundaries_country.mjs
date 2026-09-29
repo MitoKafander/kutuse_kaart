@@ -30,7 +30,12 @@ const repo = join(here, '..');
 const pub = join(repo, 'public');
 mkdirSync(pub, { recursive: true });
 
-const args = process.argv.slice(2).map((s) => s.toUpperCase());
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--')).map((s) => s.toUpperCase());
+/**
+ * Metres between kept vertices, for every country (and Estonia's own script).
+ * Override for experiments with --interval=N.
+ */
+const SIMPLIFY_M = Number(process.argv.find((a) => a.startsWith('--interval='))?.split('=')[1] ?? 150);
 const COUNTRIES = args.length ? args : SEEDABLE_COUNTRIES;
 
 for (const cc of COUNTRIES) {
@@ -53,14 +58,14 @@ for (const cc of COUNTRIES) {
   const tL1 = join(pub, `.bb_${cc}_l1.geojson`);
   writeFileSync(tLabeled, JSON.stringify(labeled));
 
-  // Same knobs as the Estonian pipeline: topology-preserving simplify,
-  // keep-shapes so nothing is dropped, 0.001° coordinate precision. The ratio
-  // is per country because the cost is per VERTEX: Poland's 380 powiaty at 25%
-  // were 4.7 MB and blocked the main thread 3.8 s on opening the Avastuskaart
-  // and ~3 s on every pan (measured, 4x CPU throttle). They are only ever seen
-  // at country-to-region zoom, where 8% is indistinguishable.
-  const SIMPLIFY = { PL: '8%' };
-  execFileSync('npx', ['-y', 'mapshaper', tLabeled, '-simplify', SIMPLIFY[cc] ?? '25%', 'keep-shapes', '-o', tL2, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
+  // ONE RULE FOR EVERY COUNTRY: keep a vertex roughly every SIMPLIFY_M metres
+  // (mapshaper `interval`), topology-preserving, keep-shapes so nothing is
+  // dropped, 0.001° coordinate precision. A distance, not a percentage: 25%
+  // of Poland's powiaty was 4.7 MB and blocked the main thread 3.8 s on
+  // opening the Avastuskaart, while any single percentage low enough for
+  // Poland would make Malta's tiny councils jagged. A fixed interval gives the
+  // same on-screen detail everywhere. See SIMPLIFY_M.
+  execFileSync('npx', ['-y', 'mapshaper', tLabeled, '-simplify', `interval=${SIMPLIFY_M}`, 'keep-shapes', '-o', tL2, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
   execFileSync('npx', ['-y', 'mapshaper', tL2, '-dissolve', 'maakond_id', '-o', tL1, 'precision=0.001', 'format=geojson'], { stdio: 'inherit' });
 
   const l2Out = JSON.parse(readFileSync(tL2, 'utf8')).features

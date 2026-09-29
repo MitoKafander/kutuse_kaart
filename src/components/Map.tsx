@@ -193,8 +193,7 @@ function ClusterLayer({
    * pan made clicks miss in the old animated setup. But past zoom 11 clustering
    * is disabled, and with this off EVERY marker in the layer is a live DOM
    * node — Poland's 8,022 blocked the main thread 2 s on zoom-in and 1.5 s per
-   * pan (4x CPU throttle). So it is switched on only for big catalogues, where
-   * that cost is real; the small countries keep April's behaviour exactly.
+   * pan (4x CPU throttle). Now on for every country — see cullOffscreen in Map.
    */
   cullOffscreen?: boolean;
   iconCreateFunction: (cluster: any) => L.DivIcon;
@@ -1068,10 +1067,13 @@ export function Map({
     if (!showDiscoveryMap || !focusedMaakondStationIds) return stations;
     return stations.filter(s => focusedMaakondStationIds.has(String(s.id)));
   }, [stations, showDiscoveryMap, focusedMaakondStationIds]);
-  // See ClusterLayer's cullOffscreen. Keyed on the whole country's size, not
-  // the working set, so it does not flip (and rebuild the layer) when a
-  // county is focused. SE (2,955) and NO (2,158) cross it; FI (1,890) does not.
-  const cullOffscreen = stations.length > 2000;
+  // See ClusterLayer's cullOffscreen. On for every country since 2026-09-28:
+  // it started as a >2,000-station rule for PL/SE/NO, and the April click
+  // problem it was guarding against did not come back (animations are off
+  // now, which was the other half of that bug) — verified by clicking markers
+  // after pans in EE and PL. One rule everywhere is simpler and every
+  // country gets the cheaper DOM.
+  const cullOffscreen = true;
   // Keep the module-level ref read by the discovery cluster icon function in
   // sync with the latest prop — iconCreateFunction is cached inside MCG so we
   // can't close over props the normal React way.
