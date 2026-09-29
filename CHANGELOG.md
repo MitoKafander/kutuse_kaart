@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Changed] - Stop downloading every country on every open - 2026-09-29
+
+- 🔴 **Every open fetched all 18,787 stations in nine countries** — 19 requests
+  and 8.8 MB of JSON — and again after every price submission, for a map that
+  draws one country. It was the largest remaining cost in the app and grew with
+  every country added; Germany (14,000+ stations) would have doubled it.
+- 🟢 **The station store** (`src/hooks/useStationStore.ts`) now holds the
+  ACTIVE country in full plus only the cross-border slices a feature asks for:
+
+  | need | loads |
+  |---|---|
+  | map, search, Avastuskaart, statistics | the active country, on open/refresh/switch |
+  | price entry, scan currency, Cheapest nearby, first-run country | every country within ~30 km of the position (`loadNear`/`ensureNear`) |
+  | route planner | every country inside the route's box, padded by the widest corridor |
+  | favourites and your own price history | those station ids only |
+  | owner's admin entry | every country (the one place that still does) |
+
+  Measured on the built app vs production: **Estonia 19 requests / 8,796 KB →
+  1 request / 302 KB**; Poland → 9 requests / 3,718 KB. All 482 Estonian
+  stations still on the map (Σ of cluster counts identical).
+- Verified in a browser against production, same results: at Valka with
+  Estonia active, "Sisesta hinnad käsitsi" lists the Latvian Virši 0 m away; a
+  first run at Valka picks Latvia; switching EE→LV loads Latvia in one request
+  and moves the cache; a Tallinn→Riga route fetches the route box and lists
+  stations along it.
+- ⚠️ **Two ordering hazards the old all-at-once load hid**, both handled:
+  - price entry picked its candidates ONCE when GPS arrived — it now awaits the
+    stations around the fix (≤ 4 s) before choosing, so a pump across the
+    border cannot come back as "no stations within 500 m";
+  - celebration seeding (`useRegionProgress`) ran as soon as prices were in; on
+    a switch to a country whose stations were still loading it would bank
+    "nothing completed" and then replay every old completion. It now also waits
+    for the country's catalogue (`loadedCountries`).
+- The chain filter and loyalty list read the active country's chains, not
+  everything in memory. `fetchAllRows` moved to `src/utils/fetchAllRows.ts`.
+- 🟡 Process note: `npx tsc --noEmit -p .` checks nothing here (`tsconfig.json`
+  is references-only). `npm run build` runs `tsc -b`, so builds and deploys were
+  always type-checked; use `npx tsc -b` for a standalone check.
+
+### Germany — parked, and why
+
+Germany is technically ready now (catalogue size no longer matters), but it is
+a different kind of country: every German station reports prices to the
+Markttransparenzstelle in real time by law, and ADAC / clever-tanken show them
+live. Crowd-sourcing there adds little. The official route, checked at the
+source 2026-09-29: Tankerkönig republishes it under CC BY 4.0 (14,000+
+stations), but the free API allows 1 request/min, 10 stations per price
+request and a 25 km radius (~23 h per full refresh), bulk transfer of all
+prices is a paid commercial service, and their terms say "Die Weitergabe der
+Datensätze … ist nicht gestattet". A key needs a signup (name, email, purpose)
+with manual approval. Official prices would also make Germany the only
+non-crowd-sourced country — a product decision for Mikk, not a build task.
+
 ## [Changed] - One performance rule for every country - 2026-09-28
 
 Poland's fixes were two special cases (`>2,000 stations`, `PL: 8%`). Both are

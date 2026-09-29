@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { X, Check, Camera, Loader2, AlertTriangle, RefreshCw, MapPin, Upload, ArrowLeft } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -8,6 +8,17 @@ import { capture, captureReloadSafe } from '../utils/analytics';
 import * as Sentry from '@sentry/react';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
+// How long a GPS fix waits for the stations around it before candidates are
+// chosen anyway. Long enough for one bbox fetch on a slow connection; short
+// enough that a dead network does not strand the user on "waiting for GPS".
+const NEARBY_WAIT_MS = 4000;
+
+function mergeById(a: any[], b: any[]): any[] {
+  if (!b.length) return a;
+  const m = new globalThis.Map<string, any>(a.map((s) => [String(s.id), s]));
+  for (const s of b) m.set(String(s.id), s);
+  return Array.from(m.values());
+}
 const MAX_RETRIES = 2;
 // Exponential backoff between retry attempts (ms). Indexed by attempt number;
 // attempt 0 is the initial try (no wait). Timeline of this knob:
@@ -36,6 +47,7 @@ export function ManualPriceModal({
   mode,
   pendingScanRestore,
   homeCountry = 'EE',
+  loadStationsNear,
 }: {
   station: any | null,
   isOpen: boolean,
@@ -47,6 +59,14 @@ export function ManualPriceModal({
   mode?: 'station' | 'camera' | 'manual',
   /** Last-resort currency source when neither the station nor GPS resolves one. */
   homeCountry?: CountryCode,
+  /**
+   * Loads and returns the stations of EVERY country around a position. The
+   * app holds only the active country's catalogue, but a driver submits at
+   * the forecourt they are standing on — which, near a border, may be in the
+   * other country. Every GPS fix awaits this before picking candidates, so a
+   * Latvian pump in Valka cannot come back as "no stations within 500 m".
+   */
+  loadStationsNear?: (lat: number, lon: number) => Promise<any[]>,
   // When set, the modal is being re-opened post-reload to resume an
   // interrupted AI scan. Skip the file picker, pre-fill the captured
   // photo + station context, and immediately re-run the scan.
@@ -85,6 +105,24 @@ export function ManualPriceModal({
   const [pricesFromAi, setPricesFromAi] = useState(false);
   const [manualGpsError, setManualGpsError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  // Stations around the last GPS fix, any country (see loadStationsNear). The
+  // app's store gets them too, but through a render; holding them here means
+  // the candidate code reads them the moment the fix is published.
+  const [nearStations, setNearStations] = useState<any[]>([]);
+  const stationPool = useMemo(() => mergeById(allStations ?? [], nearStations), [allStations, nearStations]);
+  const nearbyFor = async (p: { lat: number; lon: number }): Promise<any[]> => {
+    if (!loadStationsNear) return [];
+    try {
+      const rows = await Promise.race([
+        loadStationsNear(p.lat, p.lon),
+        new Promise<any[]>((resolve) => setTimeout(() => resolve([]), NEARBY_WAIT_MS)),
+      ]);
+      if (rows.length) setNearStations(rows);
+      return rows;
+    } catch {
+      return [];
+    }
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,6 +148,7 @@ export function ManualPriceModal({
       setAutoSelectMsg(null);
       onPhotoExpandedChange(false);
       setCapturedPosition(null);
+      setNearStations([]);
       setPendingDetectedBrand(null);
       setPricesFromAi(false);
       setManualGpsError(null);
@@ -130,10 +169,15 @@ export function ManualPriceModal({
         const restored = pendingScanRestore;
         setCapturedBase64(restored.base64);
         setCapturedPreviewUrl(restored.base64);
-        if (restored.capturedPosition) setCapturedPosition(restored.capturedPosition);
+        if (restored.capturedPosition) {
+          setCapturedPosition(restored.capturedPosition);
+          // Best effort: the scan below re-runs immediately, and the late-GPS
+          // effect picks candidates from whatever has arrived by then.
+          void nearbyFor(restored.capturedPosition);
+        }
         if (restored.pendingDetectedBrand) setPendingDetectedBrand(restored.pendingDetectedBrand);
         const preResolved = restored.stationId
-          ? allStations?.find((s: any) => s.id === restored.stationId) ?? null
+          ? stationPool.find((s: any) => s.id === restored.stationId) ?? null
           : null;
         if (preResolved) setResolvedStation(preResolved);
         capture('ai_scan_reload_restored');
@@ -298,11 +342,11 @@ export function ManualPriceModal({
   // standing at, but anything beyond MAX_SUBMIT_KM would be rejected by the
   // server's proximity trigger anyway — so don't offer it in the picker.
   const resolveNearbyCandidates = (lat: number, lon: number, detectedBrand?: string) => {
-    if (!allStations?.length) return;
+    if (!stationPool.length) return;
 
     const TIGHT_KM = 0.5;
     const FALLBACK_KM = MAX_SUBMIT_KM;
-    const withDist = allStations.map(s => ({
+    const withDist = stationPool.map(s => ({
       ...s,
       _dist: haversineKm(lat, lon, s.latitude, s.longitude)
     })).sort((a, b) => a._dist - b._dist);
@@ -359,9 +403,12 @@ export function ManualPriceModal({
   // explicit that a single tap of the manual FAB should land the user in a
   // small, precise list they fully control.
   const MANUAL_RADIUS_KM = 0.5;
-  const buildManualCandidates = (lat: number, lon: number) => {
-    if (!allStations?.length) { setStationCandidates([]); return; }
-    const withDist = allStations
+  const buildManualCandidates = (lat: number, lon: number, near: any[] = []) => {
+    // `near` is passed in because the state it also went into is not visible
+    // to this closure until the next render.
+    const source = mergeById(stationPool, near);
+    if (!source.length) { setStationCandidates([]); return; }
+    const withDist = source
       .map(s => ({ ...s, _dist: haversineKm(lat, lon, s.latitude, s.longitude) }))
       .filter(s => s._dist <= MANUAL_RADIUS_KM)
       .sort((a, b) => a._dist - b._dist);
@@ -373,10 +420,11 @@ export function ManualPriceModal({
     setStationCandidates(null);
     setCapturedPosition(null);
     getCurrentPositionAsync()
-      .then(pos => {
+      .then(async pos => {
         const p = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        const near = await nearbyFor(p);
         setCapturedPosition(p);
-        buildManualCandidates(p.lat, p.lon);
+        buildManualCandidates(p.lat, p.lon, near);
       })
       .catch((e: any) => {
         const kind = (e?.kind as 'permission' | 'unavailable' | 'timeout' | 'unsupported') || 'unavailable';
@@ -554,7 +602,13 @@ export function ManualPriceModal({
     // error instead of letting the submit button hang on "Ootan GPS-signaali...".
     if (!station && allStations) {
       getCurrentPositionAsync()
-        .then(pos => setCapturedPosition({ lat: pos.coords.latitude, lon: pos.coords.longitude }))
+        .then(async pos => {
+          const p = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+          // nearStations is set before the fix is published, so every render
+          // that sees capturedPosition also sees the stations around it.
+          await nearbyFor(p);
+          setCapturedPosition(p);
+        })
         .catch(() => setScanError('NO_GPS'));
     }
 
@@ -821,9 +875,9 @@ export function ManualPriceModal({
    */
   const scanCountry = (() => {
     if (activeStation?.country) return activeStation.country as CountryCode;
-    if (capturedPosition && allStations?.length) {
+    if (capturedPosition && stationPool.length) {
       let best: { d: number; country?: string } | null = null;
-      for (const st of allStations) {
+      for (const st of stationPool) {
         const d = haversineKm(capturedPosition.lat, capturedPosition.lon, st.latitude, st.longitude);
         if (!best || d < best.d) best = { d, country: st.country };
       }

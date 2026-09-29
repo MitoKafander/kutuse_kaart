@@ -60,6 +60,11 @@ CHANGELOG 2026-09-26.
 
 ### Adding country ten
 
+⚠️ **Germany is parked** (2026-09-29): official real-time prices exist by law
+(MTS-K); crowd-sourcing there adds little, and the official data's free tier
+cannot drive a country-wide map — see CHANGELOG "Germany — parked". Austria,
+France and Italy may have similar official feeds; check before choosing one.
+
 ✅ **Sweden is done** (phases A–D of `Notes/Plan_Local_Currency.md`). Phase E, market
 insight for a non-euro country, self-gates until Sweden has 20+ local prices — at that
 point decide whether to make the USD-wholesale-vs-pump conversion per-currency or skip
@@ -76,6 +81,13 @@ reported "Poland has no powiaty and no fuel stations". That nearly chose a tier.
 rather than waiting for the cron, or cross-border ranking is off until 06:00). NOK, DKK
 and PLN all went in that way. Note `integerDigits`: krone prices have 2 digits before the
 separator, złoty and euro have 1.
+
+**The client holds ONE country's stations, not all of them** (2026-09-29,
+`src/hooks/useStationStore.ts`): the active country in full, plus cross-border
+slices on demand — near the user (price entry, Cheapest nearby, first-run
+country), along a route, and favourites/own history by id. Anything new that
+needs another country's stations must ask the store (`loadNear`, `ensureBox`,
+`loadIds`), not assume `stations` holds them. Estonia's open went 8.8 MB → 0.3 MB.
 
 **The first-paint cache is CAPPED at 1,500 stations nearest the last map centre**
 (`CACHE_LIMIT` in App.tsx, 2026-09-27), so its cost is a constant ~0.61 MiB whatever the

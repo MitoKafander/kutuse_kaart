@@ -134,6 +134,7 @@ export function CheapestNearbyPanel({
   fallbackLocation = null,
   homeCurrency = 'EUR',
   fxRates = {},
+  onLocation,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -151,9 +152,19 @@ export function CheapestNearbyPanel({
   /** The viewer's own currency — the common ground results are ranked on. */
   homeCurrency?: CurrencyCode;
   fxRates?: FxRates;
+  /**
+   * Told every position this panel ranks from, so the app can load the
+   * stations of EVERY country around it — the client otherwise holds only the
+   * active country, and at Valga the cheapest pump may be in Valka. Results
+   * are computed on render, so they update when those stations land.
+   */
+  onLocation?: (lat: number, lon: number) => void;
 }) {
   const { t } = useTranslation();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  useEffect(() => {
+    if (userLocation) onLocation?.(userLocation.lat, userLocation.lon);
+  }, [userLocation, onLocation]);
   const [locationErrorKind, setLocationErrorKind] = useState<GeolocationErrorKind | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);

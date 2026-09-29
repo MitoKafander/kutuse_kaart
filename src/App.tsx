@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Map } from './components/Map';
 import { Search, UserCircle, Camera, Euro, Coins, Navigation, TrendingUp, X, Fuel, Compass, EyeOff } from 'lucide-react';
@@ -65,6 +65,8 @@ const RoutePlanModal = lazyWithReload(() => import('./components/RoutePlanModal'
 const StatisticsDrawer = lazyWithReload(() => import('./components/StatisticsDrawer').then(m => ({ default: m.StatisticsDrawer })));
 const AdminPriceModal = lazyWithReload(() => import('./components/AdminPriceModal').then(m => ({ default: m.AdminPriceModal })));
 import { supabase } from './supabase';
+import { fetchAllRows } from './utils/fetchAllRows';
+import { useStationStore, type Box } from './hooks/useStationStore';
 import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS, haversineKm } from './utils';
 import type { LoyaltyDiscounts, BrandProgress, FxRates } from './utils';
 import { shouldAutoShowInstallPrompt } from './utils/install';
@@ -137,56 +139,6 @@ const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 // authority, so exposing the id here is harmless. = mikk.rosin@gmail.com.
 const KYTS_ADMIN_UID = '3eac34e5-0db4-4d64-a1e8-e5391f83db4a';
 
-// Page a Supabase select past PostgREST's `db-max-rows` cap. The Supabase
-// platform silently truncates any single response to 1000 rows regardless of
-// `.limit()` — which previously dropped older `prices` rows from the client and
-// made Avastuskaart "lose" completed valds the moment the table grew past 1k.
-// Strategy: the first page asks for `count: 'exact'` so the rest can fan out in
-// parallel without a separate HEAD round-trip, and short-circuits if the table
-// fits in one page. Order is preserved across pages by the caller-supplied
-// `apply` callback (must be a stable, non-volatile expression for pagination
-// to be deterministic). Hard cap protects against runaway loops if `count`
-// somehow disagrees with reality.
-async function fetchAllRows<T = any>(
-  table: string,
-  apply: (q: any) => any = (q) => q,
-): Promise<{ data: T[] | null; error: any }> {
-  const PAGE = 1000;
-  const SAFETY_CAP = 100_000;
-  const first = await apply(supabase.from(table).select('*', { count: 'exact' })).range(0, PAGE - 1);
-  if (first.error) return { data: null, error: first.error };
-  const head = (first.data ?? []) as T[];
-  const total = Math.min(first.count ?? head.length, SAFETY_CAP);
-  if (head.length < PAGE || head.length >= total) return { data: head, error: null };
-  const requests: Promise<any>[] = [];
-  for (let from = PAGE; from < total; from += PAGE) {
-    const to = Math.min(from + PAGE - 1, total - 1);
-    requests.push(apply(supabase.from(table).select('*')).range(from, to));
-  }
-  const rest = await Promise.all(requests);
-  // Dedupe by id: parallel pages can both observe the same row when a write
-  // lands between requests (a new row at offset 0 shifts existing rows down,
-  // so the last row of page N reappears as the first row of page N+1).
-  const seen = new Set<any>();
-  const all: T[] = [];
-  for (const row of head) {
-    const id = (row as any)?.id;
-    if (id != null && seen.has(id)) continue;
-    if (id != null) seen.add(id);
-    all.push(row);
-  }
-  for (const r of rest) {
-    if (r.error) return { data: null, error: r.error };
-    for (const row of (r.data ?? []) as T[]) {
-      const id = (row as any)?.id;
-      if (id != null && seen.has(id)) continue;
-      if (id != null) seen.add(id);
-      all.push(row);
-    }
-  }
-  return { data: all, error: null };
-}
-
 /**
  * The first-paint cache: the `CACHE_LIMIT` stations of `cc` nearest to
  * `centre`, or to where the user last had the map, or to the country's home
@@ -218,7 +170,13 @@ function writeStationCache(all: any[], cc: CountryCode, centre?: { lat: number; 
       try {
         const raw = localStorage.getItem(MAP_CENTRE_KEY);
         const p = raw ? JSON.parse(raw) : null;
-        if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)) at = p;
+        // Only a centre INSIDE this country is worth aiming at. Right after a
+        // country switch the persisted centre still points into the country
+        // being left, and "the Polish stations nearest Tallinn" is the wrong
+        // 1,500 to paint first — the map is about to fly home anyway.
+        const [w, south, e, n] = COUNTRIES[cc].bbox;
+        if (p && Number.isFinite(p.lat) && Number.isFinite(p.lon)
+          && p.lat >= south && p.lat <= n && p.lon >= w && p.lon <= e) at = p;
       } catch { /* ignore a malformed centre and fall back below */ }
     }
     if (!at) {
@@ -297,27 +255,30 @@ function App() {
   // out of the cache: the table is paged in via fetchAllRows and can run to
   // many MB of JSON; the parse cost on cold mount outweighs the
   // perceived-perf win, and the dots themselves are the "we're alive" signal.
-  // True once `stations` is the full network set rather than the one-country
-  // first-paint cache. Two decisions must wait for it: the first-run country
-  // guess (a Valka user with only Estonia's stations cached would find Valga's
-  // pumps "nearest" and be pinned to Estonia for good) and re-aiming the cache
-  // on a country switch (filtering the old country's cache by the new code
-  // would write an empty payload).
-  const stationsFromNetworkRef = useRef(false);
-  const [stations, setStations] = useState<any[]>(() => {
+  // The station store (src/hooks/useStationStore.ts): the active country in
+  // full, plus whatever cross-border slices a feature asks for. First paint
+  // comes from the one-country cache, which the network load then replaces.
+  const {
+    stations, loadedCountries, loadCountry, ensureNear, loadNear, ensureBox, loadIds,
+  } = useStationStore(() => {
     try {
       const raw = localStorage.getItem('kyts:cache:stations');
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      // Cache holds ONE country (see the write below). A payload for a country
-      // the user has since left is worse than none — it would paint the wrong
-      // map for the few hundred ms before the network answers — so it is
-      // discarded rather than shown. The pre-2026-09-27 format was a bare
-      // array of every country; it has no `country` field and is dropped the
-      // same way, then rewritten on the next load.
+      // Cache holds ONE country (see writeStationCache). A payload for a
+      // country the user has since left is worse than none — it would paint
+      // the wrong map for the few hundred ms before the network answers — so
+      // it is discarded rather than shown. The pre-2026-09-27 format was a
+      // bare array of every country; it has no `country` field and is dropped
+      // the same way, then rewritten on the next load.
       if (!parsed || !Array.isArray(parsed.stations)) return [];
       return parsed.country === readActiveCountry() ? parsed.stations : [];
     } catch { return []; }
+  }, (cc, rows) => {
+    // Rewrite the first-paint cache whenever the ACTIVE country's catalogue
+    // lands — on open, on refresh, and after a switch to a country not yet
+    // loaded this session.
+    if (cc === readActiveCountry()) writeStationCache(rows, cc);
   });
   const [prices, setPrices] = useState<any[]>([]);
   const [pricesLoaded, setPricesLoaded] = useState(false);
@@ -604,13 +565,15 @@ function App() {
     // Fan out the public queries in parallel. They're independent, land on
     // the same HTTP/2 connection, and previously ran serially — PSI showed the
     // 4th finishing at 2.4s on Slow 4G when the 1st finished at 1.6s.
-    const [stRes, prRes, vtRes, repsRes, insightRes, fxRes] = await Promise.all([
-      // MUST page: the Baltic expansion took the active-station count past
-      // PostgREST's 1000-row cap (1,772 as of phase 65), and a bare select
-      // silently returns the first 1000 — which dropped most of Lithuania AND
-      // 52 Estonian stations off the map. Ordered by id so the pages are a
-      // stable partition rather than whatever order the planner picks.
-      fetchAllRows('stations', q => q.eq('active', true).order('id', { ascending: true })),
+    const [, prRes, vtRes, repsRes, insightRes, fxRes] = await Promise.all([
+      // The ACTIVE country only (forced, so a refresh picks up catalogue
+      // changes). This used to be every active station in every country —
+      // 19 requests and 8.8 MB of JSON on every open and after every price
+      // submission, for a map that draws one country. Other countries arrive
+      // on demand through the station store. Paged inside, past PostgREST's
+      // 1000-row cap. It resolves before prices are set below, so anything
+      // keyed on "prices loaded" already sees this country's stations.
+      loadCountry(readActiveCountry(), true),
       fetchAllRows('prices', q => q.order('reported_at', { ascending: false }).order('id', { ascending: false })),
       fetchAllRows('votes', q => q.order('created_at', { ascending: false }).order('id', { ascending: false })),
       supabase.from('v_reporters').select('user_id, display_name'),
@@ -632,11 +595,6 @@ function App() {
       setFxRates(rates);
     }
 
-    if (stRes.data) {
-      setStations(stRes.data);
-      stationsFromNetworkRef.current = true;
-      writeStationCache(stRes.data, readActiveCountry());
-    }
     // Only claim the prices are loaded when they actually arrived. This used
     // to flip unconditionally, so a failed fetch (fetchAllRows returns
     // {data: null} if ANY of its ~9 pages fails) told useRegionProgress the
@@ -1022,7 +980,11 @@ function App() {
     stationParishMap,
     stationNamesMap,
     emitCelebrations: showDiscoveryMap,
-    contributionsReady: !session || pricesLoaded,
+    // Also wait for the country's STATIONS: parish and maakond completions are
+    // computed through stationParishMap, and seeding against a country whose
+    // catalogue is still loading would bank "nothing completed", then replay
+    // every old completion as new the moment the stations arrive.
+    contributionsReady: (!session || pricesLoaded) && loadedCountries.has(activeCountry),
     userId: session?.user?.id ?? null,
     country: activeCountry,
     brandProgress: userBrandProgress,
@@ -1114,35 +1076,40 @@ function App() {
   useEffect(() => {
     if (!liveUserLocation) return;
     if (localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
-    // Wait for the FULL catalog rather than guess without it. This guess now
-    // decides which stations exist on the map at all, not merely the home view,
-    // so getting it wrong is no longer cosmetic — and once written it is never
-    // revisited. The one-country first-paint cache does not count: measured
-    // against it, a user in Valka would find Valga's pumps nearest.
-    if (!stationsFromNetworkRef.current) return;
+    // Guess from the stations AROUND the user, in every country — loaded for
+    // exactly this (the store otherwise holds only the active country). This
+    // guess decides which stations exist on the map at all, and once written
+    // it is never revisited, so it must not run on a partial picture: against
+    // the one-country cache, a user in Valka would find Valga's pumps nearest.
+    const { lat, lon } = liveUserLocation;
+    let cancelled = false;
+    void loadNear(lat, lon).then((near) => {
+      if (cancelled || localStorage.getItem(ACTIVE_COUNTRY_KEY)) return;
 
-    // Nearest catalogued station first, geometry only as a fallback.
-    // countryForCoords is a bounding-box test with a nearest-centre tiebreak and
-    // it is measurably wrong at borders: it places Haparanda in Finland, which
-    // is exactly where a Swede would be standing when this runs.
-    let nearest: { d: number; country?: string } | null = null;
-    for (const st of stations) {
-      const d = haversineKm(liveUserLocation.lat, liveUserLocation.lon, st.latitude, st.longitude);
-      if (!nearest || d < nearest.d) nearest = { d, country: st.country };
-    }
-    const guess = (nearest && nearest.d <= 3 && isCountryCode(nearest.country))
-      ? nearest.country
-      : countryForCoords(liveUserLocation.lat, liveUserLocation.lon);
-    if (!guess) return;
+      // Nearest catalogued station first, geometry only as a fallback.
+      // countryForCoords is a bounding-box test with a nearest-centre tiebreak
+      // and it is measurably wrong at borders: it places Haparanda in Finland,
+      // which is exactly where a Swede would be standing when this runs.
+      let nearest: { d: number; country?: string } | null = null;
+      for (const st of near) {
+        const d = haversineKm(lat, lon, st.latitude, st.longitude);
+        if (!nearest || d < nearest.d) nearest = { d, country: st.country };
+      }
+      const guess = (nearest && nearest.d <= 3 && isCountryCode(nearest.country))
+        ? nearest.country
+        : countryForCoords(lat, lon);
+      if (!guess) return;
 
-    // Persist it. Standing where you are is a stronger signal than the browser
-    // language guess that got us here, and without writing it the app re-guesses
-    // (and briefly re-renders Estonia) on every single load.
-    setActiveCountry(prev => {
-      if (prev !== guess) writeActiveCountry(guess);
-      return guess;
+      // Persist it. Standing where you are is a stronger signal than the
+      // browser language guess that got us here, and without writing it the
+      // app re-guesses (and briefly re-renders Estonia) on every single load.
+      setActiveCountry(prev => {
+        if (prev !== guess) writeActiveCountry(guess);
+        return guess;
+      });
     });
-  }, [liveUserLocation, stations]);
+    return () => { cancelled = true; };
+  }, [liveUserLocation, loadNear]);
 
   const handleActiveCountryChange = (next: CountryCode) => {
     setActiveCountry(next);
@@ -1153,15 +1120,44 @@ function App() {
     // pin floating on the new country's map, since mapStations deliberately
     // carries a selected station across borders.
     setSelectedStation(null);
-    // Re-aim the first-paint cache at the new country now, or the next open is
-    // cold: the read side discards a payload for any other country. Aimed at
-    // the new home view, not the persisted map centre — that still points into
-    // the country being left, and the map is about to fly home anyway.
-    if (stationsFromNetworkRef.current) {
-      const home = COUNTRIES[next].center;
-      writeStationCache(stations, next, { lat: home[0], lon: home[1] });
-    }
+    // The new country's catalogue loads through the activeCountry effect
+    // below, which also re-aims the first-paint cache (writeStationCache
+    // ignores a persisted centre outside the country, so it aims at home).
   };
+
+  // Your favourites and the stations of your own price history can be in any
+  // country, and the profile lists them by station — fetch just those rows.
+  // After prices land, by which point the active country is loaded and only
+  // genuinely foreign ids are left to ask for.
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid || !pricesLoaded) return;
+    const ids: unknown[] = favorites.map((f: any) => f.station_id);
+    for (const p of prices) if (p.user_id === uid) ids.push(p.station_id);
+    void loadIds(ids);
+  }, [session?.user?.id, pricesLoaded, favorites, prices, loadIds]);
+
+  // The owner's admin entry can post to any station anywhere, so it gets
+  // every country's catalogue — the only place that still loads them all.
+  useEffect(() => {
+    if (!isAdminPriceOpen) return;
+    for (const cc of availableCountries) void loadCountry(cc);
+  }, [isAdminPriceOpen, availableCountries, loadCountry]);
+
+  // Keep the active country's full catalogue loaded. A no-op when it already
+  // is; on a switch to a country not yet seen this session it is the one
+  // fetch, and the map fills in when it lands.
+  useEffect(() => { void loadCountry(activeCountry); }, [activeCountry, loadCountry]);
+
+  const ensureRouteBox = useCallback((box: Box) => { void ensureBox(box); }, [ensureBox]);
+
+  // Stations of EVERY country around the user, fetched as soon as a position
+  // is known, so the cross-border tools (Cheapest nearby, price entry) have
+  // them before they are opened. Cheap to call on every GPS tick: it only
+  // fetches once the 20 km neighbourhood leaves what is already loaded.
+  useEffect(() => {
+    if (liveUserLocation) void ensureNear(liveUserLocation.lat, liveUserLocation.lon);
+  }, [liveUserLocation, ensureNear]);
 
   // Centralized so the main-screen filter pill and the profile-settings toggle
   // share one write path (state + localStorage mirror + DB persistence).
@@ -1244,12 +1240,14 @@ function App() {
       }
     : undefined;
 
-  // Derive all unique brands dynamically
+  // The active country's chains — for the map's chain filter and the loyalty
+  // card list, both of which are about the country on screen. (It read every
+  // station in memory, which now includes cross-border slices near the user.)
   const uniqueBrands = useMemo(() => {
     const brands = new Set<string>();
-    stations.forEach(s => { if (s.name) brands.add(getBrand(s.name)); });
+    countryStations.forEach(s => { if (s.name) brands.add(getBrand(s.name)); });
     return Array.from(brands).sort();
-  }, [stations]);
+  }, [countryStations]);
 
   // ONE COUNTRY ON THE MAP. Until now every country the user had not switched
   // off was drawn at once, which by six countries meant 6,686 stations — and a
@@ -1921,6 +1919,7 @@ function App() {
             onClose={() => { setIsCameraOpen(false); setPendingScanRestore(null); }}
             onPricesSubmitted={handlePricesSubmitted}
             allStations={stations}
+            loadStationsNear={loadNear}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
             pendingScanRestore={pendingScanRestore}
@@ -1951,6 +1950,7 @@ function App() {
             onClose={() => setIsManualOpen(false)}
             onPricesSubmitted={handlePricesSubmitted}
             allStations={stations}
+            loadStationsNear={loadNear}
             photoExpanded={isPhotoExpanded}
             onPhotoExpandedChange={setIsPhotoExpanded}
           />
@@ -2099,6 +2099,7 @@ function App() {
             fallbackLocation={liveUserLocation}
             homeCurrency={homeCurrency}
             fxRates={fxRates}
+            onLocation={ensureNear}
           />
         )}
 
@@ -2118,6 +2119,7 @@ function App() {
           onStationSelect={setSelectedStation}
           homeCurrency={homeCurrency}
           fxRates={fxRates}
+          onRouteBox={ensureRouteBox}
         />}
 
         {isStatsOpen && (

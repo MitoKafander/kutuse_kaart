@@ -9,6 +9,7 @@ import {
 } from '../utils';
 import type { LoyaltyDiscounts, ReporterMap, FxRates } from '../utils';
 import { COUNTRY_CODES, currencyForCountry, type CurrencyCode } from '../constants/countries';
+import type { Box } from '../hooks/useStationStore';
 
 const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 const CORRIDOR_OPTIONS = [1, 2, 5];
@@ -80,6 +81,7 @@ export function RoutePlanModal({
   onStationSelect,
   homeCurrency = 'EUR',
   fxRates = {},
+  onRouteBox,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -96,6 +98,13 @@ export function RoutePlanModal({
    *  ranking has to happen on common ground (phase 69). */
   homeCurrency?: CurrencyCode;
   fxRates?: FxRates;
+  /**
+   * Called with the route's bounding box (padded by the widest corridor) so
+   * the app can load every country's stations along it — a route from Tallinn
+   * to Riga crosses a border, and the client otherwise holds only the active
+   * country. Results are computed on render and update when they land.
+   */
+  onRouteBox?: (box: Box) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
@@ -129,6 +138,23 @@ export function RoutePlanModal({
   }, [isOpen]);
 
   useEffect(() => { onRouteChange(route); }, [route, onRouteChange]);
+
+  useEffect(() => {
+    if (!route?.length || !onRouteBox) return;
+    let s = Infinity, n = -Infinity, w = Infinity, e = -Infinity;
+    for (const [lat, lon] of route) {
+      if (lat < s) s = lat;
+      if (lat > n) n = lat;
+      if (lon < w) w = lon;
+      if (lon > e) e = lon;
+    }
+    // Pad by the widest corridor option so a station just off either end, or
+    // just outside the box of a straight east-west route, is not missed.
+    const padKm = Math.max(...CORRIDOR_OPTIONS);
+    const dLat = padKm / 111.32;
+    const dLon = padKm / (111.32 * Math.max(0.1, Math.cos((((s + n) / 2) * Math.PI) / 180)));
+    onRouteBox({ s: s - dLat, n: n + dLat, w: w - dLon, e: e + dLon });
+  }, [route, onRouteBox]);
   // Don't clear the polyline on unmount — the user closes the modal TO see the
   // drawn route. The dedicated cancel-route (X) FAB clears it explicitly.
 
