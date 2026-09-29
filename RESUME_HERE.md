@@ -62,7 +62,8 @@ CHANGELOG 2026-09-26.
 
 ⚠️ **Germany is parked** (2026-09-29): official real-time prices exist by law
 (MTS-K); crowd-sourcing there adds little, and the official data's free tier
-cannot drive a country-wide map — see CHANGELOG "Germany — parked". Austria,
+cannot drive a country-wide map. Measured demand: 2 German sessions in 90 days.
+All options, obligations and sources: `Notes/Germany_Data_Options.md`. Austria,
 France and Italy may have similar official feeds; check before choosing one.
 
 ✅ **Sweden is done** (phases A–D of `Notes/Plan_Local_Currency.md`). Phase E, market
