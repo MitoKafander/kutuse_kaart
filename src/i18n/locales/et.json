@@ -758,7 +758,8 @@
         "step1": "Ava brauseri menüü (⋮ üleval paremal)",
         "step2": "Vali 'Installi rakendus' või 'Lisa avaekraanile'"
       }
-    }
+    },
+    "eyebrowValue": "Hea nipp"
   },
   "header": {
     "aria": {
@@ -826,5 +827,12 @@
     "days": "{{n}} p",
     "all": "kõik",
     "stations": "{{count}} jaama"
+  },
+  "share": {
+    "button": "Jaga",
+    "copied": "Link kopeeritud",
+    "nudge": "Aitäh! Jaga seda hinda sõbraga",
+    "stationWithPrices": "{{name}}: {{prices}} — vaata Kyts kaardilt",
+    "stationNoPrices": "{{name}} — vaata Kyts kaardilt ja lisa hind"
   }
 }

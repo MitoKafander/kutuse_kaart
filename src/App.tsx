@@ -69,7 +69,9 @@ import { fetchAllRows } from './utils/fetchAllRows';
 import { useStationStore, type Box } from './hooks/useStationStore';
 import { getStationDisplayName, getBrand, getPriceAgeHours, AGE_STOPS, EXPIRY_HOURS, haversineKm } from './utils';
 import type { LoyaltyDiscounts, BrandProgress, FxRates } from './utils';
-import { shouldAutoShowInstallPrompt } from './utils/install';
+import { shouldAutoShowInstallPrompt, shouldShowValueInstallPrompt, markValueInstallPromptShown } from './utils/install';
+import { shareNudgeDue, markShareNudgeShown } from './utils/share';
+import { ShareNudge } from './components/ShareNudge';
 import { COUNTRIES, COUNTRY_CODES, DEFAULT_COUNTRY, countryForCoords, toCountryCode, isCountryCode, isCurrencyCode, type CountryCode } from './constants/countries';
 import { clearCountryPrefs, readActiveCountry, writeActiveCountry, ACTIVE_COUNTRY_KEY } from './utils/countryPrefs';
 import './index.css';
@@ -138,6 +140,15 @@ const FUEL_TYPES = ["Bensiin 95", "Bensiin 98", "Diisel", "LPG"];
 // crowd-sourced. Gated on this UUID; the DB (phase62 triggers + RLS) is the real
 // authority, so exposing the id here is harmless. = mikk.rosin@gmail.com.
 const KYTS_ADMIN_UID = '3eac34e5-0db4-4d64-a1e8-e5391f83db4a';
+
+// A shared station link — `?station=<id>&ref=share` (src/utils/share.ts). Read
+// once at boot, before anything rewrites the URL; the params are stripped
+// again once handled so a refresh or a copied address does not replay it.
+const BOOT_PARAMS = (() => {
+  try { return new URLSearchParams(window.location.search); } catch { return new URLSearchParams(); }
+})();
+const DEEP_LINK_STATION_ID = BOOT_PARAMS.get('station');
+const DEEP_LINK_REF = BOOT_PARAMS.get('ref');
 
 /**
  * The first-paint cache: the `CACHE_LIMIT` stations of `cc` nearest to
@@ -245,6 +256,15 @@ function App() {
   const [isStationReportOpen, setIsStationReportOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [isInstallPromptOpen, setIsInstallPromptOpen] = useState(false);
+  const [installContext, setInstallContext] = useState<'tutorial' | 'value'>('tutorial');
+  // A "moment of value" waiting for the screen to be free: a price just
+  // submitted, or Cheapest nearby just found fuel. Resolved by an effect below
+  // into the one-time install prompt or the (daily) share toast.
+  const [valueMoment, setValueMoment] = useState<{ kind: 'submit' | 'lookup'; station?: any } | null>(null);
+  const [shareNudgeStation, setShareNudgeStation] = useState<any | null>(null);
+  const closeShareNudge = useCallback(() => setShareNudgeStation(null), []);
+  const nearbyFoundRef = useRef(false);
+  const markNearbyFound = useCallback(() => { nearbyFoundRef.current = true; }, []);
   const [marketInsightSeenId, setMarketInsightSeenId] = useState<string | null>(
     () => localStorage.getItem('kyts:market-insight-seen')
   );
@@ -451,6 +471,10 @@ function App() {
   const openTutorialAfterGdpr = () => {
     if (tutorialArmedRef.current) return;
     if (localStorage.getItem('kyts:tutorial-seen')) return;
+    // Someone who followed a link to one station came for that station. A
+    // six-step tutorial over it would bury the one thing the link promised;
+    // it stays one tap away in Settings.
+    if (DEEP_LINK_STATION_ID) return;
     tutorialArmedRef.current = true;
     setTimeout(() => setIsTutorialOpen(true), 400);
   };
@@ -500,7 +524,7 @@ function App() {
     if (isTutorialOpen) list.push({ id: 'tutorial', close: () => setIsTutorialOpen(false), skipRewind: true });
     if (isProfileOpen) list.push({ id: 'profile', close: () => setIsProfileOpen(false) });
     if (selectedStation) list.push({ id: 'station', close: () => setSelectedStation(null) });
-    if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => setIsCheapestNearbyOpen(false) });
+    if (isCheapestNearbyOpen) list.push({ id: 'cheapestNearby', close: () => closeCheapestNearby() });
     return list;
   }, [isPriceModalOpen, isPhotoExpanded, isCameraOpen, isManualOpen, isAuthOpen, isFeedbackOpen, isStationReportOpen, isTutorialOpen, isProfileOpen, selectedStation, isCheapestNearbyOpen]);
 
@@ -553,8 +577,9 @@ function App() {
     if (!selectedFuelType) setHighlightCheapest(false);
   }, [selectedFuelType]);
 
-  const handlePricesSubmitted = (pointsEarned?: number) => {
+  const handlePricesSubmitted = (pointsEarned?: number, station?: any) => {
     loadData();
+    if (station) setValueMoment({ kind: 'submit', station });
     if (pointsEarned && pointsEarned > 0) {
       setPointsEvents(q => [...q, { id: Date.now() + Math.random(), amount: pointsEarned }]);
     }
@@ -1144,6 +1169,69 @@ function App() {
     for (const cc of availableCountries) void loadCountry(cc);
   }, [isAdminPriceOpen, availableCountries, loadCountry]);
 
+  // Closing Cheapest nearby — from its X and from the back button alike — is
+  // the moment to follow up a lookup that found fuel.
+  const closeCheapestNearby = () => {
+    setIsCheapestNearbyOpen(false);
+    if (nearbyFoundRef.current) {
+      nearbyFoundRef.current = false;
+      setValueMoment({ kind: 'lookup' });
+    }
+  };
+
+  // Resolve a moment of value once nothing else is on screen: the install
+  // prompt if this device is due its one value-moment prompt, otherwise — after
+  // a submission — the share toast, at most once a day. Never both.
+  const overlayBusy = isPriceModalOpen || isCameraOpen || isManualOpen || isAdminPriceOpen
+    || isTutorialOpen || isInstallPromptOpen || isCheapestNearbyOpen;
+  useEffect(() => {
+    if (!valueMoment || overlayBusy) return;
+    const moment = valueMoment;
+    const tm = setTimeout(() => {
+      setValueMoment(null);
+      if (shouldShowValueInstallPrompt()) {
+        markValueInstallPromptShown();
+        setInstallContext('value');
+        setIsInstallPromptOpen(true);
+      } else if (moment.kind === 'submit' && moment.station && shareNudgeDue()) {
+        markShareNudgeShown();
+        setShareNudgeStation(moment.station);
+      }
+    }, 500);
+    return () => clearTimeout(tm);
+  }, [valueMoment, overlayBusy]);
+
+  // A shared station link: count it, clean the address bar, and fetch the
+  // station (it may be in any country — the store holds only the active one).
+  const deepLinkPendingRef = useRef<string | null>(DEEP_LINK_STATION_ID);
+  useEffect(() => {
+    if (!DEEP_LINK_STATION_ID) return;
+    capture('deep_link_opened', { kind: 'station', ref: DEEP_LINK_REF });
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('station');
+      url.searchParams.delete('ref');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    } catch { /* keep the params; harmless */ }
+    void loadIds([DEEP_LINK_STATION_ID]);
+  }, [loadIds]);
+  // ...and open it once it is in the store.
+  useEffect(() => {
+    const id = deepLinkPendingRef.current;
+    if (!id) return;
+    const st = stations.find(s => String(s.id) === id);
+    if (!st) return;
+    deepLinkPendingRef.current = null;
+    // A first-time visitor lands in the station's country. Someone who has
+    // already chosen a country keeps it; the map draws a selected station
+    // from another country anyway.
+    if (!localStorage.getItem(ACTIVE_COUNTRY_KEY) && isCountryCode(st.country)) {
+      writeActiveCountry(st.country);
+      setActiveCountry(st.country);
+    }
+    setSelectedStation(st);
+  }, [stations]);
+
   // Keep the active country's full catalogue loaded. A no-op when it already
   // is; on a switch to a country not yet seen this session it is the one
   // fetch, and the map fills in when it lands.
@@ -1446,6 +1534,9 @@ function App() {
       <CelebrationOverlay events={celebrationEvents} onDrain={consumeEvents} discoveryMapOn={showDiscoveryMap} />
 
       <PointsToast events={pointsEvents} onDrain={() => setPointsEvents([])} />
+      {shareNudgeStation && (
+        <ShareNudge station={shareNudgeStation} prices={prices} votes={votes} onClose={closeShareNudge} />
+      )}
 
       <UpdateBanner />
 
@@ -2085,7 +2176,8 @@ function App() {
         {isCheapestNearbyOpen && (
           <CheapestNearbyPanel
             isOpen={isCheapestNearbyOpen}
-            onClose={() => setIsCheapestNearbyOpen(false)}
+            onClose={closeCheapestNearby}
+            onResultsShown={markNearbyFound}
             stations={stations}
             prices={prices}
             allVotes={votes}
@@ -2182,6 +2274,7 @@ function App() {
               // through the tutorial. Skipping signals disinterest — don't
               // pile a second modal onto someone already reaching for the X.
               if (outcome === 'completed' && shouldAutoShowInstallPrompt()) {
+                setInstallContext('tutorial');
                 setTimeout(() => setIsInstallPromptOpen(true), 250);
               }
             }}
@@ -2191,6 +2284,7 @@ function App() {
           <InstallPromptModal
             isOpen={isInstallPromptOpen}
             onClose={() => setIsInstallPromptOpen(false)}
+            context={installContext}
           />
         )}
       </Suspense>

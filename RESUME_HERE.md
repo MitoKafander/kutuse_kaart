@@ -1,5 +1,25 @@
 # Kyts — RESUME HERE
 
+## ▶ NOW: Growth push (started 2026-09-29, checkpoint ~2026-11-24)
+
+Decided with Mikk: traction is flat (~130–150 sessions/week, 3–4 contributors
+besides him, ~8 Estonian stations priced < 24 h on a median day), and the only
+thing that ever moved it was Facebook posting (17 Aug week: 845 sessions). So
+for 6–8 weeks: **distribution in Tallinn, no new countries or big features.**
+
+- **Mikk:** ~2 Facebook posts/week into rotating groups, voice from
+  `Notes/MARKETING_STRATEGY.md`. Fresh numbers + drafts: `node scripts/gen_content_pack.mjs`
+  → `Notes/content-packs/` (local, gitignored).
+- **Weekly check:** `npm run kpis`. Targets for a normal week by the checkpoint:
+  ≥ 8 contributors besides Mikk · ≥ 40 EE stations fresh < 24 h (median day) ·
+  ≥ 250 sessions. If steady posting does not move them, Kyts is Mikk's own
+  tool rather than a community product — decide then, don't drift.
+- **Shipped for it:** share button + post-submit share toast, `?station=` links,
+  install prompt at the moment of value (CHANGELOG 2026-09-29).
+- **Frozen:** new countries (DE parked — `Notes/Germany_Data_Options.md`),
+  big features. Fixes and user feedback only.
+
+
 Operational quick-start for a fresh/parallel session. Depth lives in `CHANGELOG.md` and workspace memory (`memory/project_kutuse_kaart.md`); this is just enough to get going.
 
 ## Reconnect / access

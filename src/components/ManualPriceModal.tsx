@@ -52,7 +52,8 @@ export function ManualPriceModal({
   station: any | null,
   isOpen: boolean,
   onClose: () => void,
-  onPricesSubmitted: (pointsEarned?: number) => void,
+  /** `station` = the station just priced, so the app can offer to share it. */
+  onPricesSubmitted: (pointsEarned?: number, station?: any) => void,
   allStations?: any[],
   photoExpanded: boolean,
   onPhotoExpandedChange: (expanded: boolean) => void,
@@ -839,7 +840,7 @@ export function ManualPriceModal({
       capture('price_submitted', { count: inserts.length, from_ai: pricesFromAi, entry_method: entryMethod, attempts });
       // Each price row scores +1 in the activity leaderboard formula, so the
       // count doubles as the points just earned (the corner toast shows +N).
-      onPricesSubmitted(user?.id ? inserts.length : 0);
+      onPricesSubmitted(user?.id ? inserts.length : 0, activeStation);
       if (isManualMode) {
         // Manual flow: confirm save inline, then close after a short beat so
         // the user sees the result instead of the modal disappearing mid-tap.

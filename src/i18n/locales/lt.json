@@ -163,7 +163,8 @@
         "step1": "Atverkite naršyklės meniu (⋮ viršuje dešinėje)",
         "step2": "Pasirinkite 'Įdiegti programėlę' arba 'Pridėti į pradžios ekraną'"
       }
-    }
+    },
+    "eyebrowValue": "Patarimas"
   },
   "profile": {
     "tabs": {
@@ -745,5 +746,12 @@
     "days": "{{n}} d.",
     "all": "visos",
     "stations": "{{count}} degalinės"
+  },
+  "share": {
+    "button": "Dalintis",
+    "copied": "Nuoroda nukopijuota",
+    "nudge": "Ačiū! Pasidalink šia kaina su draugu",
+    "stationWithPrices": "{{name}}: {{prices}} — žiūrėk Kyts žemėlapyje",
+    "stationNoPrices": "{{name}} — žiūrėk Kyts žemėlapyje ir pridėk kainą"
   }
 }

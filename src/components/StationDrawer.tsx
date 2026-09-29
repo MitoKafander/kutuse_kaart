@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Flag, ShieldCheck } from 'lucide-react';
+import { X, Clock, Edit3, ThumbsUp, ThumbsDown, Star, TrendingUp, Navigation, Flag, ShieldCheck, Share2 } from 'lucide-react';
+import { shareStation } from '../utils/share';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '../supabase';
 import i18n from '../i18n';
@@ -59,6 +60,13 @@ export function StationDrawer({
   const [showHistory, setShowHistory] = useState(false);
   const [historyFuelType, setHistoryFuelType] = useState('Bensiin 95');
   const [voteConfirm, setVoteConfirm] = useState<string | null>(null);
+  // "Link copied" — only where the native share sheet does not exist (desktop).
+  const [shareCopied, setShareCopied] = useState(false);
+  useEffect(() => {
+    if (!shareCopied) return;
+    const tm = setTimeout(() => setShareCopied(false), 1800);
+    return () => clearTimeout(tm);
+  }, [shareCopied]);
   const [cooldownToast, setCooldownToast] = useState<{ priceId: string; remainingMin: number } | null>(null);
 
   // Escape-key dismiss — matches the modal pattern used elsewhere in the app.
@@ -214,10 +222,35 @@ export function StationDrawer({
           </button>
           <h2 className="heading-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getStationDisplayName(station)}</h2>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', flexShrink: 0 }}>
-          <X size={24} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {/* In the header, not the action row: that row is already full on a
+              phone, and share-next-to-close is a pattern people know. */}
+          <button
+            onClick={async () => {
+              const outcome = await shareStation({ station, prices, votes: allVotes, t, context: 'drawer' });
+              if (outcome === 'copied') setShareCopied(true);
+            }}
+            aria-label={t('share.button')}
+            title={t('share.button')}
+            style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer', padding: '4px' }}
+          >
+            <Share2 size={21} />
+          </button>
+          <button onClick={onClose} aria-label={t('common.close')} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <X size={24} />
+          </button>
+        </div>
       </div>
+      {shareCopied && (
+        <div role="status" style={{
+          position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--color-surface)', border: '1px solid var(--color-surface-border)',
+          borderRadius: '10px', padding: '6px 12px', fontSize: '0.85rem', color: 'var(--color-text)',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.35)', whiteSpace: 'nowrap',
+        }}>
+          {t('share.copied')}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '24px' }}>
         {fuelTypes.map(type => {

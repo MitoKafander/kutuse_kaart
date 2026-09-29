@@ -163,7 +163,8 @@
         "step1": "Avaa selaimen valikko (⋮ ylhäällä oikealla)",
         "step2": "Valitse 'Asenna sovellus' tai 'Lisää aloitusnäyttöön'"
       }
-    }
+    },
+    "eyebrowValue": "Vinkki"
   },
   "profile": {
     "tabs": {
@@ -747,5 +748,12 @@
     "days": "{{n}} pv",
     "all": "kaikki",
     "stations": "{{count}} asemaa"
+  },
+  "share": {
+    "button": "Jaa",
+    "copied": "Linkki kopioitu",
+    "nudge": "Kiitos! Jaa tämä hinta kaverille",
+    "stationWithPrices": "{{name}}: {{prices}} — katso Kyts-kartalta",
+    "stationNoPrices": "{{name}} — katso Kyts-kartalta ja lisää hinta"
   }
 }

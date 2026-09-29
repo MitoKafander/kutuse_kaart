@@ -163,7 +163,8 @@
         "step1": "Open your browser menu (⋮ top right)",
         "step2": "Choose 'Install app' or 'Add to Home screen'"
       }
-    }
+    },
+    "eyebrowValue": "Quick tip"
   },
   "profile": {
     "tabs": {
@@ -824,5 +825,12 @@
     "days": "{{n}} d",
     "all": "all",
     "stations": "{{count}} stations"
+  },
+  "share": {
+    "button": "Share",
+    "copied": "Link copied",
+    "nudge": "Thanks! Share this price with a friend",
+    "stationWithPrices": "{{name}}: {{prices}} — see it on Kyts",
+    "stationNoPrices": "{{name}} — see it on Kyts and add a price"
   }
 }

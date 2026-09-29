@@ -163,7 +163,8 @@
         "step1": "Otwórz menu przeglądarki (⋮ w prawym górnym rogu)",
         "step2": "Wybierz „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”"
       }
-    }
+    },
+    "eyebrowValue": "Wskazówka"
   },
   "profile": {
     "tabs": {
@@ -767,5 +768,12 @@
     "stations_few": "{{count}} stacje",
     "stations_many": "{{count}} stacji",
     "stations_other": "{{count}} stacji"
+  },
+  "share": {
+    "button": "Udostępnij",
+    "copied": "Link skopiowany",
+    "nudge": "Dzięki! Udostępnij tę cenę znajomemu",
+    "stationWithPrices": "{{name}}: {{prices}} — zobacz na mapie Kyts",
+    "stationNoPrices": "{{name}} — zobacz na mapie Kyts i dodaj cenę"
   }
 }

@@ -135,6 +135,7 @@ export function CheapestNearbyPanel({
   homeCurrency = 'EUR',
   fxRates = {},
   onLocation,
+  onResultsShown,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -159,6 +160,12 @@ export function CheapestNearbyPanel({
    * are computed on render, so they update when those stations land.
    */
   onLocation?: (lat: number, lon: number) => void;
+  /**
+   * Called once per opening when the panel has shown at least one price
+   * inside the radius — a "moment of value" the app may follow with the
+   * one-time install prompt after the panel closes.
+   */
+  onResultsShown?: () => void;
 }) {
   const { t } = useTranslation();
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -206,11 +213,16 @@ export function CheapestNearbyPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  const results = userLocation
+  // Computed before the early return (hooks below need it); empty when closed.
+  const results = isOpen && userLocation
     ? findCheapestNearby(stations, prices, allVotes, userLocation.lat, userLocation.lon, radius, preferredBrands, loyaltyDiscounts, applyLoyalty, homeCurrency, fxRates)
     : [];
+  const foundInRadius = results.some(r => !r.outsideRadius);
+  useEffect(() => {
+    if (foundInRadius) onResultsShown?.();
+  }, [foundInRadius, onResultsShown]);
+
+  if (!isOpen) return null;
 
   const fuelLabel: Record<string, string> = {
     'Bensiin 95': '95',
@@ -247,7 +259,7 @@ export function CheapestNearbyPanel({
             <MapPin size={20} style={{ color: 'var(--color-primary)' }} />
             <h2 className="heading-1">{t('cheapest.title')}</h2>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
+          <button onClick={onClose} aria-label={t('common.close')} style={{ background: 'none', border: 'none', color: 'var(--color-text)', cursor: 'pointer' }}>
             <X size={24} />
           </button>
         </div>

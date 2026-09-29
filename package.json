@@ -13,7 +13,8 @@
     "verify:currency": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/verify_currency_rendering.mjs",
     "verify:scanner": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/verify_scanner_contract.mjs",
     "preview": "vite preview",
-    "measure:chains": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/measure_chain_patterns.mjs"
+    "measure:chains": "node --experimental-strip-types --import ./scripts/_ts_resolve_hook_register.mjs scripts/measure_chain_patterns.mjs",
+    "kpis": "node scripts/weekly_kpis.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

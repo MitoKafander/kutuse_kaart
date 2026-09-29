@@ -163,7 +163,8 @@
         "step1": "Atver pārlūka izvēlni (⋮ augšā pa labi)",
         "step2": "Izvēlies 'Instalēt lietotni' vai 'Pievienot sākuma ekrānam'"
       }
-    }
+    },
+    "eyebrowValue": "Padoms"
   },
   "profile": {
     "tabs": {
@@ -747,5 +748,12 @@
     "days": "{{n}} d",
     "all": "visas",
     "stations": "{{count}} stacijas"
+  },
+  "share": {
+    "button": "Dalīties",
+    "copied": "Saite nokopēta",
+    "nudge": "Paldies! Dalies ar šo cenu ar draugu",
+    "stationWithPrices": "{{name}}: {{prices}} — skaties Kyts kartē",
+    "stationNoPrices": "{{name}} — skaties Kyts kartē un pievieno cenu"
   }
 }

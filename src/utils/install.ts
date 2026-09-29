@@ -25,7 +25,12 @@ if (typeof window !== 'undefined') {
   });
   window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
-    try { localStorage.setItem('kyts:install-prompt-dismissed', '1'); } catch { /* private mode */ }
+    try {
+      localStorage.setItem('kyts:install-prompt-dismissed', '1');
+      // Separate from "dismissed": a user who installed and later opens Kyts
+      // in the browser tab must not be asked to install it again.
+      localStorage.setItem(INSTALLED_KEY, '1');
+    } catch { /* private mode */ }
   });
 }
 
@@ -73,6 +78,8 @@ export function isStandalone(): boolean {
 }
 
 const DISMISS_KEY = 'kyts:install-prompt-dismissed';
+const INSTALLED_KEY = 'kyts:app-installed';
+const VALUE_SHOWN_KEY = 'kyts:install-prompt-value-shown';
 
 export function isInstallPromptDismissed(): boolean {
   try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
@@ -89,4 +96,24 @@ export function markInstallPromptDismissed(): void {
 // menu instructions if no deferred prompt is captured.
 export function shouldAutoShowInstallPrompt(): boolean {
   return isPhone() && !isStandalone() && !isInstallPromptDismissed();
+}
+
+// The "moment of value" prompt: right after someone has just submitted a
+// price, or has just had Cheapest nearby find them fuel. That is when the case
+// for installing is obvious, and it is the growth plan's main retention lever
+// (Notes/CROWD_GROWTH_PLAN.md §3, move 2).
+//
+// It deliberately IGNORES an earlier dismissal of the tutorial prompt: that one
+// comes before the user has seen Kyts do anything, so "not now" there is not a
+// verdict on the app. But it shows at most ONCE per device, so a device sees at
+// most two prompts in its life — one after the tutorial, one at first value.
+export function shouldShowValueInstallPrompt(): boolean {
+  if (!isPhone() || isStandalone()) return false;
+  try {
+    return localStorage.getItem(INSTALLED_KEY) !== '1' && localStorage.getItem(VALUE_SHOWN_KEY) !== '1';
+  } catch { return false; }
+}
+
+export function markValueInstallPromptShown(): void {
+  try { localStorage.setItem(VALUE_SHOWN_KEY, '1'); } catch { /* private mode */ }
 }

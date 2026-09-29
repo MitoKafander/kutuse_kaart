@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Shipped] - Growth push, part 1: share, install at the moment of value, weekly numbers - 2026-09-29
+
+Why now, measured: the only time Kyts ever moved was Facebook posting —
+the week of 17 August went from ~130 to 845 sessions (455 from Facebook) and
+lifted contributions for three weeks (207 → 410 → 487 prices/week, 40+ from
+new anonymous users). When posting stopped, Facebook referrals fell to 2
+sessions in three weeks and traffic returned to ~130–150/week, where two
+months of product work (9 countries, currencies, performance, SEO) had left it.
+So: 6–8 weeks of distribution in Tallinn, breadth frozen, and three small
+builds that make every post count for more (from `Notes/CROWD_GROWTH_PLAN.md`).
+
+- 🟢 **Install prompt at the moment of value.** Right after a price is
+  submitted, or when Cheapest nearby found fuel and is closed — once per
+  device, on phones, never if installed. It deliberately ignores a "not now"
+  on the tutorial prompt, which comes before Kyts has done anything for the
+  user; a device sees at most two prompts in its life. Heading "Hea nipp";
+  `install_prompt_shown/dismissed/result` now carry `context: tutorial|value`.
+- 🟢 **Share.** A share button in the station drawer header, and after a
+  submission a toast "Aitäh! Jaga seda hinda sõbraga" (when the install prompt
+  is not due; at most once a day per device). Native share sheet on phones,
+  clipboard + "Link kopeeritud" on desktop. The text carries the station's
+  current (non-expired) prices in its own currency. Event `share_clicked`
+  with `context` and `outcome`.
+- 🟢 **`?station=<id>&ref=share` opens that station** — fetched from any
+  country through the station store, drawer open, address bar cleaned, no
+  tutorial on top of it, and a first-time visitor lands in the station's
+  country. Event `deep_link_opened`.
+- 🟢 **`npm run kpis`** — per week: sessions, Facebook sessions, contributors
+  besides the owner, median-day Estonian stations priced < 24 h, prices
+  (owner / anonymous), shares, shared-link opens, install prompts (value) and
+  installs; plus last full week against the targets (8 contributors / 40 fresh
+  stations / 250 sessions). Baseline 2026-09-21: 3 / 8 / 148.
+- Verified in a browser on the built app: a shared link to a Latvian station
+  opens its drawer in Latvia with no tutorial and a clean URL; desktop share
+  copies text + link and confirms; on a phone a lookup with results triggers
+  the prompt once and not again; a (mocked — nothing written to prod)
+  submission shows the share toast.
+- Cheapest nearby's close button gained an aria-label.
+
 ## [Changed] - Stop downloading every country on every open - 2026-09-29
 
 - 🔴 **Every open fetched all 18,787 stations in nine countries** — 19 requests

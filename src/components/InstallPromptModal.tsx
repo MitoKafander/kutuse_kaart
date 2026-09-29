@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Share, PlusSquare, Check, Smartphone, MoreVertical, Download } from 'lucide-react';
 import { capture } from '../utils/analytics';
@@ -12,12 +12,22 @@ import {
 export function InstallPromptModal({
   isOpen,
   onClose,
+  context = 'tutorial',
 }: {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Why it opened: at the end of the tutorial, or at a moment of value (just
+   * submitted a price / Cheapest nearby found fuel). Changes the heading, and
+   * is on every event so the two can be compared.
+   */
+  context?: 'tutorial' | 'value';
 }) {
   const { t } = useTranslation();
   const [installing, setInstalling] = useState(false);
+  useEffect(() => {
+    if (isOpen) capture('install_prompt_shown', { context, platform: isIOSPhone() ? 'ios' : 'android' });
+  }, [isOpen, context]);
   if (!isOpen) return null;
 
   const ios = isIOSPhone();
@@ -25,7 +35,7 @@ export function InstallPromptModal({
 
   const handleDismiss = () => {
     markInstallPromptDismissed();
-    capture('install_prompt_dismissed', { platform: ios ? 'ios' : 'android' });
+    capture('install_prompt_dismissed', { platform: ios ? 'ios' : 'android', context });
     onClose();
   };
 
@@ -33,7 +43,7 @@ export function InstallPromptModal({
     setInstalling(true);
     const accepted = await triggerNativeInstall();
     setInstalling(false);
-    capture('install_prompt_result', { platform: 'android', accepted });
+    capture('install_prompt_result', { platform: 'android', accepted, context });
     if (accepted) markInstallPromptDismissed();
     onClose();
   };
@@ -63,7 +73,7 @@ export function InstallPromptModal({
       >
         <div className="flex-between" style={{ marginBottom: '8px' }}>
           <span style={{ color: 'var(--color-text-muted)', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {t('install.eyebrow')}
+            {t(context === 'value' ? 'install.eyebrowValue' : 'install.eyebrow')}
           </span>
           <button
             onClick={handleDismiss}
